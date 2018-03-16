@@ -14,6 +14,7 @@
 #include <uint256.h>
 #include <util.h>
 #include <utilstrencodings.h>
+#include <validation.h>
 
 #include <univalue.h>
 
@@ -79,7 +80,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_parse)
     UniValue tests = read_json(std::string(json_tests::base58_keys_valid, json_tests::base58_keys_valid + sizeof(json_tests::base58_keys_valid)));
     CBitcoinSecret secret;
     CTxDestination destination;
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(CBaseChainParams::MAIN, &chainActive);
 
     for (unsigned int idx = 0; idx < tests.size(); idx++) {
         UniValue test = tests[idx];
@@ -92,7 +93,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_parse)
         std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
         const UniValue &metadata = test[2].get_obj();
         bool isPrivkey = find_value(metadata, "isPrivkey").get_bool();
-        SelectParams(find_value(metadata, "chain").get_str());
+        SelectParams(find_value(metadata, "chain").get_str(), &chainActive);
         bool try_case_flip = find_value(metadata, "tryCaseFlip").isNull() ? false : find_value(metadata, "tryCaseFlip").get_bool();
         if (isPrivkey) {
             bool isCompressed = find_value(metadata, "isCompressed").get_bool();
@@ -152,7 +153,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_gen)
         std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
         const UniValue &metadata = test[2].get_obj();
         bool isPrivkey = find_value(metadata, "isPrivkey").get_bool();
-        SelectParams(find_value(metadata, "chain").get_str());
+        SelectParams(find_value(metadata, "chain").get_str(), &chainActive);
         if (isPrivkey) {
             bool isCompressed = find_value(metadata, "isCompressed").get_bool();
             CKey key;
@@ -171,7 +172,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_gen)
         }
     }
 
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(CBaseChainParams::MAIN, &chainActive);
 }
 
 
@@ -194,7 +195,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_invalid)
 
         // must be invalid as public and as private key
         for (auto chain : { CBaseChainParams::MAIN, CBaseChainParams::TESTNET, CBaseChainParams::REGTEST }) {
-            SelectParams(chain);
+            SelectParams(chain, &chainActive);
             destination = DecodeDestination(exp_base58string);
             BOOST_CHECK_MESSAGE(!IsValidDestination(destination), "IsValid pubkey in mainnet:" + strTest);
             secret.SetString(exp_base58string);

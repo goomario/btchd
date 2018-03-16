@@ -10,6 +10,9 @@
 #include <serialize.h>
 #include <uint256.h>
 
+/** BCO version mask. */
+static const uint32_t VERSIONBIT_BCO_MASK = 1U << 12;
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -25,8 +28,9 @@ public:
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    uint64_t nBits; // uint32_t => uint64_t. BCO / baseTarget
+    uint64_t nNonce; // uint32_t => uint64_t. BCO / nonce
+    uint64_t nPlotSeed; // BCO / Plot file seed
 
     CBlockHeader()
     {
@@ -41,8 +45,23 @@ public:
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
+
+        // bits & nonce compatiable
+        if (this->nVersion & VERSIONBIT_BCO_MASK) {
+            READWRITE(nBits);
+            READWRITE(nNonce);
+            READWRITE(nPlotSeed);
+        } else {
+            assert (nBits < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+            void *pnBits = static_cast<void*>(&nBits);
+            READWRITE(*(static_cast<uint32_t*>(pnBits)));
+            *(static_cast<uint32_t*>(pnBits) + 1) = 0;
+
+            assert (nNonce < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+            void *pnNonce = static_cast<void*>(&nNonce);
+            READWRITE(*(static_cast<uint32_t*>(pnNonce)));
+            *(static_cast<uint32_t*>(pnNonce) + 1) = 0;
+        }
     }
 
     void SetNull()
@@ -53,6 +72,7 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        nPlotSeed = 0;
     }
 
     bool IsNull() const
@@ -113,6 +133,7 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+        block.nPlotSeed      = nPlotSeed;
         return block;
     }
 

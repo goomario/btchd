@@ -13,6 +13,7 @@
 #include <consensus/validation.h>
 #include <validation.h>
 #include <core_io.h>
+#include <poc/poc.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
@@ -61,22 +62,28 @@ double GetDifficulty(const CChain& chain, const CBlockIndex* blockindex)
             blockindex = chain.Tip();
     }
 
-    int nShift = (blockindex->nBits >> 24) & 0xff;
-    double dDiff =
-        (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
+    if (blockindex->nHeight >= Params().GetConsensus().BCOHeight) {
+        // BCO block difficulty
+        return (double)((poc::TWO64 / blockindex->nBits).GetLow64());
+    } else {
+        int nShift = (blockindex->nBits >> 24) & 0xff;
 
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
+        double dDiff =
+            (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
 
-    return dDiff;
+        while (nShift < 29)
+        {
+            dDiff *= 256.0;
+            nShift++;
+        }
+        while (nShift > 29)
+        {
+            dDiff /= 256.0;
+            nShift--;
+        }
+
+        return dDiff;
+    }
 }
 
 double GetDifficulty(const CBlockIndex* blockindex)
@@ -155,6 +162,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
+    result.push_back(Pair("_block", poc::GetBlockId(block)));
     return result;
 }
 
@@ -1099,8 +1107,8 @@ static UniValue SoftForkDesc(const std::string &name, int version, CBlockIndex* 
 {
     UniValue rv(UniValue::VOBJ);
     rv.push_back(Pair("id", name));
-    rv.push_back(Pair("version", version));
-    rv.push_back(Pair("reject", SoftForkMajorityDesc(version, pindex, consensusParams)));
+    rv.push_back(Pair("version", (int)(version & (~VERSIONBIT_BCO_MASK))));
+    rv.push_back(Pair("reject", SoftForkMajorityDesc((int)(version & (~VERSIONBIT_BCO_MASK)), pindex, consensusParams)));
     return rv;
 }
 

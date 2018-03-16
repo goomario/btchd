@@ -43,7 +43,8 @@ static int AppInitRawTx(int argc, char* argv[])
 
     // Check for -testnet or -regtest parameter (Params() calls are only valid after this clause)
     try {
-        SelectParams(ChainNameFromCommandLine());
+        // TODO: felix chainActive ?
+        SelectParams(ChainNameFromCommandLine(), nullptr);
     } catch (const std::exception& e) {
         fprintf(stderr, "Error: %s\n", e.what());
         return EXIT_FAILURE;

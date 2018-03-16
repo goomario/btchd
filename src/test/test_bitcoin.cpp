@@ -48,7 +48,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName)
         InitScriptExecutionCache();
         fPrintToDebugLog = false; // don't want to write to debug.log file
         fCheckBlockIndex = true;
-        SelectParams(chainName);
+        SelectParams(chainName, &chainActive);
         noui_connect();
 }
 
@@ -148,7 +148,7 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
         IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
     }
 
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
+    while (!CheckProofOfWork(&block, chainparams.GetConsensus(), -1)) ++block.nNonce;
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     ProcessNewBlock(chainparams, shared_pblock, true, nullptr);

@@ -210,8 +210,10 @@ public:
     int32_t nVersion;
     uint256 hashMerkleRoot;
     uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    uint64_t nBits; // uint32_t => uint64_t. baseTarget of BCO
+    uint64_t nNonce; // uint32_t => uint64_t. nonce of BCO
+
+    uint64_t nPlotSeed; // BCO / plot file seed
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -240,6 +242,7 @@ public:
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
+        nPlotSeed      = 0;
     }
 
     CBlockIndex()
@@ -256,6 +259,7 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
+        nPlotSeed      = block.nPlotSeed;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -286,6 +290,7 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+        block.nPlotSeed      = nPlotSeed;
         return block;
     }
 
@@ -359,7 +364,7 @@ public:
     const CBlockIndex* GetAncestor(int height) const;
 };
 
-arith_uint256 GetBlockProof(const CBlockIndex& block);
+arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params&);
 /** Return the time it would take to redo the work difference between from and to, assuming the current hashrate corresponds to the difficulty at tip, in seconds. */
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params&);
 /** Find the forking point between two chain tips. */
@@ -403,8 +408,23 @@ public:
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
+
+        // bits & nonce compatiable
+        if (this->nVersion & VERSIONBIT_BCO_MASK) {
+            READWRITE(nBits);
+            READWRITE(nNonce);
+            READWRITE(nPlotSeed);
+        } else {
+            assert (nBits < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+            void *pnBits = static_cast<void*>(&nBits);
+            READWRITE(*(static_cast<uint32_t*>(pnBits)));
+            *(static_cast<uint32_t*>(pnBits) + 1) = 0;
+
+            assert (nNonce < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+            void *pnNonce = static_cast<void*>(&nNonce);
+            READWRITE(*(static_cast<uint32_t*>(pnNonce)));
+            *(static_cast<uint32_t*>(pnNonce) + 1) = 0;
+        }
     }
 
     uint256 GetBlockHash() const
@@ -416,6 +436,7 @@ public:
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;
+        block.nPlotSeed       = nPlotSeed;
         return block.GetHash();
     }
 

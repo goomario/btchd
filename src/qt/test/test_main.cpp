@@ -9,6 +9,7 @@
 #include <chainparams.h>
 #include <qt/test/rpcnestedtests.h>
 #include <util.h>
+#include <validation.h>
 #include <qt/test/uritests.h>
 #include <qt/test/compattests.h>
 
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
 {
     SetupEnvironment();
     SetupNetworking();
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(CBaseChainParams::MAIN, &chainActive);
     noui_connect();
     ClearDatadirCache();
     fs::path pathTemp = fs::temp_directory_path() / strprintf("test_bitcoin-qt_%lu_%i", (unsigned long)GetTime(), (int)GetRand(100000));

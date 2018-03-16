@@ -4,15 +4,24 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <pow.h>
-
+#include <chain.h>
+#include <chainparams.h>
 #include <arith_uint256.h>
 #include <chain.h>
+#include <poc/poc.h>
 #include <primitives/block.h>
 #include <uint256.h>
+#include <validation.h>
 
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
+uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
+
+    if (pindexLast->nHeight+1 >= Params().GetConsensus().BCOHeight) {
+        // Calc BCO next block work required
+        return ::poc::CalculateBaseTarget(*pindexLast, *pblock, params);
+    }
+
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
     // Only change once per difficulty adjustment interval
@@ -46,7 +55,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     return CalculateNextWorkRequired(pindexLast, pindexFirst->GetBlockTime(), params);
 }
 
-unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params& params)
+uint32_t CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params& params)
 {
     if (params.fPowNoRetargeting)
         return pindexLast->nBits;
@@ -71,20 +80,46 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     return bnNew.GetCompact();
 }
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
+bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& params, int blockHeight)
 {
+    // Get block height
+    if (blockHeight == -1) {
+        auto iter = mapBlockIndex.find(pblock->hashPrevBlock);
+        if (iter != mapBlockIndex.end()) {
+            blockHeight = iter->second->nHeight + 1;
+        }
+        assert (blockHeight != -1 || !(pblock->nVersion&VERSIONBIT_BCO_MASK));
+    }
+
+    if (blockHeight != -1) {
+        // BCO
+        if (blockHeight >= Params().GetConsensus().BCOHeight) {
+            auto iter = mapBlockIndex.find(pblock->hashPrevBlock);
+            if (iter == mapBlockIndex.end()) {
+                return false;
+            }
+
+            if (iter->second->nHeight + 1 != blockHeight) {
+                return false;
+            }
+
+            return ::poc::VerifyGenerationSignature(*(iter->second), *pblock, params);
+        }
+    }
+
+    // PoW
     bool fNegative;
     bool fOverflow;
     arith_uint256 bnTarget;
 
-    bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+    bnTarget.SetCompact(pblock->nBits, &fNegative, &fOverflow);
 
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
         return false;
 
     // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget)
+    if (UintToArith256(pblock->GetHash()) > bnTarget)
         return false;
 
     return true;

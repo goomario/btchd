@@ -110,7 +110,8 @@ const CChainParams &Params();
  * Sets the params returned by Params() to those for the given BIP70 chain name.
  * @throws std::runtime_error when the chain is not supported.
  */
-void SelectParams(const std::string& chain);
+class CChain;
+void SelectParams(const std::string& chain, CChain *pchainActive);
 
 /**
  * Allows modifying the Version Bits regtest parameters.

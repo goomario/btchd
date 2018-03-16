@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chain.h>
+#include <poc/poc.h>
 
 /**
  * CChain implementation
@@ -118,8 +119,14 @@ void CBlockIndex::BuildSkip()
         pskip = pprev->GetAncestor(GetSkipHeight(nHeight));
 }
 
-arith_uint256 GetBlockProof(const CBlockIndex& block)
+arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params& params)
 {
+    // POC
+    if (block.nHeight >= params.BCOHeight) {
+        return (poc::TWO64 / block.nBits);
+    }
+
+    // POW
     arith_uint256 bnTarget;
     bool fNegative;
     bool fOverflow;
@@ -143,7 +150,7 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
         r = from.nChainWork - to.nChainWork;
         sign = -1;
     }
-    r = r * arith_uint256(params.nPowTargetSpacing) / GetBlockProof(tip);
+    r = r * arith_uint256(params.nPowTargetSpacing) / GetBlockProof(tip, params);
     if (r.bits() > 63) {
         return sign * std::numeric_limits<int64_t>::max();
     }

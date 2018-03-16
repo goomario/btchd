@@ -25,6 +25,7 @@
 #include <netbase.h>
 #include <net.h>
 #include <net_processing.h>
+#include <poc/poc.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
@@ -160,6 +161,7 @@ static CScheduler scheduler;
 
 void Interrupt()
 {
+    InterruptPOC();
     InterruptHTTPServer();
     InterruptHTTPRPC();
     InterruptRPC();
@@ -184,6 +186,7 @@ void Shutdown()
     RenameThread("bitcoin-shutoff");
     mempool.AddTransactionsUpdated(1);
 
+    StopPOC();
     StopHTTPRPC();
     StopREST();
     StopRPC();
@@ -728,6 +731,8 @@ bool AppInitServers()
     if (gArgs.GetBoolArg("-rest", DEFAULT_REST_ENABLE) && !StartREST())
         return false;
     if (!StartHTTPServer())
+        return false;
+    if (!StartPOC())
         return false;
     return true;
 }

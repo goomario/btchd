@@ -81,6 +81,16 @@ static void JSONErrorReply(HTTPRequest* req, const UniValue& objError, const Uni
     req->WriteReply(nStatus, strReply);
 }
 
+static void BurstJSONErrorReply(HTTPRequest* req, int nErrorCode, const std::string &strErrorDescription) 
+{
+    UniValue result;
+    result.pushKV("errorCode", nErrorCode);
+    result.pushKV("errorDescription", strErrorDescription);
+
+    req->WriteHeader("Content-Type", "application/json; charset=UTF-8");
+    req->WriteReply(HTTP_OK, result.write());
+}
+
 //This function checks username and password against -rpcauth
 //entries from config file.
 static bool multiUserAuthorized(std::string strUserPass)
@@ -208,6 +218,61 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
     return true;
 }
 
+static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
+{
+    JSONRPCRequest jreq;
+    try {
+        // Parse request
+        const std::map<std::string,std::string> parameters = req->GetParameters();
+        const auto requestType = parameters.find("requestType");
+        if (requestType == parameters.end()) {
+            BurstJSONErrorReply(req, 1, "Incorrect request");
+            return false;
+        }
+
+        const time_t startTime = ::time(nullptr);
+
+        // Set the request
+        jreq.strMethod = requestType->second;
+        jreq.URI = req->GetURI();
+        jreq.params.setObject();
+        for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
+            if (it->first == "requestType") {
+                continue;
+            }
+            jreq.params.pushKV(it->first, it->second);
+        }
+
+        // Call
+        UniValue result = tableRPC.execute(jreq);
+        if (result.isBool()) {
+            if (result.isFalse()) {
+                BurstJSONErrorReply(req, 1, "Incorrect request");
+                return false;
+            } else {
+                result.setObject();
+            }
+        } else if (result.isNull() || !result.isObject()) {
+            BurstJSONErrorReply(req, 1, "Incorrect request");
+            return false;
+        }
+
+        result.pushKV("requestProcessingTime", UniValue((int64_t)(::time(nullptr) - startTime)));
+
+        // Send reply
+        req->WriteHeader("Content-Type", "application/json; charset=UTF-8");
+        req->WriteReply(HTTP_OK, result.write());
+    } catch (const UniValue& objError) {
+        BurstJSONErrorReply(req, 1, objError.getValStr());
+        return false;
+    } catch (const std::exception& e) {
+        req->WriteHeader("Content-Type", "text/plain; charset=UTF-8");
+        req->WriteReply(HTTP_INTERNAL_SERVER_ERROR, e.what());
+        return false;
+    }
+    return true;
+}
+
 static bool InitRPCAuthentication()
 {
     if (gArgs.GetArg("-rpcpassword", "") == "")
@@ -233,6 +298,7 @@ bool StartHTTPRPC()
         return false;
 
     RegisterHTTPHandler("/", true, HTTPReq_JSONRPC);
+    RegisterHTTPHandler("/burst", false, HTTPReq_BurstJSONRPC);
 #ifdef ENABLE_WALLET
     // ifdef can be removed once we switch to better endpoint support and API versioning
     RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);

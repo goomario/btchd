@@ -9,6 +9,28 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+// BCO fork information
+/** The starting height of the fork point. */
+static const uint64_t BCO_FORK_BLOCK_HEIGHT = 900000;
+
+inline unsigned int MaxBlockSize(uint64_t nblock) {
+    if (nblock < BCO_FORK_BLOCK_HEIGHT)
+        return 4000*1000; // 4MB
+
+    return (32*1000*1000); // 32MB
+}
+
+inline unsigned int MaxBlockSigops(uint64_t nblock) {
+    return MaxBlockSize(nblock) / 50;
+}
+
+inline unsigned int MaxBlockSerializedSize(uint64_t nblock){
+    if (nblock < BCO_FORK_BLOCK_HEIGHT)
+        return 4000*1000;
+
+    return (32*1000*1000);
+}
+
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
 static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 4000000;
 /** The maximum allowed weight for a block, see BIP 141 (network rule) */

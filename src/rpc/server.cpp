@@ -170,7 +170,7 @@ std::string CRPCTable::help(const std::string& strCommand, const JSONRPCRequest&
     {
         const CRPCCommand *pcmd = command.second;
         std::string strMethod = pcmd->name;
-        if ((strCommand != "" || pcmd->category == "hidden") && strMethod != strCommand)
+        if ((strCommand != "" || pcmd->category == "hidden" || pcmd->category == "burst") && strMethod != strCommand)
             continue;
         jreq.strMethod = strMethod;
         try
@@ -513,7 +513,7 @@ std::vector<std::string> CRPCTable::listCommands() const
 
 std::string HelpExampleCli(const std::string& methodname, const std::string& args)
 {
-    return "> bitcoin-cli " + methodname + " " + args + "\n";
+    return "> bco-cli " + methodname + " " + args + "\n";
 }
 
 std::string HelpExampleRpc(const std::string& methodname, const std::string& args)

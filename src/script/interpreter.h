@@ -24,6 +24,8 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
+    SIGHASH_FORKID_UBC = 0x8, // Deprecated. Signature hash flag for UBC
+    SIGHASH_FORKID_BCO = 0x10, // Signature hash flag for BCO
     SIGHASH_ANYONECANPAY = 0x80,
 };
 
@@ -111,6 +113,10 @@ enum
     // Public keys in segregated witness scripts must be compressed
     //
     SCRIPT_VERIFY_WITNESS_PUBKEYTYPE = (1U << 15),
+    
+    // Do we accept signature using SIGHASH_FORKID_BCO
+    //
+    SCRIPT_ENABLE_SIGHASH_FORKID = (1U << 18),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);
@@ -129,7 +135,7 @@ enum SigVersion
     SIGVERSION_WITNESS_V0 = 1,
 };
 
-uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr);
+uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr, uint32_t flags = SCRIPT_ENABLE_SIGHASH_FORKID);
 
 class BaseSignatureChecker
 {
@@ -184,5 +190,10 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror = nullptr);
 
 size_t CountWitnessSigOps(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags);
+
+// BCO paramters
+namespace Consensus { struct Params; }
+class CChain;
+void InitBCOParams(const Consensus::Params * params, const CChain *pChainActive);
 
 #endif // BITCOIN_SCRIPT_INTERPRETER_H
