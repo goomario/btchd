@@ -11,7 +11,7 @@
 
 // BCO fork information
 /** The starting height of the fork point. */
-static const uint64_t BCO_FORK_BLOCK_HEIGHT = 900000;
+static const uint64_t BCO_FORK_BLOCK_HEIGHT = 514000;
 
 inline unsigned int MaxBlockSize(uint64_t nblock) {
     if (nblock < BCO_FORK_BLOCK_HEIGHT)
