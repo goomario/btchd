@@ -59,10 +59,18 @@ struct Params {
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
 
-    /** BCO */
+    /** BitcoinOre */
     /** Block height at which UAHF kicks in */
     int BCOHeight;
-    
+    /** Block height at which UAHF kicks in */
+    int BCOInitBlockCount;
+    /** BitcoinOre foundation wallet address */
+    std::string BCOFoundationAddress;
+    /** BitcoinOre god mode block generator */
+    std::string BCOForkGeneratorPubkey;
+    /** BitcoinOre god mode */
+    bool GodMode(int nHeight) const { return nHeight >= BCOHeight - 1 && nHeight < BCOHeight + BCOInitBlockCount - 1; }
+
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.

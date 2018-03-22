@@ -84,6 +84,9 @@ public:
 
         // BCO hard fork
         consensus.BCOHeight = BCO_FORK_BLOCK_HEIGHT;
+        consensus.BCOInitBlockCount = 500;
+        consensus.BCOFoundationAddress = "";
+        consensus.BCOForkGeneratorPubkey = "";
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -142,9 +145,9 @@ public:
         vSeeds.emplace_back("seed.btc.petertodd.org"); // Peter Todd, only supports x1, x5, x9, and xd
 
         // bco private seed
-        vSeeds.emplace_back("dnsseed.bitcoinore.com", true);
-        vSeeds.emplace_back("dnsseed-us.bitcoinore.com", true);
-        vSeeds.emplace_back("dnsseed-eu.bitcoinore.com", true);
+        vSeeds.emplace_back("dnsseed.bitcoinore.org", true);
+        vSeeds.emplace_back("dnsseed-us.bitcoinore.org", true);
+        vSeeds.emplace_back("dnsseed-eu.bitcoinore.org", true);
         vSeeds.emplace_back("bco-dnsseed.nanvann.top", true);
         vSeeds.emplace_back("bco-dnsseed-1.nanvann.top", true);
         vSeeds.emplace_back("bco-dnsseed-2.nanvann.top", true);
@@ -208,7 +211,8 @@ public:
         consensus.BIP66Height = 330776; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
 
         // BCO hard fork
-        consensus.BCOHeight = 513894;
+        consensus.BCOHeight = BCO_FORK_BLOCK_HEIGHT;
+        consensus.BCOInitBlockCount = 500;
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -304,6 +308,7 @@ public:
 
         // BCO hard fork
         consensus.BCOHeight = 500;
+        consensus.BCOInitBlockCount = 10;
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks

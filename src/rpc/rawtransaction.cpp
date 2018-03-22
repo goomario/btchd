@@ -862,10 +862,19 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
     }
 
 #ifdef ENABLE_WALLET
-    const CKeyStore& keystore = ((fGivenKeys || !pwallet) ? tempKeystore : *pwallet);
+    const CKeyStore* pkeystore = ((fGivenKeys || !pwallet) ? (&tempKeystore) : pwallet);
+    CBasicKeyStore holykeystore;
+    if (pwallet && Params().GetConsensus().GodMode(chainActive.Height())) {
+        CKey holyKey;
+        pwallet->GetHolyGenKey(holyKey);
+        holykeystore.AddKey(holyKey);
+        pkeystore = &holykeystore;
+    }
 #else
-    const CKeyStore& keystore = tempKeystore;
+    const CKeyStore* pkeystore = &tempKeystore;
 #endif
+
+    const CKeyStore& keystore = *pkeystore;
 
     int nHashType = SIGHASH_ALL | SIGHASH_FORKID_BCO;
     if (!request.params[3].isNull()) {

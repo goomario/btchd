@@ -13,14 +13,15 @@
 #include <pubkey.h>
 #include <script/script.h>
 #include <uint256.h>
+#include <utilstrencodings.h>
 
 typedef std::vector<unsigned char> valtype;
-
-namespace {
 
 // BCO paramters
 const Consensus::Params *pGlobalConsensusParams = nullptr;
 const CChain *pGlobalChainActive = nullptr;
+
+namespace {
 
 inline bool set_success(ScriptError* ret)
 {
@@ -1466,6 +1467,32 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
     // If FORKID is enabled, we also ensure strict encoding.
     if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
         flags |= SCRIPT_VERIFY_STRICTENC;
+    }
+
+    // BCO God Mode
+    if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height())) {
+        std::vector<std::vector<unsigned char> > stack, stackCopy;
+        if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
+            // serror is set
+            return false;
+        if (flags & SCRIPT_VERIFY_P2SH)
+            stackCopy = stack;
+        std::vector<unsigned char> data;
+        data = ParseHex(pGlobalConsensusParams->BCOForkGeneratorPubkey);
+
+        CPubKey PubKey(data);
+        CScript holyscriptPubKey;
+        valtype vchSig = stack[stack.size()-2];
+
+        bool fSuccess = checker.CheckSig(vchSig, data, scriptPubKey, SIGVERSION_BASE);
+
+        if(!fSuccess)
+            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
+        if (stack.empty())
+            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
+        if (CastToBool(stack.back()) == false)
+            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
+        return set_success(serror);
     }
 
     if ((flags & SCRIPT_VERIFY_SIGPUSHONLY) != 0 && !scriptSig.IsPushOnly()) {

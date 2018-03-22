@@ -227,12 +227,11 @@ static UniValue GetAccountId(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "burst",              "getMiningInfo",            &GetMiningInfo,      {} },
-    { "burst",              "submitNonce",              &SubmitNonce,        {"nonce", "secretPhrase"} },
-    { "burst",              "getBlockchainStatus",      &GetBlockchainStatus, {} },
-    { "burst",              "getBlock",                 &GetBlock,           {"block"} },
-    { "burst",              "getAccountId",             &GetAccountId,       {"id"} },
-    
+    { "poc",              "getMiningInfo",            &GetMiningInfo,      {} },
+    { "poc",              "submitNonce",              &SubmitNonce,        {"nonce", "secretPhrase"} },
+    { "poc",              "getBlockchainStatus",      &GetBlockchainStatus, {} },
+    { "poc",              "getBlock",                 &GetBlock,           {"block"} },
+    { "poc",              "getAccountId",             &GetAccountId,       {"id"} },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)

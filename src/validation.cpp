@@ -6,6 +6,7 @@
 #include <validation.h>
 
 #include <arith_uint256.h>
+#include <base58.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <checkpoints.h>
@@ -3028,6 +3029,38 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
+
+    // Check block in god mode
+    if (block.hashPrevBlock != uint256()) {
+        auto iter = mapBlockIndex.find(block.hashPrevBlock);
+        if (iter != mapBlockIndex.end()) {
+            if (Params().GetConsensus().GodMode(iter->second->nHeight)) {
+                // when block is in god mode
+                if (block.vtx[0]->vout.empty())
+                    return state.DoS(100, false, REJECT_INVALID, "coinbase-vout-missing", false, "coinbase has no vout");
+
+                // get key from coinbase
+                txnouttype type;
+                std::vector<CTxDestination> addresses;
+                int nRequired;
+                bool ret = ExtractDestinations(block.vtx[0]->vout[0].scriptPubKey, type, addresses, nRequired);
+                if (!ret || addresses.size() != 1 || type != TX_SCRIPTHASH)
+                    return state.DoS(100, false, REJECT_INVALID, "coinbase-invalid-script", false, "coinbase script is not valid");
+
+                // get key from chainparams
+                CTxDestination txDest = DecodeDestination(Params().GetConsensus().BCOFoundationAddress);
+                CScriptID* keyID = boost::get<CScriptID>(&txDest);
+                if (!keyID)
+                    return state.DoS(100, false, REJECT_INVALID, "invalid-bco-foundation-address", false, "invalid bco foundation address");
+
+                if (boost::get<CScriptID>(addresses[0]) != *keyID)
+                    return state.DoS(100, false, REJECT_INVALID, "coinbase-not-bco-foundation-script", false, "coinbase script is not for bco foundation");
+            }
+        } else {
+            return state.DoS(100, false, REJECT_INVALID, "can-not-get-prev-blockheader", false, "can not get prev block header by prev block hash");
+        }
+    }
+
     for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");

@@ -5,12 +5,19 @@
 
 #include <script/sign.h>
 
+#include <chain.h>
+#include <consensus/params.h>
 #include <key.h>
 #include <keystore.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
 #include <script/standard.h>
 #include <uint256.h>
+#include <utilstrencodings.h>
+#include <validation.h>
+
+extern const Consensus::Params *pGlobalConsensusParams;
+extern const CChain *pGlobalChainActive;
 
 
 typedef std::vector<unsigned char> valtype;
@@ -140,6 +147,24 @@ static CScript PushAll(const std::vector<valtype>& values)
 
 bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
 {
+    // BCO God Mode
+    if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height())) {
+        std::vector<valtype> result;
+
+        std::vector<unsigned char> data;
+        data = ParseHex(pGlobalConsensusParams->BCOForkGeneratorPubkey);
+        CPubKey PubKey(data);
+        CKeyID address = PubKey.GetID();
+
+        if (!Sign1(address, creator, fromPubKey, result, SIGVERSION_BASE))
+            return false;
+
+        result.push_back(ToByteVector(PubKey));
+        sigdata.scriptSig = PushAll(result);
+
+        return VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+    }
+
     CScript script = fromPubKey;
     std::vector<valtype> result;
     txnouttype whichType;

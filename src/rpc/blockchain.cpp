@@ -6,13 +6,14 @@
 #include <rpc/blockchain.h>
 
 #include <amount.h>
+#include <base58.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <checkpoints.h>
 #include <coins.h>
 #include <consensus/validation.h>
-#include <validation.h>
 #include <core_io.h>
+#include <key.h>
 #include <poc/poc.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
@@ -25,6 +26,7 @@
 #include <util.h>
 #include <utilstrencodings.h>
 #include <hash.h>
+#include <validation.h>
 #include <validationinterface.h>
 #include <warnings.h>
 
@@ -42,6 +44,9 @@ struct CUpdatedBlock
     uint256 hash;
     int height;
 };
+
+std::set<std::string> whitelist;
+std::set<CScript> whitescriptlist;
 
 static std::mutex cs_blockchange;
 static std::condition_variable cond_blockchange;
@@ -881,6 +886,84 @@ static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
     stats.hashSerialized = ss.GetHash();
     stats.nDiskSize = view->EstimateSize();
     return true;
+}
+
+int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
+{
+    FlushStateToDisk();
+    std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
+    int index = 0;
+
+    outputs.clear();
+
+    int chainHeight = chainActive.Height();
+    if ((chainHeight < Params().GetConsensus().BCOHeight - 1) 
+        || (chainHeight >= (Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount - 1)))
+        return 0;
+
+    // generator's address
+    std::vector<unsigned char> data;
+    data = ParseHex(Params().GetConsensus().BCOForkGeneratorPubkey);
+    CPubKey pubKey(data);
+    CKeyID keyID = pubKey.GetID();
+    int nSpendHeight = chainActive.Height() + 1;
+
+    while (pcursor->Valid()) {
+        boost::this_thread::interruption_point();
+        COutPoint key;
+        Coin coin;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            if (coin.nHeight >= Params().GetConsensus().BCOHeight) {
+                pcursor->Next();
+                continue;
+            }
+            // ignore amount less than 0.01
+            if (coin.out.nValue <= 1000000) {
+                pcursor->Next();
+                continue;
+            }
+            // ignore not mature coin
+            if (coin.IsCoinBase() && nSpendHeight - coin.nHeight < COINBASE_MATURITY) {
+                pcursor->Next();
+                continue;
+            }
+            txnouttype typeRet;
+            std::vector<CTxDestination> addressRet;
+            int nRequiredRet;
+            bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRet, nRequiredRet);
+            if (ret) {
+                if (addressRet.size() == 1){
+                    std::string addrStr = EncodeDestination(addressRet[0]);
+                    // judge if the lock script is belong to block UBCForkGenerator
+                    std::string KeyIDStr = EncodeDestination(keyID);
+                    if (KeyIDStr == addrStr) {
+                        pcursor->Next();
+                        continue;
+                    }
+                    // judge if the lock script owner is in the whitelist
+                    if (whitelist.find(addrStr) == whitelist.end()) {
+                        outputs.emplace_back(std::make_pair(key, coin.out));
+                        ++index;
+                        if (index >= count) break;
+                    }
+                }
+                else if (addressRet.size() > 1) {
+                    // judge if the lock MS script is in the whitescriptlist
+                    if (whitescriptlist.find(coin.out.scriptPubKey) == whitescriptlist.end()) {
+                        outputs.emplace_back(std::make_pair(key, coin.out));
+                        ++index;
+                        if (index >= count) break;
+                    }
+                }
+                else {
+                    ;
+                }
+            }
+        }
+        pcursor->Next();
+    }
+
+    return outputs.size();
 }
 
 UniValue pruneblockchain(const JSONRPCRequest& request)

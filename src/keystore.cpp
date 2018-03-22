@@ -4,7 +4,11 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <keystore.h>
+#include <chainparams.h>
+#include <utilstrencodings.h>
 
+#include <key.h>
+#include <pubkey.h>
 #include <util.h>
 
 bool CKeyStore::AddKey(const CKey &key) {
@@ -79,6 +83,23 @@ std::set<CKeyID> CBasicKeyStore::GetKeys() const
 bool CBasicKeyStore::GetKey(const CKeyID &address, CKey &keyOut) const
 {
     LOCK(cs_KeyStore);
+    KeyMap::const_iterator mi = mapKeys.find(address);
+    if (mi != mapKeys.end()) {
+        keyOut = mi->second;
+        return true;
+    }
+    return false;
+}
+
+bool CBasicKeyStore::GetHolyGenKey(CKey &keyOut) const
+{
+    LOCK(cs_KeyStore);
+
+    std::vector<unsigned char> data;
+    data = ParseHex(Params().GetConsensus().BCOForkGeneratorPubkey);
+    CPubKey PubKey(data);
+    CKeyID address = PubKey.GetID();
+
     KeyMap::const_iterator mi = mapKeys.find(address);
     if (mi != mapKeys.end()) {
         keyOut = mi->second;
