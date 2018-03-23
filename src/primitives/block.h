@@ -11,7 +11,17 @@
 #include <uint256.h>
 
 /** BCO version mask. */
-static const uint32_t VERSIONBIT_BCO_MASK = 1U << 12;
+static const uint32_t VERSIONBIT_BCO_MASK = 1U << 3;
+
+// Read/Write 4byte data to/from 8byte var
+#define READWRITE32_64(obj) \
+    { \
+        assert ((obj) < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())); \
+        void *pobj = static_cast<void*>(&(obj)); \
+        READWRITE(*(static_cast<uint32_t*>(pobj))); \
+        *(static_cast<uint32_t*>(pobj) + 1) = 0; \
+    } \
+
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -52,15 +62,8 @@ public:
             READWRITE(nNonce);
             READWRITE(nPlotSeed);
         } else {
-            assert (nBits < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
-            void *pnBits = static_cast<void*>(&nBits);
-            READWRITE(*(static_cast<uint32_t*>(pnBits)));
-            *(static_cast<uint32_t*>(pnBits) + 1) = 0;
-
-            assert (nNonce < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
-            void *pnNonce = static_cast<void*>(&nNonce);
-            READWRITE(*(static_cast<uint32_t*>(pnNonce)));
-            *(static_cast<uint32_t*>(pnNonce) + 1) = 0;
+            READWRITE32_64(nBits);
+            READWRITE32_64(nNonce);
         }
     }
 

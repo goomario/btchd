@@ -60,6 +60,12 @@ struct Params {
     int BIP66Height;
 
     /** BitcoinOre */
+    /** BTC --------*------------------------------> */
+    /**             |                                */
+    /**            fork                              */
+    /**             |                                */
+    /** BCO         *---------|--------------------> */
+    /**                 init([height,height+count) as god mode block */
     /** Block height at which UAHF kicks in */
     int BCOHeight;
     /** Block height at which UAHF kicks in */
@@ -68,8 +74,8 @@ struct Params {
     std::string BCOFoundationAddress;
     /** BitcoinOre god mode block generator */
     std::string BCOForkGeneratorPubkey;
-    /** BitcoinOre god mode */
-    bool GodMode(int nHeight) const { return nHeight >= BCOHeight - 1 && nHeight < BCOHeight + BCOInitBlockCount - 1; }
+    /** BitcoinOre god mode [height,height+count) */
+    bool GodMode(int nHeight) const { return nHeight >= BCOHeight && nHeight < BCOHeight + BCOInitBlockCount; }
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,

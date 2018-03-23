@@ -842,20 +842,29 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
             // if redeemScript given and not using the local wallet (private keys
             // given), add redeemScript to the tempKeystore so it can be signed:
             if (fGivenKeys && (scriptPubKey.IsPayToScriptHash() || scriptPubKey.IsPayToWitnessScriptHash())) {
-                RPCTypeCheckObj(prevOut,
-                    {
-                        {"txid", UniValueType(UniValue::VSTR)},
-                        {"vout", UniValueType(UniValue::VNUM)},
-                        {"scriptPubKey", UniValueType(UniValue::VSTR)},
-                        {"redeemScript", UniValueType(UniValue::VSTR)},
-                    });
-                UniValue v = find_value(prevOut, "redeemScript");
-                if (!v.isNull()) {
-                    std::vector<unsigned char> rsData(ParseHexV(v, "redeemScript"));
-                    CScript redeemScript(rsData.begin(), rsData.end());
-                    tempKeystore.AddCScript(redeemScript);
-                    // Automatically also add the P2WSH wrapped version of the script (to deal with P2SH-P2WSH).
-                    tempKeystore.AddCScript(GetScriptForWitness(redeemScript));
+                if (Params().GetConsensus().GodMode(chainActive.Height() + 1)) {
+                    RPCTypeCheckObj(prevOut,
+                        {
+                            {"txid", UniValueType(UniValue::VSTR)},
+                            {"vout", UniValueType(UniValue::VNUM)},
+                            {"scriptPubKey", UniValueType(UniValue::VSTR)}, 
+                        });
+                } else {
+                    RPCTypeCheckObj(prevOut,
+                        {
+                            {"txid", UniValueType(UniValue::VSTR)},
+                            {"vout", UniValueType(UniValue::VNUM)},
+                            {"scriptPubKey", UniValueType(UniValue::VSTR)},
+                            {"redeemScript", UniValueType(UniValue::VSTR)},
+                        });
+                    UniValue v = find_value(prevOut, "redeemScript");
+                    if (!v.isNull()) {
+                        std::vector<unsigned char> rsData(ParseHexV(v, "redeemScript"));
+                        CScript redeemScript(rsData.begin(), rsData.end());
+                        tempKeystore.AddCScript(redeemScript);
+                        // Automatically also add the P2WSH wrapped version of the script (to deal with P2SH-P2WSH).
+                        tempKeystore.AddCScript(GetScriptForWitness(redeemScript));
+                    }
                 }
             }
         }
@@ -864,7 +873,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 #ifdef ENABLE_WALLET
     const CKeyStore* pkeystore = ((fGivenKeys || !pwallet) ? (&tempKeystore) : pwallet);
     CBasicKeyStore holykeystore;
-    if (pwallet && Params().GetConsensus().GodMode(chainActive.Height())) {
+    if (pwallet && Params().GetConsensus().GodMode(chainActive.Height() + 1)) {
         CKey holyKey;
         pwallet->GetHolyGenKey(holyKey);
         holykeystore.AddKey(holyKey);

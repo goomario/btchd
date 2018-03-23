@@ -415,15 +415,8 @@ public:
             READWRITE(nNonce);
             READWRITE(nPlotSeed);
         } else {
-            assert (nBits < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
-            void *pnBits = static_cast<void*>(&nBits);
-            READWRITE(*(static_cast<uint32_t*>(pnBits)));
-            *(static_cast<uint32_t*>(pnBits) + 1) = 0;
-
-            assert (nNonce < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
-            void *pnNonce = static_cast<void*>(&nNonce);
-            READWRITE(*(static_cast<uint32_t*>(pnNonce)));
-            *(static_cast<uint32_t*>(pnNonce) + 1) = 0;
+            READWRITE32_64(nBits);
+            READWRITE32_64(nNonce);
         }
     }
 

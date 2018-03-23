@@ -148,7 +148,7 @@ static CScript PushAll(const std::vector<valtype>& values)
 bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
 {
     // BCO God Mode
-    if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height())) {
+    if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
         std::vector<valtype> result;
 
         std::vector<unsigned char> data;

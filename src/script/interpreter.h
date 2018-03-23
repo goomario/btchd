@@ -24,7 +24,6 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
-    SIGHASH_FORKID_UBC = 0x8, // Deprecated. Signature hash flag for UBC
     SIGHASH_FORKID_BCO = 0x10, // Signature hash flag for BCO
     SIGHASH_ANYONECANPAY = 0x80,
 };

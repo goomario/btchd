@@ -123,7 +123,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd)
     {
-        if (nHeight + 1 >= Params().GetConsensus().BCOHeight) {
+        if (nHeight + 1 >= Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
             break;
         }
         

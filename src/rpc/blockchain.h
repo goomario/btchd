@@ -5,6 +5,11 @@
 #ifndef BITCOIN_RPC_BLOCKCHAIN_H
 #define BITCOIN_RPC_BLOCKCHAIN_H
 
+#include <primitives/transaction.h>
+
+#include <vector>
+#include <map>
+
 class CBlock;
 class CBlockIndex;
 class UniValue;
@@ -32,6 +37,9 @@ UniValue mempoolToJSON(bool fVerbose = false);
 
 /** Block header to JSON */
 UniValue blockheaderToJSON(const CBlockIndex* blockindex);
+
+/** Get UTXOs in God Mode */
+int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs);
 
 #endif
 

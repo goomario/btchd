@@ -7,22 +7,26 @@
 #include <base58.h>
 #include <chain.h>
 #include <consensus/validation.h>
+#include <consensus/merkle.h>
 #include <core_io.h>
 #include <httpserver.h>
-#include <validation.h>
+#include <miner.h>
 #include <net.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
+#include <rpc/blockchain.h>
 #include <rpc/mining.h>
 #include <rpc/safemode.h>
 #include <rpc/server.h>
+#include <rpc/rawtransaction.h>
 #include <rpc/util.h>
 #include <script/sign.h>
 #include <timedata.h>
 #include <util.h>
 #include <utilmoneystr.h>
+#include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/feebumper.h>
 #include <wallet/wallet.h>
@@ -3435,6 +3439,219 @@ UniValue generate(const JSONRPCRequest& request)
     return generateBlocks(coinbase_script, num_generate, max_tries, true);
 }
 
+// BCO God Mode tools
+UniValue generateholyblocks(const JSONRPCRequest& request)
+{
+    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 2) {
+        throw std::runtime_error(
+            "generateholyblocks nblocks address\n"
+            "\nMine up to nblocks blocks immediately (before the RPC call returns) to an address in the wallet.\n"
+            "\nArguments:\n"
+            "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
+            "2. address      (string, required) The address of BCO foundation.\n"
+            "\nResult:\n"
+            "[ blockhashes ]     (array) hashes of blocks generated\n"
+            "\nExamples:\n"
+            "\nggenerateholyblocks 20 blocks\n"
+            + HelpExampleCli("generateholyblocks", "20")
+        );
+    }
+    int numGenerate = request.params[0].get_int();
+
+
+    // judge whether param address is UnionBitcion foundation's official address
+
+    if (request.params[1].get_str() != Params().GetConsensus().BCOFoundationAddress) {
+        throw JSONRPCError(RPC_NOT_FOUNDATION_ADDRESS, "Error: Not the BCO foundation address");
+    }
+
+    int nHeightEnd = 0;
+    int nHeight = 0;
+    {   // Don't keep cs_main locked
+        LOCK(cs_main);
+        nHeight = chainActive.Height();
+        nHeightEnd = nHeight + numGenerate;
+    }
+    if (!Params().GetConsensus().GodMode(nHeight + 1)) {
+        throw JSONRPCError(RPC_NOT_IN_GOD_MODE, "Error: Not in god mode");
+    }
+
+    // initialize coinbase script
+    CTxDestination destination = DecodeDestination(request.params[1].get_str());
+    if (!IsValidDestination(destination)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address");
+    }
+    std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
+    coinbaseScript->reserveScript = GetScriptForDestination(destination);
+
+    unsigned int nExtraNonce = 1;
+    UniValue blockHashes(UniValue::VARR);
+    while (nHeight < nHeightEnd) {
+        if (chainActive.Height() + 1 >= Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount)
+            break;
+
+        // if mempool is not empty, clear it
+        if (mempool.size() != 0)
+            mempool.clear();
+
+        // get 32768 utxos if possible
+        // 128 vins per trx and 256 trxs per block
+        std::vector<std::pair<COutPoint, CTxOut>> outputs;
+        GetHolyUTXO(0x100 * 0x80, outputs);
+
+        while (!outputs.empty()) {
+            // vin
+            int popElem = 0;
+            if (outputs.size() < 0x80)
+                popElem = outputs.size();
+            else
+                popElem = 0x80;
+
+            int outputs_size = outputs.size();
+            CAmount amount = 0;
+            double amountf = 0.0;
+            double fee = 0.0;
+            std::vector<std::pair<COutPoint, CTxOut>> txOutput;
+            std::copy(std::end(outputs)-popElem, std::end(outputs), std::back_inserter(txOutput));
+            outputs.resize(outputs_size-popElem);
+
+            // build input and output
+            UniValue reqCrtRaw(UniValue::VARR);
+            UniValue firstParamCrt(UniValue::VARR);
+            UniValue secondParamCrt(UniValue::VOBJ);
+            for (const auto& output: txOutput) {
+                UniValue o(UniValue::VOBJ);
+                
+                UniValue vout(UniValue::VNUM);
+                vout.setInt((int)output.first.n);
+                
+                o.pushKV("txid", output.first.hash.GetHex());
+                o.pushKV("vout", vout);
+                o.pushKV("scriptPubKey", HexStr(output.second.scriptPubKey.begin(), output.second.scriptPubKey.end()));
+                firstParamCrt.push_back(o);
+                amount += output.second.nValue;
+            }
+            amountf = amount / 100000000.0;
+            // 0.0001 per kilo bytes
+            fee = (((180 * popElem + 40 * 2 + 10) / 1000) + 1) * 0.0001;
+
+            char a[64];
+            char *p = a;
+            snprintf(p, 64, "%.08f", amountf-fee);
+            secondParamCrt.pushKV(request.params[1].get_str(), std::string(p));
+
+            reqCrtRaw.push_back(firstParamCrt);
+            reqCrtRaw.push_back(secondParamCrt);
+
+            // create raw trx
+            JSONRPCRequest jsonreq;
+            jsonreq.params = reqCrtRaw;
+            UniValue hexRawTrx = createrawtransaction(jsonreq);
+
+            // get holy generateblock privkey from wallet	
+            CKey vchSecret;
+            if (!pwallet->GetHolyGenKey(vchSecret)) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Private key for pubkey " + Params().GetConsensus().BCOForkGeneratorPubkey + " is not known");
+            }
+            std::string BCOForkGeneratorPrivkey = CBitcoinSecret(vchSecret).ToString();
+
+            // sign raw trx
+            UniValue thirdParamSign(UniValue::VARR);
+            UniValue privKey(UniValue::VSTR);
+            privKey.setStr(BCOForkGeneratorPrivkey);
+            thirdParamSign.push_back(privKey);
+            UniValue reqSignRaw(UniValue::VARR);
+            reqSignRaw.push_back(hexRawTrx);
+            reqSignRaw.push_back(firstParamCrt);
+            reqSignRaw.push_back(thirdParamSign);
+
+            std::map<std::string, UniValue> objMap;
+            UniValue hexRawSignTrx(UniValue::VSTR);
+            jsonreq.params = reqSignRaw;
+            UniValue result = signrawtransaction(jsonreq);
+            result.getObjMap(objMap);
+            hexRawSignTrx = objMap["hex"];
+            UniValue completeSign(UniValue::VBOOL);
+            completeSign = objMap["complete"];
+            
+            if (!completeSign.getBool())
+                throw JSONRPCError(RPC_ABNORMAL_SIGN_TRX, "not completely signed transaction");
+
+            // parse hex string from parameter
+            // add to mempool
+            CMutableTransaction mtx;
+            if (!DecodeHexTx(mtx, hexRawSignTrx.get_str()))
+                throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+            CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
+            const uint256& hashTx = tx->GetHash();
+
+            CAmount nMaxRawTxFee = maxTxFee;
+
+            { // cs_main scope
+                LOCK(cs_main);
+
+                CCoinsViewCache &view = *pcoinsTip;
+                bool fHaveChain = false;
+                for (size_t o = 0; !fHaveChain && o < tx->vout.size(); o++) {
+                    const Coin& existingCoin = view.AccessCoin(COutPoint(hashTx, o));
+                    fHaveChain = !existingCoin.IsSpent();
+                }
+                bool fHaveMempool = mempool.exists(hashTx);
+                if (!fHaveMempool && !fHaveChain) {
+                    // push to local node and sync with wallets
+                    CValidationState state;
+                    bool fMissingInputs;
+                    if (!AcceptToMemoryPool(mempool, state, std::move(tx), &fMissingInputs, nullptr, false, nMaxRawTxFee)) {
+                        if (state.IsInvalid()) {
+                            throw JSONRPCError(RPC_TRANSACTION_REJECTED, strprintf("%i: %s", state.GetRejectCode(), state.GetRejectReason()));
+                        } else {
+                            if (fMissingInputs) {
+                                throw JSONRPCError(RPC_TRANSACTION_ERROR, "Missing inputs");
+                            }
+                            throw JSONRPCError(RPC_TRANSACTION_ERROR, state.GetRejectReason());
+                        }
+                    }
+                } else if (fHaveChain) {
+                    throw JSONRPCError(RPC_TRANSACTION_ALREADY_IN_CHAIN, "transaction already in block chain");
+                }
+            }
+        }
+
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
+        if (!pblocktemplate.get())
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
+
+        // initialize coinbase
+        CBlock *pblock = &pblocktemplate->block;
+
+        // Update nExtraNonce
+        {
+            LOCK(cs_main);
+            unsigned int nHeight = chainActive.Tip()->nHeight+1; // Height first in coinbase required for block.version=2
+            CMutableTransaction txCoinbase(*pblock->vtx[0]);
+            txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
+            assert(txCoinbase.vin[0].scriptSig.size() <= 100);
+
+            pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
+            pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
+        }
+
+        std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
+        if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
+        ++nHeight;
+
+        blockHashes.push_back(pblock->GetHash().GetHex());
+    }
+    return blockHashes;
+}
+
 UniValue rescanblockchain(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -3588,6 +3805,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
+    { "generating",         "generateholyblocks",       &generateholyblocks,       {"nblocks","address"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)

@@ -48,7 +48,7 @@ static const int HASH_CAP = 4096;
 
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block)
 {
-    if (prevBlockIndex.nHeight + 1 == Params().GetConsensus().BCOHeight) {
+    if (prevBlockIndex.nHeight + 1 < Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
         return 0;
     }
 
@@ -257,13 +257,13 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 {
     assert(prevBlockIndex.nHeight + 1 >= params.BCOHeight);
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight == params.BCOHeight) {
-        // genesis block
+    if (nHeight < params.BCOHeight + params.BCOInitBlockCount) {
+        // genesis block & god mode block
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BCOHeight + 4) {
+    } else if (nHeight < params.BCOHeight + params.BCOInitBlockCount + 4) {
         // < 4
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BCOHeight + 2700) {
+    } else if (nHeight < params.BCOHeight + params.BCOInitBlockCount + 2700) {
         // < 2700
         // [N-1,N-2,N-3,N-4]
         uint64_t avgBaseTarget = prevBlockIndex.nBits;
@@ -352,8 +352,8 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
         return false;
     }
 
-    if (prevBlockIndex.nHeight + 1 == params.BCOHeight) {
-        // genesis block
+    if (prevBlockIndex.nHeight + 1 < Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
+        // God Mode
         return true;
     }
     

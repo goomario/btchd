@@ -17,7 +17,7 @@ uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *
 {
     assert(pindexLast != nullptr);
 
-    if (pindexLast->nHeight+1 >= Params().GetConsensus().BCOHeight) {
+    if (pindexLast->nHeight + 1 >= Params().GetConsensus().BCOHeight) {
         // Calc BCO next block work required
         return ::poc::CalculateBaseTarget(*pindexLast, *pblock, params);
     }

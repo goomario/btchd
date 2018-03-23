@@ -517,6 +517,7 @@ bool IsUAHFenabled(const Consensus::Params& consensusparams, const CBlockIndex *
 
     return IsUAHFenabled(consensusparams, pindexPrev->nHeight);
 }
+
 bool IsUAHFenabledForCurrentBlock(const Consensus::Params& consensusparams) {
     AssertLockHeld(cs_main);
     return IsUAHFenabled(consensusparams, chainActive.Tip());
@@ -3034,7 +3035,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (block.hashPrevBlock != uint256()) {
         auto iter = mapBlockIndex.find(block.hashPrevBlock);
         if (iter != mapBlockIndex.end()) {
-            if (Params().GetConsensus().GodMode(iter->second->nHeight)) {
+            if (Params().GetConsensus().GodMode(iter->second->nHeight + 1)) {
                 // when block is in god mode
                 if (block.vtx[0]->vout.empty())
                     return state.DoS(100, false, REJECT_INVALID, "coinbase-vout-missing", false, "coinbase has no vout");
