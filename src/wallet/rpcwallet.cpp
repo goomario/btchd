@@ -3465,8 +3465,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
     int numGenerate = request.params[0].get_int();
 
 
-    // judge whether param address is UnionBitcion foundation's official address
-
+    // judge whether param address is BCO foundation's official address
     if (request.params[1].get_str() != Params().GetConsensus().BCOFoundationAddress) {
         throw JSONRPCError(RPC_NOT_FOUNDATION_ADDRESS, "Error: Not the BCO foundation address");
     }

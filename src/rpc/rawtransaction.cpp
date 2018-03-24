@@ -794,6 +794,9 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
     }
 #endif
 
+    // God mode
+    const bool godMode = Params().GetConsensus().GodMode(chainActive.Height() + 1);
+
     // Add previous txouts given in the RPC call:
     if (!request.params[1].isNull()) {
         UniValue prevTxs = request.params[1].get_array();
@@ -842,7 +845,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
             // if redeemScript given and not using the local wallet (private keys
             // given), add redeemScript to the tempKeystore so it can be signed:
             if (fGivenKeys && (scriptPubKey.IsPayToScriptHash() || scriptPubKey.IsPayToWitnessScriptHash())) {
-                if (Params().GetConsensus().GodMode(chainActive.Height() + 1)) {
+                if (godMode) {
                     RPCTypeCheckObj(prevOut,
                         {
                             {"txid", UniValueType(UniValue::VSTR)},
@@ -873,7 +876,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 #ifdef ENABLE_WALLET
     const CKeyStore* pkeystore = ((fGivenKeys || !pwallet) ? (&tempKeystore) : pwallet);
     CBasicKeyStore holykeystore;
-    if (pwallet && Params().GetConsensus().GodMode(chainActive.Height() + 1)) {
+    if (pwallet && godMode) {
         CKey holyKey;
         pwallet->GetHolyGenKey(holyKey);
         holykeystore.AddKey(holyKey);
@@ -938,7 +941,9 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mtx.vout.size()))
             ProduceSignature(MutableTransactionSignatureCreator(&keystore, &mtx, i, amount, nHashType), prevPubKey, sigdata);
-        sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(mtx, i));
+
+        if (!godMode)
+            sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(mtx, i));
 
         UpdateTransaction(mtx, i, sigdata);
 
