@@ -19,7 +19,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
-    <RemoteRootDir>/mnt/d/Developer/erich/bco-btc/src/vsproject</RemoteRootDir>
+    <RemoteRootDir>/tmp/bco-vsproject</RemoteRootDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
@@ -49,8 +49,21 @@
     <ClCompile Include="..\src\clientversion.cpp" />
     <ClCompile Include="..\src\coins.cpp" />
     <ClCompile Include="..\src\compressor.cpp" />
+    <ClCompile Include="..\src\consensus\merkle.cpp" />
+    <ClCompile Include="..\src\consensus\tx_verify.cpp" />
     <ClCompile Include="..\src\core_read.cpp" />
     <ClCompile Include="..\src\core_write.cpp" />
+    <ClCompile Include="..\src\crypto\aes.cpp" />
+    <ClCompile Include="..\src\crypto\chacha20.cpp" />
+    <ClCompile Include="..\src\crypto\curve25519.cpp" />
+    <ClCompile Include="..\src\crypto\hmac_sha256.cpp" />
+    <ClCompile Include="..\src\crypto\hmac_sha512.cpp" />
+    <ClCompile Include="..\src\crypto\ripemd160.cpp" />
+    <ClCompile Include="..\src\crypto\sha1.cpp" />
+    <ClCompile Include="..\src\crypto\sha256.cpp" />
+    <ClCompile Include="..\src\crypto\sha256_sse4.cpp" />
+    <ClCompile Include="..\src\crypto\sha512.cpp" />
+    <ClCompile Include="..\src\crypto\shabal256.cpp" />
     <ClCompile Include="..\src\dbwrapper.cpp" />
     <ClCompile Include="..\src\fs.cpp" />
     <ClCompile Include="..\src\hash.cpp" />
@@ -66,7 +79,15 @@
     <ClCompile Include="..\src\netbase.cpp" />
     <ClCompile Include="..\src\net_processing.cpp" />
     <ClCompile Include="..\src\noui.cpp" />
+    <ClCompile Include="..\src\poc\poc.cpp" />
+    <ClCompile Include="..\src\poc\poc_rpc.cpp" />
+    <ClCompile Include="..\src\policy\feerate.cpp" />
+    <ClCompile Include="..\src\policy\fees.cpp" />
+    <ClCompile Include="..\src\policy\policy.cpp" />
+    <ClCompile Include="..\src\policy\rbf.cpp" />
     <ClCompile Include="..\src\pow.cpp" />
+    <ClCompile Include="..\src\primitives\block.cpp" />
+    <ClCompile Include="..\src\primitives\transaction.cpp" />
     <ClCompile Include="..\src\protocol.cpp" />
     <ClCompile Include="..\src\pubkey.cpp" />
     <ClCompile Include="..\src\random.cpp" />
@@ -90,6 +111,8 @@
     <ClCompile Include="..\src\script\sigcache.cpp" />
     <ClCompile Include="..\src\script\sign.cpp" />
     <ClCompile Include="..\src\script\standard.cpp" />
+    <ClCompile Include="..\src\support\cleanse.cpp" />
+    <ClCompile Include="..\src\support\lockedpool.cpp" />
     <ClCompile Include="..\src\sync.cpp" />
     <ClCompile Include="..\src\threadinterrupt.cpp" />
     <ClCompile Include="..\src\timedata.cpp" />
@@ -98,6 +121,10 @@
     <ClCompile Include="..\src\txmempool.cpp" />
     <ClCompile Include="..\src\uint256.cpp" />
     <ClCompile Include="..\src\ui_interface.cpp" />
+    <ClCompile Include="..\src\univalue\lib\univalue.cpp" />
+    <ClCompile Include="..\src\univalue\lib\univalue_get.cpp" />
+    <ClCompile Include="..\src\univalue\lib\univalue_read.cpp" />
+    <ClCompile Include="..\src\univalue\lib\univalue_write.cpp" />
     <ClCompile Include="..\src\util.cpp" />
     <ClCompile Include="..\src\utilmoneystr.cpp" />
     <ClCompile Include="..\src\utilstrencodings.cpp" />
@@ -116,6 +143,9 @@
     <ClCompile Include="..\src\wallet\walletdb.cpp" />
     <ClCompile Include="..\src\wallet\walletutil.cpp" />
     <ClCompile Include="..\src\warnings.cpp" />
+    <ClCompile Include="..\src\zmq\zmqabstractnotifier.cpp" />
+    <ClCompile Include="..\src\zmq\zmqnotificationinterface.cpp" />
+    <ClCompile Include="..\src\zmq\zmqpublishnotifier.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\addrdb.h" />
@@ -136,8 +166,24 @@
     <ClInclude Include="..\src\coins.h" />
     <ClInclude Include="..\src\compat.h" />
     <ClInclude Include="..\src\compressor.h" />
+    <ClInclude Include="..\src\consensus\consensus.h" />
+    <ClInclude Include="..\src\consensus\merkle.h" />
+    <ClInclude Include="..\src\consensus\params.h" />
+    <ClInclude Include="..\src\consensus\tx_verify.h" />
+    <ClInclude Include="..\src\consensus\validation.h" />
     <ClInclude Include="..\src\core_io.h" />
     <ClInclude Include="..\src\core_memusage.h" />
+    <ClInclude Include="..\src\crypto\aes.h" />
+    <ClInclude Include="..\src\crypto\chacha20.h" />
+    <ClInclude Include="..\src\crypto\common.h" />
+    <ClInclude Include="..\src\crypto\curve25519.h" />
+    <ClInclude Include="..\src\crypto\hmac_sha256.h" />
+    <ClInclude Include="..\src\crypto\hmac_sha512.h" />
+    <ClInclude Include="..\src\crypto\ripemd160.h" />
+    <ClInclude Include="..\src\crypto\sha1.h" />
+    <ClInclude Include="..\src\crypto\sha256.h" />
+    <ClInclude Include="..\src\crypto\sha512.h" />
+    <ClInclude Include="..\src\crypto\shabal256.h" />
     <ClInclude Include="..\src\cuckoocache.h" />
     <ClInclude Include="..\src\dbwrapper.h" />
     <ClInclude Include="..\src\fs.h" />
@@ -158,8 +204,15 @@
     <ClInclude Include="..\src\netmessagemaker.h" />
     <ClInclude Include="..\src\net_processing.h" />
     <ClInclude Include="..\src\noui.h" />
+    <ClInclude Include="..\src\poc\poc.h" />
+    <ClInclude Include="..\src\policy\feerate.h" />
+    <ClInclude Include="..\src\policy\fees.h" />
+    <ClInclude Include="..\src\policy\policy.h" />
+    <ClInclude Include="..\src\policy\rbf.h" />
     <ClInclude Include="..\src\pow.h" />
     <ClInclude Include="..\src\prevector.h" />
+    <ClInclude Include="..\src\primitives\block.h" />
+    <ClInclude Include="..\src\primitives\transaction.h" />
     <ClInclude Include="..\src\protocol.h" />
     <ClInclude Include="..\src\pubkey.h" />
     <ClInclude Include="..\src\random.h" />
@@ -185,6 +238,9 @@
     <ClInclude Include="..\src\script\standard.h" />
     <ClInclude Include="..\src\serialize.h" />
     <ClInclude Include="..\src\streams.h" />
+    <ClInclude Include="..\src\support\cleanse.h" />
+    <ClInclude Include="..\src\support\events.h" />
+    <ClInclude Include="..\src\support\lockedpool.h" />
     <ClInclude Include="..\src\sync.h" />
     <ClInclude Include="..\src\threadinterrupt.h" />
     <ClInclude Include="..\src\threadsafety.h" />
@@ -196,6 +252,10 @@
     <ClInclude Include="..\src\uint256.h" />
     <ClInclude Include="..\src\ui_interface.h" />
     <ClInclude Include="..\src\undo.h" />
+    <ClInclude Include="..\src\univalue\include\univalue.h" />
+    <ClInclude Include="..\src\univalue\lib\univalue_escapes.h" />
+    <ClInclude Include="..\src\univalue\lib\univalue_utffilter.h" />
+    <ClInclude Include="..\src\univalue\univalue-config.h" />
     <ClInclude Include="..\src\util.h" />
     <ClInclude Include="..\src\utilmoneystr.h" />
     <ClInclude Include="..\src\utilstrencodings.h" />
@@ -215,10 +275,14 @@
     <ClInclude Include="..\src\wallet\walletdb.h" />
     <ClInclude Include="..\src\wallet\walletutil.h" />
     <ClInclude Include="..\src\warnings.h" />
+    <ClInclude Include="..\src\zmq\zmqabstractnotifier.h" />
+    <ClInclude Include="..\src\zmq\zmqconfig.h" />
+    <ClInclude Include="..\src\zmq\zmqnotificationinterface.h" />
+    <ClInclude Include="..\src\zmq\zmqpublishnotifier.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>__USE_MISC;HAVE_CONFIG_H;HAVE_DECL_DAEMON</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__linux__;__USE_MISC;HAVE_CONFIG_H;HAVE_DECL_DAEMON</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

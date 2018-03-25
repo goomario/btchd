@@ -13,6 +13,36 @@
     <Filter Include="src\wallet">
       <UniqueIdentifier>{e58019f3-0e3c-4c89-abee-5d37636021fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\consensus">
+      <UniqueIdentifier>{17a37cde-f156-412a-bb55-2aa4a9c94a41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\crypto">
+      <UniqueIdentifier>{f2ef6bca-4cd5-4b10-be4c-6675788e2547}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\poc">
+      <UniqueIdentifier>{ee81aed5-187b-4cec-8674-56e8ab15b7d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\policy">
+      <UniqueIdentifier>{73df6bf4-29c8-456b-8243-5e48d395bd9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\primitives">
+      <UniqueIdentifier>{137a5976-6666-4b23-9947-f2c444982ea4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\support">
+      <UniqueIdentifier>{ce409cf7-2c9a-47ae-afbb-92712d67bcff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\univalue">
+      <UniqueIdentifier>{8ff2ef70-e73f-490b-a396-b28ede0527a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\univalue\include">
+      <UniqueIdentifier>{3bb82509-a6b2-425e-9268-f8ecba87733b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\univalue\lib">
+      <UniqueIdentifier>{086d39cf-fcd2-4efe-85b4-90c51b23035e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\zmq">
+      <UniqueIdentifier>{c1424653-9f7b-4660-868b-d463bc6ba8cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\addrdb.cpp">
@@ -266,6 +296,96 @@
     </ClCompile>
     <ClCompile Include="..\src\wallet\walletutil.cpp">
       <Filter>src\wallet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\consensus\merkle.cpp">
+      <Filter>src\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\consensus\tx_verify.cpp">
+      <Filter>src\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\aes.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\chacha20.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\curve25519.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\hmac_sha256.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\hmac_sha512.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\ripemd160.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\sha1.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\sha256.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\sha256_sse4.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\sha512.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto\shabal256.cpp">
+      <Filter>src\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\poc\poc.cpp">
+      <Filter>src\poc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\poc\poc_rpc.cpp">
+      <Filter>src\poc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\policy\feerate.cpp">
+      <Filter>src\policy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\policy\fees.cpp">
+      <Filter>src\policy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\policy\policy.cpp">
+      <Filter>src\policy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\policy\rbf.cpp">
+      <Filter>src\policy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\primitives\block.cpp">
+      <Filter>src\primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\primitives\transaction.cpp">
+      <Filter>src\primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\support\cleanse.cpp">
+      <Filter>src\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\support\lockedpool.cpp">
+      <Filter>src\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\univalue\lib\univalue.cpp">
+      <Filter>src\univalue\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\univalue\lib\univalue_get.cpp">
+      <Filter>src\univalue\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\univalue\lib\univalue_read.cpp">
+      <Filter>src\univalue\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\univalue\lib\univalue_write.cpp">
+      <Filter>src\univalue\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\zmq\zmqabstractnotifier.cpp">
+      <Filter>src\zmq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\zmq\zmqnotificationinterface.cpp">
+      <Filter>src\zmq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\zmq\zmqpublishnotifier.cpp">
+      <Filter>src\zmq</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -559,6 +679,108 @@
     </ClInclude>
     <ClInclude Include="..\src\wallet\walletutil.h">
       <Filter>src\wallet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\consensus\consensus.h">
+      <Filter>src\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\consensus\merkle.h">
+      <Filter>src\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\consensus\params.h">
+      <Filter>src\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\consensus\tx_verify.h">
+      <Filter>src\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\consensus\validation.h">
+      <Filter>src\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\aes.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\chacha20.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\common.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\curve25519.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\hmac_sha256.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\hmac_sha512.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\ripemd160.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\sha1.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\sha256.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\sha512.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto\shabal256.h">
+      <Filter>src\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\poc\poc.h">
+      <Filter>src\poc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\policy\feerate.h">
+      <Filter>src\policy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\policy\fees.h">
+      <Filter>src\policy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\policy\policy.h">
+      <Filter>src\policy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\policy\rbf.h">
+      <Filter>src\policy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\primitives\block.h">
+      <Filter>src\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\primitives\transaction.h">
+      <Filter>src\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\support\cleanse.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\support\events.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\support\lockedpool.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\univalue\include\univalue.h">
+      <Filter>src\univalue\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\univalue\lib\univalue_escapes.h">
+      <Filter>src\univalue\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\univalue\lib\univalue_utffilter.h">
+      <Filter>src\univalue\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\univalue\univalue-config.h">
+      <Filter>src\univalue</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\zmq\zmqabstractnotifier.h">
+      <Filter>src\zmq</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\zmq\zmqconfig.h">
+      <Filter>src\zmq</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\zmq\zmqnotificationinterface.h">
+      <Filter>src\zmq</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\zmq\zmqpublishnotifier.h">
+      <Filter>src\zmq</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
