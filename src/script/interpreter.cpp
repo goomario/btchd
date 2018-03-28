@@ -903,7 +903,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     if (pGlobalChainActive->Height() >= pGlobalConsensusParams->BCOHeight) {
                         // SIGHASH_FORKID_BCO
                         if (!(flags & SCRIPT_ENABLE_SIGHASH_FORKID) ||
-							(!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO))) {
+                            (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO))) {
                             //scriptCode.FindAndDelete(CScript(vchSig));
                             return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                         }
@@ -982,7 +982,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                         if (pGlobalChainActive->Height() >= pGlobalConsensusParams->BCOHeight) {
                             // BCO
                             if (!(flags & SCRIPT_ENABLE_SIGHASH_FORKID) || 
-								(!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO))) {
+                                (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO))) {
                                 //scriptCode.FindAndDelete(CScript(vchSig));
                                 return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                             }
@@ -1469,7 +1469,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         flags |= SCRIPT_VERIFY_STRICTENC;
     }
 
-    // BCO God Mode
+    // BCO God Mode(Next block height in god mode range)
     if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
         std::vector<std::vector<unsigned char> > stack, stackCopy;
         if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
@@ -1480,8 +1480,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         std::vector<unsigned char> data;
         data = ParseHex(pGlobalConsensusParams->BCOForkGeneratorPubkey);
 
-        CPubKey PubKey(data);
-        CScript holyscriptPubKey;
+        CPubKey pubKey(data);
         valtype vchSig = stack[stack.size()-2];
 
         bool fSuccess = checker.CheckSig(vchSig, data, scriptPubKey, SIGVERSION_BASE);

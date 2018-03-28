@@ -1035,8 +1035,8 @@ UniValue exportblocks(const JSONRPCRequest& request)
     } else {
         LOCK(cs_main);
 
-		fs::path blkdir = exportdir / "blocks";
-		fs::create_directories(blkdir);
+        fs::path blkdir = exportdir / "blocks";
+        fs::create_directories(blkdir);
 
         int nBlockFile = 0;
         std::unique_ptr<CAutoFile> pfileout;
@@ -1045,13 +1045,13 @@ UniValue exportblocks(const JSONRPCRequest& request)
             std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
             ReadBlockFromDisk(*pblock, pblockindex, Params().GetConsensus());
 
-			unsigned int nBlockSize = ::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION);
-			if (pfileout == nullptr || ftell(pfileout->Get()) + nBlockSize + 8 >= MAX_BLOCKFILE_SIZE) {
-				pfileout.reset(new CAutoFile(fsbridge::fopen(blkdir / strprintf("blk%05u.dat", nBlockFile), "wb"), SER_DISK, CLIENT_VERSION));
-				LogPrintf("Export to blk%05u.dat, begin=%d, progress=%0.2f%%\n", nBlockFile, nHeight, 1.0f * nHeight / nDestinationHeight);
+            unsigned int nBlockSize = ::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION);
+            if (pfileout == nullptr || ftell(pfileout->Get()) + nBlockSize + 8 >= MAX_BLOCKFILE_SIZE) {
+                pfileout.reset(new CAutoFile(fsbridge::fopen(blkdir / strprintf("blk%05u.dat", nBlockFile), "wb"), SER_DISK, CLIENT_VERSION));
+                LogPrintf("Export to blk%05u.dat, begin=%d, progress=%0.2f%%\n", nBlockFile, nHeight, 1.0f * nHeight / nDestinationHeight);
 
-				nBlockFile++;
-			}
+                nBlockFile++;
+            }
 
             // Write index header
             (*pfileout) << FLATDATA(Params().MessageStart()) << nBlockSize;
