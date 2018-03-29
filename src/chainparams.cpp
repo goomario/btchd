@@ -85,6 +85,7 @@ public:
         // BCO hard fork
         consensus.BCOHeight = BCO_FORK_BLOCK_HEIGHT;
         consensus.BCOInitBlockCount = 500;
+        consensus.BCOGodSignaturePubkey = "039ba3b93e2bb4c689f31e3607a9b3405763d5a24f2c5c0e4947a9982e7e98895a";
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks

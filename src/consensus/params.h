@@ -70,6 +70,8 @@ struct Params {
     int BCOHeight;
     /** Block height at which UAHF kicks in */
     int BCOInitBlockCount;
+    /** BCO signature data */
+    std::string BCOGodSignaturePubkey;
     /** BitcoinOre god mode [height,height+count) */
     bool GodMode(int nHeight) const { return nHeight >= BCOHeight && nHeight < BCOHeight + BCOInitBlockCount; }
 
