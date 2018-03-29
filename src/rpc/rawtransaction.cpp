@@ -875,13 +875,6 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
 #ifdef ENABLE_WALLET
     const CKeyStore* pkeystore = ((fGivenKeys || !pwallet) ? (&tempKeystore) : pwallet);
-    CBasicKeyStore holykeystore;
-    if (pwallet && godMode) {
-        CKey holyKey;
-        pwallet->GetHolyGenKey(holyKey);
-        holykeystore.AddKey(holyKey);
-        pkeystore = &holykeystore;
-    }
 #else
     const CKeyStore* pkeystore = &tempKeystore;
 #endif

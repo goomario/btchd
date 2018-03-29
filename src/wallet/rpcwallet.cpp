@@ -3440,6 +3440,8 @@ UniValue generate(const JSONRPCRequest& request)
 }
 
 // BCO God Mode tools
+int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs);
+UniValue validateaddress(const JSONRPCRequest& request);
 UniValue generateholyblocks(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -3448,27 +3450,20 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 2) {
+    if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "generateholyblocks nblocks address\n"
+            "generateholyblocks nblocks\n"
             "\nMine up to nblocks blocks immediately (before the RPC call returns) to an address in the wallet.\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
-            "2. address      (string, required) The address of BCO foundation.\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
-            "\nggenerateholyblocks 20 blocks\n"
+            "\nggenerateholyblocks 20\n"
             + HelpExampleCli("generateholyblocks", "20")
         );
     }
     int numGenerate = request.params[0].get_int();
-
-
-    // judge whether param address is BCO foundation's official address
-    if (request.params[1].get_str() != Params().GetConsensus().BCOFoundationAddress) {
-        throw JSONRPCError(RPC_NOT_FOUNDATION_ADDRESS, "Error: Not the BCO foundation address");
-    }
 
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -3481,13 +3476,45 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_NOT_IN_GOD_MODE, "Error: Not in god mode");
     }
 
-    // initialize coinbase script
-    CTxDestination destination = DecodeDestination(request.params[1].get_str());
-    if (!IsValidDestination(destination)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address");
+    // foundation accounts
+    struct BCOFoundationAccount {
+        CTxDestination destination;
+        CKeyID keyID;
+    };
+    std::vector<BCOFoundationAccount> bcoFoundationAccountList = {
+        { DecodeDestination("3PbqmGh5fRj1sipVW4St5XR9mHmqhkiRGC") }, // 0
+        { DecodeDestination("3Q2C5UtgBv9P9qb3NW4X68Bt7ynFEupPJd") }, // 1
+        { DecodeDestination("3GzzMt8o2KeoNAzmWyZhEySGnnkVd5jdeg") }, // 2
+        { DecodeDestination("3GigczGAES93Ayac6ZvpRnahWhYECuCubv") }, // 3
+        { DecodeDestination("3GpcLFUvKbviDFcWDG5a3FNGG4NsJp86rc") }, // 4
+        { DecodeDestination("3K8A38VWGYqWEWawMBheztnV792gshQDmX") }, // 5
+        { DecodeDestination("37oN8wG3bAMsGTraPks4PmynUavZ8Y1pAv") }, // 6
+        { DecodeDestination("3LjkwSnS2gB5oZB5vsH2DgZDHgdZseVHeX") }, // 7
+        { DecodeDestination("3LdU72Uh7QiiDjqdnQCijNBNsZMLWdCX2G") }, // 8
+        { DecodeDestination("3BXu1YgZR6jNQrPPdXA1V6C4zyRJv6Nv3k") }, // 9
+        //{ DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK") }, // 10
+        //{ DecodeDestination("3FpVoCEfqNAz4xAAAQdtn4kqhPhu4L4ckv") }, // 11
+        //{ DecodeDestination("35SSk8V8MjeYLNCoegJ54banUL17YDZ8tH") }, // 12
+        //{ DecodeDestination("32MX3v4TtWjKeicNc9cXRrHDqqMYhfVdkZ") }, // 13
+    };
+    for (auto &account : bcoFoundationAccountList) {
+        JSONRPCRequest jsonreq;
+        jsonreq.params = UniValue(UniValue::VARR);
+        jsonreq.params.push_back(EncodeDestination(account.destination));
+        UniValue response = validateaddress(jsonreq);
+        if (!response["isvalid"].getBool()) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address " + EncodeDestination(account.destination));
+        }
+        if (!response["ismine"].getBool()) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: The address " + EncodeDestination(account.destination) + " not current wallet");
+        }
+        std::vector<unsigned char> data;
+        data = ParseHex(response["pubkey"].get_str());
+        CPubKey pubKey(data);
+        account.keyID = pubKey.GetID();
+
+        assert(IsValidDestination(account.destination));
     }
-    std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
-    coinbaseScript->reserveScript = GetScriptForDestination(destination);
 
     unsigned int nExtraNonce = 1;
     UniValue blockHashes(UniValue::VARR);
@@ -3505,6 +3532,8 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         GetHolyUTXO(0x100 * 0x80, outputs);
 
         while (!outputs.empty()) {
+            const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[rand() % bcoFoundationAccountList.size()];
+
             // vin
             int popElem = 0;
             if (outputs.size() < 0x80)
@@ -3543,7 +3572,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
             char a[64];
             char *p = a;
             snprintf(p, 64, "%.08f", amountf-fee);
-            secondParamCrt.pushKV(request.params[1].get_str(), std::string(p));
+            secondParamCrt.pushKV(EncodeDestination(currentAccount.destination), std::string(p));
 
             reqCrtRaw.push_back(firstParamCrt);
             reqCrtRaw.push_back(secondParamCrt);
@@ -3553,10 +3582,10 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
             jsonreq.params = reqCrtRaw;
             UniValue hexRawTrx = createrawtransaction(jsonreq);
 
-            // get holy generateblock privkey from wallet	
+            // get holy generateblock privkey from wallet
             CKey vchSecret;
-            if (!pwallet->GetHolyGenKey(vchSecret)) {
-                throw JSONRPCError(RPC_WALLET_ERROR, "Private key for pubkey " + Params().GetConsensus().BCOForkGeneratorPubkey + " is not known");
+            if (!pwallet->GetKey(currentAccount.keyID, vchSecret)) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Private key for pubkey " + currentAccount.keyID.GetHex() + " is not known");
             }
             std::string BCOForkGeneratorPrivkey = CBitcoinSecret(vchSecret).ToString();
 
@@ -3621,6 +3650,10 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
                 }
             }
         }
+
+        // initialize coinbase script
+        std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
+        coinbaseScript->reserveScript = GetScriptForDestination(bcoFoundationAccountList[rand() % bcoFoundationAccountList.size()].destination);
 
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
         if (!pblocktemplate.get())
@@ -3804,7 +3837,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
-    { "generating",         "generateholyblocks",       &generateholyblocks,       {"nblocks","address"} },
+    { "generating",         "generateholyblocks",       &generateholyblocks,       {"nblocks"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)

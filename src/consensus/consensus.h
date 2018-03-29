@@ -10,8 +10,8 @@
 #include <stdint.h>
 
 // BCO fork information
-/** The starting height of the fork point. */
-static const uint64_t BCO_FORK_BLOCK_HEIGHT = 501949; // 00000000000000000069c0ed50d118cef1e727cf5210fe1a7dddb835c752844e
+/** The starting height of the fork height. */
+static const uint64_t BCO_FORK_BLOCK_HEIGHT = 501948 + 1; // 00000000000000000069c0ed50d118cef1e727cf5210fe1a7dddb835c752844e
 
 inline unsigned int MaxBlockSize(uint64_t nblock) {
     if (nblock < BCO_FORK_BLOCK_HEIGHT)
@@ -24,7 +24,7 @@ inline unsigned int MaxBlockSigops(uint64_t nblock) {
     return MaxBlockSize(nblock) / 50;
 }
 
-inline unsigned int MaxBlockSerializedSize(uint64_t nblock){
+inline unsigned int MaxBlockSerializedSize(uint64_t nblock) {
     if (nblock < BCO_FORK_BLOCK_HEIGHT)
         return 4000*1000;
 

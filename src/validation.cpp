@@ -3048,14 +3048,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
                 if (!ret || addresses.size() != 1 || type != TX_SCRIPTHASH)
                     return state.DoS(100, false, REJECT_INVALID, "coinbase-invalid-script", false, "coinbase script is not valid");
 
-                // get key from chainparams
-                CTxDestination txDest = DecodeDestination(Params().GetConsensus().BCOFoundationAddress);
-                CScriptID* keyID = boost::get<CScriptID>(&txDest);
-                if (!keyID)
-                    return state.DoS(100, false, REJECT_INVALID, "invalid-bco-foundation-address", false, "invalid bco foundation address");
-
-                if (boost::get<CScriptID>(addresses[0]) != *keyID)
-                    return state.DoS(100, false, REJECT_INVALID, "coinbase-not-bco-foundation-script", false, "coinbase script is not for bco foundation");
+                // Not yet verify god mode destination
+                return true;
             }
         } else {
             return state.DoS(100, false, REJECT_INVALID, "can-not-get-prev-blockheader", false, "can not get prev block header by prev block hash");

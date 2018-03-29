@@ -1471,27 +1471,13 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 
     // BCO God Mode(Next block height in god mode range)
     if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
-        std::vector<std::vector<unsigned char> > stack, stackCopy;
+        std::vector<std::vector<unsigned char> > stack;
         if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
             // serror is set
             return false;
-        if (flags & SCRIPT_VERIFY_P2SH)
-            stackCopy = stack;
-        std::vector<unsigned char> data;
-        data = ParseHex(pGlobalConsensusParams->BCOForkGeneratorPubkey);
 
-        CPubKey pubKey(data);
-        valtype vchSig = stack[stack.size()-2];
-
-        bool fSuccess = checker.CheckSig(vchSig, data, scriptPubKey, SIGVERSION_BASE);
-
-        if(!fSuccess)
-            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
-        if (stack.empty())
-            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
-        if (CastToBool(stack.back()) == false)
-            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
-        return set_success(serror);
+        // Not yet verify god mode destination
+        return true;
     }
 
     if ((flags & SCRIPT_VERIFY_SIGPUSHONLY) != 0 && !scriptSig.IsPushOnly()) {

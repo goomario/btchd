@@ -149,20 +149,7 @@ bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPu
 {
     // BCO God Mode
     if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
-        std::vector<valtype> result;
-
-        std::vector<unsigned char> data;
-        data = ParseHex(pGlobalConsensusParams->BCOForkGeneratorPubkey);
-        CPubKey PubKey(data);
-        CKeyID address = PubKey.GetID();
-
-        if (!Sign1(address, creator, fromPubKey, result, SIGVERSION_BASE))
-            return false;
-
-        result.push_back(ToByteVector(PubKey));
-        sigdata.scriptSig = PushAll(result);
-
-        return VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+        return true;
     }
 
     CScript script = fromPubKey;

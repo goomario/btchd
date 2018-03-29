@@ -91,23 +91,6 @@ bool CBasicKeyStore::GetKey(const CKeyID &address, CKey &keyOut) const
     return false;
 }
 
-bool CBasicKeyStore::GetHolyGenKey(CKey &keyOut) const
-{
-    LOCK(cs_KeyStore);
-
-    std::vector<unsigned char> data;
-    data = ParseHex(Params().GetConsensus().BCOForkGeneratorPubkey);
-    CPubKey PubKey(data);
-    CKeyID address = PubKey.GetID();
-
-    KeyMap::const_iterator mi = mapKeys.find(address);
-    if (mi != mapKeys.end()) {
-        keyOut = mi->second;
-        return true;
-    }
-    return false;
-}
-
 bool CBasicKeyStore::AddCScript(const CScript& redeemScript)
 {
     if (redeemScript.size() > MAX_SCRIPT_ELEMENT_SIZE)

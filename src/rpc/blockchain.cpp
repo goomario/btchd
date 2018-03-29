@@ -45,9 +45,6 @@ struct CUpdatedBlock
     int height;
 };
 
-std::set<std::string> whitelist;
-std::set<CScript> whitescriptlist;
-
 static std::mutex cs_blockchange;
 static std::condition_variable cond_blockchange;
 static CUpdatedBlock latestblock;
@@ -901,11 +898,6 @@ int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
         || (chainHeight >= (Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount - 1)))
         return 0;
 
-    // generator's address
-    std::vector<unsigned char> data;
-    data = ParseHex(Params().GetConsensus().BCOForkGeneratorPubkey);
-    CPubKey pubKey(data);
-    CKeyID keyID = pubKey.GetID();
     int nSpendHeight = chainActive.Height() + 1;
 
     while (pcursor->Valid()) {
@@ -932,31 +924,10 @@ int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
             int nRequiredRet;
             bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRet, nRequiredRet);
             if (ret) {
-                if (addressRet.size() == 1){
-                    std::string addrStr = EncodeDestination(addressRet[0]);
-                    // judge if the lock script is belong to block UBCForkGenerator
-                    std::string KeyIDStr = EncodeDestination(keyID);
-                    if (KeyIDStr == addrStr) {
-                        pcursor->Next();
-                        continue;
-                    }
-                    // judge if the lock script owner is in the whitelist
-                    if (whitelist.find(addrStr) == whitelist.end()) {
-                        outputs.emplace_back(std::make_pair(key, coin.out));
-                        ++index;
-                        if (index >= count) break;
-                    }
-                }
-                else if (addressRet.size() > 1) {
-                    // judge if the lock MS script is in the whitescriptlist
-                    if (whitescriptlist.find(coin.out.scriptPubKey) == whitescriptlist.end()) {
-                        outputs.emplace_back(std::make_pair(key, coin.out));
-                        ++index;
-                        if (index >= count) break;
-                    }
-                }
-                else {
-                    ;
+                if (!addressRet.empty()) {
+                    outputs.emplace_back(std::make_pair(key, coin.out));
+                    ++index;
+                    if (index >= count) break;
                 }
             }
         }
