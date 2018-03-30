@@ -1471,7 +1471,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 
     // BCO God Mode(Next block height in god mode range)
     if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
-        std::vector<std::vector<unsigned char> > stack, stackCopy;
+        std::vector<std::vector<unsigned char> > stack, stackCopy;
         if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
             // serror is set
             return false;
