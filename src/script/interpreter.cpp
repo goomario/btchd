@@ -19,7 +19,6 @@ typedef std::vector<unsigned char> valtype;
 
 // BCO paramters
 const Consensus::Params *pGlobalConsensusParams = nullptr;
-const CChain *pGlobalChainActive = nullptr;
 
 namespace {
 
@@ -41,7 +40,6 @@ inline bool set_error(ScriptError* ret, const ScriptError serror)
 
 void InitBCOParams(const Consensus::Params *params, const CChain *pChainActive) {
     pGlobalConsensusParams = params; 
-    pGlobalChainActive = pChainActive;
 }
 
 bool CastToBool(const valtype& vch)
@@ -202,7 +200,7 @@ bool static IsDefinedHashtypeSignature(const valtype &vchSig) {
     if (vchSig.size() == 0) {
         return false;
     }
-    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO));
+    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO | SIGHASH_FORKID_BCOGOD));
     if (nHashType < SIGHASH_ALL || nHashType > SIGHASH_SINGLE)
         return false;
 
@@ -900,15 +898,12 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     CScript scriptCode(pbegincodehash, pend);
 
                     // Drop the signature in scripts when SIGHASH_FORKID is not used.
-                    if (pGlobalChainActive->Height() >= pGlobalConsensusParams->BCOHeight) {
-                        // SIGHASH_FORKID_BCO
-                        if (!(flags & SCRIPT_ENABLE_SIGHASH_FORKID) ||
-                            (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO))) {
+                    if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
+                        if (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO)) {
                             //scriptCode.FindAndDelete(CScript(vchSig));
                             return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                         }
                     } else {
-                        // SIGHASH_FORKID_BCO
                         if (!vchSig.empty() && vchSig[vchSig.size() - 1] & (SIGHASH_FORKID_BCO)) {
                             return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                         }
@@ -979,10 +974,8 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     for (int k = 0; k < nSigsCount; k++)
                     {
                         valtype& vchSig = stacktop(-isig-k);
-                        if (pGlobalChainActive->Height() >= pGlobalConsensusParams->BCOHeight) {
-                            // BCO
-                            if (!(flags & SCRIPT_ENABLE_SIGHASH_FORKID) || 
-                                (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO))) {
+                        if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
+                            if (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO)) {
                                 //scriptCode.FindAndDelete(CScript(vchSig));
                                 return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                             }
@@ -990,7 +983,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                         if (sigversion == SIGVERSION_BASE) {
                             scriptCode.FindAndDelete(CScript(vchSig));
                         }
-                        if (pGlobalChainActive->Height() < pGlobalConsensusParams->BCOHeight) {
+                        if (!(flags & SCRIPT_ENABLE_SIGHASH_FORKID)) {
                             if (!vchSig.empty() && vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO) {
                                 //scriptCode.FindAndDelete(CScript(vchSig));
                                 return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
@@ -1264,7 +1257,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         // Sighash type
         ss << nHashType;
         if ((nHashType & SIGHASH_FORKID_BCO) && (flags & SCRIPT_ENABLE_SIGHASH_FORKID)) {
-            std::string bco_flags = "bco";
+            std::string bco_flags = (nHashType & SIGHASH_FORKID_BCOGOD) ? "bcogod" : "bco";
             ss << bco_flags;
         }
 
@@ -1288,7 +1281,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
     if ((nHashType & SIGHASH_FORKID_BCO) && (flags & SCRIPT_ENABLE_SIGHASH_FORKID)) {
-        std::string bco_flags = "bco";
+        std::string bco_flags = (nHashType & SIGHASH_FORKID_BCOGOD) ? "bcogod" : "bco";
         ss << bco_flags;
     }
     return ss.GetHash();
@@ -1469,8 +1462,9 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         flags |= SCRIPT_VERIFY_STRICTENC;
     }
 
-    // BCO God Mode(Next block height in god mode range)
-    if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
+    // BCO God Mode
+    if (flags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) {
+        assert(flags & SCRIPT_ENABLE_SIGHASH_FORKID);
         std::vector<std::vector<unsigned char> > stack, stackCopy;
         if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
             // serror is set

@@ -875,13 +875,25 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
 #ifdef ENABLE_WALLET
     const CKeyStore* pkeystore = ((fGivenKeys || !pwallet) ? (&tempKeystore) : pwallet);
+    if (godMode && pkeystore == &tempKeystore) {
+        // Add god mode signature key to tempKeystore
+        std::vector<unsigned char> data;
+        data = ParseHex(Params().GetConsensus().BCOGodSignaturePubkey);
+        CPubKey pubKey(data);
+
+        CKey vchSecret;
+        if (!pwallet->GetKey(pubKey.GetID(), vchSecret)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "BCO god mode signature private key for pubkey " + pubKey.GetID().GetHex() + " is not known");
+        }
+        tempKeystore.AddKey(vchSecret);
+    }
 #else
     const CKeyStore* pkeystore = &tempKeystore;
 #endif
 
     const CKeyStore& keystore = *pkeystore;
 
-    int nHashType = SIGHASH_ALL | SIGHASH_FORKID_BCO;
+    int nHashType = SIGHASH_ALL | SIGHASH_FORKID_BCO | (godMode ? SIGHASH_FORKID_BCOGOD : 0);
     if (!request.params[3].isNull()) {
         static std::map<std::string, int> mapSigHashValues = {
             {std::string("ALL"), int(SIGHASH_ALL)},
@@ -892,26 +904,36 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
             {std::string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY)},
 
             // BCO
-            {std::string("ALL|FORKID"), int(SIGHASH_ALL | SIGHASH_FORKID_BCO)},
-            {std::string("ALL|FORKID|ANYONECANPAY"), int(SIGHASH_ALL | SIGHASH_FORKID_BCO | SIGHASH_ANYONECANPAY)},
-            {std::string("NONE|FORKID"), int(SIGHASH_NONE | SIGHASH_FORKID_BCO)},
-            {std::string("NONE|FORKID|ANYONECANPAY"), int(SIGHASH_NONE | SIGHASH_FORKID_BCO | SIGHASH_ANYONECANPAY)},
-            {std::string("SINGLE|FORKID"), int(SIGHASH_SINGLE | SIGHASH_FORKID_BCO)},
-            {std::string("SINGLE|FORKID|ANYONECANPAY"), int(SIGHASH_SINGLE | SIGHASH_FORKID_BCO | SIGHASH_ANYONECANPAY)},
+            {std::string("ALL|FORKID"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO)},
+            {std::string("ALL|FORKID|ANYONECANPAY"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY)},
+            {std::string("NONE|FORKID"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO)},
+            {std::string("NONE|FORKID|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY)},
+            {std::string("SINGLE|FORKID"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO)},
+            {std::string("SINGLE|FORKID|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY)},
+
+            // BCO GOD
+            {std::string("ALL|FORKID|GOD"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD)},
+            {std::string("ALL|FORKID|GOD|ANYONECANPAY"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY)},
+            {std::string("NONE|FORKID|GOD"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO)},
+            {std::string("NONE|FORKID|GOD|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY)},
+            {std::string("SINGLE|FORKID|GOD"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD)},
+            {std::string("SINGLE|FORKID|GOD|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY)},
         };
         std::string strHashType = request.params[3].get_str();
-        if (mapSigHashValues.count(strHashType))
-        {
+        if (mapSigHashValues.count(strHashType)) {
             nHashType = mapSigHashValues[strHashType];
             if ((nHashType & SIGHASH_FORKID_BCO) == 0) {
-                throw JSONRPCError(RPC_INVALID_PARAMETER,"Signature must use SIGHASH_FORKID");
+                throw JSONRPCError(RPC_INVALID_PARAMETER,"Signature must use FORKID");
+            }
+            if ((nHashType & SIGHASH_FORKID_BCOGOD) != 0 && (nHashType & SIGHASH_FORKID_BCO) == 0) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Signature God must use FORKID");
             }
         }
         else
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid sighash param");
     }
 
-    bool fHashSingle = ((nHashType & ~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO)) == SIGHASH_SINGLE);
+    bool fHashSingle = ((nHashType & ~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO | SIGHASH_FORKID_BCOGOD)) == SIGHASH_SINGLE);
 
     // Script verification errors
     UniValue vErrors(UniValue::VARR);
@@ -940,8 +962,11 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
         UpdateTransaction(mtx, i, sigdata);
 
+        unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
+        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
+
         ScriptError serror = SCRIPT_ERR_OK;
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i, amount), &serror)) {
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, TransactionSignatureChecker(&txConst, i, amount), &serror)) {
             if (serror == SCRIPT_ERR_INVALID_STACK_OPERATION) {
                 // Unable to sign input and verification failed (possible attempt to partially sign).
                 TxInErrorToJSON(txin, vErrors, "Unable to sign input, invalid stack size (possibly missing key)");

@@ -347,7 +347,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
 bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
-    if (!(block.nVersion&VERSIONBIT_BCO_MASK) || 
+    if (block.GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN ||
         block.nBits != CalculateBaseTarget(prevBlockIndex, block, params)) {
         return false;
     }

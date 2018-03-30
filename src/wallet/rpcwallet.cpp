@@ -3480,22 +3480,23 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
     struct BCOFoundationAccount {
         CTxDestination destination;
         CKeyID keyID;
+        CKey vchSecret;
     };
     std::vector<BCOFoundationAccount> bcoFoundationAccountList = {
-        { DecodeDestination("3PbqmGh5fRj1sipVW4St5XR9mHmqhkiRGC") }, // 0
-        { DecodeDestination("3Q2C5UtgBv9P9qb3NW4X68Bt7ynFEupPJd") }, // 1
-        { DecodeDestination("3GzzMt8o2KeoNAzmWyZhEySGnnkVd5jdeg") }, // 2
-        { DecodeDestination("3GigczGAES93Ayac6ZvpRnahWhYECuCubv") }, // 3
-        { DecodeDestination("3GpcLFUvKbviDFcWDG5a3FNGG4NsJp86rc") }, // 4
-        { DecodeDestination("3K8A38VWGYqWEWawMBheztnV792gshQDmX") }, // 5
-        { DecodeDestination("37oN8wG3bAMsGTraPks4PmynUavZ8Y1pAv") }, // 6
-        { DecodeDestination("3LjkwSnS2gB5oZB5vsH2DgZDHgdZseVHeX") }, // 7
-        { DecodeDestination("3LdU72Uh7QiiDjqdnQCijNBNsZMLWdCX2G") }, // 8
-        { DecodeDestination("3BXu1YgZR6jNQrPPdXA1V6C4zyRJv6Nv3k") }, // 9
-        //{ DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK") }, // 10
-        //{ DecodeDestination("3FpVoCEfqNAz4xAAAQdtn4kqhPhu4L4ckv") }, // 11
-        //{ DecodeDestination("35SSk8V8MjeYLNCoegJ54banUL17YDZ8tH") }, // 12
-        //{ DecodeDestination("32MX3v4TtWjKeicNc9cXRrHDqqMYhfVdkZ") }, // 13
+        { DecodeDestination("3PbqmGh5fRj1sipVW4St5XR9mHmqhkiRGC"), CKeyID(), CKey() }, // 0
+        { DecodeDestination("3Q2C5UtgBv9P9qb3NW4X68Bt7ynFEupPJd"), CKeyID(), CKey() }, // 1
+        { DecodeDestination("3GzzMt8o2KeoNAzmWyZhEySGnnkVd5jdeg"), CKeyID(), CKey() }, // 2
+        { DecodeDestination("3GigczGAES93Ayac6ZvpRnahWhYECuCubv"), CKeyID(), CKey() }, // 3
+        { DecodeDestination("3GpcLFUvKbviDFcWDG5a3FNGG4NsJp86rc"), CKeyID(), CKey() }, // 4
+        { DecodeDestination("3K8A38VWGYqWEWawMBheztnV792gshQDmX"), CKeyID(), CKey() }, // 5
+        { DecodeDestination("37oN8wG3bAMsGTraPks4PmynUavZ8Y1pAv"), CKeyID(), CKey() }, // 6
+        { DecodeDestination("3LjkwSnS2gB5oZB5vsH2DgZDHgdZseVHeX"), CKeyID(), CKey() }, // 7
+        { DecodeDestination("3LdU72Uh7QiiDjqdnQCijNBNsZMLWdCX2G"), CKeyID(), CKey() }, // 8
+        { DecodeDestination("3BXu1YgZR6jNQrPPdXA1V6C4zyRJv6Nv3k"), CKeyID(), CKey() }, // 9
+        //{ DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK"), CKeyID(), CKey() }, // 10
+        //{ DecodeDestination("3FpVoCEfqNAz4xAAAQdtn4kqhPhu4L4ckv"), CKeyID(), CKey() }, // 11
+        //{ DecodeDestination("35SSk8V8MjeYLNCoegJ54banUL17YDZ8tH"), CKeyID(), CKey() }, // 12
+        //{ DecodeDestination("32MX3v4TtWjKeicNc9cXRrHDqqMYhfVdkZ"), CKeyID(), CKey() }, // 13
     };
     for (auto &account : bcoFoundationAccountList) {
         JSONRPCRequest jsonreq;
@@ -3514,6 +3515,10 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         account.keyID = pubKey.GetID();
 
         assert(IsValidDestination(account.destination));
+
+        if (!pwallet->GetKey(account.keyID, account.vchSecret)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Private key for pubkey " + account.keyID.GetHex() + " is not known");
+        }
     }
 
     unsigned int nExtraNonce = 1;
@@ -3582,17 +3587,10 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
             jsonreq.params = reqCrtRaw;
             UniValue hexRawTrx = createrawtransaction(jsonreq);
 
-            // get holy generateblock privkey from wallet
-            CKey vchSecret;
-            if (!pwallet->GetKey(currentAccount.keyID, vchSecret)) {
-                throw JSONRPCError(RPC_WALLET_ERROR, "Private key for pubkey " + currentAccount.keyID.GetHex() + " is not known");
-            }
-            std::string BCOForkGeneratorPrivkey = CBitcoinSecret(vchSecret).ToString();
-
             // sign raw trx
             UniValue thirdParamSign(UniValue::VARR);
             UniValue privKey(UniValue::VSTR);
-            privKey.setStr(BCOForkGeneratorPrivkey);
+            privKey.setStr(CBitcoinSecret(currentAccount.vchSecret).ToString()); // get holy generateblock privkey from wallet
             thirdParamSign.push_back(privKey);
             UniValue reqSignRaw(UniValue::VARR);
             reqSignRaw.push_back(hexRawTrx);

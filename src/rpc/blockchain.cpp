@@ -1211,8 +1211,8 @@ static UniValue SoftForkDesc(const std::string &name, int version, CBlockIndex* 
 {
     UniValue rv(UniValue::VOBJ);
     rv.push_back(Pair("id", name));
-    rv.push_back(Pair("version", (int)(version & (~VERSIONBIT_BCO_MASK))));
-    rv.push_back(Pair("reject", SoftForkMajorityDesc((int)(version & (~VERSIONBIT_BCO_MASK)), pindex, consensusParams)));
+    rv.push_back(Pair("version", version));
+    rv.push_back(Pair("reject", SoftForkMajorityDesc(version, pindex, consensusParams)));
     return rv;
 }
 

@@ -410,7 +410,7 @@ public:
         READWRITE(nTime);
 
         // bits & nonce compatiable
-        if (this->nVersion & VERSIONBIT_BCO_MASK) {
+        if (static_cast<int64_t>(nTime) >= BCO_BLOCK_UNIXTIME_MIN) {
             READWRITE(nBits);
             READWRITE(nNonce);
             READWRITE(nPlotSeed);

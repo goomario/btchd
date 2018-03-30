@@ -88,7 +88,6 @@ bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& param
         if (iter != mapBlockIndex.end()) {
             blockHeight = iter->second->nHeight + 1;
         }
-        assert (blockHeight != -1 || !(pblock->nVersion&VERSIONBIT_BCO_MASK));
     }
 
     if (blockHeight != -1) {

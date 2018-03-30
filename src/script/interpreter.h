@@ -25,6 +25,7 @@ enum
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
     SIGHASH_FORKID_BCO = 0x10, // Signature hash flag for BCO
+    SIGHASH_FORKID_BCOGOD = 0x20, // Signature hash flag for BCO god mode
     SIGHASH_ANYONECANPAY = 0x80,
 };
 
@@ -112,10 +113,14 @@ enum
     // Public keys in segregated witness scripts must be compressed
     //
     SCRIPT_VERIFY_WITNESS_PUBKEYTYPE = (1U << 15),
-    
+
     // Do we accept signature using SIGHASH_FORKID_BCO
     //
     SCRIPT_ENABLE_SIGHASH_FORKID = (1U << 18),
+
+    // Do we accept signature using SIGHASH_FORKID_BCOGOD
+    //
+    SCRIPT_ENABLE_SIGHASH_FORKID_GOD = (1U << 19),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);

@@ -421,6 +421,9 @@ bool CheckSequenceLocks(const CTransaction &tx, int flags, LockPoints* lp, bool 
 // Returns the script flags which should be checked for a given block
 static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& chainparams);
 
+// Returns the script flags which should be checked for a given block
+static unsigned int GetGodBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& chainparams);
+
 static void LimitMempoolSize(CTxMemPool& pool, size_t limit, unsigned long age) {
     int expired = pool.Expire(GetTime() - age);
     if (expired != 0) {
@@ -601,6 +604,9 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return state.Invalid(false, REJECT_DUPLICATE, "txn-already-in-mempool");
     }
 
+    // Current god block script verify flags
+    const unsigned int currentGodBlockScriptVerifyFlags = GetGodBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
+
     // Check for conflicts with in-memory transactions
     std::set<uint256> setConflicts;
     for (const CTxIn &txin : tx.vin)
@@ -700,7 +706,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, view))
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-witness-nonstandard", true);
 
-        int64_t nSigOpsCost = GetTransactionSigOpCost(tx, view, STANDARD_SCRIPT_VERIFY_FLAGS);
+        int64_t nSigOpsCost = GetTransactionSigOpCost(tx, view, STANDARD_SCRIPT_VERIFY_FLAGS | currentGodBlockScriptVerifyFlags);
 
         // nModifiedFees includes any fee deltas from PrioritiseTransaction
         CAmount nModifiedFees = nFees;
@@ -899,7 +905,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             }
         }
 
-        unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+        unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS | currentGodBlockScriptVerifyFlags;
         if (!chainparams.RequireStandard()) {
             scriptVerifyFlags = gArgs.GetArg("-promiscuousmempoolflags", scriptVerifyFlags);
         }
@@ -935,7 +941,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // There is a similar check in CreateNewBlock() to prevent creating
         // invalid blocks (using TestBlockValidity), however allowing such
         // transactions into the mempool can be exploited as a DoS attack.
-        unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
+        unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus()) | currentGodBlockScriptVerifyFlags;
         if (!CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata))
         {
             // If we're using promiscuousmempoolflags, we may hit this normally
@@ -945,7 +951,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                 return error("%s: BUG! PLEASE REPORT THIS! ConnectInputs failed against latest-block but not STANDARD flags %s, %s",
                     __func__, hash.ToString(), FormatStateMessage(state));
             } else {
-                if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true, false, txdata)) {
+                if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS | currentGodBlockScriptVerifyFlags, true, false, txdata)) {
                     return error("%s: ConnectInputs failed against MANDATORY but not STANDARD flags due to promiscuous mempool %s, %s",
                         __func__, hash.ToString(), FormatStateMessage(state));
                 } else {
@@ -1147,7 +1153,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
 
-    if (pindex->nHeight >= consensusParams.BCOHeight && !(pindex->nVersion & VERSIONBIT_BCO_MASK)) 
+    if (pindex->nHeight >= consensusParams.BCOHeight && pindex->GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN)
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): Block version doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
 
@@ -1714,12 +1720,6 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
         }
     }
 
-    // Add version flags for BCO block
-    if (pindexPrev != nullptr && pindexPrev->nHeight + 1 >= params.BCOHeight) {
-        assert(!(nVersion & VERSIONBIT_BCO_MASK));
-        nVersion |= VERSIONBIT_BCO_MASK;
-    }
-
     return nVersion;
 }
 
@@ -1790,7 +1790,13 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
     return flags;
 }
 
-
+static unsigned int GetGodBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& consensusparams) {
+    unsigned int flags = 0;
+    if (consensusparams.GodMode(pindex->nHeight + 1)) {
+        flags |= SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
+    }
+    return flags;
+}
 
 static int64_t nTimeCheck = 0;
 static int64_t nTimeForks = 0;
@@ -1918,7 +1924,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
 
     // Get the script flags for this block
-    unsigned int flags = GetBlockScriptFlags(pindex, chainparams.GetConsensus());
+    unsigned int flags = GetBlockScriptFlags(pindex, chainparams.GetConsensus()) | GetGodBlockScriptFlags(pindex, chainparams.GetConsensus());
 
     int64_t nTime2 = GetTimeMicros(); nTimeForks += nTime2 - nTime1;
     LogPrint(BCLog::BENCH, "    - Fork checks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime2 - nTime1), nTimeForks * MICRO, nTimeForks * MILLI / nBlocksTotal);
@@ -3182,12 +3188,15 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
     // check for version 2, 3 and 4 upgrades
     // check for version of BCO flags
-    if((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||
-       (block.nVersion < 3 && nHeight >= consensusParams.BIP66Height) ||
-       (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height) ||
-       (!(block.nVersion & VERSIONBIT_BCO_MASK) && nHeight >= consensusParams.BCOHeight))
+    if ((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||
+        (block.nVersion < 3 && nHeight >= consensusParams.BIP66Height) ||
+        (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
             return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
                                  strprintf("rejected nVersion=0x%08x nHeight=%d block", nHeight, block.nVersion));
+
+    // Check BCO block's timestamp
+    if (nHeight >= consensusParams.BCOHeight && block.GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN)
+        return state.Invalid(false, REJECT_INVALID, "time-too-old", "BCO block's timestamp is too early");
 
     return true;
 }
@@ -3745,8 +3754,8 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
     // Poc CheckProofOfWork depends previous block
     for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
         CBlockIndex *pindex = it->second;
-        if (pindex->nHeight >= consensus_params.BCOHeight && !(pindex->nVersion & VERSIONBIT_BCO_MASK))
-            return error("%s: Check BCO block version failed: %s", __func__, pindex->ToString());
+        if (pindex->nHeight >= consensus_params.BCOHeight && pindex->GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN)
+            return error("%s: Check BCO block's time failed: %s", __func__, pindex->ToString());
 
         CBlockHeader blockHeader = pindex->GetBlockHeader();
         if (!CheckProofOfWork(&blockHeader, consensus_params, pindex->nHeight))

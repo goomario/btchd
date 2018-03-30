@@ -499,7 +499,7 @@ static void MutateTxDelOutput(CMutableTransaction& tx, const std::string& strOut
     tx.vout.erase(tx.vout.begin() + outIdx);
 }
 
-static const unsigned int N_SIGHASH_OPTS = 6;
+static const unsigned int N_SIGHASH_OPTS = 18;
 static const struct {
     const char *flagStr;
     int flags;
@@ -510,6 +510,22 @@ static const struct {
     {"ALL|ANYONECANPAY", SIGHASH_ALL|SIGHASH_ANYONECANPAY},
     {"NONE|ANYONECANPAY", SIGHASH_NONE|SIGHASH_ANYONECANPAY},
     {"SINGLE|ANYONECANPAY", SIGHASH_SINGLE|SIGHASH_ANYONECANPAY},
+
+    // Add signature options for BCO Chain
+    {"ALL|FORKID", SIGHASH_ALL|SIGHASH_FORKID_BCO},
+    {"NONE|FORKID", SIGHASH_NONE|SIGHASH_FORKID_BCO},
+    {"SINGLE|FORKID", SIGHASH_SINGLE|SIGHASH_FORKID_BCO},
+    {"ALL|FORKID|ANYONECANPAY", SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY},
+    {"NONE|FORKID|ANYONECANPAY", SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY},
+    {"SINGLE|FORKID|ANYONECANPAY", SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY},
+
+     // Add signature options for BCO Chain in God mode
+    {"ALL|FORKID|GOD", SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD},
+    {"NONE|FORKID|GOD", SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD},
+    {"SINGLE|FORKID|GOD", SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD},
+    {"ALL|FORKID|GOD|ANYONECANPAY", SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY },
+    {"NONE|FORKID|GOD|ANYONECANPAY", SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY },
+    {"SINGLE|FORKID|GOD|ANYONECANPAY", SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY },
 };
 
 static bool findSighashFlags(int& flags, const std::string& flagStr)
@@ -656,7 +672,10 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
             sigdata = CombineSignatures(prevPubKey, MutableTransactionSignatureChecker(&mergedTx, i, amount), sigdata, DataFromTransaction(txv, i));
         UpdateTransaction(mergedTx, i, sigdata);
 
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&mergedTx, i, amount)))
+        unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
+        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
+
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, MutableTransactionSignatureChecker(&mergedTx, i, amount)))
             fComplete = false;
     }
 

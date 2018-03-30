@@ -70,12 +70,20 @@ const std::map<unsigned char, std::string> mapSigHashTypes = {
     {static_cast<unsigned char>(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY), std::string("SINGLE|ANYONECANPAY")},
 
     // BCO
-    {static_cast<unsigned char>(SIGHASH_ALL | SIGHASH_FORKID_BCO), std::string("ALL|FORKID")},
-    {static_cast<unsigned char>(SIGHASH_ALL | SIGHASH_FORKID_BCO | SIGHASH_ANYONECANPAY), std::string("ALL|FORKID|ANYONECANPAY")},
-    {static_cast<unsigned char>(SIGHASH_NONE | SIGHASH_FORKID_BCO), std::string("NONE|FORKID")},
-    {static_cast<unsigned char>(SIGHASH_NONE | SIGHASH_FORKID_BCO | SIGHASH_ANYONECANPAY), std::string("NONE|FORKID|ANYONECANPAY")},
-    {static_cast<unsigned char>(SIGHASH_SINGLE | SIGHASH_FORKID_BCO), std::string("SINGLE|FORKID")},
-    {static_cast<unsigned char>(SIGHASH_SINGLE | SIGHASH_FORKID_BCO | SIGHASH_ANYONECANPAY), std::string("SINGLE|FORKID|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_ALL|SIGHASH_FORKID_BCO), std::string("ALL|FORKID")},
+    {static_cast<unsigned char>(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY), std::string("ALL|FORKID|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_NONE|SIGHASH_FORKID_BCO), std::string("NONE|FORKID")},
+    {static_cast<unsigned char>(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY), std::string("NONE|FORKID|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_SINGLE|SIGHASH_FORKID_BCO), std::string("SINGLE|FORKID")},
+    {static_cast<unsigned char>(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY), std::string("SINGLE|FORKID|ANYONECANPAY")},
+
+    // BCO God
+    {static_cast<unsigned char>(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD), std::string("ALL|FORKID|GOD")},
+    {static_cast<unsigned char>(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY), std::string("ALL|FORKID|GOD|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD), std::string("NONE|FORKID")},
+    {static_cast<unsigned char>(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY), std::string("NONE|FORKID|GOD|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD), std::string("SINGLE|FORKID")},
+    {static_cast<unsigned char>(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY), std::string("SINGLE|FORKID|GOD|ANYONECANPAY")},
 };
 
 /**
@@ -117,6 +125,12 @@ std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDeco
                         // to set the appropriate flag.
                         // TODO: Remove after the Hard Fork.
                         flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
+                    }
+                    if (vch.back() & (SIGHASH_FORKID_BCOGOD)) {
+                        // If the transaction is using SIGHASH_FORKID_BCOGOD, we need
+                        // to set the appropriate flag.
+                        // TODO: Remove after the Hard Fork.
+                        flags |= SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
                     }
 
                     if (CheckSignatureEncoding(vch, flags, nullptr)) {

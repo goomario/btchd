@@ -28,6 +28,9 @@ public:
 
     /** Create a singular (non-script) signature. */
     virtual bool CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const =0;
+
+    /** Check this creator is for god mode */
+    virtual bool IsGod() const = 0;
 };
 
 /** A signature creator for transactions. */
@@ -42,6 +45,7 @@ public:
     TransactionSignatureCreator(const CKeyStore* keystoreIn, const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, int nHashTypeIn=SIGHASH_ALL|SIGHASH_FORKID_BCO);
     const BaseSignatureChecker& Checker() const override { return checker; }
     bool CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override;
+    bool IsGod() const override;
 };
 
 class MutableTransactionSignatureCreator : public TransactionSignatureCreator {
@@ -57,6 +61,7 @@ public:
     explicit DummySignatureCreator(const CKeyStore* keystoreIn) : BaseSignatureCreator(keystoreIn) {}
     const BaseSignatureChecker& Checker() const override;
     bool CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override;
+    bool IsGod() const override;
 };
 
 struct SignatureData {

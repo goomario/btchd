@@ -6,12 +6,10 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
+#include <consensus/consensus.h>
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <uint256.h>
-
-/** BCO version mask. */
-static const uint32_t VERSIONBIT_BCO_MASK = 1U << 3;
 
 // Read/Write 4byte data to/from 8byte var
 #define READWRITE32_64(obj) \
@@ -57,7 +55,7 @@ public:
         READWRITE(nTime);
 
         // bits & nonce compatiable
-        if (this->nVersion & VERSIONBIT_BCO_MASK) {
+        if (static_cast<int64_t>(nTime) >= BCO_BLOCK_UNIXTIME_MIN) {
             READWRITE(nBits);
             READWRITE(nNonce);
             READWRITE(nPlotSeed);

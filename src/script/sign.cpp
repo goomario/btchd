@@ -17,7 +17,6 @@
 #include <validation.h>
 
 extern const Consensus::Params *pGlobalConsensusParams;
-extern const CChain *pGlobalChainActive;
 
 
 typedef std::vector<unsigned char> valtype;
@@ -39,6 +38,12 @@ bool TransactionSignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, 
         return false;
     vchSig.push_back((unsigned char)nHashType);
     return true;
+}
+
+bool TransactionSignatureCreator::IsGod() const
+{
+    assert(!(nHashType & SIGHASH_FORKID_BCOGOD) || (nHashType & SIGHASH_FORKID_BCO));
+    return (nHashType & SIGHASH_FORKID_BCOGOD) != 0;
 }
 
 static bool Sign1(const CKeyID& address, const BaseSignatureCreator& creator, const CScript& scriptCode, std::vector<valtype>& ret, SigVersion sigversion)
@@ -148,7 +153,7 @@ static CScript PushAll(const std::vector<valtype>& values)
 bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
 {
     // BCO God Mode
-    if (pGlobalConsensusParams->GodMode(pGlobalChainActive->Height() + 1)) {
+    if (creator.IsGod()) {
         // signature data for god mode
         std::vector<valtype> result;
 
@@ -163,7 +168,7 @@ bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPu
         result.push_back(ToByteVector(PubKey));
         sigdata.scriptSig = PushAll(result);
 
-        return VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+        return VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS | SCRIPT_ENABLE_SIGHASH_FORKID_GOD, creator.Checker());
     }
 
     CScript script = fromPubKey;
@@ -449,6 +454,11 @@ bool DummySignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, const 
     return true;
 }
 
+bool DummySignatureCreator::IsGod() const
+{
+    return false;
+}
+
 bool IsSolvable(const CKeyStore& store, const CScript& script)
 {
     // This check is to make sure that the script we created can actually be solved for and signed by us
@@ -462,7 +472,7 @@ bool IsSolvable(const CKeyStore& store, const CScript& script)
     static_assert(STANDARD_SCRIPT_VERIFY_FLAGS & SCRIPT_VERIFY_WITNESS_PUBKEYTYPE, "IsSolvable requires standard script flags to include WITNESS_PUBKEYTYPE");
     if (ProduceSignature(creator, script, sigs)) {
         // VerifyScript check is just defensive, and should never fail.
-        assert(VerifyScript(sigs.scriptSig, script, &sigs.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker()));
+        assert(VerifyScript(sigs.scriptSig, script, &sigs.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS | (creator.IsGod() ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0), creator.Checker()));
         return true;
     }
     return false;
