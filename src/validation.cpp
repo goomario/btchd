@@ -419,10 +419,10 @@ bool CheckSequenceLocks(const CTransaction &tx, int flags, LockPoints* lp, bool 
 }
 
 // Returns the script flags which should be checked for a given block
-static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& chainparams);
+static unsigned int GetBlockScriptFlags(int nTargetBlockHeight, const CBlockIndex *pindex, const Consensus::Params& chainparams);
 
 // Returns the script flags which should be checked for a given block
-static unsigned int GetGodBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& chainparams);
+static unsigned int GetGodBlockScriptFlags(int nTargetBlockHeight, const CBlockIndex *pindex, const Consensus::Params& chainparams);
 
 static void LimitMempoolSize(CTxMemPool& pool, size_t limit, unsigned long age) {
     int expired = pool.Expire(GetTime() - age);
@@ -509,24 +509,6 @@ void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool, bool f
     LimitMempoolSize(mempool, gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000, gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60);
 }
 
-static bool IsUAHFenabled(const Consensus::Params& consensusparams, int nHeight) {
-    return nHeight >= consensusparams.BCOHeight;
-}
-
-bool IsUAHFenabled(const Consensus::Params& consensusparams, const CBlockIndex *pindexPrev) {
-    if (pindexPrev == nullptr) {
-        return false;
-    }
-
-    return IsUAHFenabled(consensusparams, pindexPrev->nHeight);
-}
-
-bool IsUAHFenabledForCurrentBlock(const Consensus::Params& consensusparams) {
-    AssertLockHeld(cs_main);
-    return IsUAHFenabled(consensusparams, chainActive.Tip());
-}
-
-
 // Used to avoid mempool polluting consensus critical paths if CCoinsViewMempool
 // were somehow broken and returning the wrong scriptPubKeys
 static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &view, CTxMemPool& pool,
@@ -605,7 +587,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     // Current god block script verify flags
-    const unsigned int currentGodBlockScriptVerifyFlags = GetGodBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
+    const unsigned int currentGodBlockScriptVerifyFlags = GetGodBlockScriptFlags(chainActive.Height() + 1, chainActive.Tip(), Params().GetConsensus());
 
     // Check for conflicts with in-memory transactions
     std::set<uint256> setConflicts;
@@ -941,7 +923,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // There is a similar check in CreateNewBlock() to prevent creating
         // invalid blocks (using TestBlockValidity), however allowing such
         // transactions into the mempool can be exploited as a DoS attack.
-        unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus()) | currentGodBlockScriptVerifyFlags;
+        unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Height() + 1, chainActive.Tip(), Params().GetConsensus()) | currentGodBlockScriptVerifyFlags;
         if (!CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata))
         {
             // If we're using promiscuousmempoolflags, we may hit this normally
@@ -1750,8 +1732,9 @@ public:
 // Protected by cs_main
 static ThresholdConditionCache warningcache[VERSIONBITS_NUM_BITS];
 
-static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& consensusparams) {
+static unsigned int GetBlockScriptFlags(int nTargetBlockHeight, const CBlockIndex *pindex, const Consensus::Params& consensusparams) {
     AssertLockHeld(cs_main);
+    assert(nTargetBlockHeight >= pindex->nHeight);
 
     unsigned int flags = SCRIPT_VERIFY_NONE;
 
@@ -1782,7 +1765,7 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
     }
 
     // If the UAHF is enabled, we start accepting replay protected txns
-    if (IsUAHFenabled(consensusparams, pindex->pprev)) {
+    if (nTargetBlockHeight >= consensusparams.BCOHeight) {
         flags |= SCRIPT_VERIFY_STRICTENC;
         flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
     }
@@ -1790,11 +1773,16 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
     return flags;
 }
 
-static unsigned int GetGodBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& consensusparams) {
+static unsigned int GetGodBlockScriptFlags(int nTargetBlockHeight, const CBlockIndex *pindex, const Consensus::Params& consensusparams) {
+    AssertLockHeld(cs_main);
+    assert(nTargetBlockHeight >= pindex->nHeight);
+
     unsigned int flags = 0;
-    if (consensusparams.GodMode(pindex->nHeight + 1)) {
+
+    if (consensusparams.GodMode(nTargetBlockHeight)) {
         flags |= SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
     }
+
     return flags;
 }
 
@@ -1924,7 +1912,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
 
     // Get the script flags for this block
-    unsigned int flags = GetBlockScriptFlags(pindex, chainparams.GetConsensus()) | GetGodBlockScriptFlags(pindex, chainparams.GetConsensus());
+    unsigned int flags = GetBlockScriptFlags(pindex->nHeight, pindex, chainparams.GetConsensus()) | GetGodBlockScriptFlags(pindex->nHeight, pindex, chainparams.GetConsensus());
 
     int64_t nTime2 = GetTimeMicros(); nTimeForks += nTime2 - nTime1;
     LogPrint(BCLog::BENCH, "    - Fork checks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime2 - nTime1), nTimeForks * MICRO, nTimeForks * MILLI / nBlocksTotal);

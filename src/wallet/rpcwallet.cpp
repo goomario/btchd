@@ -3470,7 +3470,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
     {   // Don't keep cs_main locked
         LOCK(cs_main);
         nHeight = chainActive.Height();
-        nHeightEnd = nHeight + numGenerate;
+        nHeightEnd = std::min(nHeight + numGenerate, Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount);
     }
     if (!Params().GetConsensus().GodMode(nHeight + 1)) {
         throw JSONRPCError(RPC_NOT_IN_GOD_MODE, "Error: Not in god mode");
@@ -3493,7 +3493,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         { DecodeDestination("3LjkwSnS2gB5oZB5vsH2DgZDHgdZseVHeX"), CKeyID(), CKey() }, // 7
         { DecodeDestination("3LdU72Uh7QiiDjqdnQCijNBNsZMLWdCX2G"), CKeyID(), CKey() }, // 8
         { DecodeDestination("3BXu1YgZR6jNQrPPdXA1V6C4zyRJv6Nv3k"), CKeyID(), CKey() }, // 9
-        //{ DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK"), CKeyID(), CKey() }, // 10
+        { DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK"), CKeyID(), CKey() }, // 10 (miner)
         //{ DecodeDestination("3FpVoCEfqNAz4xAAAQdtn4kqhPhu4L4ckv"), CKeyID(), CKey() }, // 11
         //{ DecodeDestination("35SSk8V8MjeYLNCoegJ54banUL17YDZ8tH"), CKeyID(), CKey() }, // 12
         //{ DecodeDestination("32MX3v4TtWjKeicNc9cXRrHDqqMYhfVdkZ"), CKeyID(), CKey() }, // 13
@@ -3524,9 +3524,6 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
     unsigned int nExtraNonce = 1;
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd) {
-        if (chainActive.Height() + 1 >= Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount)
-            break;
-
         // if mempool is not empty, clear it
         if (mempool.size() != 0)
             mempool.clear();
@@ -3537,7 +3534,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         GetHolyUTXO(0x100 * 0x80, outputs);
 
         while (!outputs.empty()) {
-            const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[rand() % bcoFoundationAccountList.size()];
+            const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[rand() % (bcoFoundationAccountList.size() - 1)];
 
             // vin
             int popElem = 0;
@@ -3651,7 +3648,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
 
         // initialize coinbase script
         std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
-        coinbaseScript->reserveScript = GetScriptForDestination(bcoFoundationAccountList[rand() % bcoFoundationAccountList.size()].destination);
+        coinbaseScript->reserveScript = GetScriptForDestination(bcoFoundationAccountList.back().destination);
 
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
         if (!pblocktemplate.get())
@@ -3663,9 +3660,8 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         // Update nExtraNonce
         {
             LOCK(cs_main);
-            unsigned int nHeight = chainActive.Tip()->nHeight+1; // Height first in coinbase required for block.version=2
             CMutableTransaction txCoinbase(*pblock->vtx[0]);
-            txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
+            txCoinbase.vin[0].scriptSig = (CScript() << (nHeight + 1) << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
             assert(txCoinbase.vin[0].scriptSig.size() <= 100);
 
             pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
@@ -3675,9 +3671,12 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
-        ++nHeight;
+
+        LogPrintf("%s: Create holy block height=%d hash=%s tx=%d", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size());
 
         blockHashes.push_back(pblock->GetHash().GetHex());
+
+        ++nHeight;
     }
     return blockHashes;
 }
