@@ -1475,7 +1475,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         data = ParseHex(pGlobalConsensusParams->BCOGodSignaturePubkey);
 
         CPubKey pubKey(data);
-        valtype vchSig = stack[stack.size() - 2];
+        valtype vchSig = stack.size() < 2 ? valtype() : stack[stack.size() - 2];
 
         bool fSuccess = checker.CheckSig(vchSig, data, scriptPubKey, SIGVERSION_BASE);
 

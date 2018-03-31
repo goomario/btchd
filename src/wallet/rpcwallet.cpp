@@ -3672,7 +3672,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
 
-        LogPrintf("%s: Create holy block height=%d hash=%s tx=%d", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size());
+        LogPrintf("%s: Create holy block height=%d hash=%s tx=%d\n", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size());
 
         blockHashes.push_back(pblock->GetHash().GetHex());
 
