@@ -24,6 +24,7 @@
 #include <rpc/util.h>
 #include <script/sign.h>
 #include <timedata.h>
+#include <txdb.h>
 #include <util.h>
 #include <utilmoneystr.h>
 #include <validation.h>
@@ -38,6 +39,8 @@
 #include <stdint.h>
 
 #include <univalue.h>
+
+#include <boost/thread/thread.hpp> // boost::thread::interrupt
 
 static const std::string WALLET_ENDPOINT_BASE = "/wallet/";
 
@@ -3440,7 +3443,52 @@ UniValue generate(const JSONRPCRequest& request)
 }
 
 // BCO God Mode tools
-int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs);
+int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
+{
+    FlushStateToDisk();
+    std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
+    int index = 0;
+
+    outputs.clear();
+
+    int nSpendHeight = chainActive.Height() + 1;
+
+    while (pcursor->Valid()) {
+        boost::this_thread::interruption_point();
+        COutPoint key;
+        Coin coin;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            if (coin.nHeight >= Params().GetConsensus().BCOHeight) {
+                pcursor->Next();
+                continue;
+            }
+            // ignore amount less than 0.01
+            if (coin.out.nValue <= 1000000) {
+                pcursor->Next();
+                continue;
+            }
+            // ignore not mature coin
+            if (coin.IsCoinBase() && nSpendHeight - coin.nHeight < COINBASE_MATURITY) {
+                pcursor->Next();
+                continue;
+            }
+            txnouttype typeRet;
+            std::vector<CTxDestination> addressRet;
+            int nRequiredRet;
+            bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRet, nRequiredRet);
+            if (ret) {
+                if (!addressRet.empty()) {
+                    outputs.emplace_back(std::make_pair(key, coin.out));
+                    ++index;
+                    if (index >= count) break;
+                }
+            }
+        }
+        pcursor->Next();
+    }
+
+    return outputs.size();
+}
 UniValue validateaddress(const JSONRPCRequest& request);
 UniValue generateholyblocks(const JSONRPCRequest& request)
 {
