@@ -3443,13 +3443,11 @@ UniValue generate(const JSONRPCRequest& request)
 }
 
 // BCO God Mode tools
-int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
+int GetHolyUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
 {
     FlushStateToDisk();
     std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
     int index = 0;
-
-    outputs.clear();
 
     int nSpendHeight = chainActive.Height() + 1;
 
@@ -3472,6 +3470,13 @@ int GetHolyUTXO(int count, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
                 pcursor->Next();
                 continue;
             }
+
+            // ignore not coinbase
+            if (coinbaseOnly && !coin.IsCoinBase()) {
+                pcursor->Next();
+                continue;
+            }
+
             txnouttype typeRet;
             std::vector<CTxDestination> addressRet;
             int nRequiredRet;
@@ -3518,7 +3523,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
     {   // Don't keep cs_main locked
         LOCK(cs_main);
         nHeight = chainActive.Height();
-        nHeightEnd = std::min(nHeight + numGenerate, Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount);
+        nHeightEnd = std::min(nHeight + numGenerate, Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount - 1);
     }
     if (!Params().GetConsensus().GodMode(nHeight + 1)) {
         throw JSONRPCError(RPC_NOT_IN_GOD_MODE, "Error: Not in god mode");
@@ -3569,21 +3574,21 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         }
     }
 
-    unsigned int nExtraNonce = 1;
-    UniValue blockHashes(UniValue::VARR);
-    while (nHeight < nHeightEnd) {
-        // if mempool is not empty, clear it
-        if (mempool.size() != 0)
-            mempool.clear();
+    if (mempool.size() != 0)
+        mempool.clear();
 
-        // get 32768 utxos if possible
-        // 128 vins per trx and 256 trxs per block
+    // Create transaction
+    auto AddUTXOTransaction = [&bcoFoundationAccountList] (bool coinbaseOnly) -> void {
+        // get utxo
         std::vector<std::pair<COutPoint, CTxOut>> outputs;
-        GetHolyUTXO(0x100 * 0x80, outputs);
+        GetHolyUTXO(std::numeric_limits<int>::max(), coinbaseOnly, outputs);
+        LogPrintf("AddUTXOTransaction: Get UTXO %d\n", __func__, outputs.size());
 
+        // Put to mempool
         while (!outputs.empty()) {
             const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[rand() % (bcoFoundationAccountList.size() - 1)];
 
+            // 128 vins per trx and 256 trxs per block
             // vin
             int popElem = 0;
             if (outputs.size() < 0x80)
@@ -3596,19 +3601,19 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
             double amountf = 0.0;
             double fee = 0.0;
             std::vector<std::pair<COutPoint, CTxOut>> txOutput;
-            std::copy(std::end(outputs)-popElem, std::end(outputs), std::back_inserter(txOutput));
-            outputs.resize(outputs_size-popElem);
+            std::copy(std::end(outputs) - popElem, std::end(outputs), std::back_inserter(txOutput));
+            outputs.resize(outputs_size - popElem);
 
             // build input and output
             UniValue reqCrtRaw(UniValue::VARR);
             UniValue firstParamCrt(UniValue::VARR);
             UniValue secondParamCrt(UniValue::VOBJ);
-            for (const auto& output: txOutput) {
+            for (const auto& output : txOutput) {
                 UniValue o(UniValue::VOBJ);
-                
+
                 UniValue vout(UniValue::VNUM);
                 vout.setInt((int)output.first.n);
-                
+
                 o.pushKV("txid", output.first.hash.GetHex());
                 o.pushKV("vout", vout);
                 o.pushKV("scriptPubKey", HexStr(output.second.scriptPubKey.begin(), output.second.scriptPubKey.end()));
@@ -3621,7 +3626,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
 
             char a[64];
             char *p = a;
-            snprintf(p, 64, "%.08f", amountf-fee);
+            snprintf(p, 64, "%.08f", amountf - fee);
             secondParamCrt.pushKV(EncodeDestination(currentAccount.destination), std::string(p));
 
             reqCrtRaw.push_back(firstParamCrt);
@@ -3650,7 +3655,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
             hexRawSignTrx = objMap["hex"];
             UniValue completeSign(UniValue::VBOOL);
             completeSign = objMap["complete"];
-            
+
             if (!completeSign.getBool())
                 throw JSONRPCError(RPC_ABNORMAL_SIGN_TRX, "not completely signed transaction");
 
@@ -3681,17 +3686,33 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
                     if (!AcceptToMemoryPool(mempool, state, std::move(tx), &fMissingInputs, nullptr, false, nMaxRawTxFee)) {
                         if (state.IsInvalid()) {
                             throw JSONRPCError(RPC_TRANSACTION_REJECTED, strprintf("%i: %s", state.GetRejectCode(), state.GetRejectReason()));
-                        } else {
+                        }
+                        else {
                             if (fMissingInputs) {
                                 throw JSONRPCError(RPC_TRANSACTION_ERROR, "Missing inputs");
                             }
                             throw JSONRPCError(RPC_TRANSACTION_ERROR, state.GetRejectReason());
                         }
                     }
-                } else if (fHaveChain) {
+                }
+                else if (fHaveChain) {
                     throw JSONRPCError(RPC_TRANSACTION_ALREADY_IN_CHAIN, "transaction already in block chain");
                 }
             }
+        }
+    };
+
+    AddUTXOTransaction(false);
+
+    bool godCoinbaseUTXOLoaded = false;
+    unsigned int nExtraNonce = 1;
+    UniValue blockHashes(UniValue::VARR);
+    while (nHeight < nHeightEnd) {
+        // update transaction on last block create before. For coinbase MATURITY 
+        if (!godCoinbaseUTXOLoaded && mempool.size() == 0) {
+            // Get Coinbase
+            godCoinbaseUTXOLoaded = true;
+            AddUTXOTransaction(true);
         }
 
         // initialize coinbase script
@@ -3720,12 +3741,14 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
 
-        LogPrintf("%s: Create holy block height=%d hash=%s tx=%d\n", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size());
+        LogPrintf("%s: Create holy block height=%d hash=%s tx=%d mempool=%d\n", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size(), mempool.size());
 
         blockHashes.push_back(pblock->GetHash().GetHex());
 
         ++nHeight;
     }
+    LogPrintf("%s: mempool=%d\n", __func__, mempool.size());
+
     return blockHashes;
 }
 

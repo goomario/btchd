@@ -48,7 +48,8 @@ static const int HASH_CAP = 4096;
 
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block)
 {
-    if (prevBlockIndex.nHeight + 1 < Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
+    if (prevBlockIndex.nHeight + 1 <= Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
+        // genesis block & god mode block
         return 0;
     }
 
@@ -256,14 +257,15 @@ uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight)
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
     assert(prevBlockIndex.nHeight + 1 >= params.BCOHeight);
+    int nPocGenesisBlockHeight = params.BCOHeight + params.BCOInitBlockCount;
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight < params.BCOHeight + params.BCOInitBlockCount) {
+    if (nHeight <= nPocGenesisBlockHeight) {
         // genesis block & god mode block
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BCOHeight + params.BCOInitBlockCount + 4) {
+    } else if (nHeight < nPocGenesisBlockHeight + 4) {
         // < 4
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BCOHeight + params.BCOInitBlockCount + 2700) {
+    } else if (nHeight < nPocGenesisBlockHeight + 2700) {
         // < 2700
         // [N-1,N-2,N-3,N-4]
         uint64_t avgBaseTarget = prevBlockIndex.nBits;
