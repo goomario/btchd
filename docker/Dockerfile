@@ -2,6 +2,8 @@ FROM ubuntu:16.04
 
 MAINTAINER zhaoyiyong zhaoyy1010@gmail.com
 
+ADD sources.list /etc/apt/
+
 # env
 RUN apt-get update && \
     apt-get install -y build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils python3
