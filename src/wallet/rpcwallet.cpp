@@ -38,6 +38,9 @@
 
 #include <stdint.h>
 
+#include <cstdlib>
+#include <ctime>
+
 #include <univalue.h>
 
 #include <boost/thread/thread.hpp> // boost::thread::interrupt
@@ -3529,6 +3532,8 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_NOT_IN_GOD_MODE, "Error: Not in god mode");
     }
 
+    std::srand(std::time(nullptr));
+
     // foundation accounts
     struct BCOFoundationAccount {
         CTxDestination destination;
@@ -3581,8 +3586,9 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
     auto AddUTXOTransaction = [&bcoFoundationAccountList] (bool coinbaseOnly) -> void {
         // get utxo
         std::vector<std::pair<COutPoint, CTxOut>> outputs;
+        outputs.reserve(0x100*0x80);
         GetHolyUTXO(std::numeric_limits<int>::max(), coinbaseOnly, outputs);
-        LogPrintf("AddUTXOTransaction: Get UTXO %d\n", __func__, outputs.size());
+        LogPrintf("AddUTXOTransaction: Get UTXO %d\n", outputs.size());
 
         // Put to mempool
         while (!outputs.empty()) {
@@ -3683,7 +3689,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
                     // push to local node and sync with wallets
                     CValidationState state;
                     bool fMissingInputs;
-                    if (!AcceptToMemoryPool(mempool, state, std::move(tx), &fMissingInputs, nullptr, false, nMaxRawTxFee)) {
+                    if (!AcceptToMemoryPool(mempool, state, std::move(tx), &fMissingInputs, nullptr, true, nMaxRawTxFee)) {
                         if (state.IsInvalid()) {
                             throw JSONRPCError(RPC_TRANSACTION_REJECTED, strprintf("%i: %s", state.GetRejectCode(), state.GetRejectReason()));
                         }
