@@ -136,22 +136,16 @@ public:
         // This is fine at runtime as we'll fall back to using them as a oneshot if they dont support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        //vSeeds.emplace_back("seed.bitcoin.sipa.be"); // Pieter Wuille, only supports x1, x5, x9, and xd
-        //vSeeds.emplace_back("dnsseed.bluematt.me"); // Matt Corallo, only supports x9
-        //vSeeds.emplace_back("dnsseed.bitcoin.dashjr.org"); // Luke Dashjr
-        //vSeeds.emplace_back("seed.bitcoinstats.com"); // Christian Decker, supports x1 - xf
-        //vSeeds.emplace_back("seed.bitcoin.jonasschnelli.ch"); // Jonas Schnelli, only supports x1, x5, x9, and xd
-        //vSeeds.emplace_back("seed.btc.petertodd.org"); // Peter Todd, only supports x1, x5, x9, and xd
-
-        // bco private seed
-        vSeeds.emplace_back("dnsseed.bitcoinore.org");
-        vSeeds.emplace_back("dnsseed-us.bitcoinore.org");
-        vSeeds.emplace_back("dnsseed-eu.bitcoinore.org");
-        vSeeds.emplace_back("bco-dnsseed.nanvann.top");
-        vSeeds.emplace_back("bco-dnsseed-1.nanvann.top");
-        vSeeds.emplace_back("bco-dnsseed-2.nanvann.top");
-        vSeeds.emplace_back("bco-dnsseed-3.nanvann.top");
-        vSeeds.emplace_back("bco-dnsseed-4.nanvann.top");
+        vSeeds.push_back("seed0-bco.bitcoinore.org");
+        vSeeds.push_back("seed1-bco.bitcoinore.org");
+        vSeeds.push_back("seed2-bco.bitcoinore.org");
+        vSeeds.push_back("seed3-bco.bitcoinore.org");
+        vSeeds.push_back("seed4-bco.bitcoinore.org");
+        vSeeds.push_back("seed5-bco.bitcoinore.org");
+        vSeeds.push_back("seed6-bco.bitcoinore.org");
+        vSeeds.push_back("seed7-bco.bitcoinore.org");
+        vSeeds.push_back("seed8-bco.bitcoinore.org");
+        vSeeds.push_back("seed9-bco.bitcoinore.org");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
