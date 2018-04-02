@@ -144,14 +144,14 @@ public:
         //vSeeds.emplace_back("seed.btc.petertodd.org"); // Peter Todd, only supports x1, x5, x9, and xd
 
         // bco private seed
-        vSeeds.emplace_back("dnsseed.bitcoinore.org", true);
-        vSeeds.emplace_back("dnsseed-us.bitcoinore.org", true);
-        vSeeds.emplace_back("dnsseed-eu.bitcoinore.org", true);
-        vSeeds.emplace_back("bco-dnsseed.nanvann.top", true);
-        vSeeds.emplace_back("bco-dnsseed-1.nanvann.top", true);
-        vSeeds.emplace_back("bco-dnsseed-2.nanvann.top", true);
-        vSeeds.emplace_back("bco-dnsseed-3.nanvann.top", true);
-        vSeeds.emplace_back("bco-dnsseed-4.nanvann.top", true);
+        vSeeds.emplace_back("dnsseed.bitcoinore.org");
+        vSeeds.emplace_back("dnsseed-us.bitcoinore.org");
+        vSeeds.emplace_back("dnsseed-eu.bitcoinore.org");
+        vSeeds.emplace_back("bco-dnsseed.nanvann.top");
+        vSeeds.emplace_back("bco-dnsseed-1.nanvann.top");
+        vSeeds.emplace_back("bco-dnsseed-2.nanvann.top");
+        vSeeds.emplace_back("bco-dnsseed-3.nanvann.top");
+        vSeeds.emplace_back("bco-dnsseed-4.nanvann.top");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
