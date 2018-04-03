@@ -1,0 +1,14 @@
+{
+    "window.zoomLevel": 0,
+
+    "files.eol": "\n",
+    "files.exclude": {
+        "**/*.o": true,
+        "**/*.la": true,
+        "**/.deps": true,
+        "**/.libs": true,
+    },
+    "files.watcherExclude": {
+        "./vsproject/.linux_*": true
+    },
+}
