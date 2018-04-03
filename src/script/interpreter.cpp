@@ -38,7 +38,7 @@ inline bool set_error(ScriptError* ret, const ScriptError serror)
 
 } // namespace
 
-void InitBCOParams(const Consensus::Params *params, const CChain *pChainActive) {
+void InitBCOParams(const Consensus::Params *params) {
     pGlobalConsensusParams = params; 
 }
 
