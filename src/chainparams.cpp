@@ -385,13 +385,13 @@ std::unique_ptr<CChainParams> CreateChainParams(const std::string& chain)
     throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
 }
 
-void SelectParams(const std::string& network, CChain *pchainActive)
+void SelectParams(const std::string& network)
 {
     SelectBaseParams(network);
     globalChainParams = CreateChainParams(network);
 
     // Init interpreter paramters
-    InitBCOParams(&Params().GetConsensus(), pchainActive);
+    InitBCOParams(&Params().GetConsensus());
 }
 
 void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)

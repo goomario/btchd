@@ -30,7 +30,6 @@
 #include <rpc/server.h>
 #include <ui_interface.h>
 #include <util.h>
-#include <validation.h>
 #include <warnings.h>
 
 #ifdef ENABLE_WALLET
@@ -640,7 +639,7 @@ int main(int argc, char *argv[])
 
     // Check for -testnet or -regtest parameter (Params() calls are only valid after this clause)
     try {
-        SelectParams(ChainNameFromCommandLine(), &chainActive);
+        SelectParams(ChainNameFromCommandLine());
     } catch(std::exception &e) {
         QMessageBox::critical(0, QObject::tr(PACKAGE_NAME), QObject::tr("Error: %1").arg(e.what()));
         return EXIT_FAILURE;
