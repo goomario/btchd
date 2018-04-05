@@ -27,7 +27,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>..\src;..\src\config;..\src\leveldb\helpers\memenv;..\src\leveldb\include;..\src\secp256k1\include;..\src\univalue\include;.\.linux_usr_include;.\.linux_usr_include\c++\5;.\.linux_usr_include\x86_64-linux-gnu\qt5;$(IncludePath)</IncludePath>
+    <IncludePath>..\src;..\src\config;..\src\leveldb\helpers\memenv;..\src\leveldb\include;..\src\secp256k1\include;..\src\univalue\include;.\.linux_usr_include;.\.linux_usr_include\c++\5;.\.linux_usr_include\x86_64-linux-gnu\qt5;.\.linux_usr_include\x86_64-linux-gnu\qt5\QtCore;.\.linux_usr_include\x86_64-linux-gnu\qt5\QtGui;.\.linux_usr_include\x86_64-linux-gnu\qt5\QtWidgets;$(IncludePath)</IncludePath>
     <TargetExt />
     <SourcePath>..\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
@@ -90,6 +90,57 @@
     <ClCompile Include="..\src\primitives\transaction.cpp" />
     <ClCompile Include="..\src\protocol.cpp" />
     <ClCompile Include="..\src\pubkey.cpp" />
+    <ClCompile Include="..\src\qt\addressbookpage.cpp" />
+    <ClCompile Include="..\src\qt\addresstablemodel.cpp" />
+    <ClCompile Include="..\src\qt\askpassphrasedialog.cpp" />
+    <ClCompile Include="..\src\qt\bantablemodel.cpp" />
+    <ClCompile Include="..\src\qt\bitcoin.cpp" />
+    <ClCompile Include="..\src\qt\bitcoinaddressvalidator.cpp" />
+    <ClCompile Include="..\src\qt\bitcoinamountfield.cpp" />
+    <ClCompile Include="..\src\qt\bitcoingui.cpp" />
+    <ClCompile Include="..\src\qt\bitcoinstrings.cpp" />
+    <ClCompile Include="..\src\qt\bitcoinunits.cpp" />
+    <ClCompile Include="..\src\qt\clientmodel.cpp" />
+    <ClCompile Include="..\src\qt\coincontroldialog.cpp" />
+    <ClCompile Include="..\src\qt\coincontroltreewidget.cpp" />
+    <ClCompile Include="..\src\qt\csvmodelwriter.cpp" />
+    <ClCompile Include="..\src\qt\editaddressdialog.cpp" />
+    <ClCompile Include="..\src\qt\guiutil.cpp" />
+    <ClCompile Include="..\src\qt\intro.cpp" />
+    <ClCompile Include="..\src\qt\modaloverlay.cpp" />
+    <ClCompile Include="..\src\qt\networkstyle.cpp" />
+    <ClCompile Include="..\src\qt\notificator.cpp" />
+    <ClCompile Include="..\src\qt\openuridialog.cpp" />
+    <ClCompile Include="..\src\qt\optionsdialog.cpp" />
+    <ClCompile Include="..\src\qt\optionsmodel.cpp" />
+    <ClCompile Include="..\src\qt\overviewpage.cpp" />
+    <ClCompile Include="..\src\qt\paymentrequestplus.cpp" />
+    <ClCompile Include="..\src\qt\paymentserver.cpp" />
+    <ClCompile Include="..\src\qt\peertablemodel.cpp" />
+    <ClCompile Include="..\src\qt\platformstyle.cpp" />
+    <ClCompile Include="..\src\qt\qvalidatedlineedit.cpp" />
+    <ClCompile Include="..\src\qt\qvaluecombobox.cpp" />
+    <ClCompile Include="..\src\qt\receivecoinsdialog.cpp" />
+    <ClCompile Include="..\src\qt\receiverequestdialog.cpp" />
+    <ClCompile Include="..\src\qt\recentrequeststablemodel.cpp" />
+    <ClCompile Include="..\src\qt\rpcconsole.cpp" />
+    <ClCompile Include="..\src\qt\sendcoinsdialog.cpp" />
+    <ClCompile Include="..\src\qt\sendcoinsentry.cpp" />
+    <ClCompile Include="..\src\qt\signverifymessagedialog.cpp" />
+    <ClCompile Include="..\src\qt\splashscreen.cpp" />
+    <ClCompile Include="..\src\qt\trafficgraphwidget.cpp" />
+    <ClCompile Include="..\src\qt\transactiondesc.cpp" />
+    <ClCompile Include="..\src\qt\transactiondescdialog.cpp" />
+    <ClCompile Include="..\src\qt\transactionfilterproxy.cpp" />
+    <ClCompile Include="..\src\qt\transactionrecord.cpp" />
+    <ClCompile Include="..\src\qt\transactiontablemodel.cpp" />
+    <ClCompile Include="..\src\qt\transactionview.cpp" />
+    <ClCompile Include="..\src\qt\utilitydialog.cpp" />
+    <ClCompile Include="..\src\qt\walletframe.cpp" />
+    <ClCompile Include="..\src\qt\walletmodel.cpp" />
+    <ClCompile Include="..\src\qt\walletmodeltransaction.cpp" />
+    <ClCompile Include="..\src\qt\walletview.cpp" />
+    <ClCompile Include="..\src\qt\winshutdownmonitor.cpp" />
     <ClCompile Include="..\src\random.cpp" />
     <ClCompile Include="..\src\rest.cpp" />
     <ClCompile Include="..\src\rpc\blockchain.cpp" />
@@ -215,6 +266,59 @@
     <ClInclude Include="..\src\primitives\transaction.h" />
     <ClInclude Include="..\src\protocol.h" />
     <ClInclude Include="..\src\pubkey.h" />
+    <ClInclude Include="..\src\qt\addressbookpage.h" />
+    <ClInclude Include="..\src\qt\addresstablemodel.h" />
+    <ClInclude Include="..\src\qt\askpassphrasedialog.h" />
+    <ClInclude Include="..\src\qt\bantablemodel.h" />
+    <ClInclude Include="..\src\qt\bitcoinaddressvalidator.h" />
+    <ClInclude Include="..\src\qt\bitcoinamountfield.h" />
+    <ClInclude Include="..\src\qt\bitcoingui.h" />
+    <ClInclude Include="..\src\qt\bitcoinunits.h" />
+    <ClInclude Include="..\src\qt\callback.h" />
+    <ClInclude Include="..\src\qt\clientmodel.h" />
+    <ClInclude Include="..\src\qt\coincontroldialog.h" />
+    <ClInclude Include="..\src\qt\coincontroltreewidget.h" />
+    <ClInclude Include="..\src\qt\csvmodelwriter.h" />
+    <ClInclude Include="..\src\qt\editaddressdialog.h" />
+    <ClInclude Include="..\src\qt\guiconstants.h" />
+    <ClInclude Include="..\src\qt\guiutil.h" />
+    <ClInclude Include="..\src\qt\intro.h" />
+    <ClInclude Include="..\src\qt\macdockiconhandler.h" />
+    <ClInclude Include="..\src\qt\macnotificationhandler.h" />
+    <ClInclude Include="..\src\qt\modaloverlay.h" />
+    <ClInclude Include="..\src\qt\networkstyle.h" />
+    <ClInclude Include="..\src\qt\notificator.h" />
+    <ClInclude Include="..\src\qt\openuridialog.h" />
+    <ClInclude Include="..\src\qt\optionsdialog.h" />
+    <ClInclude Include="..\src\qt\optionsmodel.h" />
+    <ClInclude Include="..\src\qt\overviewpage.h" />
+    <ClInclude Include="..\src\qt\paymentrequestplus.h" />
+    <ClInclude Include="..\src\qt\paymentserver.h" />
+    <ClInclude Include="..\src\qt\peertablemodel.h" />
+    <ClInclude Include="..\src\qt\platformstyle.h" />
+    <ClInclude Include="..\src\qt\qvalidatedlineedit.h" />
+    <ClInclude Include="..\src\qt\qvaluecombobox.h" />
+    <ClInclude Include="..\src\qt\receivecoinsdialog.h" />
+    <ClInclude Include="..\src\qt\receiverequestdialog.h" />
+    <ClInclude Include="..\src\qt\recentrequeststablemodel.h" />
+    <ClInclude Include="..\src\qt\rpcconsole.h" />
+    <ClInclude Include="..\src\qt\sendcoinsdialog.h" />
+    <ClInclude Include="..\src\qt\sendcoinsentry.h" />
+    <ClInclude Include="..\src\qt\signverifymessagedialog.h" />
+    <ClInclude Include="..\src\qt\splashscreen.h" />
+    <ClInclude Include="..\src\qt\trafficgraphwidget.h" />
+    <ClInclude Include="..\src\qt\transactiondesc.h" />
+    <ClInclude Include="..\src\qt\transactiondescdialog.h" />
+    <ClInclude Include="..\src\qt\transactionfilterproxy.h" />
+    <ClInclude Include="..\src\qt\transactionrecord.h" />
+    <ClInclude Include="..\src\qt\transactiontablemodel.h" />
+    <ClInclude Include="..\src\qt\transactionview.h" />
+    <ClInclude Include="..\src\qt\utilitydialog.h" />
+    <ClInclude Include="..\src\qt\walletframe.h" />
+    <ClInclude Include="..\src\qt\walletmodel.h" />
+    <ClInclude Include="..\src\qt\walletmodeltransaction.h" />
+    <ClInclude Include="..\src\qt\walletview.h" />
+    <ClInclude Include="..\src\qt\winshutdownmonitor.h" />
     <ClInclude Include="..\src\random.h" />
     <ClInclude Include="..\src\reverselock.h" />
     <ClInclude Include="..\src\reverse_iterator.h" />
@@ -279,6 +383,34 @@
     <ClInclude Include="..\src\zmq\zmqconfig.h" />
     <ClInclude Include="..\src\zmq\zmqnotificationinterface.h" />
     <ClInclude Include="..\src\zmq\zmqpublishnotifier.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\qt\bitcoin.qrc" />
+    <None Include="..\src\qt\bitcoin_locale.qrc" />
+    <None Include="..\src\qt\forms\addressbookpage.ui" />
+    <None Include="..\src\qt\forms\askpassphrasedialog.ui" />
+    <None Include="..\src\qt\forms\coincontroldialog.ui" />
+    <None Include="..\src\qt\forms\debugwindow.ui" />
+    <None Include="..\src\qt\forms\editaddressdialog.ui" />
+    <None Include="..\src\qt\forms\helpmessagedialog.ui" />
+    <None Include="..\src\qt\forms\intro.ui" />
+    <None Include="..\src\qt\forms\modaloverlay.ui" />
+    <None Include="..\src\qt\forms\openuridialog.ui" />
+    <None Include="..\src\qt\forms\optionsdialog.ui" />
+    <None Include="..\src\qt\forms\overviewpage.ui" />
+    <None Include="..\src\qt\forms\receivecoinsdialog.ui" />
+    <None Include="..\src\qt\forms\receiverequestdialog.ui" />
+    <None Include="..\src\qt\forms\sendcoinsdialog.ui" />
+    <None Include="..\src\qt\forms\sendcoinsentry.ui" />
+    <None Include="..\src\qt\forms\signverifymessagedialog.ui" />
+    <None Include="..\src\qt\forms\transactiondescdialog.ui" />
+    <None Include="..\src\qt\macdockiconhandler.mm" />
+    <None Include="..\src\qt\macnotificationhandler.mm" />
+    <None Include="..\src\qt\Makefile" />
+    <None Include="..\src\qt\paymentrequest.proto" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\src\qt\res\bitcoin-qt-res.rc" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
