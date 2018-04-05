@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -27,7 +27,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>..\src;..\src\config;..\src\leveldb\helpers\memenv;..\src\leveldb\include;..\src\secp256k1\include;..\src\univalue\include;.\.linux_usr_include;$(IncludePath)</IncludePath>
+    <IncludePath>..\src;..\src\config;..\src\leveldb\helpers\memenv;..\src\leveldb\include;..\src\secp256k1\include;..\src\univalue\include;.\.linux_usr_include;.\.linux_usr_include\c++\5;.\.linux_usr_include\x86_64-linux-gnu\qt5;$(IncludePath)</IncludePath>
     <TargetExt />
     <SourcePath>..\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
