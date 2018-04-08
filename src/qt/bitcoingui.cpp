@@ -109,6 +109,8 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     openRPCConsoleAction(0),
     openAction(0),
     showHelpMessageAction(0),
+    openMinerAction(0),
+    openPlotAction(0),
     trayIcon(0),
     trayIconMenu(0),
     notificator(0),
@@ -377,6 +379,12 @@ void BitcoinGUI::createActions()
     showHelpMessageAction->setMenuRole(QAction::NoRole);
     showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Bitcoin command-line options").arg(tr(PACKAGE_NAME)));
 
+    openMinerAction = new QAction(platformStyle->TextColorIcon(":/icons/tx_mined"), tr("&Open miner"), this);
+    openMinerAction->setStatusTip(tr("Open mining console"));
+
+    openPlotAction = new QAction(platformStyle->TextColorIcon(":/icons/edit"), tr("&Open plot generator"), this);
+    openPlotAction->setStatusTip(tr("Open plot generator console"));
+
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
     connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
@@ -400,6 +408,9 @@ void BitcoinGUI::createActions()
         connect(openAction, SIGNAL(triggered()), this, SLOT(openClicked()));
     }
 #endif // ENABLE_WALLET
+
+    connect(openMinerAction, SIGNAL(triggered()), this, SLOT(showMinerWindow()));
+    connect(openPlotAction, SIGNAL(triggered()), this, SLOT(showPlotWindow()));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_C), this, SLOT(showDebugWindowActivateConsole()));
     new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_D), this, SLOT(showDebugWindow()));
@@ -438,6 +449,10 @@ void BitcoinGUI::createMenuBar()
         settings->addSeparator();
     }
     settings->addAction(optionsAction);
+
+    QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
+    tools->addAction(openMinerAction);
+    tools->addAction(openPlotAction);
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
     if(walletFrame)
@@ -1193,6 +1208,16 @@ void BitcoinGUI::toggleNetworkActive()
     if (clientModel) {
         clientModel->setNetworkActive(!clientModel->getNetworkActive());
     }
+}
+
+void BitcoinGUI::showMinerWindow()
+{
+
+}
+
+void BitcoinGUI::showPlotWindow()
+{
+
 }
 
 UnitDisplayStatusBarControl::UnitDisplayStatusBarControl(const PlatformStyle *platformStyle) :

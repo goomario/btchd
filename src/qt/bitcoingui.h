@@ -111,6 +111,8 @@ private:
     QAction *openRPCConsoleAction;
     QAction *openAction;
     QAction *showHelpMessageAction;
+    QAction *openMinerAction;
+    QAction *openPlotAction;
 
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
@@ -241,6 +243,12 @@ private Q_SLOTS:
     void toggleNetworkActive();
 
     void showModalOverlay();
+
+    /** Show mining setting console */
+    void showMinerWindow();
+
+    /** Show plot console */
+    void showPlotWindow();
 };
 
 class UnitDisplayStatusBarControl : public QLabel
