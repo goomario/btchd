@@ -77,7 +77,7 @@ static UniValue SubmitNonce(const JSONRPCRequest& request)
         return result;
     }
 
-    const uint64_t nNonce = static_cast<uint64_t>(std::stoul(request.params[0].get_str()));
+    const uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
     const uint64_t nAccountId = poc::GetAccountIdByPassPhrase(request.params[1].get_str());
 
     uint64_t deadline;
@@ -125,7 +125,7 @@ static UniValue GetBlock(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    const uint64_t blockId = static_cast<uint64_t>(std::stoul(request.params[0].get_str()));
+    const uint64_t blockId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
 
     CBlockIndex *pBlockIndex = nullptr;
     for (const std::pair<const uint256, CBlockIndex*>& item : mapBlockIndex)

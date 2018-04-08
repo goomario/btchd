@@ -13,7 +13,6 @@
 #include <policy/policy.h>
 #include <ui_interface.h>
 #include <util.h>
-#include <validation.h>
 #include <wallet/wallet.h>
 
 #include <cstdlib>
@@ -222,11 +221,11 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
                 auto tempChainParams = CreateChainParams(CBaseChainParams::MAIN);
 
                 if (IsValidDestinationString(r.address.toStdString(), *tempChainParams)) {
-                    SelectParams(CBaseChainParams::MAIN, &chainActive);
+                    SelectParams(CBaseChainParams::MAIN);
                 } else {
                     tempChainParams = CreateChainParams(CBaseChainParams::TESTNET);
                     if (IsValidDestinationString(r.address.toStdString(), *tempChainParams)) {
-                        SelectParams(CBaseChainParams::TESTNET, &chainActive);
+                        SelectParams(CBaseChainParams::TESTNET);
                     }
                 }
             }
@@ -240,11 +239,11 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
             {
                 if (request.getDetails().network() == "main")
                 {
-                    SelectParams(CBaseChainParams::MAIN, &chainActive);
+                    SelectParams(CBaseChainParams::MAIN);
                 }
                 else if (request.getDetails().network() == "test")
                 {
-                    SelectParams(CBaseChainParams::TESTNET, &chainActive);
+                    SelectParams(CBaseChainParams::TESTNET);
                 }
             }
         }

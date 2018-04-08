@@ -1,0 +1,57 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "intelliSenseMode": "msvc-x64",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/config",
+                "${workspaceFolder}/src/univalue/include",
+                "${workspaceFolder}/src/leveldb/include",
+                "${workspaceFolder}/src/leveldb/helpers/memenv",
+                "${workspaceFolder}/src/secp256k1/include",
+                "${workspaceFolder}/depends/i686-w64-mingw32/include",
+                "${workspaceFolder}/depends/x86_64-w64-mingw32/include",
+                "${workspaceFolder}/vsproject/.linux_usr_include"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++14"
+        },
+        {
+            "name": "Linux",
+            "intelliSenseMode": "clang-x64",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/config",
+                "${workspaceFolder}/src/univalue/include",
+                "${workspaceFolder}/src/leveldb/include",
+                "${workspaceFolder}/src/leveldb/helpers/memenv",
+                "${workspaceFolder}/src/secp256k1/include",
+                "/usr/include",
+                "/usr/local/include"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++14"
+        },
+        {
+            "name": "Mac",
+            "intelliSenseMode": "clang-x64",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/config",
+                "${workspaceFolder}/src/univalue/include",
+                "${workspaceFolder}/src/leveldb/include",
+                "${workspaceFolder}/src/leveldb/helpers/memenv",
+                "${workspaceFolder}/src/secp256k1/include",
+                "/Applications/Xcode.app/Conents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
+                "/usr/include",
+                "/usr/local/include",
+                "/usr/local/Celler/openssl/1.0.2n/include"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++14"
+        }
+    ],
+    
+    "version": 3
+}

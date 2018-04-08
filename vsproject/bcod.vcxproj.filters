@@ -43,6 +43,15 @@
     <Filter Include="src\zmq">
       <UniqueIdentifier>{c1424653-9f7b-4660-868b-d463bc6ba8cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\qt">
+      <UniqueIdentifier>{e4f46d33-5813-4c98-b1fc-6fe66a307c4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\qt\forms">
+      <UniqueIdentifier>{743d8fab-c6a6-4e76-922a-39136b905f45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\qt\res">
+      <UniqueIdentifier>{133ef92d-6ef8-4233-9ece-beab4aa7c59d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\addrdb.cpp">
@@ -386,6 +395,159 @@
     </ClCompile>
     <ClCompile Include="..\src\zmq\zmqpublishnotifier.cpp">
       <Filter>src\zmq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\addressbookpage.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\addresstablemodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\askpassphrasedialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bantablemodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bitcoin.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bitcoinaddressvalidator.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bitcoinamountfield.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bitcoingui.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bitcoinstrings.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\bitcoinunits.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\clientmodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\coincontroldialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\coincontroltreewidget.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\csvmodelwriter.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\editaddressdialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\guiutil.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\intro.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\modaloverlay.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\networkstyle.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\notificator.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\openuridialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\optionsdialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\optionsmodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\overviewpage.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\paymentrequestplus.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\paymentserver.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\peertablemodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\platformstyle.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\qvalidatedlineedit.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\qvaluecombobox.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\receivecoinsdialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\receiverequestdialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\recentrequeststablemodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\rpcconsole.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\sendcoinsdialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\sendcoinsentry.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\signverifymessagedialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\splashscreen.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\trafficgraphwidget.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\transactiondesc.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\transactiondescdialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\transactionfilterproxy.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\transactionrecord.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\transactiontablemodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\transactionview.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\utilitydialog.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\walletframe.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\walletmodel.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\walletmodeltransaction.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\walletview.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\winshutdownmonitor.cpp">
+      <Filter>src\qt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -782,5 +944,240 @@
     <ClInclude Include="..\src\zmq\zmqpublishnotifier.h">
       <Filter>src\zmq</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\qt\addressbookpage.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\addresstablemodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\askpassphrasedialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\bantablemodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\bitcoinaddressvalidator.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\bitcoinamountfield.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\bitcoingui.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\bitcoinunits.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\callback.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\clientmodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\coincontroldialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\coincontroltreewidget.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\csvmodelwriter.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\editaddressdialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\guiconstants.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\guiutil.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\intro.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\macdockiconhandler.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\macnotificationhandler.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\modaloverlay.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\networkstyle.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\notificator.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\openuridialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\optionsdialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\optionsmodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\overviewpage.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\paymentrequestplus.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\paymentserver.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\peertablemodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\platformstyle.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\qvalidatedlineedit.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\qvaluecombobox.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\receivecoinsdialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\receiverequestdialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\recentrequeststablemodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\rpcconsole.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\sendcoinsdialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\sendcoinsentry.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\signverifymessagedialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\splashscreen.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\trafficgraphwidget.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\transactiondesc.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\transactiondescdialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\transactionfilterproxy.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\transactionrecord.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\transactiontablemodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\transactionview.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\utilitydialog.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\walletframe.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\walletmodel.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\walletmodeltransaction.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\walletview.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\winshutdownmonitor.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\qt\bitcoin.qrc">
+      <Filter>src\qt</Filter>
+    </None>
+    <None Include="..\src\qt\bitcoin_locale.qrc">
+      <Filter>src\qt</Filter>
+    </None>
+    <None Include="..\src\qt\macdockiconhandler.mm">
+      <Filter>src\qt</Filter>
+    </None>
+    <None Include="..\src\qt\macnotificationhandler.mm">
+      <Filter>src\qt</Filter>
+    </None>
+    <None Include="..\src\qt\Makefile">
+      <Filter>src\qt</Filter>
+    </None>
+    <None Include="..\src\qt\paymentrequest.proto">
+      <Filter>src\qt</Filter>
+    </None>
+    <None Include="..\src\qt\forms\addressbookpage.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\askpassphrasedialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\coincontroldialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\debugwindow.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\editaddressdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\helpmessagedialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\intro.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\modaloverlay.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\openuridialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\optionsdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\overviewpage.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\receivecoinsdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\receiverequestdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\sendcoinsdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\sendcoinsentry.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\signverifymessagedialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\transactiondescdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\src\qt\res\bitcoin-qt-res.rc">
+      <Filter>src\qt\res</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
