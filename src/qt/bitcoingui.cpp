@@ -17,6 +17,7 @@
 #include <qt/platformstyle.h>
 #include <qt/rpcconsole.h>
 #include <qt/utilitydialog.h>
+#include <qt/minerconsole.h>
 
 #ifdef ENABLE_WALLET
 #include <qt/walletframe.h>
@@ -117,6 +118,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     rpcConsole(0),
     helpMessageDialog(0),
     modalOverlay(0),
+    minerConsole(0),
     prevBlocks(0),
     spinnerFrame(0),
     platformStyle(_platformStyle)
@@ -154,6 +156,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
 
     rpcConsole = new RPCConsole(_platformStyle, 0);
     helpMessageDialog = new HelpMessageDialog(this, false);
+    minerConsole = new MinerConsole(_platformStyle, 0);
 #ifdef ENABLE_WALLET
     if(enableWallet)
     {
@@ -167,6 +170,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
          * the central widget is the rpc console.
          */
         setCentralWidget(rpcConsole);
+        setCentralWidget(minerConsole);
     }
 
     // Accept D&D of URIs
@@ -273,6 +277,7 @@ BitcoinGUI::~BitcoinGUI()
 #endif
 
     delete rpcConsole;
+    delete minerConsole;
 }
 
 void BitcoinGUI::createActions()
@@ -379,10 +384,10 @@ void BitcoinGUI::createActions()
     showHelpMessageAction->setMenuRole(QAction::NoRole);
     showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Bitcoin command-line options").arg(tr(PACKAGE_NAME)));
 
-    openMinerAction = new QAction(platformStyle->TextColorIcon(":/icons/tx_mined"), tr("&Open miner"), this);
+    openMinerAction = new QAction(platformStyle->TextColorIcon(":/icons/tx_mined"), tr("Open &Miner"), this);
     openMinerAction->setStatusTip(tr("Open mining console"));
 
-    openPlotAction = new QAction(platformStyle->TextColorIcon(":/icons/edit"), tr("&Open plot generator"), this);
+    openPlotAction = new QAction(platformStyle->TextColorIcon(":/icons/edit"), tr("Open &Plot generator"), this);
     openPlotAction->setStatusTip(tr("Open plot generator console"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
@@ -394,6 +399,7 @@ void BitcoinGUI::createActions()
     connect(openRPCConsoleAction, SIGNAL(triggered()), this, SLOT(showDebugWindow()));
     // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, SIGNAL(triggered()), rpcConsole, SLOT(hide()));
+    connect(quitAction, SIGNAL(triggered()), minerConsole, SLOT(hide()));
 
 #ifdef ENABLE_WALLET
     if(walletFrame)
@@ -974,6 +980,7 @@ void BitcoinGUI::closeEvent(QCloseEvent *event)
         {
             // close rpcConsole in case it was open to make some space for the shutdown window
             rpcConsole->close();
+            minerConsole->close();
 
             QApplication::quit();
         }
@@ -1131,6 +1138,8 @@ void BitcoinGUI::detectShutdown()
     {
         if(rpcConsole)
             rpcConsole->hide();
+        if (minerConsole)
+            minerConsole->hide();
         qApp->quit();
     }
 }
@@ -1212,7 +1221,10 @@ void BitcoinGUI::toggleNetworkActive()
 
 void BitcoinGUI::showMinerWindow()
 {
-
+    minerConsole->showNormal();
+    minerConsole->show();
+    minerConsole->raise();
+    minerConsole->activateWindow();
 }
 
 void BitcoinGUI::showPlotWindow()
