@@ -6,26 +6,32 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>743</width>
-    <height>434</height>
+    <width>500</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>400</width>
+    <width>500</width>
     <height>300</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>Miner console</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_1">
+  <layout class="QHBoxLayout" name="horizontalLayout_1" stretch="0,1">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_1">
+    <layout class="QVBoxLayout" name="verticalLayout_1" stretch="0,0,1,0,0,0">
+     <property name="minimumSize" stdset="0">
+      <size>
+       <width>400</width>
+       <height>16777215</height>
+      </size>
+     </property>
      <item>
       <layout class="QGridLayout" name="gridLayout_options">
-       <item row="0" column="0" alignment="Qt::AlignTop">
-        <widget class="QLabel" name="label">
+       <item row="1" column="0" alignment="Qt::AlignTop">
+        <widget class="QLabel" name="passphraseLabel">
          <property name="minimumSize">
           <size>
            <width>80</width>
@@ -33,14 +39,14 @@
           </size>
          </property>
          <property name="text">
-          <string>PassPhare</string>
+          <string>Passphrase</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
-       <item row="0" column="1" alignment="Qt::AlignTop">
+       <item row="1" column="2" alignment="Qt::AlignTop">
         <widget class="QLineEdit" name="passphareLineEdit">
          <property name="minimumSize">
           <size>
@@ -48,49 +54,41 @@
            <height>20</height>
           </size>
          </property>
+         <property name="placeholderText">
+          <string>Enter your passphrase</string>
+         </property>
         </widget>
        </item>
-       <item row="1" column="0" colspan="2" alignment="Qt::AlignHCenter">
-        <widget class="QPushButton" name="switchMiningButton">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>100</width>
-           <height>16777215</height>
-          </size>
-         </property>
+       <item row="2" column="0">
+        <widget class="QLabel" name="targetDeadlineLabel">
          <property name="text">
-          <string>Start mining</string>
+          <string>TargetDeadline</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QLineEdit" name="targetDeadlineLineEdit">
+         <property name="placeholderText">
+          <string>&quot;123456&quot; Or &quot;1y 2d 12:34:56&quot;</string>
          </property>
         </widget>
        </item>
       </layout>
      </item>
      <item>
-      <widget class="QListWidget" name="plotfileList">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>16777215</height>
-        </size>
+      <widget class="QLabel" name="plotFileLabel">
+       <property name="text">
+        <string>Plot files</string>
        </property>
       </widget>
+     </item>
+     <item>
+      <widget class="QListWidget" name="plotfileList"/>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_plotfile">
        <item>
         <widget class="QPushButton" name="addPlotFileButton">
-         <property name="maximumSize">
-          <size>
-           <width>120</width>
-           <height>16777215</height>
-          </size>
-         </property>
          <property name="text">
           <string>Add plot file</string>
          </property>
@@ -98,12 +96,6 @@
        </item>
        <item>
         <widget class="QPushButton" name="removePlotFileButton">
-         <property name="maximumSize">
-          <size>
-           <width>120</width>
-           <height>16777215</height>
-          </size>
-         </property>
          <property name="text">
           <string>Remove plot file</string>
          </property>
@@ -111,10 +103,44 @@
        </item>
       </layout>
      </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>10</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="switchMiningButton">
+       <property name="text">
+        <string>Start mining</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../bitcoin.qrc">
+         <normaloff>:/icons/tx_mined</normaloff>:/icons/tx_mined</iconset>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
-    <widget class="QPlainTextEdit" name="logPlainTextEdit"/>
+    <widget class="QPlainTextEdit" name="logPlainTextEdit">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+     <property name="backgroundVisible">
+      <bool>false</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
