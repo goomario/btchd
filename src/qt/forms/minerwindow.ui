@@ -47,7 +47,7 @@
         </widget>
        </item>
        <item row="1" column="2" alignment="Qt::AlignTop">
-        <widget class="QLineEdit" name="passphareLineEdit">
+        <widget class="QLineEdit" name="passphraseLineEdit">
          <property name="minimumSize">
           <size>
            <width>200</width>

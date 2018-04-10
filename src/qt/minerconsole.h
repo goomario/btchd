@@ -7,6 +7,9 @@
 
 #include <qt/guiutil.h>
 
+#include <memory>
+
+#include <QString>
 #include <QWidget>
 
 class PlatformStyle;
@@ -14,6 +17,10 @@ class PlatformStyle;
 namespace Ui {
     class MinerConsole;
 }
+
+QT_BEGIN_NAMESPACE
+class QTemporaryFile;
+QT_END_NAMESPACE
 
 /** Local Bitcoin Miner console. */
 class MinerConsole : public QWidget
@@ -26,6 +33,7 @@ public:
 
 private:
     void notifyMiningStatusChange(bool mining);
+    void saveSettings();
 
 private Q_SLOTS:
     void on_plotfileList_itemSelectionChanged(int row);
@@ -37,6 +45,7 @@ private:
     Ui::MinerConsole *ui;
 
     bool mining;
+    std::shared_ptr<QTemporaryFile> minerConfigFile;
 };
 
 #endif // BITCOIN_QT_MINERCONSOLE_H

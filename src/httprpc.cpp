@@ -243,6 +243,27 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
             jreq.params.pushKV(it->first, it->second);
         }
 
+        // submitNonce
+        if (jreq.strMethod == "submitNonce") {
+            if (jreq.params.exists("accountId")) {
+                jreq.strMethod = "submitNonceToPool";
+            } else if (jreq.params.exists("secretPhrase")) {
+                jreq.strMethod = "submitNonceAsSolo";
+            } else {
+                throw UniValue("submitNonce require accountId or secretPhrase parameters");
+            }
+
+            UniValue params(UniValue::VOBJ);
+            const std::vector<std::string>& keys = jreq.params.getKeys();
+            const std::vector<UniValue>& values = jreq.params.getValues();
+            for (size_t i = 0; i < keys.size(); ++i) {
+                if (keys[i] == "nonce" || keys[i] == "accountId" || keys[i] == "secretPhrase") {
+                    params.pushKV(keys[i], values[i]);
+                }
+            }
+            jreq.params = params;
+        }
+
         // Call
         UniValue result = tableRPC.execute(jreq);
         if (result.isBool()) {

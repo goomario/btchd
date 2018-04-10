@@ -101,6 +101,7 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
 std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId)
 {
+    AssertLockHeld(cs_main);
     if (::vpwallets.empty()) {
         return nullptr;
     }
@@ -153,6 +154,7 @@ void CheckDeadlineThread()
         if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(1000)))
             return;
         
+        std::shared_ptr<CBlock> pblock;
         {
             LOCK(cs_main);
             if (gNextBlockHeight != 0) {
@@ -163,8 +165,8 @@ void CheckDeadlineThread()
                         // forge
                         LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
-                        std::shared_ptr<CBlock> pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockSeed);
-                        if (!pblock || !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+                        pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockSeed);
+                        if (!pblock) {
                             LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
                         }
@@ -175,14 +177,23 @@ void CheckDeadlineThread()
                        continue;
                    }
                 }
-
-                // clear
-                LogPrint(BCLog::POC, "Clear check deadline data");
-                gNextBlockHeight = 0;
-                gNextBlockNonce = 0;
-                gNextBlockSeed = 0;
-                gNextBlockDeadline = 0;
             }
+        }
+
+        // ProcessNewBlock
+        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
+        }
+        
+        // clear
+        {
+            LOCK(cs_main);
+            LogPrint(BCLog::POC, "Clear check deadline data");
+            gNextBlockHeight = 0;
+            gNextBlockNonce = 0;
+            gNextBlockSeed = 0;
+            gNextBlockDeadline = 0;
         }
     }
 }
@@ -372,11 +383,12 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId, 
     uint64_t &deadline)
 {
-    std::shared_ptr<CBlock> pblock = CreateBlock(prevBlockIndex, nNonce, nAccountId);
-    if (!pblock) 
-        return false;
+    CBlockHeader block;
+    block.nVersion = ComputeBlockVersion(&prevBlockIndex, Params().GetConsensus());
+    block.nNonce = nNonce;
+    block.nPlotSeed = nAccountId;
 
-    deadline = CalculateDeadline(prevBlockIndex, *pblock);
+    deadline = CalculateDeadline(prevBlockIndex, block);
 
     if (gNextBlockHeight != prevBlockIndex.nHeight + 1 
         || nAccountId != gNextBlockSeed 
