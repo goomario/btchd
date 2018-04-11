@@ -107,6 +107,7 @@
     <ClCompile Include="..\src\qt\editaddressdialog.cpp" />
     <ClCompile Include="..\src\qt\guiutil.cpp" />
     <ClCompile Include="..\src\qt\intro.cpp" />
+    <ClCompile Include="..\src\qt\minerconsole.cpp" />
     <ClCompile Include="..\src\qt\modaloverlay.cpp" />
     <ClCompile Include="..\src\qt\networkstyle.cpp" />
     <ClCompile Include="..\src\qt\notificator.cpp" />
@@ -285,6 +286,7 @@
     <ClInclude Include="..\src\qt\intro.h" />
     <ClInclude Include="..\src\qt\macdockiconhandler.h" />
     <ClInclude Include="..\src\qt\macnotificationhandler.h" />
+    <ClInclude Include="..\src\qt\minerconsole.h" />
     <ClInclude Include="..\src\qt\modaloverlay.h" />
     <ClInclude Include="..\src\qt\networkstyle.h" />
     <ClInclude Include="..\src\qt\notificator.h" />

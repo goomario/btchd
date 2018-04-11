@@ -549,6 +549,9 @@
     <ClCompile Include="..\src\qt\winshutdownmonitor.cpp">
       <Filter>src\qt</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\qt\minerconsole.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\addrdb.h">
@@ -1101,6 +1104,9 @@
       <Filter>src\qt</Filter>
     </ClInclude>
     <ClInclude Include="..\src\qt\winshutdownmonitor.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\minerconsole.h">
       <Filter>src\qt</Filter>
     </ClInclude>
   </ItemGroup>
