@@ -27,18 +27,16 @@
 
 namespace {
  
- const char passphraseSettingsKey[] = "MinerPassphrase";
- const char targetDeadlineSettingsKey[] = "MinerTargetDeadline";
- const char plotfilesSettingsKey[] = "MinerPlotfiles";
+const char passphraseSettingsKey[] = "MinerPassphrase";
+const char targetDeadlineSettingsKey[] = "MinerTargetDeadline";
+const char plotfilesSettingsKey[] = "MinerPlotfiles";
 
- const char creepMinerRelativePath[] = "../../miner";
-
+const char creepMinerRelativePath[] = "miner";
 }
 
 MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::MinerConsole),
-    mining(false)
+    ui(new Ui::MinerConsole)
 {
     ui->setupUi(this);
 
@@ -63,7 +61,13 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     }
 
     // Update mining status
-    notifyMiningStatusChange(mining);
+    notifyMiningStatusChanged(false);
+
+    minerProcess = std::make_shared<QProcess>();
+    connect(minerProcess.get(), SIGNAL(started()), this, SLOT(onMiningStarted()));
+    connect(minerProcess.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onMiningFinished(int, QProcess::ExitStatus)));
+    connect(minerProcess.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(onMiningReadyReadStandardOutput()));
+    connect(minerProcess.get(), SIGNAL(readyReadStandardError()), this, SLOT(onMiningReadyReadStandardError()));
 }
 
 MinerConsole::~MinerConsole()
@@ -74,19 +78,22 @@ MinerConsole::~MinerConsole()
     saveSettings();
 
     minerConfigFile.reset();
+    if (!minerProcess->atEnd()) {
+        minerProcess->close();
+        minerProcess->terminate();
+    }
+    minerProcess.reset();
 
     delete ui;
 }
 
-void MinerConsole::notifyMiningStatusChange(bool mining)
+void MinerConsole::notifyMiningStatusChanged(bool mining)
 {
-    this->mining = mining;
-
     ui->switchMiningButton->setText(mining ? tr("Stop mining") : tr("Start mining"));
-    ui->addPlotFileButton->setEnabled(!this->mining);
-    ui->removePlotFileButton->setEnabled(!this->mining);
-    ui->passphraseLineEdit->setReadOnly(!this->mining);
-    ui->targetDeadlineLineEdit->setReadOnly(!this->mining);
+    ui->addPlotFileButton->setEnabled(!mining);
+    ui->removePlotFileButton->setEnabled(!mining);
+    ui->passphraseLineEdit->setReadOnly(!mining);
+    ui->targetDeadlineLineEdit->setReadOnly(!mining);
 
     if (mining) {
         saveSettings();
@@ -148,12 +155,7 @@ void MinerConsole::on_removePlotFileButton_clicked()
 
 void MinerConsole::on_switchMiningButton_clicked()
 {
-    if (mining) {
-        // Stop mining
-        mining = false;
-
-        minerConfigFile.reset();
-    } else {
+    if (minerProcess->atEnd()) {
         // Start mining
 
         // template file
@@ -183,7 +185,7 @@ void MinerConsole::on_switchMiningButton_clicked()
                 .replace("${submission}", QString("http://localhost:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
                 .replace("${plots}", QString("\"") + plotfiles.join("\",\"") + QString("\""));
 
-            LogPrintf("%s: configuration content \n%s\n", __func__, configContent.toStdString().c_str());
+            LogPrint(BCLog::POC, "%s: configuration content \n%s\n", __func__, configContent.toStdString().c_str());
         }
         // temporary
         {
@@ -199,10 +201,38 @@ void MinerConsole::on_switchMiningButton_clicked()
         }
 
         // run miner
-
-        mining = true;
-
+        QStringList arguments;
+        arguments << (QString("--config=\"") + minerConfigFile->fileName() + "\"");
+#ifdef WIN32
+        minerProcess->start(QString((GetAppDir() / creepMinerRelativePath / "creepMiner.exe").c_str()), arguments, QProcess::ReadOnly);
+#else
+        minerProcess->start(QString((GetAppDir() / creepMinerRelativePath / "creepMiner").c_str()), arguments, QProcess::ReadOnly);
+#endif
+    } else {
+        // Stop mining
+        minerProcess->close();
+        minerConfigFile.reset();
     }
+}
 
-    notifyMiningStatusChange(mining);
+void MinerConsole::onMiningStarted()
+{
+    notifyMiningStatusChanged(true);
+    LogPrintf("%s\n", __func__);
+}
+
+void MinerConsole::onMiningFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    notifyMiningStatusChanged(false);
+    LogPrintf("%s: status=%d\n", __func__, exitStatus);
+}
+
+void MinerConsole::onMiningReadyReadStandardOutput()
+{
+    LogPrintf("%s: %s\n", __func__, minerProcess->readAllStandardOutput().data());
+}
+
+void MinerConsole::onMiningReadyReadStandardError()
+{
+    LogPrintf("%s: %s\n", __func__, minerProcess->readAllStandardError().data());
 }

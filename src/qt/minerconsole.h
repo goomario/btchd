@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include <QProcess>
 #include <QString>
 #include <QWidget>
 
@@ -32,7 +33,7 @@ public:
     ~MinerConsole();
 
 private:
-    void notifyMiningStatusChange(bool mining);
+    void notifyMiningStatusChanged(bool mining);
     void saveSettings();
 
 private Q_SLOTS:
@@ -41,11 +42,17 @@ private Q_SLOTS:
     void on_removePlotFileButton_clicked();
     void on_switchMiningButton_clicked();
 
+    // process output
+    void onMiningStarted();
+    void onMiningFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onMiningReadyReadStandardOutput();
+    void onMiningReadyReadStandardError();
+
 private:
     Ui::MinerConsole *ui;
 
-    bool mining;
     std::shared_ptr<QTemporaryFile> minerConfigFile;
+    std::shared_ptr<QProcess> minerProcess;
 };
 
 #endif // BITCOIN_QT_MINERCONSOLE_H

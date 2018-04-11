@@ -585,8 +585,8 @@ const fs::path &GetAppDir()
         char path[MAX_PATH];
         memset(path, 0, sizeof(path));
         ::GetModuleFileNameA(NULL, path, MAX_PATH);
-        ::PathRemoveFileSpecA(path);
         appPathCached = path;
+        appPathCached = appPathCached.parent_path();
 #else
         char path[1024];
         memset(path, 0, sizeof(path));
@@ -596,7 +596,7 @@ const fs::path &GetAppDir()
         } else if (getcwd(path, sizeof(path) / sizeof(path[0])) != NULL) {
             appPathCached = path;
         } else {
-            appPathCached = getenv("PWD");
+            appPathCached = "/opt/bitcoinore";
         }
 #endif
     }

@@ -15,7 +15,7 @@
             "plotDone" : false
         },
         "outputType" : "terminal",
-        "path" : "logs/",
+        "path" : "",
         "plotReader" : "information",
         "plotVerifier" : "information",
         "progressBar" : {
