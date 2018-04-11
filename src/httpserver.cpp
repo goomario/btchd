@@ -551,15 +551,24 @@ std::map<std::string, std::string> HTTPRequest::GetParameters()
 {
     std::map<std::string, std::string> parameters;
     
-    const char *raw_uri;
-    char *decoded_uri;
-    struct evkeyvalq kv;
-    raw_uri = evhttp_request_get_uri(req);
-    decoded_uri = evhttp_uridecode(raw_uri, false, nullptr);
-    if (evhttp_parse_query(decoded_uri, &kv) == 0) {
-        for (evkeyval *val = kv.tqh_first; val != nullptr; val = val->next.tqe_next) {
-            parameters.insert(std::make_pair(val->key, val->value));
+    const char *raw_uri = evhttp_request_get_uri(req);
+    char *decoded_uri = evhttp_uridecode(raw_uri, false, nullptr);
+    if (decoded_uri) {
+        char *decode_query = strstr(decoded_uri, "?");
+        if (decode_query) {
+            decode_query += 1;
+        } else {
+            decode_query = decoded_uri;
         }
+        struct evkeyvalq kv;
+        if (evhttp_parse_query_str(decode_query, &kv) == 0) {
+            for (evkeyval *val = kv.tqh_first; val != nullptr; val = val->next.tqe_next) {
+                parameters.insert(std::make_pair(val->key, val->value));
+                LogPrintf("%s:%d: %s => %s\n", __func__, __LINE__, val->key, val->value);
+            }
+
+        }
+
         free(decoded_uri);
     }
 

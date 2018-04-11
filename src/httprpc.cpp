@@ -225,7 +225,7 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         // Parse request
         const std::map<std::string,std::string> parameters = req->GetParameters();
         const auto requestType = parameters.find("requestType");
-        if (requestType == parameters.end()) {
+        if (requestType == parameters.cend()) {
             BurstJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
@@ -233,35 +233,41 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         const time_t startTime = ::time(nullptr);
 
         // Set the request
-        jreq.strMethod = requestType->second;
         jreq.URI = req->GetURI();
         jreq.params.setObject();
-        for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
-            if (it->first == "requestType") {
-                continue;
-            }
-            jreq.params.pushKV(it->first, it->second);
-        }
-
-        // submitNonce
-        if (jreq.strMethod == "submitNonce") {
-            if (jreq.params.exists("accountId")) {
-                jreq.strMethod = "submitNonceToPool";
-            } else if (jreq.params.exists("secretPhrase")) {
-                jreq.strMethod = "submitNonceAsSolo";
-            } else {
-                throw UniValue("submitNonce require accountId or secretPhrase parameters");
-            }
-
-            UniValue params(UniValue::VOBJ);
-            const std::vector<std::string>& keys = jreq.params.getKeys();
-            const std::vector<UniValue>& values = jreq.params.getValues();
-            for (size_t i = 0; i < keys.size(); ++i) {
-                if (keys[i] == "nonce" || keys[i] == "accountId" || keys[i] == "secretPhrase") {
-                    params.pushKV(keys[i], values[i]);
+        if (requestType->second == "submitNonce") {
+            // submitNonce
+            const auto nonce = parameters.find("nonce");
+            if (nonce != parameters.cend()) {
+                const auto accountId = parameters.find("accountId");
+                const auto secretPhrase = parameters.find("secretPhrase");
+                if (accountId != parameters.cend()) {
+                    // Pool
+                    jreq.strMethod = "submitNonceToPool";
+                    jreq.params.pushKV("nonce", nonce->second);
+                    jreq.params.pushKV("accountId", accountId->second);
+                } else if (secretPhrase != parameters.cend()) {
+                    // Solo
+                    jreq.strMethod = "submitNonceAsSolo";
+                    jreq.params.pushKV("nonce", nonce->second);
+                    jreq.params.pushKV("secretPhrase", secretPhrase->second);
+                } else {
+                    BurstJSONErrorReply(req, 1, "Incorrect request");
+                    return false;
                 }
             }
-            jreq.params = params;
+            else {
+                BurstJSONErrorReply(req, 1, "Incorrect request");
+                return false;
+            }
+        } else {
+            jreq.strMethod = requestType->second;
+            for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
+                if (it->first == "requestType") {
+                    continue;
+                }
+                jreq.params.pushKV(it->first, it->second);
+            }
         }
 
         // Call
@@ -283,15 +289,17 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         // Send reply
         req->WriteHeader("Content-Type", "application/json; charset=UTF-8");
         req->WriteReply(HTTP_OK, result.write());
+        return true;
     } catch (const UniValue& objError) {
         BurstJSONErrorReply(req, 1, objError.getValStr());
+        LogPrint(BCLog::POC, "Call rpc fail: %s", objError.getValStr().c_str());
         return false;
     } catch (const std::exception& e) {
         req->WriteHeader("Content-Type", "text/plain; charset=UTF-8");
         req->WriteReply(HTTP_INTERNAL_SERVER_ERROR, e.what());
+        LogPrint(BCLog::POC, "Call rpc fail: %s", e.what());
         return false;
     }
-    return true;
 }
 
 static bool InitRPCAuthentication()
