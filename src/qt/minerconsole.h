@@ -42,7 +42,7 @@ public Q_SLOTS:
     void close();
 
 private Q_SLOTS:
-    void on_plotfileList_itemSelectionChanged(int row);
+    void on_plotfileList_itemSelectionChanged();
     void on_addPlotFileButton_clicked();
     void on_removePlotFileButton_clicked();
     void on_switchMiningButton_clicked();

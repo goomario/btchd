@@ -34,11 +34,18 @@ public:
 
 private:
     void saveSettings();
+    void appendLog(const QStringList &lines);
 
 public Q_SLOTS:
     void close();
 
 private Q_SLOTS:
+    void updatePlotInfo();
+    void plotSpinBoxValueChanged(int i);
+
+    void on_setPlotPathButton_clicked();
+    void on_startPlotButton_clicked();
+
     // process output
     void onPlotStarted();
     void onPlotFinished(int exitCode, QProcess::ExitStatus exitStatus);
