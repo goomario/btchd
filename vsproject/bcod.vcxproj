@@ -119,6 +119,7 @@
     <ClCompile Include="..\src\qt\paymentserver.cpp" />
     <ClCompile Include="..\src\qt\peertablemodel.cpp" />
     <ClCompile Include="..\src\qt\platformstyle.cpp" />
+    <ClCompile Include="..\src\qt\plotconsole.cpp" />
     <ClCompile Include="..\src\qt\qvalidatedlineedit.cpp" />
     <ClCompile Include="..\src\qt\qvaluecombobox.cpp" />
     <ClCompile Include="..\src\qt\receivecoinsdialog.cpp" />
@@ -298,6 +299,7 @@
     <ClInclude Include="..\src\qt\paymentserver.h" />
     <ClInclude Include="..\src\qt\peertablemodel.h" />
     <ClInclude Include="..\src\qt\platformstyle.h" />
+    <ClInclude Include="..\src\qt\plotconsole.h" />
     <ClInclude Include="..\src\qt\qvalidatedlineedit.h" />
     <ClInclude Include="..\src\qt\qvaluecombobox.h" />
     <ClInclude Include="..\src\qt\receivecoinsdialog.h" />

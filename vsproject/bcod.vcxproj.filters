@@ -552,6 +552,9 @@
     <ClCompile Include="..\src\qt\minerconsole.cpp">
       <Filter>src\qt</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\qt\plotconsole.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\addrdb.h">
@@ -1107,6 +1110,9 @@
       <Filter>src\qt</Filter>
     </ClInclude>
     <ClInclude Include="..\src\qt\minerconsole.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\plotconsole.h">
       <Filter>src\qt</Filter>
     </ClInclude>
   </ItemGroup>

@@ -31,6 +31,7 @@ class WalletModel;
 class HelpMessageDialog;
 class ModalOverlay;
 class MinerConsole;
+class PlotConsole;
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -122,6 +123,7 @@ private:
     HelpMessageDialog *helpMessageDialog;
     ModalOverlay *modalOverlay;
     MinerConsole *minerConsole;
+    PlotConsole *plotConsole;
 
     /** Keep track of previous number of blocks, to detect progress */
     int prevBlocks;

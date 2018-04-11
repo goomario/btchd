@@ -24,6 +24,7 @@
 #include <QStringList>
 #include <QTemporaryFile>
 #include <QTextStream>
+
 #include <qt/minerconsole.moc>
 
 namespace {
