@@ -398,10 +398,12 @@
     <None Include="..\src\qt\forms\editaddressdialog.ui" />
     <None Include="..\src\qt\forms\helpmessagedialog.ui" />
     <None Include="..\src\qt\forms\intro.ui" />
+    <None Include="..\src\qt\forms\minerwindow.ui" />
     <None Include="..\src\qt\forms\modaloverlay.ui" />
     <None Include="..\src\qt\forms\openuridialog.ui" />
     <None Include="..\src\qt\forms\optionsdialog.ui" />
     <None Include="..\src\qt\forms\overviewpage.ui" />
+    <None Include="..\src\qt\forms\plotwindow.ui" />
     <None Include="..\src\qt\forms\receivecoinsdialog.ui" />
     <None Include="..\src\qt\forms\receiverequestdialog.ui" />
     <None Include="..\src\qt\forms\sendcoinsdialog.ui" />
@@ -410,7 +412,6 @@
     <None Include="..\src\qt\forms\transactiondescdialog.ui" />
     <None Include="..\src\qt\macdockiconhandler.mm" />
     <None Include="..\src\qt\macnotificationhandler.mm" />
-    <None Include="..\src\qt\Makefile" />
     <None Include="..\src\qt\paymentrequest.proto" />
   </ItemGroup>
   <ItemGroup>

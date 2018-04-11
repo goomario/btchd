@@ -1129,9 +1129,6 @@
     <None Include="..\src\qt\macnotificationhandler.mm">
       <Filter>src\qt</Filter>
     </None>
-    <None Include="..\src\qt\Makefile">
-      <Filter>src\qt</Filter>
-    </None>
     <None Include="..\src\qt\paymentrequest.proto">
       <Filter>src\qt</Filter>
     </None>
@@ -1184,6 +1181,12 @@
       <Filter>src\qt\forms</Filter>
     </None>
     <None Include="..\src\qt\forms\transactiondescdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\minerwindow.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\plotwindow.ui">
       <Filter>src\qt\forms</Filter>
     </None>
   </ItemGroup>
