@@ -20,6 +20,7 @@ namespace Ui {
 }
 
 QT_BEGIN_NAMESPACE
+class QStringList;
 class QTemporaryFile;
 QT_END_NAMESPACE
 
@@ -35,6 +36,10 @@ public:
 private:
     void notifyMiningStatusChanged(bool mining);
     void saveSettings();
+    void appendLog(const QStringList &lines);
+
+public Q_SLOTS:
+    void close();
 
 private Q_SLOTS:
     void on_plotfileList_itemSelectionChanged(int row);
@@ -51,8 +56,8 @@ private Q_SLOTS:
 private:
     Ui::MinerConsole *ui;
 
-    std::shared_ptr<QTemporaryFile> minerConfigFile;
-    std::shared_ptr<QProcess> minerProcess;
+    std::unique_ptr<QTemporaryFile> minerConfigFile;
+    std::unique_ptr<QProcess> minerProcess;
 };
 
 #endif // BITCOIN_QT_MINERCONSOLE_H

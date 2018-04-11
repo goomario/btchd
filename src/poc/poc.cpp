@@ -189,11 +189,13 @@ void CheckDeadlineThread()
         // clear
         {
             LOCK(cs_main);
-            LogPrint(BCLog::POC, "Clear check deadline data");
-            gNextBlockHeight = 0;
-            gNextBlockNonce = 0;
-            gNextBlockSeed = 0;
-            gNextBlockDeadline = 0;
+            if (gNextBlockHeight != 0) {
+                LogPrint(BCLog::POC, "Clear check deadline data");
+                gNextBlockHeight = 0;
+                gNextBlockNonce = 0;
+                gNextBlockSeed = 0;
+                gNextBlockDeadline = 0;
+            }
         }
     }
 }
@@ -383,6 +385,9 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId, 
     uint64_t &deadline)
 {
+    LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ", deadline=%" PRIu64 "\n",
+        prevBlockIndex.nHeight + 1, nNonce, nAccountId, deadline);
+
     CBlockHeader block;
     block.nVersion = ComputeBlockVersion(&prevBlockIndex, Params().GetConsensus());
     block.nNonce = nNonce;

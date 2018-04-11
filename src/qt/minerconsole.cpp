@@ -19,6 +19,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QScrollBar>
 #include <QSettings>
 #include <QStringList>
 #include <QTemporaryFile>
@@ -31,7 +32,7 @@ const char passphraseSettingsKey[] = "MinerPassphrase";
 const char targetDeadlineSettingsKey[] = "MinerTargetDeadline";
 const char plotfilesSettingsKey[] = "MinerPlotfiles";
 
-const char creepMinerRelativePath[] = "miner";
+const char creepMinerRelativePath[] = "tools/creepMiner";
 }
 
 MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
@@ -39,6 +40,7 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     ui(new Ui::MinerConsole)
 {
     ui->setupUi(this);
+    connect(this, SIGNAL(close()), this, SLOT(onClose()));
 
     QSettings settings;
     if (!restoreGeometry(settings.value("MinerConsoleWindowGeometry").toByteArray())) {
@@ -63,7 +65,7 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     // Update mining status
     notifyMiningStatusChanged(false);
 
-    minerProcess = std::make_shared<QProcess>();
+    minerProcess = std::unique_ptr<QProcess>(new QProcess());
     connect(minerProcess.get(), SIGNAL(started()), this, SLOT(onMiningStarted()));
     connect(minerProcess.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onMiningFinished(int, QProcess::ExitStatus)));
     connect(minerProcess.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(onMiningReadyReadStandardOutput()));
@@ -77,12 +79,8 @@ MinerConsole::~MinerConsole()
     
     saveSettings();
 
-    minerConfigFile.reset();
-    if (!minerProcess->atEnd()) {
-        minerProcess->close();
-        minerProcess->terminate();
-    }
     minerProcess.reset();
+    minerConfigFile.reset();
 
     delete ui;
 }
@@ -92,8 +90,8 @@ void MinerConsole::notifyMiningStatusChanged(bool mining)
     ui->switchMiningButton->setText(mining ? tr("Stop mining") : tr("Start mining"));
     ui->addPlotFileButton->setEnabled(!mining);
     ui->removePlotFileButton->setEnabled(!mining);
-    ui->passphraseLineEdit->setReadOnly(!mining);
-    ui->targetDeadlineLineEdit->setReadOnly(!mining);
+    ui->passphraseLineEdit->setReadOnly(mining);
+    ui->targetDeadlineLineEdit->setReadOnly(mining);
 
     if (mining) {
         saveSettings();
@@ -113,9 +111,42 @@ void MinerConsole::saveSettings()
     settings.setValue(plotfilesSettingsKey, plotfiles);
 }
 
+void MinerConsole::appendLog(const QStringList &lines)
+{
+    // https://stackoverflow.com/questions/13559990/how-to-append-text-to-qplaintextedit-without-adding-newline-and-keep-scroll-at
+    QScrollBar *scrollbar = ui->logPlainTextEdit->verticalScrollBar();
+    bool atBottom = (scrollbar->value() == scrollbar->maximum());
+
+    QTextCursor cursor(ui->logPlainTextEdit->document());
+    cursor.beginEditBlock();
+    cursor.movePosition(QTextCursor::End);
+    for (int i = 0; i < lines.size(); i++) {
+        cursor.insertText(lines.at(i));
+        if (i + 1 < lines.size())
+            cursor.insertBlock();
+    }
+    cursor.endEditBlock();
+
+    if (atBottom) {
+        scrollbar->setValue(scrollbar->maximum());
+    }
+}
+
+void MinerConsole::close()
+{
+    QWidget::close();
+
+    if (minerProcess->state() != QProcess::NotRunning) {
+        minerProcess->kill();
+    }
+    minerConfigFile.reset();
+}
+
 void MinerConsole::on_plotfileList_itemSelectionChanged(int row)
 {
-    ui->removePlotFileButton->setEnabled(row != -1);
+    if (minerProcess->state() == QProcess::NotRunning) {
+        ui->removePlotFileButton->setEnabled(row != -1);
+    }
 }
 
 void MinerConsole::on_addPlotFileButton_clicked()
@@ -155,17 +186,25 @@ void MinerConsole::on_removePlotFileButton_clicked()
 
 void MinerConsole::on_switchMiningButton_clicked()
 {
-    if (minerProcess->atEnd()) {
+    if (minerProcess->state() == QProcess::NotRunning) {
         // Start mining
+        if (ui->passphraseLineEdit->text().isEmpty()) {
+            QMessageBox::information(this, "Miner console", QString("Please input your passphare!"));
+            return;
+        }
+        if (ui->plotfileList->count() == 0) {
+            QMessageBox::information(this, "Miner console", QString("Please add your plot files!"));
+            return;
+        }
 
         // template file
         QString configContent;
         {
-            QString tplfilepath((GetAppDir() / creepMinerRelativePath / "mining.conf.tpl").c_str());
+            QString tplfilepath = QString::fromWCharArray((GetAppDir() / creepMinerRelativePath / "mining.conf.tpl").c_str());
             LogPrintf("%s: Template file %s\n", __func__, tplfilepath.toStdString().c_str());
             QFile tplfile(tplfilepath);
             if (!tplfile.open(QFile::ReadOnly | QFile::Text)) {
-                QMessageBox::critical(this, "Error", QString("Error: Cannot read miner default configuration file!"));
+                QMessageBox::critical(this, "Miner console", QString("Error: Cannot read miner default configuration file!"));
                 return;
             }
             configContent = QTextStream(&tplfile).readAll();
@@ -189,50 +228,63 @@ void MinerConsole::on_switchMiningButton_clicked()
         }
         // temporary
         {
-            minerConfigFile = std::make_shared<QTemporaryFile>();
+            minerConfigFile = std::unique_ptr<QTemporaryFile>(new QTemporaryFile());
             if (!minerConfigFile || !minerConfigFile->open()) {
                 minerConfigFile.reset();
                 QMessageBox::critical(this, "Error", QString("Error: Cannot create miner configuration file!"));
                 return;
             }
             QTextStream(minerConfigFile.get()) << configContent;
+            minerConfigFile->flush();
 
             LogPrintf("%s: Temporary configuration file %s\n", __func__, minerConfigFile->fileName().toStdString().c_str());
         }
 
         // run miner
-        QStringList arguments;
-        arguments << (QString("--config=\"") + minerConfigFile->fileName() + "\"");
+        {
+            ui->switchMiningButton->setEnabled(false);
+
 #ifdef WIN32
-        minerProcess->start(QString((GetAppDir() / creepMinerRelativePath / "creepMiner.exe").c_str()), arguments, QProcess::ReadOnly);
+            const QString creepMinerDir = QString::fromWCharArray((GetAppDir() / creepMinerRelativePath).c_str());
+            const QString creepMinerFile = "creepMiner.exe";
+            const QStringList arguments = QStringList() << "/config" << minerConfigFile->fileName();
 #else
-        minerProcess->start(QString((GetAppDir() / creepMinerRelativePath / "creepMiner").c_str()), arguments, QProcess::ReadOnly);
+            const QString creepMinerDir = QString((GetAppDir() / creepMinerRelativePath).c_str());
+            const QString creepMinerFile = "creepMiner";
+            const QStringList arguments = QStringList() << "--config" << minerConfigFile->fileName();
 #endif
+            minerProcess->setWorkingDirectory(creepMinerDir);
+            minerProcess->start(creepMinerDir + "/" + creepMinerFile, arguments, QProcess::ReadOnly);
+        }
     } else {
         // Stop mining
-        minerProcess->close();
+        ui->switchMiningButton->setEnabled(false);
+        minerProcess->kill();
         minerConfigFile.reset();
     }
 }
 
 void MinerConsole::onMiningStarted()
 {
+    ui->switchMiningButton->setEnabled(true);
     notifyMiningStatusChanged(true);
-    LogPrintf("%s\n", __func__);
+    ui->logPlainTextEdit->clear();
+    appendLog(QStringList() << QString("Start miner") << "" << "");
 }
 
 void MinerConsole::onMiningFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    ui->switchMiningButton->setEnabled(true);
     notifyMiningStatusChanged(false);
-    LogPrintf("%s: status=%d\n", __func__, exitStatus);
+    appendLog(QStringList() << QString("Stop miner (") + QString::number((int)exitStatus) + QString(")"));
 }
 
 void MinerConsole::onMiningReadyReadStandardOutput()
 {
-    LogPrintf("%s: %s\n", __func__, minerProcess->readAllStandardOutput().data());
+    appendLog(QString(minerProcess->readAllStandardOutput()).split("\r\n"));
 }
 
 void MinerConsole::onMiningReadyReadStandardError()
 {
-    LogPrintf("%s: %s\n", __func__, minerProcess->readAllStandardError().data());
+    appendLog(QString(minerProcess->readAllStandardError()).split("\r\n"));
 }
