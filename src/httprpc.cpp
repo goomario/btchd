@@ -323,15 +323,21 @@ static bool InitRPCAuthentication()
 bool StartHTTPRPC()
 {
     LogPrint(BCLog::RPC, "Starting HTTP RPC server\n");
-    if (!InitRPCAuthentication())
-        return false;
 
-    RegisterHTTPHandler("/", true, HTTPReq_JSONRPC);
-    RegisterHTTPHandler("/burst", false, HTTPReq_BurstJSONRPC);
+    if (gArgs.GetBoolArg("-server", false)) {
+        if (!InitRPCAuthentication())
+            return false;
+
+        RegisterHTTPHandler("/", true, HTTPReq_JSONRPC);
+
 #ifdef ENABLE_WALLET
-    // ifdef can be removed once we switch to better endpoint support and API versioning
-    RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);
+        // ifdef can be removed once we switch to better endpoint support and API versioning
+        RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);
 #endif
+    }
+
+    RegisterHTTPHandler("/burst", false, HTTPReq_BurstJSONRPC);
+
     assert(EventBase());
     httpRPCTimerInterface = MakeUnique<HTTPRPCTimerInterface>(EventBase());
     RPCSetTimerInterface(httpRPCTimerInterface.get());

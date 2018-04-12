@@ -1269,12 +1269,9 @@ bool AppInitMain()
      * that the server is there and will be ready later).  Warmup mode will
      * be disabled when initialisation is finished.
      */
-    if (gArgs.GetBoolArg("-server", false))
-    {
-        uiInterface.InitMessage.connect(SetRPCWarmupStatus);
-        if (!AppInitServers())
-            return InitError(_("Unable to start HTTP server. See debug log for details."));
-    }
+    uiInterface.InitMessage.connect(SetRPCWarmupStatus);
+    if (!AppInitServers())
+        return InitError(_("Unable to start HTTP server. See debug log for details."));
 
     int64_t nStart;
 
