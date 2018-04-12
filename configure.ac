@@ -214,6 +214,20 @@ AC_ARG_ENABLE([debug],
     [enable_debug=$enableval],
     [enable_debug=no])
 
+# Enable miner
+AC_ARG_ENABLE([miner],
+  [AS_HELP_STRING([--disable-miner],
+  [disable miner (enabled by default)])],
+  [enable_miner=$enableval],
+  [enable_miner=yes])
+
+# Enable plotter
+AC_ARG_ENABLE([plotter],
+  [AS_HELP_STRING([--disable-plotter],
+  [disable plotter (enabled by default)])],
+  [enable_plotter=$enableval],
+  [enable_plotter=yes])
+
 # Turn warnings into errors
 AC_ARG_ENABLE([werror],
     [AS_HELP_STRING([--enable-werror],
@@ -1196,6 +1210,26 @@ if test x$build_bitcoin_utils$build_bitcoin_libs$build_bitcoind$bitcoin_enable_q
   AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-libs --with-daemon --with-gui --enable-bench or --enable-tests])
 fi
 
+dnl enable miner
+AC_MSG_CHECKING([if miner should be enabled])
+if test x$enable_miner != xno; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE_UNQUOTED([ENABLE_MINER],[1],[Define to 1 to enable miner])
+
+else
+  AC_MSG_RESULT(no)
+fi
+
+dnl enable plotter
+AC_MSG_CHECKING([if plotter should be enabled])
+if test x$enable_plotter != xno; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE_UNQUOTED([ENABLE_PLOTTER],[1],[Define to 1 to enable plotter])
+
+else
+  AC_MSG_RESULT(no)
+fi
+
 AM_CONDITIONAL([TARGET_DARWIN], [test x$TARGET_OS = xdarwin])
 AM_CONDITIONAL([BUILD_DARWIN], [test x$BUILD_OS = xdarwin])
 AM_CONDITIONAL([TARGET_WINDOWS], [test x$TARGET_OS = xwindows])
@@ -1210,9 +1244,8 @@ AM_CONDITIONAL([GLIBC_BACK_COMPAT],[test x$use_glibc_compat = xyes])
 AM_CONDITIONAL([HARDEN],[test x$use_hardening = xyes])
 AM_CONDITIONAL([ENABLE_HWCRC32],[test x$enable_hwcrc32 = xyes])
 AM_CONDITIONAL([USE_ASM],[test x$use_asm = xyes])
-
-AM_CONDITIONAL([ENABLE_MINER], [test x$TARGET_OS = xwindows])
-AM_CONDITIONAL([ENABLE_PLOTTER], [test x$TARGET_OS = xwindows])
+AM_CONDITIONAL([ENABLE_MINER],[test x$enable_miner = xyes])
+AM_CONDITIONAL([ENABLE_PLOTTER],[test x$enable_plotter = xyes])
 
 AC_DEFINE(CLIENT_VERSION_MAJOR, _CLIENT_VERSION_MAJOR, [Major version])
 AC_DEFINE(CLIENT_VERSION_MINOR, _CLIENT_VERSION_MINOR, [Minor version])
@@ -1322,6 +1355,8 @@ esac
 echo
 echo "Options used to compile and link:"
 echo "  with wallet   = $enable_wallet"
+echo "  with miner    = $enable_miner"
+echo "  with pollter  = $enable_plotter"
 echo "  with gui / qt = $bitcoin_enable_qt"
 if test x$bitcoin_enable_qt != xno; then
     echo "    qt version  = $bitcoin_qt_got_major_vers"

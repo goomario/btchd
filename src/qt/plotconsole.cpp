@@ -119,14 +119,15 @@ void PlotConsole::updatePlotInfo()
 
     // plot file size
     int64_t requireByteSize = ui->noncesSpinBox->value() * 256LL * 1024;
-    info += tr("The plot file size %1GB.").arg(1.0f * requireByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
+    info += tr("The plot file size: %1GB.").arg(1.0f * requireByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
 
     // validate space
     if (!ui->plotfolderLineEdit->text().isEmpty()) {
         int64_t availableByteSize = (int64_t)QStorageInfo(ui->plotfolderLineEdit->text()).bytesAvailable();
-        info += "\n" + tr("The destination folder free size %1GB.").arg(1.0f * availableByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
+        info += "\n" + tr("The destination folder free size: %1GB.").arg(1.0f * availableByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
         if (availableByteSize < requireByteSize) {
-            info += "\n" + tr("This folder free size not enough!") ;
+            info += "\n" + tr("This folder free size not enough!");
+            info += tr("This folder max nonce number: %1").arg((availableByteSize - 32 * 1024 * 1024) / (256LL*1024)); // reserved 32MB
         }
     }
 
