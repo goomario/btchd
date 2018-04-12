@@ -18,7 +18,7 @@ inline unsigned int MaxBlockSize(uint64_t nblock) {
     if (nblock < BCO_FORK_BLOCK_HEIGHT)
         return 4000*1000; // 4MB
 
-    return (32*1000*1000); // 32MB
+    return (8*1000*1000); // 8MB
 }
 
 inline unsigned int MaxBlockSigops(uint64_t nblock) {
@@ -29,7 +29,7 @@ inline unsigned int MaxBlockSerializedSize(uint64_t nblock) {
     if (nblock < BCO_FORK_BLOCK_HEIGHT)
         return 4000*1000;
 
-    return (32*1000*1000);
+    return (8*1000*1000);
 }
 
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
