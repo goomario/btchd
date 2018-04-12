@@ -130,9 +130,11 @@ QT_FORMS_UI = \
   qt/forms/helpmessagedialog.ui \
   qt/forms/intro.ui \
   qt/forms/modaloverlay.ui \
+  qt/forms/minerwindow.ui \
   qt/forms/openuridialog.ui \
   qt/forms/optionsdialog.ui \
   qt/forms/overviewpage.ui \
+  qt/forms/plotwindow.ui \
   qt/forms/receivecoinsdialog.ui \
   qt/forms/receiverequestdialog.ui \
   qt/forms/debugwindow.ui \
@@ -189,6 +191,14 @@ QT_MOC_CPP = \
   qt/moc_walletmodel.cpp \
   qt/moc_walletview.cpp
 
+if ENABLE_MINER
+QT_MOC_CPP += qt/moc_minerconsole.cpp
+endif
+
+if ENABLE_PLOTTER
+QT_MOC_CPP += qt/moc_plotconsole.cpp
+endif
+
 BITCOIN_MM = \
   qt/macdockiconhandler.mm \
   qt/macnotificationhandler.mm
@@ -200,6 +210,14 @@ QT_MOC = \
   qt/intro.moc \
   qt/overviewpage.moc \
   qt/rpcconsole.moc
+
+if ENABLE_MINER
+QT_MOC += qt/minerconsole.moc
+endif
+
+if ENABLE_PLOTTER
+QT_MOC += qt/plotconsole.moc
+endif
 
 QT_QRC_CPP = qt/qrc_bitcoin.cpp
 QT_QRC = qt/bitcoin.qrc
@@ -265,6 +283,14 @@ BITCOIN_QT_H = \
   qt/walletview.h \
   qt/winshutdownmonitor.h
 
+if ENABLE_MINER
+BITCOIN_QT_H += qt/minerconsole.h
+endif
+
+if ENABLE_PLOTTER
+BITCOIN_QT_H += qt/plotconsole.h
+endif
+
 RES_ICONS = \
   qt/res/icons/add.png \
   qt/res/icons/address-book.png \
@@ -322,6 +348,10 @@ RES_ICONS = \
   qt/res/icons/warning.png \
   qt/res/icons/verify.png
 
+if ENABLE_PLOTTER
+RES_ICONS += qt/res/icons/hd_plot.png
+endif
+
 BITCOIN_QT_BASE_CPP = \
   qt/bantablemodel.cpp \
   qt/bitcoinaddressvalidator.cpp \
@@ -345,6 +375,14 @@ BITCOIN_QT_BASE_CPP = \
   qt/splashscreen.cpp \
   qt/trafficgraphwidget.cpp \
   qt/utilitydialog.cpp
+
+if ENABLE_MINER
+BITCOIN_QT_BASE_CPP += qt/minerconsole.cpp
+endif
+
+if ENABLE_PLOTTER
+BITCOIN_QT_BASE_CPP += qt/plotconsole.cpp
+endif
 
 BITCOIN_QT_WINDOWS_CPP = qt/winshutdownmonitor.cpp
 

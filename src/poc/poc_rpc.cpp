@@ -43,15 +43,38 @@ static UniValue GetMiningInfo(const JSONRPCRequest& request)
 }
 
 // Burst `submitNonce`
-static UniValue SubmitNonce(const JSONRPCRequest& request)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId)
+{
+    LOCK(cs_main);
+    const CBlockIndex *pBlockIndex = chainActive.Tip();
+    if (pBlockIndex == nullptr) {
+        throw std::runtime_error("Block chain tip is empty!");
+    }
+
+    if (pBlockIndex->nHeight + 1 < Params().GetConsensus().BCOHeight) {
+        result.pushKV("result", "Not yet to the BCO fork height");
+        return;
+    }
+
+    uint64_t deadline;
+    if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline)) {
+        result.pushKV("result", "Generate failed");
+        return;
+    }
+
+    result.pushKV("result", "success");
+    result.pushKV("deadline", deadline);
+}
+
+static UniValue SubmitNonceToPool(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonce \"nonce\" \"passPhrase\"\n"
+            "submitNonce \"nonce\" \"accountId\"\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
-            "2. \"passPhrase\"      (string, required) The string of the burst account passPhrase\n"
+            "2. \"accountId\"       (string, optional) The digit string of the brust account ID\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -66,28 +89,40 @@ static UniValue SubmitNonce(const JSONRPCRequest& request)
         return result;
     }
 
-    LOCK(cs_main);
-    const CBlockIndex *pBlockIndex = chainActive.Tip();
-    if (pBlockIndex == nullptr) {
-        throw std::runtime_error("Block chain tip is empty!");
+    SubmitNonce(result, 
+        static_cast<uint64_t>(std::stoull(request.params[0].get_str())), 
+        static_cast<uint64_t>(std::stoull(request.params[1].get_str())));
+
+    return result;
+}
+
+static UniValue SubmitNonceAsSolo(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "submitNonce \"nonce\" \"passPhrase\"\n"
+            "\nSubmit mining nonce.\n"
+            "\nArguments:\n"
+            "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
+            "2. \"passPhrase\"      (string, optional) The string of the burst account passPhrase\n"
+            "\nResult:\n"
+            "{\n"
+            "  [ result ]                  (string) Submit result: 'success' or others \n"
+            "  [ deadline ]                (integer, optional) Current block generation signature\n"
+            "}\n"
+        );
     }
 
-    if (pBlockIndex->nHeight + 1 < Params().GetConsensus().BCOHeight) {
-        result.pushKV("result", "Not yet to the BCO fork height");
+    UniValue result(UniValue::VOBJ);
+    if (request.params.size() != 2) {
+        result.pushKV("result", "Missing parameters");
         return result;
     }
 
-    const uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-    const uint64_t nAccountId = poc::GetAccountIdByPassPhrase(request.params[1].get_str());
+    SubmitNonce(result,
+        static_cast<uint64_t>(std::stoull(request.params[0].get_str())),
+        poc::GetAccountIdByPassPhrase(request.params[2].get_str()));
 
-    uint64_t deadline;
-    if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline)) {
-        result.pushKV("result", "Generate failed");
-        return result;
-    }
-
-    result.pushKV("result", "success");
-    result.pushKV("deadline", deadline);
     return result;
 }
 
@@ -228,7 +263,8 @@ static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
     { "poc",              "getMiningInfo",            &GetMiningInfo,      {} },
-    { "poc",              "submitNonce",              &SubmitNonce,        {"nonce", "secretPhrase"} },
+    { "poc",              "submitNonceToPool",        &SubmitNonceToPool,  {"nonce", "accountId"} },
+    { "poc",              "submitNonceAsSolo",        &SubmitNonceAsSolo,  {"nonce", "secretPhrase"} },
     { "poc",              "getBlockchainStatus",      &GetBlockchainStatus, {} },
     { "poc",              "getBlock",                 &GetBlock,           {"block"} },
     { "poc",              "getAccountId",             &GetAccountId,       {"id"} },

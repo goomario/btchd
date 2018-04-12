@@ -182,6 +182,7 @@ bool LockDirectory(const fs::path& directory, const std::string lockfile_name, b
 void ReleaseDirectoryLocks();
 
 bool TryCreateDirectories(const fs::path& p);
+const fs::path &GetAppDir();
 fs::path GetDefaultDataDir();
 const fs::path &GetDataDir(bool fNetSpecific = true);
 void ClearDatadirCache();
