@@ -33,6 +33,7 @@ public:
     ~PlotConsole();
 
 private:
+    void notifyPlotStatusChanged(bool plotting);
     void saveSettings();
     void appendLog(const QStringList &lines);
 

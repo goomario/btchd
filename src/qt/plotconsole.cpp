@@ -61,6 +61,9 @@ PlotConsole::PlotConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     ui->memoryGBSpinBox->setValue(settings.value(memoryGBSettingsKey, "1").toInt());
     ui->plotfolderLineEdit->setText(settings.value(folderSettingsKey, "").toString());
 
+    // Update mining status
+    notifyPlotStatusChanged(false);
+
     plotProcess = std::unique_ptr<QProcess>(new QProcess());
     connect(plotProcess.get(), SIGNAL(started()), this, SLOT(onPlotStarted()));
     connect(plotProcess.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onPlotFinished(int, QProcess::ExitStatus)));
@@ -82,6 +85,21 @@ PlotConsole::~PlotConsole()
     delete ui;
 }
 
+void PlotConsole::notifyPlotStatusChanged(bool plotting)
+{
+    ui->startPlotButton->setText(plotting ? tr("Stop plot") : tr("Start plot"));
+    ui->passphraseLineEdit->setReadOnly(plotting);
+    ui->threadsSpinBox->setEnabled(!plotting);
+    ui->startNonceSpinBox->setEnabled(!plotting);
+    ui->noncesSpinBox->setEnabled(!plotting);
+    ui->memoryGBSpinBox->setEnabled(!plotting);
+    ui->setPlotPathButton->setEnabled(!plotting);
+
+    if (plotting) {
+        saveSettings();
+    }
+}
+
 void PlotConsole::saveSettings()
 {
     QSettings settings;
@@ -95,6 +113,8 @@ void PlotConsole::saveSettings()
 
 void PlotConsole::appendLog(const QStringList &lines)
 {
+    int updateProgress = -1;
+
     QScrollBar *scrollbar = ui->logPlainTextEdit->verticalScrollBar();
     bool atBottom = (scrollbar->value() == scrollbar->maximum());
 
@@ -102,14 +122,30 @@ void PlotConsole::appendLog(const QStringList &lines)
     cursor.beginEditBlock();
     cursor.movePosition(QTextCursor::End);
     for (int i = 0; i < lines.size(); i++) {
-        cursor.insertText(lines.at(i));
+        const QString &line = lines.at(i);
+        cursor.insertText(line);
         if (i + 1 < lines.size())
             cursor.insertBlock();
+
+        // progress
+        int start, end = line.lastIndexOf("%] Generating nonces from");
+        for (start = end - 1; start > 0 && line[start] != '['; start--);
+        if (start >= 0 && end > start + 1) {
+            bool ok;
+            float fProgress = line.mid(start + 1, end - start - 1).toFloat(&ok);
+            if (ok) {
+                updateProgress = static_cast<int>(fProgress);
+            }
+        }
     }
     cursor.endEditBlock();
 
     if (atBottom) {
         scrollbar->setValue(scrollbar->maximum());
+    }
+
+    if (updateProgress >= 0 && updateProgress <= 100) {
+        ui->plotProgressBar->setValue(updateProgress);
     }
 }
 
@@ -189,7 +225,7 @@ void PlotConsole::on_startPlotButton_clicked()
             << "-n" << QString::number(ui->noncesSpinBox->value())
             << "-t" << QString::number(ui->threadsSpinBox->value())
             << "-mem" << QString::number(ui->memoryGBSpinBox->value()) + "G"
-            << "-path" << ui->plotfolderLineEdit->text();
+            << "-path" << ui->plotfolderLineEdit->text() + "/";
 
         plotProcess->setWorkingDirectory(xplotterDir);
         plotProcess->start(xplotterDir + "/" + xplotterFile, arguments, QProcess::ReadOnly);
@@ -202,17 +238,21 @@ void PlotConsole::on_startPlotButton_clicked()
 
 void PlotConsole::onPlotStarted()
 {
-    saveSettings();
-
+    notifyPlotStatusChanged(true);
     ui->startPlotButton->setEnabled(true);
+    ui->plotProgressBar->setValue(0);
+
     ui->logPlainTextEdit->clear();
     appendLog(QStringList() << QString("Start plot") << "" << "");
 }
 
 void PlotConsole::onPlotFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    notifyPlotStatusChanged(false);
     ui->startPlotButton->setEnabled(true);
-    appendLog(QStringList() << QString("Stop plot (") + QString::number((int)exitStatus) + QString(")"));
+    ui->plotProgressBar->setValue(100);
+
+    appendLog(QStringList() << "" << "" << QString("Stop plot (") + QString::number((int)exitStatus) + QString(")"));
 }
 
 void PlotConsole::onPlotReadyReadStandardOutput()

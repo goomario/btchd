@@ -192,11 +192,11 @@ QT_MOC_CPP = \
   qt/moc_walletview.cpp
 
 if ENABLE_MINER
-QT_MOC_CPP += qt/moc_minerconsole.moc
+QT_MOC_CPP += qt/moc_minerconsole.cpp
 endif
 
 if ENABLE_PLOTTER
-QT_MOC_CPP += qt/moc_plotconsole.moc
+QT_MOC_CPP += qt/moc_plotconsole.cpp
 endif
 
 BITCOIN_MM = \

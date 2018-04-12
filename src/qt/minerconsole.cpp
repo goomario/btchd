@@ -277,7 +277,7 @@ void MinerConsole::onMiningFinished(int exitCode, QProcess::ExitStatus exitStatu
     notifyMiningStatusChanged(false);
     ui->switchMiningButton->setEnabled(true);
 
-    appendLog(QStringList() << QString("Stop miner (") + QString::number((int)exitStatus) + QString(")"));
+    appendLog(QStringList() << "" << "" << QString("Stop miner (") + QString::number((int)exitStatus) + QString(")"));
 }
 
 void MinerConsole::onMiningReadyReadStandardOutput()
