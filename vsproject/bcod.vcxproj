@@ -107,6 +107,7 @@
     <ClCompile Include="..\src\qt\editaddressdialog.cpp" />
     <ClCompile Include="..\src\qt\guiutil.cpp" />
     <ClCompile Include="..\src\qt\intro.cpp" />
+    <ClCompile Include="..\src\qt\minerconsole.cpp" />
     <ClCompile Include="..\src\qt\modaloverlay.cpp" />
     <ClCompile Include="..\src\qt\networkstyle.cpp" />
     <ClCompile Include="..\src\qt\notificator.cpp" />
@@ -118,6 +119,7 @@
     <ClCompile Include="..\src\qt\paymentserver.cpp" />
     <ClCompile Include="..\src\qt\peertablemodel.cpp" />
     <ClCompile Include="..\src\qt\platformstyle.cpp" />
+    <ClCompile Include="..\src\qt\plotconsole.cpp" />
     <ClCompile Include="..\src\qt\qvalidatedlineedit.cpp" />
     <ClCompile Include="..\src\qt\qvaluecombobox.cpp" />
     <ClCompile Include="..\src\qt\receivecoinsdialog.cpp" />
@@ -285,6 +287,7 @@
     <ClInclude Include="..\src\qt\intro.h" />
     <ClInclude Include="..\src\qt\macdockiconhandler.h" />
     <ClInclude Include="..\src\qt\macnotificationhandler.h" />
+    <ClInclude Include="..\src\qt\minerconsole.h" />
     <ClInclude Include="..\src\qt\modaloverlay.h" />
     <ClInclude Include="..\src\qt\networkstyle.h" />
     <ClInclude Include="..\src\qt\notificator.h" />
@@ -296,6 +299,7 @@
     <ClInclude Include="..\src\qt\paymentserver.h" />
     <ClInclude Include="..\src\qt\peertablemodel.h" />
     <ClInclude Include="..\src\qt\platformstyle.h" />
+    <ClInclude Include="..\src\qt\plotconsole.h" />
     <ClInclude Include="..\src\qt\qvalidatedlineedit.h" />
     <ClInclude Include="..\src\qt\qvaluecombobox.h" />
     <ClInclude Include="..\src\qt\receivecoinsdialog.h" />
@@ -394,10 +398,12 @@
     <None Include="..\src\qt\forms\editaddressdialog.ui" />
     <None Include="..\src\qt\forms\helpmessagedialog.ui" />
     <None Include="..\src\qt\forms\intro.ui" />
+    <None Include="..\src\qt\forms\minerwindow.ui" />
     <None Include="..\src\qt\forms\modaloverlay.ui" />
     <None Include="..\src\qt\forms\openuridialog.ui" />
     <None Include="..\src\qt\forms\optionsdialog.ui" />
     <None Include="..\src\qt\forms\overviewpage.ui" />
+    <None Include="..\src\qt\forms\plotwindow.ui" />
     <None Include="..\src\qt\forms\receivecoinsdialog.ui" />
     <None Include="..\src\qt\forms\receiverequestdialog.ui" />
     <None Include="..\src\qt\forms\sendcoinsdialog.ui" />
@@ -406,7 +412,6 @@
     <None Include="..\src\qt\forms\transactiondescdialog.ui" />
     <None Include="..\src\qt\macdockiconhandler.mm" />
     <None Include="..\src\qt\macnotificationhandler.mm" />
-    <None Include="..\src\qt\Makefile" />
     <None Include="..\src\qt\paymentrequest.proto" />
   </ItemGroup>
   <ItemGroup>

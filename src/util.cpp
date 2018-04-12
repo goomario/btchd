@@ -576,6 +576,34 @@ void PrintExceptionContinue(const std::exception* pex, const char* pszThread)
     fprintf(stderr, "\n\n************************\n%s\n", message.c_str());
 }
 
+static fs::path appPathCached;
+
+const fs::path &GetAppDir()
+{
+    if (appPathCached.empty()) {
+#ifdef WIN32
+        char path[MAX_PATH];
+        memset(path, 0, sizeof(path));
+        ::GetModuleFileNameA(NULL, path, MAX_PATH);
+        appPathCached = path;
+        appPathCached = appPathCached.parent_path();
+#else
+        char path[1024];
+        memset(path, 0, sizeof(path));
+        if (readlink("/proc/self/exe", path, sizeof(path)/sizeof(path[0])) != -1) {
+            appPathCached = path;
+            appPathCached = appPathCached.parent_path();
+        } else if (getcwd(path, sizeof(path) / sizeof(path[0])) != NULL) {
+            appPathCached = path;
+        } else {
+            appPathCached = "/opt/bitcoinore";
+        }
+#endif
+    }
+
+    return appPathCached;
+}
+
 fs::path GetDefaultDataDir()
 {
     // Windows < Vista: C:\Documents and Settings\Username\Application Data\Bitcoin

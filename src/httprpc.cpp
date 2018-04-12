@@ -225,7 +225,7 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         // Parse request
         const std::map<std::string,std::string> parameters = req->GetParameters();
         const auto requestType = parameters.find("requestType");
-        if (requestType == parameters.end()) {
+        if (requestType == parameters.cend()) {
             BurstJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
@@ -233,14 +233,41 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         const time_t startTime = ::time(nullptr);
 
         // Set the request
-        jreq.strMethod = requestType->second;
         jreq.URI = req->GetURI();
         jreq.params.setObject();
-        for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
-            if (it->first == "requestType") {
-                continue;
+        if (requestType->second == "submitNonce") {
+            // submitNonce
+            const auto nonce = parameters.find("nonce");
+            if (nonce != parameters.cend()) {
+                const auto accountId = parameters.find("accountId");
+                const auto secretPhrase = parameters.find("secretPhrase");
+                if (accountId != parameters.cend()) {
+                    // Pool
+                    jreq.strMethod = "submitNonceToPool";
+                    jreq.params.pushKV("nonce", nonce->second);
+                    jreq.params.pushKV("accountId", accountId->second);
+                } else if (secretPhrase != parameters.cend()) {
+                    // Solo
+                    jreq.strMethod = "submitNonceAsSolo";
+                    jreq.params.pushKV("nonce", nonce->second);
+                    jreq.params.pushKV("secretPhrase", secretPhrase->second);
+                } else {
+                    BurstJSONErrorReply(req, 1, "Incorrect request");
+                    return false;
+                }
             }
-            jreq.params.pushKV(it->first, it->second);
+            else {
+                BurstJSONErrorReply(req, 1, "Incorrect request");
+                return false;
+            }
+        } else {
+            jreq.strMethod = requestType->second;
+            for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
+                if (it->first == "requestType") {
+                    continue;
+                }
+                jreq.params.pushKV(it->first, it->second);
+            }
         }
 
         // Call
@@ -262,15 +289,17 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         // Send reply
         req->WriteHeader("Content-Type", "application/json; charset=UTF-8");
         req->WriteReply(HTTP_OK, result.write());
+        return true;
     } catch (const UniValue& objError) {
         BurstJSONErrorReply(req, 1, objError.getValStr());
+        LogPrint(BCLog::POC, "Call rpc fail: %s", objError.getValStr().c_str());
         return false;
     } catch (const std::exception& e) {
         req->WriteHeader("Content-Type", "text/plain; charset=UTF-8");
         req->WriteReply(HTTP_INTERNAL_SERVER_ERROR, e.what());
+        LogPrint(BCLog::POC, "Call rpc fail: %s", e.what());
         return false;
     }
-    return true;
 }
 
 static bool InitRPCAuthentication()
@@ -294,15 +323,21 @@ static bool InitRPCAuthentication()
 bool StartHTTPRPC()
 {
     LogPrint(BCLog::RPC, "Starting HTTP RPC server\n");
-    if (!InitRPCAuthentication())
-        return false;
 
-    RegisterHTTPHandler("/", true, HTTPReq_JSONRPC);
-    RegisterHTTPHandler("/burst", false, HTTPReq_BurstJSONRPC);
+    if (gArgs.GetBoolArg("-server", false)) {
+        if (!InitRPCAuthentication())
+            return false;
+
+        RegisterHTTPHandler("/", true, HTTPReq_JSONRPC);
+
 #ifdef ENABLE_WALLET
-    // ifdef can be removed once we switch to better endpoint support and API versioning
-    RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);
+        // ifdef can be removed once we switch to better endpoint support and API versioning
+        RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);
 #endif
+    }
+
+    RegisterHTTPHandler("/burst", false, HTTPReq_BurstJSONRPC);
+
     assert(EventBase());
     httpRPCTimerInterface = MakeUnique<HTTPRPCTimerInterface>(EventBase());
     RPCSetTimerInterface(httpRPCTimerInterface.get());

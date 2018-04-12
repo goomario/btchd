@@ -31,6 +31,14 @@ class WalletModel;
 class HelpMessageDialog;
 class ModalOverlay;
 
+#ifdef ENABLE_MINER
+class MinerConsole;
+#endif
+
+#ifdef ENABLE_PLOTTER
+class PlotConsole;
+#endif
+
 QT_BEGIN_NAMESPACE
 class QAction;
 class QProgressBar;
@@ -118,6 +126,16 @@ private:
     RPCConsole *rpcConsole;
     HelpMessageDialog *helpMessageDialog;
     ModalOverlay *modalOverlay;
+
+#ifdef ENABLE_MINER
+    QAction *openMinerAction;
+    MinerConsole *minerConsole;
+#endif
+
+#ifdef ENABLE_PLOTTER
+    QAction *openPlotAction;
+    PlotConsole *plotConsole;
+#endif
 
     /** Keep track of previous number of blocks, to detect progress */
     int prevBlocks;
@@ -241,6 +259,17 @@ private Q_SLOTS:
     void toggleNetworkActive();
 
     void showModalOverlay();
+
+#ifdef ENABLE_MINER
+    /** Show mining setting console */
+    void showMinerWindow();
+#endif
+
+#ifdef ENABLE_PLOTTER
+    /** Show plot console */
+    void showPlotWindow();
+#endif
+
 };
 
 class UnitDisplayStatusBarControl : public QLabel

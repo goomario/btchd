@@ -549,6 +549,12 @@
     <ClCompile Include="..\src\qt\winshutdownmonitor.cpp">
       <Filter>src\qt</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\qt\minerconsole.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\qt\plotconsole.cpp">
+      <Filter>src\qt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\addrdb.h">
@@ -1103,6 +1109,12 @@
     <ClInclude Include="..\src\qt\winshutdownmonitor.h">
       <Filter>src\qt</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\qt\minerconsole.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\qt\plotconsole.h">
+      <Filter>src\qt</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\qt\bitcoin.qrc">
@@ -1115,9 +1127,6 @@
       <Filter>src\qt</Filter>
     </None>
     <None Include="..\src\qt\macnotificationhandler.mm">
-      <Filter>src\qt</Filter>
-    </None>
-    <None Include="..\src\qt\Makefile">
       <Filter>src\qt</Filter>
     </None>
     <None Include="..\src\qt\paymentrequest.proto">
@@ -1172,6 +1181,12 @@
       <Filter>src\qt\forms</Filter>
     </None>
     <None Include="..\src\qt\forms\transactiondescdialog.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\minerwindow.ui">
+      <Filter>src\qt\forms</Filter>
+    </None>
+    <None Include="..\src\qt\forms\plotwindow.ui">
       <Filter>src\qt\forms</Filter>
     </None>
   </ItemGroup>
