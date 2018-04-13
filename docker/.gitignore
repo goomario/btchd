@@ -1,3 +1,2 @@
 !Makefile
-bcod
-bco-cli
+bco/
