@@ -414,7 +414,7 @@
         <translation>ツールバータブ</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
         <translation>支払の要求 (QRコードとビットコインのURIを作成)</translation>
     </message>
     <message>
@@ -426,7 +426,7 @@
         <translation>受信に使用したアドレスとラベルの一覧を表示</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
+        <source>Open a bitcoinore: URI or payment request</source>
         <translation>ビットコインのURIまたは支払要求を開く</translation>
     </message>
     <message>
@@ -866,7 +866,7 @@
         <translation>フォーム</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
         <translation>最近のトランザクションが表示できない可能性があります。従って、ウォレットの残高が正しくない可能性があります。この情報はビットコインネットワークに接続し、同期処理を完了させると正しくなります。詳細は以下になります。</translation>
     </message>
     <message>
@@ -1246,7 +1246,7 @@
         <translation>支払い要求エラー</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
+        <source>Cannot start bitcoinore: click-to-pay handler</source>
         <translation>ビットコインを開始できません: click-to-pay handler</translation>
     </message>
     <message>
@@ -1973,7 +1973,7 @@
         <translation>隠す</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
         <translation>最小の料金のみ支払いは、ブロック内の処理容量よりも小さい場合に限り、問題ありません。しかし、ネットワークの処理できる量よりも、ビットコイン処理のほうが需要があり、最終的にその確認処理が実行されないことに注意する必要があります。</translation>
     </message>
     <message>
@@ -2208,7 +2208,7 @@
         <translation>使用されたアドレス一覧のために、このアドレスのラベルを入力します。</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
+        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
         <translation>参考資料に保存された処理のビットコインURIは、メッセージに添付されます。メモ: このメッセージはビットコイン上で送信されません。</translation>
     </message>
     <message>

@@ -339,7 +339,7 @@
     </message>
     <message>
         <source>Send coins to a Bitcoin address</source>
-        <translation>Enviar moedas para um endereço bitcoin</translation>
+        <translation>Enviar moedas para um endereço BCO</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -414,8 +414,8 @@
         <translation>Barra de ferramentas</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Solicitações de pagamentos (gera códigos QR e bitcoin: URIs)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Solicitações de pagamentos (gera códigos QR e bitcoinore: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Mostrar a lista de endereços de recebimento usados ​​e rótulos</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>Abrir um bitcoin: URI ou cobrança</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>Abrir um bitcoinore: URI ou cobrança</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -911,7 +911,7 @@ Esta sincronização inicial é muito exigente e pode expor problemas de hardwar
         <translation>Formulário</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
         <translation>Transações recentes podem não estar visíveis ainda, portanto o seu saldo pode estar incorreto. Esta informação será corrigida assim que sua carteira for sincronizada com a rede, como detalhado abaixo.</translation>
     </message>
     <message>
@@ -1311,8 +1311,8 @@ Esta sincronização inicial é muito exigente e pode expor problemas de hardwar
         <translation>Erro no pedido de pagamento</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>Não foi possível iniciar bitcoin: manipulador click-to-pay</translation>
+        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <translation>Não foi possível iniciar bitcoinore: manipulador click-to-pay</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2094,7 +2094,7 @@ Esta sincronização inicial é muito exigente e pode expor problemas de hardwar
         <translation>Ocultar</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
         <translation>Pagando apenas a taxa mínima é bom, desde que haja pouco volume de transações. Mas esteja ciente de que isso pode acabar em uma transação nunca confirmanda uma vez que há mais demanda por transações do que a rede pode processar.</translation>
     </message>
     <message>
@@ -2357,8 +2357,8 @@ Esta sincronização inicial é muito exigente e pode expor problemas de hardwar
         <translation>Digite um rótulo para este endereço para adicioná-lo no catálogo</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
-        <translation>A mensagem que foi anexada ao bitcoin: URI na qual será gravada na transação para sua referência. Nota: Essa mensagem não será gravada publicamente na rede Bitcoin.</translation>
+        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
+        <translation>A mensagem que foi anexada ao bitcoinore: URI na qual será gravada na transação para sua referência. Nota: Essa mensagem não será gravada publicamente na rede Bitcoin.</translation>
     </message>
     <message>
         <source>Pay To:</source>

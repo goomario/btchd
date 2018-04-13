@@ -143,7 +143,7 @@
     </message>
     <message>
         <source>Send coins to a Bitcoin address</source>
-        <translation>Enviar monedas a una dirección bitcoin</translation>
+        <translation>Enviar monedas a una dirección BCO</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -206,8 +206,8 @@
         <translation>Barra de pestañas</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Pide pagos (genera codigos QR and bitcoin: URls)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Pide pagos (genera codigos QR and bitcoinore: URls)</translation>
     </message>
     <message>
         <source>Error</source>

@@ -418,8 +418,8 @@
         <translation>Barra de ferramentas dos separadores</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Solicitar pagamentos (gera códigos QR e bitcoin: URIs)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Solicitar pagamentos (gera códigos QR e bitcoinore: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>Mostrar a lista de rótulos e endereços de receção usados</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>Abrir URI bitcoin: ou pedido de pagamento</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>Abrir URI bitcoinore: ou pedido de pagamento</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -747,7 +747,7 @@
     </message>
     <message>
         <source>The entered address "%1" is not a valid Bitcoin address.</source>
-        <translation>O endereço introduzido "%1" não é um endereço bitcoin válido.</translation>
+        <translation>O endereço introduzido "%1" não é um endereço BCO válido.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -894,7 +894,7 @@
         <translation>Formulário</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
         <translation>Transações recentes podem não ser visíveis por agora, portanto o saldo da sua carteira pode estar incorreto. Esta informação será corrigida quando a sua carteira acabar de sincronizar com a rede, como está explicado em baixo.</translation>
     </message>
     <message>
@@ -1054,7 +1054,7 @@
     </message>
     <message>
         <source>Automatically open the Bitcoin client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Abrir a porta do cliente bitcoin automaticamente no seu router. Isto apenas funciona se o seu router suportar UPnP e este se encontrar ligado.</translation>
+        <translation>Abrir a porta do cliente BCO automaticamente no seu router. Isto apenas funciona se o seu router suportar UPnP e este se encontrar ligado.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1283,8 +1283,8 @@
         <translation>Erro do pedido de pagamento</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>Impossível iniciar o controlador de bitcoin: click-to-pay</translation>
+        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <translation>Impossível iniciar o controlador de bitcoinore: click-to-pay</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2042,7 +2042,7 @@
         <translation>Esconder</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
         <translation>Pode pagar somente a taxa minima desde que haja um volume de transações inferior ao espaço nos blocos. No entanto tenha em atenção que esta opção poderá acabar em uma transação nunca confirmada assim que os pedidos de transações excedam a capacidade de processamento da rede.</translation>
     </message>
     <message>
@@ -2282,8 +2282,8 @@
         <translation>Introduza um rótulo para este endereço para o adicionar à sua lista de endereços usados</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
-        <translation>Uma mensagem que estava anexada ao URI bitcoin: que será armazenada com a transação para sua referência. Nota: Esta mensagem não será enviada através da rede Bitcoin.</translation>
+        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
+        <translation>Uma mensagem que estava anexada ao URI bitcoinore: que será armazenada com a transação para sua referência. Nota: Esta mensagem não será enviada através da rede Bitcoin.</translation>
     </message>
     <message>
         <source>Pay To:</source>

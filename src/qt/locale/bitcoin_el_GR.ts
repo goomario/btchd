@@ -177,7 +177,7 @@
     </message>
     <message>
         <source>%1 will close now to finish the encryption process. Remember that encrypting your wallet cannot fully protect your bitcoins from being stolen by malware infecting your computer.</source>
-        <translation>%1 θα κλείσει τώρα για να τελειώσει η διαδικασία κρυπτογράφησης. Να θυμάστε ότι κρυπρογραφόντας το πορτοφόλι σας δεν μπορείτε να προστατεύσετε πλήρως τα bitcoin σας απο κλοπή μέσω malware που μπορεί να προσβάλει τον υπολογιστή σας.</translation>
+        <translation>%1 θα κλείσει τώρα για να τελειώσει η διαδικασία κρυπτογράφησης. Να θυμάστε ότι κρυπρογραφόντας το πορτοφόλι σας δεν μπορείτε να προστατεύσετε πλήρως τα BCO σας απο κλοπή μέσω malware που μπορεί να προσβάλει τον υπολογιστή σας.</translation>
     </message>
     <message>
         <source>Wallet encryption failed</source>
@@ -275,7 +275,7 @@
     </message>
     <message>
         <source>Send coins to a Bitcoin address</source>
-        <translation>Στείλε νομίσματα σε μια διεύθυνση bitcoin</translation>
+        <translation>Στείλε νομίσματα σε μια διεύθυνση BCO</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -350,8 +350,8 @@
         <translation>Εργαλειοθήκη καρτελών</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Αίτηση πληρωμών (δημιουργεί QR codes και διευθύνσεις bitcoin: )</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Αίτηση πληρωμών (δημιουργεί QR codes και διευθύνσεις bitcoinore: )</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -362,8 +362,8 @@
         <translation>Προβολή της λίστας των χρησιμοποιημένων διευθύνσεων και ετικετών λήψεως</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>Άνοιγμα bitcoin: URI αίτησης πληρωμής</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>Άνοιγμα bitcoinore: URI αίτησης πληρωμής</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

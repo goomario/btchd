@@ -559,7 +559,7 @@ static std::string FormatException(const std::exception* pex, const char* pszThr
     char pszModule[MAX_PATH] = "";
     GetModuleFileNameA(nullptr, pszModule, sizeof(pszModule));
 #else
-    const char* pszModule = "bitcoin";
+    const char* pszModule = "bco";
 #endif
     if (pex)
         return strprintf(
@@ -596,7 +596,7 @@ const fs::path &GetAppDir()
         } else if (getcwd(path, sizeof(path) / sizeof(path[0])) != NULL) {
             appPathCached = path;
         } else {
-            appPathCached = "/opt/bitcoinore";
+            appPathCached = "/opt/bco";
         }
 #endif
     }
@@ -606,13 +606,13 @@ const fs::path &GetAppDir()
 
 fs::path GetDefaultDataDir()
 {
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Bitcoin
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Bitcoin
-    // Mac: ~/Library/Application Support/Bitcoin
-    // Unix: ~/.bitcoin
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\bco
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\bco
+    // Mac: ~/Library/Application Support/bco
+    // Unix: ~/.bco
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "BCO";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "bco";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -622,7 +622,7 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/BCO";
+    return pathRet / "Library/Application Support/bco";
 #else
     // Unix
     return pathRet / ".bco";

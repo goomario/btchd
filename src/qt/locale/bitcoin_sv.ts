@@ -419,8 +419,8 @@ Var vänlig och försök igen.</translation>
         <translation>Verktygsfält för tabbar</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Begär betalning (genererar QR-koder och bitcoin-URI)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Begär betalning (genererar QR-koder och BCO-URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -431,8 +431,8 @@ Var vänlig och försök igen.</translation>
         <translation>Visa listan av använda mottagningsadresser och etiketter</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>Öppna en bitcoin: URI eller betalningsbegäran</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>Öppna en bitcoinore: URI eller betalningsbegäran</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -911,8 +911,8 @@ Var vänlig och försök igen.</translation>
         <translation>Formulär</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
-        <translation>Nyligen gjorda transaktioner visas inte korrekt och därför kan din plånboks saldo visas felaktigt. Denna information kommer att visas korrekt så snart din plånbok har synkroniserat klart med bitcoin nätverket enligt detaljer nedan.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
+        <translation>Nyligen gjorda transaktioner visas inte korrekt och därför kan din plånboks saldo visas felaktigt. Denna information kommer att visas korrekt så snart din plånbok har synkroniserat klart med BCO nätverket enligt detaljer nedan.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
@@ -1295,8 +1295,8 @@ Var vänlig och försök igen.</translation>
         <translation>Fel vid betalningsbegäran</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>Kan inte starta bitcoin: klicka-och-betala handhavare</translation>
+        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <translation>Kan inte starta bitcoinore: klicka-och-betala handhavare</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2058,8 +2058,8 @@ Var vänlig och försök igen.</translation>
         <translation>Göm</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
-        <translation>Att betala endast den minsta avgiften är bara bra så länge det är mindre transaktionsvolym än utrymme i blocken. Men tänk på att det kan hamna i en aldrig bekräftar transaktion när det finns mer efterfrågan på bitcoin transaktioner än nätverket kan bearbeta.</translation>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
+        <translation>Att betala endast den minsta avgiften är bara bra så länge det är mindre transaktionsvolym än utrymme i blocken. Men tänk på att det kan hamna i en aldrig bekräftar transaktion när det finns mer efterfrågan på BCO transaktioner än nätverket kan bearbeta.</translation>
     </message>
     <message>
         <source>(read the tooltip)</source>
@@ -2301,8 +2301,8 @@ Var vänlig och försök igen.</translation>
         <translation>Ange en etikett för denna adress att adderas till listan över använda adresser</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
-        <translation>Ett meddelande som bifogades bitcoin-URI, vilket lagras med transaktionen som referens. NB: Meddelandet kommer inte att sändas över Bitcoinnätverket.</translation>
+        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
+        <translation>Ett meddelande som bifogades BCO-URI, vilket lagras med transaktionen som referens. NB: Meddelandet kommer inte att sändas över Bitcoinnätverket.</translation>
     </message>
     <message>
         <source>Pay To:</source>

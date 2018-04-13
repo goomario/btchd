@@ -414,8 +414,8 @@
         <translation>Pasek zakładek</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Zażądaj płatności (generuje kod QR oraz bitcoin: URls)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Zażądaj płatności (generuje kod QR oraz bitcoinore: URls)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Pokaż liste użytych adresów do odbioru oraz ich etykiety</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>Otwórz bitcoin: URl lub żądanie płatności</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>Otwórz bitcoinore: URl lub żądanie płatności</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -688,7 +688,7 @@
         <translation>Formularz</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
         <translation>Niedawne transakcje mogą być jeszcze nie widoczne i z tego powodu saldo Twojego portfela może być nieprawidłowe. Te informacje zostaną poprawione kiedy Twój portfel skończy się synchronizować z siecią Bitcoin, w sposób opisany poniżej. </translation>
     </message>
     <message>

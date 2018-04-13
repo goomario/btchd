@@ -418,8 +418,8 @@
         <translation>分頁工具列</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>要求付款(產生 QR Code 和 bitcoin 付款協議的資源識別碼: URI)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>要求付款(產生 QR Code 和 BCO 付款協議的資源識別碼: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>顯示已使用過的收款位址和標記的清單</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>開啓 bitcoin 協議的資源識別碼(URI)或付款要求</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>開啓 BCO 協議的資源識別碼(URI)或付款要求</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -918,12 +918,12 @@
         <translation>表單</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
-        <translation>最近的交易可能還看不到，因此錢包餘額可能不正確。在錢包軟體完成跟 bitcoin 網路的同步後，這裡的資訊就會正確。詳情請見下面。</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
+        <translation>最近的交易可能還看不到，因此錢包餘額可能不正確。在錢包軟體完成跟 BCO 網路的同步後，這裡的資訊就會正確。詳情請見下面。</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
-        <translation>使用還沒顯示出來的交易所影響到的 bitcoin 可能會不被網路所接受。</translation>
+        <translation>使用還沒顯示出來的交易所影響到的 BCO 可能會不被網路所接受。</translation>
     </message>
     <message>
         <source>Number of blocks left</source>
@@ -1326,8 +1326,8 @@
         <translation>要求付款時發生錯誤</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>沒辦法啟動 bitcoin 協議的「按就付」處理器</translation>
+        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <translation>沒辦法啟動 BCO 協議的「按就付」處理器</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2113,7 +2113,7 @@
         <translation>隱藏</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
         <translation>當交易量少於區塊可容納的空間時，只付最低手續費不會有什麽問題。但是當交易量的需求成長到超過整體網路可以處理的量時，可能會造成一筆一直不會被確認的交易。</translation>
     </message>
     <message>
@@ -2372,7 +2372,7 @@
         <translation>請輸入這個位址的標記，來把它加進去已使用過位址的清單。</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
+        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
         <translation>附加在 Bitcoin 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息不會送到 Bitcoin 網路上。</translation>
     </message>
     <message>

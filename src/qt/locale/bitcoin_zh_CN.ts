@@ -406,6 +406,18 @@
         <translation>设置(&amp;S)</translation>
     </message>
     <message>
+        <source>&amp;Tools</source>
+        <translation>工具(&amp;T)</translation>
+    </message>
+    <message>
+        <source>Open &amp;Miner</source>
+        <translation>打开挖矿控制台(&amp;M)</translation>
+    </message>
+    <message>
+        <source>Open &amp;Plotter</source>
+        <translation>打开P盘工具(&amp;P)</translation>
+    </message>
+    <message>
         <source>&amp;Help</source>
         <translation>帮助(&amp;H)</translation>
     </message>
@@ -414,8 +426,8 @@
         <translation>分页工具栏</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>请求支付 (生成二维码和 bitcoin: URI)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>请求支付 (生成二维码和 bitcoinore: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +438,8 @@
         <translation>显示用过的接收地址和标签的列表</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>打开一个 bitcoin: URI 或支付请求</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>打开一个 bitcoinore: URI 或支付请求</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -894,7 +906,7 @@
         <translation>表单</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
         <translation>近期交易可能尚未显示，因此当前余额可能不准确。以上信息将在与比特币网络完全同步后更正。详情如下</translation>
     </message>
     <message>
@@ -1278,8 +1290,8 @@
         <translation>要求付款时发生错误</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>无法启动 bitcoin 协议的“
+        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <translation>无法启动 BCO 协议的“
 一键支付”处理器</translation>
     </message>
     <message>
@@ -2018,7 +2030,7 @@
         <translation>隐藏</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
         <translation>交易量小时允许只支付最小交易费。但是请注意，当交易量大到超出网络可处理时您的交易可能永远无法确认。</translation>
     </message>
     <message>
@@ -2257,8 +2269,8 @@
         <translation>请为此地址输入一个标签以将它加入用过的地址列表</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
-        <translation>bitcoin:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特币网络传输。</translation>
+        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
+        <translation>bitcoinore:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特币网络传输。</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -3815,6 +3827,164 @@
     <message>
         <source>Error</source>
         <translation>错误</translation>
+    </message>
+</context>
+<context>
+    <name>MinerConsole</name>
+    <message>
+        <source>Miner console</source>
+        <translation>挖矿控制台</translation>
+    </message>
+    <message>
+        <source>Open mining console</source>
+        <translation>打开挖矿控制台</translation>
+    </message>
+    <message>
+        <source>Passphrase</source>
+        <translation>脑密码</translation>
+    </message>
+    <message>
+        <source>Enter your passphrase</source>
+        <translation>输入你的脑密码</translation>
+    </message>
+    <message>
+        <source>TargetDeadline</source>
+        <translation>时间阈值</translation>
+    </message>
+    <message>
+        <source>"123456" Or "1y 2d 12:34:56"</source>
+        <translation>格式为 "123456" 或 "1y 2d 12:34:56"</translation>
+    </message>
+    <message>
+        <source>Plot files</source>
+        <translation>Plot 文件</translation>
+    </message>
+    <message>
+        <source>Add plot file</source>
+        <translation>添加 Plot 文件</translation>
+    </message>
+    <message>
+        <source>Remove plot file</source>
+        <translation>移除 Plot 文件</translation>
+    </message>
+    <message>
+        <source>Log</source>
+        <translation>日志</translation>
+    </message>
+    <message>
+        <source>Start mining</source>
+        <translation>开始挖矿</translation>
+    </message>
+    <message>
+        <source>Stop mining</source>
+        <translation>停止挖矿</translation>
+    </message>
+    <message>
+        <source>Add Plot File</source>
+        <translation>添加 Plot 文件</translation>
+    </message>
+    <message>
+        <source>Plot File(*)</source>
+        <translation>Plot 文件(*)</translation>
+    </message>
+    <message>
+        <source>Please input your passphare!</source>
+        <translation>请输入脑密码！</translation>
+    </message>
+    <message>
+        <source>Please add your plot files!</source>
+        <translation>请添加 Plot 文件！</translation>
+    </message>
+    <message>
+        <source>Error: Cannot read miner default configuration file!</source>
+        <translation>错误：无法加载默认的挖矿配置文件！</translation>
+    </message>
+    <message>
+        <source>Error: Cannot create miner configuration file!</source>
+        <translation>错误：无法创建挖矿配置文件！</translation>
+    </message>
+</context>
+<context>
+    <name>PlotConsole</name>
+    <message>
+        <source>Plot console</source>
+        <translation>P盘工具</translation>
+    </message>
+    <message>
+        <source>Open plot generator console</source>
+        <translation>打开P盘工具</translation>
+    </message>
+    <message>
+        <source>Passphrase</source>
+        <translation>脑密码</translation>
+    </message>
+    <message>
+        <source>Enter your passphrase</source>
+        <translation>输入你的脑密码</translation>
+    </message>
+    <message>
+        <source>Start nonce</source>
+        <translation>快起始偏移</translation>
+    </message>
+    <message>
+        <source>Nonces</source>
+        <translation>快数量</translation>
+    </message>
+    <message>
+        <source>Thread number</source>
+        <translation>线程数</translation>
+    </message>
+    <message>
+        <source>Memory(GB)</source>
+        <translation>内存(GB)</translation>
+    </message>
+    <message>
+        <source>Plot folder</source>
+        <translation>目标文件夹</translation>
+    </message>
+    <message>
+        <source>Select your plot file folder</source>
+        <translation>选择 Plot 文件输出目录</translation>
+    </message>
+    <message>
+        <source>Start plot</source>
+        <translation>开始P盘</translation>
+    </message>
+    <message>
+        <source>Stop plot</source>
+        <translation>终止P盘</translation>
+    </message>
+    <message>
+        <source>Log</source>
+        <translation>日志</translation>
+    </message>
+    <message>
+        <source>The plot file size: %1GB.</source>
+        <translation>Plot 文件容量：%1GB.</translation>
+    </message>
+    <message>
+        <source>The destination folder free size: %1GB.</source>
+        <translation>目标文件夹可用容量：%1GB.</translation>
+    </message>
+    <message>
+        <source>This folder free size not enough!</source>
+        <translation>选择的文件夹没有住够的可用容量!</translation>
+    </message>
+    <message>
+        <source>This folder max nonce number: %1</source>
+        <translation>目标文件夹最多可存储的块数量：%1</translation>
+    </message>
+    <message>
+        <source>Select plot folder</source>
+        <translation>选择 Plot 文件输出目录</translation>
+    </message>
+    <message>
+        <source>Please input your passphare!</source>
+        <translation>请输入脑密码！</translation>
+    </message>
+    <message>
+        <source>Please input plot folder!</source>
+        <translation>请选择 Plot 文件的存储目录！</translation>
     </message>
 </context>
 </TS>

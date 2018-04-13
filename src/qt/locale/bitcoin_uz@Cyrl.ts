@@ -222,8 +222,8 @@
         <translation>Ички ойналар асбоблар панели</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Тўловлар (QR кодлари ва bitcoin ёрдамида яратишлар: URI’лар) сўраш</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Тўловлар (QR кодлари ва BCO ёрдамида яратишлар: URI’лар) сўраш</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -234,7 +234,7 @@
         <translation>Фойдаланилган қабул қилинган манзиллар ва ёрлиқлар рўйхатини кўрсатиш</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
+        <source>Open a bitcoinore: URI or payment request</source>
         <translation>Bitcoin’ни очиш: URI ёки тўлов сўрови</translation>
     </message>
     <message>

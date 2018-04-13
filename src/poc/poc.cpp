@@ -148,7 +148,7 @@ CThreadInterrupt interruptCheckDeadline;
 std::thread threadCheckDeadline;
 void CheckDeadlineThread()
 {
-    RenameThread("bitcoin-poc");
+    RenameThread("bitcoin-checkdeadline");
     LogPrintf("Entering check deadline loop\n");
     while (!interruptCheckDeadline) {
         if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(1000)))

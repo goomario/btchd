@@ -414,8 +414,8 @@
         <translation>Tabs taakbalk</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>Betalingen aanvragen (genereert QR codes en bitcoin: URI's)</translation>
+        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <translation>Betalingen aanvragen (genereert QR codes en bitcoinore: URI's)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Toon de lijst van gebruikte ontvangst adressen en labels</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>Open een bitcoin: URI of betaalverzoek</translation>
+        <source>Open a bitcoinore: URI or payment request</source>
+        <translation>Open een bitcoinore: URI of betaalverzoek</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
