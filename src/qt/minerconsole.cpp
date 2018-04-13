@@ -188,11 +188,11 @@ void MinerConsole::on_switchMiningButton_clicked()
     if (minerProcess->state() == QProcess::NotRunning) {
         // Start mining
         if (ui->passphraseLineEdit->text().isEmpty()) {
-            QMessageBox::information(this, "Miner console", QString("Please input your passphare!"));
+            QMessageBox::information(this, tr("Miner console"), QString(tr("Please input your passphare!")));
             return;
         }
         if (ui->plotfileList->count() == 0) {
-            QMessageBox::information(this, "Miner console", QString("Please add your plot files!"));
+            QMessageBox::information(this, tr("Miner console"), QString(tr("Please add your plot files!")));
             return;
         }
 
@@ -207,7 +207,7 @@ void MinerConsole::on_switchMiningButton_clicked()
             LogPrintf("%s: Template file %s\n", __func__, tplfilepath.toStdString().c_str());
             QFile tplfile(tplfilepath);
             if (!tplfile.open(QFile::ReadOnly | QFile::Text)) {
-                QMessageBox::critical(this, "Miner console", QString("Error: Cannot read miner default configuration file!"));
+                QMessageBox::critical(this, tr("Miner console"), QString(tr("Error: Cannot read miner default configuration file!")));
                 return;
             }
             configContent = QTextStream(&tplfile).readAll();
@@ -230,7 +230,7 @@ void MinerConsole::on_switchMiningButton_clicked()
             minerConfigFile = std::unique_ptr<QTemporaryFile>(new QTemporaryFile());
             if (!minerConfigFile || !minerConfigFile->open()) {
                 minerConfigFile.reset();
-                QMessageBox::critical(this, "Error", QString("Error: Cannot create miner configuration file!"));
+                QMessageBox::critical(this, tr("Error"), QString(tr("Error: Cannot create miner configuration file!")));
                 return;
             }
             QTextStream(minerConfigFile.get()) << configContent;

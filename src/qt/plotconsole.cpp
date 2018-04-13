@@ -202,11 +202,11 @@ void PlotConsole::on_startPlotButton_clicked()
     if (plotProcess->state() == QProcess::NotRunning) {
         // Start plot
         if (ui->passphraseLineEdit->text().isEmpty()) {
-            QMessageBox::information(this, "Plot console", QString("Please input your passphare!"));
+            QMessageBox::information(this, tr("Plot console"), QString(tr("Please input your passphare!")));
             return;
         }
         if (ui->plotfolderLineEdit->text().isEmpty()) {
-            QMessageBox::information(this, "Plot console", QString("Please input plot folder!"));
+            QMessageBox::information(this, tr("Plot console"), QString(tr("Please input plot folder!")));
             return;
         }
 

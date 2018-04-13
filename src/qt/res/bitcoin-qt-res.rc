@@ -20,7 +20,7 @@ BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
             VALUE "CompanyName",        "Bitcoinore"
-            VALUE "FileDescription",    PACKAGE_NAME " (GUI node for BCO)"
+            VALUE "FileDescription",    PACKAGE_NAME " (GUI node for BitcoinOre)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
             VALUE "InternalName",       "bco-qt"
             VALUE "LegalCopyright",     COPYRIGHT_STR

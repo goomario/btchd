@@ -148,7 +148,7 @@ CThreadInterrupt interruptCheckDeadline;
 std::thread threadCheckDeadline;
 void CheckDeadlineThread()
 {
-    RenameThread("bitcoin-poc");
+    RenameThread("bitcoin-checkdeadline");
     LogPrintf("Entering check deadline loop\n");
     while (!interruptCheckDeadline) {
         if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(1000)))
@@ -296,7 +296,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
 
-        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (240 * 4); // 4m * 60s * 4blocks
+        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (300 * 4); // 5m * 60s * 4blocks
         if (newBaseTarget > MAX_BASE_TARGET) {
             newBaseTarget = MAX_BASE_TARGET;
         }
@@ -327,7 +327,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         assert(pLastindex != nullptr);
         
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = 24 * 4 * 60;
+        int64_t targetTimespan = 5 * 60 * 24; // 5m * 60s * 24blocks
 
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;

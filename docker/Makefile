@@ -3,7 +3,8 @@ build:
 
 run:
 	docker run -it -d --name erich.bco \
-	    -p 8333:8333 \
+	    -p 8833:8833 \
+	    -p 127.0.0.1:8832:8832 \
 	    -v /bco/data:/bco/data \
 	    --env EXTERNALIP=139.196.88.249 \
 	    --env MAXTIPAGE=8640000 \
