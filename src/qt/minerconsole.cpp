@@ -221,8 +221,8 @@ void MinerConsole::on_switchMiningButton_clicked()
             configContent = configContent
                 .replace("${passphrase}", ui->passphraseLineEdit->text())
                 .replace("${targetDeadline}", ui->targetDeadlineLineEdit->text())
-                .replace("${miningInfo}", QString("http://localhost:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
-                .replace("${submission}", QString("http://localhost:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
+                .replace("${miningInfo}", QString("http://127.0.0.1:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
+                .replace("${submission}", QString("http://127.0.0.1:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
                 .replace("${plots}", QString("\"") + plotfiles.join("\",\"") + QString("\""));
 
             LogPrint(BCLog::POC, "%s: configuration content \n%s\n", __func__, configContent.toStdString().c_str());
