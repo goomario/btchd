@@ -564,7 +564,6 @@ std::map<std::string, std::string> HTTPRequest::GetParameters()
         if (evhttp_parse_query_str(decode_query, &kv) == 0) {
             for (evkeyval *val = kv.tqh_first; val != nullptr; val = val->next.tqe_next) {
                 parameters.insert(std::make_pair(val->key, val->value));
-                LogPrintf("%s:%d: %s => %s\n", __func__, __LINE__, val->key, val->value);
             }
 
         }
