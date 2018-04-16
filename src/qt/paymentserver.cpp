@@ -52,9 +52,9 @@ const QString BITCOIN_IPC_PREFIX("bco:");
 const char* BIP70_MESSAGE_PAYMENTACK = "PaymentACK";
 const char* BIP70_MESSAGE_PAYMENTREQUEST = "PaymentRequest";
 // BIP71 payment protocol media types
-const char* BIP71_MIMETYPE_PAYMENT = "application/bitcoin-payment";
-const char* BIP71_MIMETYPE_PAYMENTACK = "application/bitcoin-paymentack";
-const char* BIP71_MIMETYPE_PAYMENTREQUEST = "application/bitcoin-paymentrequest";
+const char* BIP71_MIMETYPE_PAYMENT = "application/bco-payment";
+const char* BIP71_MIMETYPE_PAYMENTACK = "application/bco-paymentack";
+const char* BIP71_MIMETYPE_PAYMENTREQUEST = "application/bco-paymentrequest";
 
 struct X509StoreDeleter {
       void operator()(X509_STORE* b) {
@@ -447,7 +447,7 @@ void PaymentServer::handleURIOrFile(const QString& s)
             }
             else
                 Q_EMIT message(tr("URI handling"),
-                    tr("URI cannot be parsed! This can be caused by an invalid bitcoinore address or malformed URI parameters."),
+                    tr("URI cannot be parsed! This can be caused by an invalid BCO address or malformed URI parameters."),
                     CClientUIInterface::ICON_WARNING);
 
             return;

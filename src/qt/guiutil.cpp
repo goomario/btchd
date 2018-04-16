@@ -146,7 +146,7 @@ void setupAmountWidget(QLineEdit *widget, QWidget *parent)
 bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 {
     // return if URI is not valid or is no bco: URI
-    if(!uri.isValid() || uri.scheme() != QString("bitcoinore"))
+    if(!uri.isValid() || uri.scheme() != QString("bco"))
         return false;
 
     SendCoinsRecipient rv;
