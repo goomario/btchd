@@ -418,7 +418,7 @@
         <translation>タブツールバー</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
         <translation>支払いを要求する (QRコードとbitcoin:ではじまるURIを生成する)</translation>
     </message>
     <message>
@@ -430,8 +430,8 @@
         <translation>支払いを受け取るアドレスとラベルのリストを表示する</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>bitcoinore: URIまたは支払いリクエストを開く</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>bco: URIまたは支払いリクエストを開く</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1326,7 +1326,7 @@
         <translation>支払いのリクエストのエラーです</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco: click-to-pay handler</source>
         <translation>BCO を起動できません: click-to-pay handler</translation>
     </message>
     <message>
@@ -2376,8 +2376,8 @@
         <translation>このアドレスに対するラベルを入力することで、使用済みアドレスの一覧に追加することができます</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>bitcoinore: URIに添付されていたメッセージです。これは参照用としてトランザクションとともに保存されます。注意：このメッセージはBitcoinネットワークを通して送信されるわけではありません。</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>bco: URIに添付されていたメッセージです。これは参照用としてトランザクションとともに保存されます。注意：このメッセージはBitcoinネットワークを通して送信されるわけではありません。</translation>
     </message>
     <message>
         <source>Pay To:</source>

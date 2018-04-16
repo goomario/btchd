@@ -418,7 +418,7 @@
         <translation>Sekme araç çubuğu</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
         <translation>Ödeme talep et (QR kodu ve bitcoin URI'si oluşturur)</translation>
     </message>
     <message>
@@ -430,8 +430,8 @@
         <translation>Kullanılmış alım adresleri ve etiketlerin listesini göster</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Bir bitcoinore: bağlantısı ya da ödeme talebi aç</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Bir bco: bağlantısı ya da ödeme talebi aç</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1310,7 +1310,7 @@
         <translation>Ödeme talebi hatası</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco: click-to-pay handler</source>
         <translation>BCO başlatılamadı: tıkla-ve-öde yöneticisi</translation>
     </message>
     <message>
@@ -2332,8 +2332,8 @@
         <translation>Kullanılmış adres listesine eklemek için bu adrese bir etiket girin</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Referans için bitcoinore: URI'siyle iliştirilmiş işlemle birlikte depolanacak bir ileti. Not: Bu mesaj BCO ağı üzerinden gönderilmeyecektir.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Referans için bco: URI'siyle iliştirilmiş işlemle birlikte depolanacak bir ileti. Not: Bu mesaj BCO ağı üzerinden gönderilmeyecektir.</translation>
     </message>
     <message>
         <source>Pay To:</source>

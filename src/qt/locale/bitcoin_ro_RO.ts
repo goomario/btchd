@@ -418,7 +418,7 @@
         <translation>Bara de unelte</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
         <translation>Cereţi plăţi (generează coduri QR şi bitcoin-uri: URls)</translation>
     </message>
     <message>
@@ -430,8 +430,8 @@
         <translation>Arată lista de adrese pentru primire şi etichetele</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Deschidere bitcoinore: o adresa URI sau o cerere de plată</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Deschidere bco: o adresa URI sau o cerere de plată</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1322,7 +1322,7 @@
         <translation>Eroare la cererea de plată</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco: click-to-pay handler</source>
         <translation>BCO nu poate porni: click-to-pay handler</translation>
     </message>
     <message>
@@ -2372,8 +2372,8 @@
         <translation>Introduceţi eticheta pentru ca această adresa să fie introdusă în lista de adrese folosite</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>un mesaj a fost ataşat la bitcoinore: URI care va fi stocat cu tranzacţia pentru referinţa dvs. Notă: Acest mesaj nu va fi trimis către reţeaua bitcoin.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>un mesaj a fost ataşat la bco: URI care va fi stocat cu tranzacţia pentru referinţa dvs. Notă: Acest mesaj nu va fi trimis către reţeaua bitcoin.</translation>
     </message>
     <message>
         <source>Pay To:</source>

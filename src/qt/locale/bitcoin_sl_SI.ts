@@ -338,8 +338,8 @@
         <translation>Orodna vrstica zavihkov</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Zahtevajte plačilo (ustvarite zahtevek s kodo QR in URI tipa bitcoinore:)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Zahtevajte plačilo (ustvarite zahtevek s kodo QR in URI tipa bco:)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -350,8 +350,8 @@
         <translation>Preglejte in uredite seznam naslovov, na katere ste kdaj prejeli plačila</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Izvedite plačilo iz zahtevka v datoteki ali iz URI tipa bitcoinore:</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Izvedite plačilo iz zahtevka v datoteki ali iz URI tipa bco:</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1508,8 +1508,8 @@
         <translation>Če vnesete oznako za zgornji naslov, se bo skupaj z naslovom shranila v imenk že uporabljenih naslovov</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Sporočilo, ki ste ga pripeli na URI tipa bitcoinore:. Shranjeno bo skupaj s podatki o transakciji. Opomba: Sporočilo ne bo poslano preko omrežja BCO.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Sporočilo, ki ste ga pripeli na URI tipa bco:. Shranjeno bo skupaj s podatki o transakciji. Opomba: Sporočilo ne bo poslano preko omrežja BCO.</translation>
     </message>
     <message>
         <source>Pay To:</source>

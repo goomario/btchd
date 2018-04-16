@@ -366,11 +366,11 @@
         <translation>Vahelehe tööriistariba</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco:/source>
         <translation>Loo maksepäring (genereerib QR koodid ja bitcoini: URId)</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
+        <source>Open a bco: payment request</source>
         <translation>Ava bitcoini: URI või maksepäring</translation>
     </message>
     <message>

@@ -47,7 +47,7 @@
 #endif
 
 const int BITCOIN_IPC_CONNECT_TIMEOUT = 1000; // milliseconds
-const QString BITCOIN_IPC_PREFIX("bitcoinore:");
+const QString BITCOIN_IPC_PREFIX("bco:");
 // BIP70 payment protocol messages
 const char* BIP70_MESSAGE_PAYMENTACK = "PaymentACK";
 const char* BIP70_MESSAGE_PAYMENTREQUEST = "PaymentRequest";
@@ -207,11 +207,11 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
         if (arg.startsWith("-"))
             continue;
 
-        // If the bitcoinore: URI contains a payment request, we are not able to detect the
+        // If the bco: URI contains a payment request, we are not able to detect the
         // network as that would require fetching and parsing the payment request.
         // That means clicking such an URI which contains a testnet payment request
         // will start a mainnet instance and throw a "wrong network" error.
-        if (arg.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // bitcoinore: URI
+        if (arg.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // bco: URI
         {
             savedPaymentRequests.append(arg);
 
@@ -307,7 +307,7 @@ PaymentServer::PaymentServer(QObject* parent, bool startLocalServer) :
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     // Install global event filter to catch QFileOpenEvents
-    // on Mac: sent when you click bitcoinore: links
+    // on Mac: sent when you click bco: links
     // other OSes: helpful when dealing with payment request files
     if (parent)
         parent->installEventFilter(this);
@@ -324,7 +324,7 @@ PaymentServer::PaymentServer(QObject* parent, bool startLocalServer) :
         if (!uriServer->listen(name)) {
             // constructor is called early in init, so don't use "Q_EMIT message()" here
             QMessageBox::critical(0, tr("Payment request error"),
-                tr("Cannot start bitcoinore: click-to-pay handler"));
+                tr("Cannot start bco: click-to-pay handler"));
         }
         else {
             connect(uriServer, SIGNAL(newConnection()), this, SLOT(handleURIConnection()));
@@ -339,7 +339,7 @@ PaymentServer::~PaymentServer()
 }
 
 //
-// OSX-specific way of handling bitcoinore: URIs and PaymentRequest mime types.
+// OSX-specific way of handling bco: URIs and PaymentRequest mime types.
 // Also used by paymentservertests.cpp and when opening a payment request file
 // via "Open URI..." menu entry.
 //
@@ -364,7 +364,7 @@ void PaymentServer::initNetManager()
         return;
     delete netManager;
 
-    // netManager is used to fetch paymentrequests given in bitcoinore: URIs
+    // netManager is used to fetch paymentrequests given in bco: URIs
     netManager = new QNetworkAccessManager(this);
 
     QNetworkProxy proxy;
@@ -404,7 +404,7 @@ void PaymentServer::handleURIOrFile(const QString& s)
         return;
     }
 
-    if (s.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // bitcoinore: URI
+    if (s.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // bco: URI
     {
 #if QT_VERSION < 0x050000
         QUrl uri(s);

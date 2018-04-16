@@ -418,8 +418,8 @@
         <translation>Välilehtipalkki</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Pyydä maksuja (Luo QR koodit ja bitcoinore: URIt)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Pyydä maksuja (Luo QR koodit ja bco: URIt)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>Näytä vastaanottamiseen käytettyjen osoitteiden ja nimien lista</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Avaa bitcoinore: URI tai maksupyyntö</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Avaa bco: URI tai maksupyyntö</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1286,7 +1286,7 @@
         <translation>Maksupyyntövirhe</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco: click-to-pay handler</source>
         <translation>Bitcoinia ei voi käynnistää: klikkaa-maksaaksesi -käsittelijän virhe</translation>
     </message>
     <message>
@@ -2268,8 +2268,8 @@
         <translation>Aseta nimi tälle osoitteelle lisätäksesi sen käytettyjen osoitteiden listalle.</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Viesti joka liitettiin bitcoinore: URI:iin tallennetaan rahansiirtoon viitteeksi. Tätä viestiä ei lähetetä BCO-verkkoon.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Viesti joka liitettiin bco: URI:iin tallennetaan rahansiirtoon viitteeksi. Tätä viestiä ei lähetetä BCO-verkkoon.</translation>
     </message>
     <message>
         <source>Pay To:</source>

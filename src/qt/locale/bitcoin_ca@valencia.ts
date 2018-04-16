@@ -374,8 +374,8 @@
         <translation>Barra d'eines de les pestanyes</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Sol·licita pagaments (genera codis QR i bitcoinore: URI)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Sol·licita pagaments (genera codis QR i bco: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -386,8 +386,8 @@
         <translation>Mostra la llista d'adreces de recepció i etiquetes utilitzades</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Obri una bitcoinore: sol·licitud d'URI o pagament</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Obri una bco: sol·licitud d'URI o pagament</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1066,8 +1066,8 @@
         <translation>Error en la sol·licitud de pagament</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>No es pot iniciar bitcoinore: gestor clica-per-pagar</translation>
+        <source>Cannot start bco: click-to-pay handler</source>
+        <translation>No es pot iniciar bco: gestor clica-per-pagar</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1876,8 +1876,8 @@
         <translation>Introduïu una etiqueta per a esta adreça per afegir-la a la llista d'adreces utilitzades</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Un missatge que s'ha adjuntat al bitcoinore: URI que s'emmagatzemarà amb la transacció per a la vostra referència. Nota: el missatge no s'enviarà a través de la xarxa BCO.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Un missatge que s'ha adjuntat al bco: URI que s'emmagatzemarà amb la transacció per a la vostra referència. Nota: el missatge no s'enviarà a través de la xarxa BCO.</translation>
     </message>
     <message>
         <source>Pay To:</source>

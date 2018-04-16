@@ -414,7 +414,7 @@
         <translation>Hjelpelinje for fliker</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
         <translation>Be om betalinger (genererer QR-koder og BCO-URIer)</translation>
     </message>
     <message>
@@ -426,8 +426,8 @@
         <translation>Vis lista over brukte mottakeradresser og merkelapper</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Åpne en bitcoinore: URI eller betalingsforespørsel</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Åpne en bco: URI eller betalingsforespørsel</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

@@ -394,7 +394,7 @@
         <translation>نوار ابزار</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
         <translation>درخواست پرداخت (ساخت کد QR و بیت‌کوین: URIs)</translation>
     </message>
     <message>
@@ -406,7 +406,7 @@
         <translation>نمایش لیست آدرس‌ها و لیبل‌های دریافتی استفاده شده</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
+        <source>Open a bco: URI or payment request</source>
         <translation>بازکردن بیت‌کوین: آدرس یا درخواست پرداخت</translation>
     </message>
     <message numerus="yes">

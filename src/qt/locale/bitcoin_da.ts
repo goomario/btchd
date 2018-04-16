@@ -418,8 +418,8 @@
         <translation>Faneværktøjslinje</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Anmod om betalinger (genererer QR-koder og “bitcoinore:”-URI'er)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Anmod om betalinger (genererer QR-koder og “bco:”-URI'er)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>Vis listen over brugte modtagelsesadresser og -mærkater</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Åbn en “bitcoinore:”-URI eller betalingsanmodning</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Åbn en “bco:”-URI eller betalingsanmodning</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1326,8 +1326,8 @@
         <translation>Fejl i betalingsanmodning</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>Kan ikke starte bitcoinore: click-to-pay-håndtering</translation>
+        <source>Cannot start bco: click-to-pay handler</source>
+        <translation>Kan ikke starte bco: click-to-pay-håndtering</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2376,7 +2376,7 @@
         <translation>Indtast et mærkat for denne adresse for at føje den til listen over brugte adresser</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
         <translation>En besked, som blev føjet til “bitcon:”-URI'en, som vil gemmes med transaktionen til din reference. Bemærk: Denne besked vil ikke blive sendt over BCO-netværket.</translation>
     </message>
     <message>

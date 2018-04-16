@@ -82,8 +82,8 @@
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
-const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
-const char * const BITCOIN_PID_FILENAME = "bitcoind.pid";
+const char * const BITCOIN_CONF_FILENAME = "bco.conf";
+const char * const BITCOIN_PID_FILENAME = "bcod.pid";
 const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
 
 ArgsManager gArgs;
@@ -687,7 +687,7 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
 {
     fs::ifstream streamConfig(GetConfigFile(confPath));
     if (!streamConfig.good())
-        return; // No bitcoin.conf file is OK
+        return; // No bco.conf file is OK
 
     {
         LOCK(cs_args);
@@ -696,7 +696,7 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
 
         for (boost::program_options::detail::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
         {
-            // Don't overwrite existing settings so command line settings override bitcoin.conf
+            // Don't overwrite existing settings so command line settings override bco.conf
             std::string strKey = std::string("-") + it->string_key;
             std::string strValue = it->value[0];
             InterpretNegativeSetting(strKey, strValue);

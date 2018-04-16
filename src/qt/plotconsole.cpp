@@ -163,7 +163,7 @@ void PlotConsole::updatePlotInfo()
         info += "\n" + tr("The destination folder free size: %1GB.").arg(1.0f * availableByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
         if (availableByteSize < requireByteSize) {
             info += "\n" + tr("This folder free size not enough!");
-            info += tr("This folder max nonce number: %1").arg((availableByteSize - 32 * 1024 * 1024) / (256LL*1024)); // reserved 32MB
+            info += "\n" + tr("This folder max nonce number: %1").arg((availableByteSize - 32 * 1024 * 1024) / (256LL*1024)); // reserved 32MB
         }
     }
 

@@ -414,8 +414,8 @@
         <translation>Tólaborð flipa</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Óska eftir greiðslum (býr til QR kóða og bitcoinore: URI)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Óska eftir greiðslum (býr til QR kóða og bco: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Sýna færslugildi sem notuð hafa verið til að taka við mynt og merkingar þeirra</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Opna bitcoinore: URI eða greiðslubeiðni</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Opna bco: URI eða greiðslubeiðni</translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>

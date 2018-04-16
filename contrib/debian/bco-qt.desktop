@@ -1,14 +1,14 @@
 [Desktop Entry]
 Version=1.0
-Name=BitcoinOre Core
+Name=BCO Core
 Comment=Connect to the BCO P2P Network
 Comment[de]=Verbinde mit dem BCO peer-to-peer Netzwerk
 Comment[fr]=BCO, monnaie virtuelle cryptographique pair à pair
 Comment[tr]=BCO, eşten eşe kriptografik sanal para birimi
-Exec=bitcoin-qt %u
+Exec=bco-qt %u
 Terminal=false
 Type=Application
 Icon=bitcoin128
-MimeType=x-scheme-handler/bitcoin;
+MimeType=x-scheme-handler/bco;
 Categories=Office;Finance;
 StartupWMClass=BCO-qt

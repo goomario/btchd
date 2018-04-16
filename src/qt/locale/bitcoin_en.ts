@@ -530,7 +530,7 @@
     </message>
     <message>
         <location line="-158"/>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco:>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -545,7 +545,7 @@
     </message>
     <message>
         <location line="+3"/>
-        <source>Open a bitcoinore: URI or payment request</source>
+        <source>Open a bco:t request</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1682,7 +1682,7 @@
     </message>
     <message>
         <location line="-398"/>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco:handler</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3068,7 +3068,7 @@
     </message>
     <message>
         <location line="+54"/>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <source>A message that was attached to the bco:l be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

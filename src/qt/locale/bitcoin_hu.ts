@@ -411,8 +411,8 @@ Kérem a kulcsmondatban használjon &lt;b&gt; tíz vagy több véletlenszerű ka
         <translation>Fül eszköztár</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Fizetési kérelem (QR-kódot és "bitcoinore:" URI azonosítót hoz létre)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Fizetési kérelem (QR-kódot és "bco:" URI azonosítót hoz létre)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -423,8 +423,8 @@ Kérem a kulcsmondatban használjon &lt;b&gt; tíz vagy több véletlenszerű ka
         <translation>A használt fogadó címek és címkék megtekintése</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>"bitcoinore:" URI azonosító vagy fizetési kérelem megnyitása</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>"bco:" URI azonosító vagy fizetési kérelem megnyitása</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1287,7 +1287,7 @@ Kérem a kulcsmondatban használjon &lt;b&gt; tíz vagy több véletlenszerű ka
         <translation>Hiba történt a fizetési kérelem során</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco: click-to-pay handler</source>
         <translation>A BCO nem tud elindulni: click-to-pay kezelő</translation>
     </message>
     <message>

@@ -378,8 +378,8 @@
         <translation>Traka kartica</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Zatraži uplatu (stvara QR kod i bitcoinore: URI adresu)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Zatraži uplatu (stvara QR kod i bco: URI adresu)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -390,8 +390,8 @@
         <translation>Prikaži popis korištenih adresa i oznaka za primanje novca</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Otvori bitcoinore: URI adresu ili zahtjev za uplatu</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Otvori bco: URI adresu ili zahtjev za uplatu</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

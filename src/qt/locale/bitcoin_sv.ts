@@ -419,7 +419,7 @@ Var vänlig och försök igen.</translation>
         <translation>Verktygsfält för tabbar</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
         <translation>Begär betalning (genererar QR-koder och BCO-URI)</translation>
     </message>
     <message>
@@ -431,8 +431,8 @@ Var vänlig och försök igen.</translation>
         <translation>Visa listan av använda mottagningsadresser och etiketter</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Öppna en bitcoinore: URI eller betalningsbegäran</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Öppna en bco: URI eller betalningsbegäran</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1295,8 +1295,8 @@ Var vänlig och försök igen.</translation>
         <translation>Fel vid betalningsbegäran</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>Kan inte starta bitcoinore: klicka-och-betala handhavare</translation>
+        <source>Cannot start bco: click-to-pay handler</source>
+        <translation>Kan inte starta bco: klicka-och-betala handhavare</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2301,7 +2301,7 @@ Var vänlig och försök igen.</translation>
         <translation>Ange en etikett för denna adress att adderas till listan över använda adresser</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
         <translation>Ett meddelande som bifogades BCO-URI, vilket lagras med transaktionen som referens. NB: Meddelandet kommer inte att sändas över Bitcoinnätverket.</translation>
     </message>
     <message>

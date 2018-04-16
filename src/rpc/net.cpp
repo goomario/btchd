@@ -207,8 +207,8 @@ UniValue addnode(const JSONRPCRequest& request)
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "2. \"command\"  (string, required) 'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once\n"
             "\nExamples:\n"
-            + HelpExampleCli("addnode", "\"192.168.0.6:8333\" \"onetry\"")
-            + HelpExampleRpc("addnode", "\"192.168.0.6:8333\", \"onetry\"")
+            + HelpExampleCli("addnode", "\"192.168.0.6:8833\" \"onetry\"")
+            + HelpExampleRpc("addnode", "\"192.168.0.6:8833\", \"onetry\"")
         );
 
     if(!g_connman)
@@ -249,9 +249,9 @@ UniValue disconnectnode(const JSONRPCRequest& request)
             "1. \"address\"     (string, optional) The IP address/port of the node\n"
             "2. \"nodeid\"      (number, optional) The node ID (see getpeerinfo for node IDs)\n"
             "\nExamples:\n"
-            + HelpExampleCli("disconnectnode", "\"192.168.0.6:8333\"")
+            + HelpExampleCli("disconnectnode", "\"192.168.0.6:8833\"")
             + HelpExampleCli("disconnectnode", "\"\" 1")
-            + HelpExampleRpc("disconnectnode", "\"192.168.0.6:8333\"")
+            + HelpExampleRpc("disconnectnode", "\"192.168.0.6:8833\"")
             + HelpExampleRpc("disconnectnode", "\"\", 1")
         );
 

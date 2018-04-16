@@ -410,8 +410,8 @@
         <translation>Orebalk</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Versoek betalings (genereer QR-kodes en bitcoinore: URI's)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Versoek betalings (genereer QR-kodes en bco: URI's)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -422,8 +422,8 @@
         <translation>Vertoon die lys van gebruikte ontvangers-adresse en etikette</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Skep 'n bitcoinore: URI of betalingsversoek</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Skep 'n bco: URI of betalingsversoek</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

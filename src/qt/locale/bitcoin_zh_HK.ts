@@ -382,8 +382,8 @@
         <translation>說明 &amp;H</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>要求付款 (產生QR碼 bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>要求付款 (產生QR碼 bco: URIs)</translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>

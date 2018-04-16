@@ -254,8 +254,8 @@
         <translation>แถบเครื่องมือ</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>เรียกเก็บ การชำระเงิน (สร้าง QR codes และ bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>เรียกเก็บ การชำระเงิน (สร้าง QR codes และ bco: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -266,8 +266,8 @@
         <translation>แสดงรายการ ที่เก็บเงินที่จะรับ BCO เข้า และป้ายชื่อ ที่ใช้ไปแล้ว</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>เปิด bitcoinore: URI หรือ การเรียกเก็บเงิน (การเรียกให้ชำระเงิน)</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>เปิด bco: URI หรือ การเรียกเก็บเงิน (การเรียกให้ชำระเงิน)</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

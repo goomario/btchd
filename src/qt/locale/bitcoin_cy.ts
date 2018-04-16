@@ -406,8 +406,8 @@
         <translation>Bar offer tabiau</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Gofyn taliadau (creu côd QR a bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Gofyn taliadau (creu côd QR a bco: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -418,8 +418,8 @@
         <translation>Dangos rhestr o gyfeiriadau derbyn a labelau wedi eu defnyddio</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Agor BitcoinOre: URI neu ofyn taliad</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Agor bco: URI neu ofyn taliad</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

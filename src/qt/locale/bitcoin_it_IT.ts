@@ -414,8 +414,8 @@
         <translation>Barra degli strumenti</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Richiedi pagamenti (genera codici QR e bitcoinore: URI)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Richiedi pagamenti (genera codici QR e bco: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Mostra la lista degli indirizzi di ricezione usati e le relative etichette</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Apri un bitcoinore: URI o una richiesta di pagamento</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Apri un bco: URI o una richiesta di pagamento</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

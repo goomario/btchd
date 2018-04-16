@@ -278,11 +278,11 @@
         <translation>Ciļņu rīkjosla</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Pieprasīt maksājumus (izveido QR kodu un bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Pieprasīt maksājumus (izveido QR kodu un bco: URIs)</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
+        <source>Open a bco: URI or payment request</source>
         <translation>Atvērt BCO URI vai maksājuma pieprasījumu</translation>
     </message>
     <message>

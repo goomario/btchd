@@ -1,36 +1,36 @@
 #!/bin/bash
 #
-#  bitcoind The bitcoin core server.
+#  bcod The BCO core server.
 #
 #
 # chkconfig: 345 80 20
-# description: bitcoind
-# processname: bitcoind
+# description: bcod
+# processname: bcod
 #
 
 # Source function library.
 . /etc/init.d/functions
 
-# you can override defaults in /etc/sysconfig/bitcoind, see below
-if [ -f /etc/sysconfig/bitcoind ]; then
-        . /etc/sysconfig/bitcoind
+# you can override defaults in /etc/sysconfig/bcod, see below
+if [ -f /etc/sysconfig/bcod ]; then
+        . /etc/sysconfig/bcod
 fi
 
 RETVAL=0
 
-prog=bitcoind
-# you can override the lockfile via BITCOIND_LOCKFILE in /etc/sysconfig/bitcoind
-lockfile=${BITCOIND_LOCKFILE-/var/lock/subsys/bitcoind}
+prog=bcod
+# you can override the lockfile via BCOD_LOCKFILE in /etc/sysconfig/bcod
+lockfile=${BCOD_LOCKFILE-/var/lock/subsys/bcod}
 
-# bitcoind defaults to /usr/bin/bitcoind, override with BITCOIND_BIN
-bitcoind=${BITCOIND_BIN-/usr/bin/bitcoind}
+# bcod defaults to /usr/bin/bcod, override with BCOD_BIN
+bcod=${BCOD_BIN-/usr/bin/bcod}
 
-# bitcoind opts default to -disablewallet, override with BITCOIND_OPTS
-bitcoind_opts=${BITCOIND_OPTS--disablewallet}
+# bcod opts default to -disablewallet, override with BCOD_OPTS
+bcod_opts=${BCOD_OPTS--disablewallet}
 
 start() {
     echo -n $"Starting $prog: "
-    daemon $DAEMONOPTS $bitcoind $bitcoind_opts
+    daemon $DAEMONOPTS $bcod $bcod_opts
     RETVAL=$?
     echo
     [ $RETVAL -eq 0 ] && touch $lockfile

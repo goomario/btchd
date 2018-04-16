@@ -59,7 +59,7 @@ struct Params {
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
 
-    /** BitcoinOre */
+    /** BCO */
     /** BTC --------*------------------------------> */
     /**             |                                */
     /**            fork                              */
@@ -72,7 +72,7 @@ struct Params {
     int BCOInitBlockCount;
     /** BCO signature data for god mode verify script*/
     std::string BCOGodSignaturePubkey;
-    /** BitcoinOre god mode [height,height+count) */
+    /** BCO god mode [height,height+count) */
     bool GodMode(int nHeight) const { return nHeight >= BCOHeight && nHeight < BCOHeight + BCOInitBlockCount; }
 
     /**

@@ -1,0 +1,6 @@
+usr/local/bin/bco-qt usr/bin
+share/pixmaps/bco32.xpm usr/share/pixmaps
+share/pixmaps/bco16.xpm usr/share/pixmaps
+share/pixmaps/bco128.png usr/share/pixmaps
+debian/bco-qt.desktop usr/share/applications
+debian/bco-qt.protocol usr/share/kde4/services/

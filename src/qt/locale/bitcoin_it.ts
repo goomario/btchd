@@ -418,8 +418,8 @@
         <translation>Barra degli strumenti</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Richiedi pagamenti (genera codici QR e bitcoinore: URI)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Richiedi pagamenti (genera codici QR e bco: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>Mostra la lista degli indirizzi di ricezione utilizzati</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Apri un bitcoinore: URI o una richiesta di pagamento</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Apri un bco: URI o una richiesta di pagamento</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1327,8 +1327,8 @@ Per specificare più URL separarli con una barra verticale "|".</translation>
         <translation>Errore di richiesta di pagamento</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>Impossibile avviare bitcoinore: gestore click-to-pay</translation>
+        <source>Cannot start bco: click-to-pay handler</source>
+        <translation>Impossibile avviare bco: gestore click-to-pay</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2377,7 +2377,7 @@ Per specificare più URL separarli con una barra verticale "|".</translation>
         <translation>Inserisci un'etichetta per questo indirizzo per aggiungerlo alla lista degli indirizzi utilizzati</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
         <translation>Messaggio incluso nel bitcoin URI e che sarà memorizzato con la transazione per vostro riferimento. Nota: Questo messaggio non sarà inviato attraverso la rete BCO.</translation>
     </message>
     <message>

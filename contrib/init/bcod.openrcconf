@@ -1,0 +1,33 @@
+# /etc/conf.d/bcod: config file for /etc/init.d/bcod
+
+# Config file location
+#BCOD_CONFIGFILE="/etc/bco/bco.conf"
+
+# What directory to write pidfile to?  (created and owned by $BCOD_USER)
+#BCOD_PIDDIR="/var/run/bcod"
+
+# What filename to give the pidfile
+#BCOD_PIDFILE="${BCOD_PIDDIR}/bcod.pid"
+
+# Where to write bcod data (be mindful that the blockchain is large)
+#BCOD_DATADIR="/var/lib/bcod"
+
+# User and group to own bcod process
+#BCOD_USER="bco"
+#BCOD_GROUP="bco"
+
+# Path to bcod executable
+#BCOD_BIN="/usr/bin/bcod"
+
+# Nice value to run bcod under
+#BCOD_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#BCOD_OPTS=""
+
+# The timeout in seconds OpenRC will wait for bcod to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+BCOD_SIGTERM_TIMEOUT=60

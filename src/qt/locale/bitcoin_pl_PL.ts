@@ -414,8 +414,8 @@
         <translation>Pasek zakładek</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Zażądaj płatności (generuje kod QR oraz bitcoinore: URls)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Zażądaj płatności (generuje kod QR oraz bco: URls)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Pokaż liste użytych adresów do odbioru oraz ich etykiety</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Otwórz bitcoinore: URl lub żądanie płatności</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Otwórz bco: URl lub żądanie płatności</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

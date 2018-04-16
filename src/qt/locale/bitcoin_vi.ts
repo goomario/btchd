@@ -410,8 +410,8 @@
         <translation>Các thanh công cụ</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Yêu cầu thanh toán (tạo QR code và bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Yêu cầu thanh toán (tạo QR code và bco: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -422,8 +422,8 @@
         <translation>Hiển thị danh sách các địa chỉ và nhãn đã dùng để nhận</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Mở một bitcoinore: URI hoặc yêu cầu thanh toán</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Mở một bco: URI hoặc yêu cầu thanh toán</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1294,8 +1294,8 @@
         <translation>Payment request error</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>Không thể khởi tạo bitcoinore: click-to-pay handler</translation>
+        <source>Cannot start bco: click-to-pay handler</source>
+        <translation>Không thể khởi tạo bco: click-to-pay handler</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2308,8 +2308,8 @@
         <translation>Nhập một label cho cái address này để thêm vào danh sách địa chỉ đã sử dụng</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Một tin nhắn được đính kèm với số bitcoinore: URI mà sẽ được lưu giữ với transaction dành cho tài liệu tham khảo. Lưu ý: Tin nhắn này sẽ không được gửi thông qua BCO network.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Một tin nhắn được đính kèm với số bco: URI mà sẽ được lưu giữ với transaction dành cho tài liệu tham khảo. Lưu ý: Tin nhắn này sẽ không được gửi thông qua BCO network.</translation>
     </message>
     <message>
         <source>Pay To:</source>

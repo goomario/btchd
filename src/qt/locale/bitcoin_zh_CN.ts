@@ -426,8 +426,8 @@
         <translation>分页工具栏</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>请求支付 (生成二维码和 bitcoinore: URI)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>请求支付 (生成二维码和 bco: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -438,8 +438,8 @@
         <translation>显示用过的接收地址和标签的列表</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>打开一个 bitcoinore: URI 或支付请求</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>打开一个 bco: URI 或支付请求</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1290,7 +1290,7 @@
         <translation>要求付款时发生错误</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
+        <source>Cannot start bco: click-to-pay handler</source>
         <translation>无法启动 BCO 协议的“
 一键支付”处理器</translation>
     </message>
@@ -2269,8 +2269,8 @@
         <translation>请为此地址输入一个标签以将它加入用过的地址列表</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>bitcoinore:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特币网络传输。</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>bco:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特币网络传输。</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -3924,19 +3924,19 @@
     </message>
     <message>
         <source>Start nonce</source>
-        <translation>快起始偏移</translation>
+        <translation>块起始位置</translation>
     </message>
     <message>
         <source>Nonces</source>
-        <translation>快数量</translation>
+        <translation>块数量</translation>
     </message>
     <message>
         <source>Thread number</source>
-        <translation>线程数</translation>
+        <translation>CPU线程数</translation>
     </message>
     <message>
         <source>Memory(GB)</source>
-        <translation>内存(GB)</translation>
+        <translation>内存缓存(GB)</translation>
     </message>
     <message>
         <source>Plot folder</source>

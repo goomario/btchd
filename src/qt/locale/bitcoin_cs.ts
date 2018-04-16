@@ -418,8 +418,8 @@
         <translation>Panel s listy</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Požaduj platby (generuje QR kódy a bitcoinore: URI)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Požaduj platby (generuje QR kódy a bco: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>Ukaž seznam použitých přijímacích adres a jejich označení</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Načti bitcoinore: URI nebo platební požadavek</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Načti bco: URI nebo platební požadavek</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1314,8 +1314,8 @@
         <translation>Chyba platebního požadavku</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>Nemůžu spustit bitcoinore: obsluha click-to-pay</translation>
+        <source>Cannot start bco: click-to-pay handler</source>
+        <translation>Nemůžu spustit bco: obsluha click-to-pay</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2328,8 +2328,8 @@
         <translation>Zadej označení této adresy; obojí se ti pak uloží do adresáře</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Zpráva, která byla připojena k bitcoinore: URI a která se ti pro přehled uloží k transakci. Poznámka: Tahle zpráva se neposílá s platbou po bitcoinové síti.</translation>
+        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Zpráva, která byla připojena k bco: URI a která se ti pro přehled uloží k transakci. Poznámka: Tahle zpráva se neposílá s platbou po bitcoinové síti.</translation>
     </message>
     <message>
         <source>Pay To:</source>

@@ -418,8 +418,8 @@
         <translation>Barra de pestañas</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Solicitar pagos (generando códigos QR e identificadores URI "bitcoinore:")</translation>
+        <source>Request payments (generates QR codes and bco:>
+        <translation>Solicitar pagos (generando códigos QR e identificadores URI "bco:n>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,8 +430,8 @@
         <translation>Muestra la lista de direcciones de recepción y etiquetas</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Abrir un identificador URI "bitcoinore:" o una petición de pago</translation>
+        <source>Open a bco:t request</source>
+        <translation>Abrir un identificador URI "bco:ón de pago</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -1326,8 +1326,8 @@
         <translation>Fallo en la solicitud de pago</translation>
     </message>
     <message>
-        <source>Cannot start bitcoinore: click-to-pay handler</source>
-        <translation>No se puede iniciar bitcoinore: encargado click-para-pagar</translation>
+        <source>Cannot start bco:handler</source>
+        <translation>No se puede iniciar bco:ck-para-pagar</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -2376,8 +2376,8 @@
         <translation>Introduce una etiqueta para esta dirección para añadirla a la lista de direcciones utilizadas</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoinore: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>Un mensaje que se adjuntó a la bitcoinore: URL que será almacenada con la transacción para su referencia. Nota: Este mensaje no se envía a través de la red BCO.</translation>
+        <source>A message that was attached to the bco:l be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <translation>Un mensaje que se adjuntó a la bco:almacenada con la transacción para su referencia. Nota: Este mensaje no se envía a través de la red BCO.</translation>
     </message>
     <message>
         <source>Pay To:</source>

@@ -358,8 +358,8 @@
         <translation>&amp;Ajutor</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Cerere plată (generează coduri QR și bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Cerere plată (generează coduri QR și bco: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -370,8 +370,8 @@
         <translation>Afișează lista adreselor de primire utilizate și etichetele.</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Deschide un bitcoinore: URI sau cerere de plată</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Deschide un bco: URI sau cerere de plată</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

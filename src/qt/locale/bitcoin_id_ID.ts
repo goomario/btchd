@@ -414,8 +414,8 @@
         <translation>Baris tab</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Permintaan pembayaran (membuat kode QR dan bitcoinore: URIs)</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Permintaan pembayaran (membuat kode QR dan bco: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Tampilkan daftar alamat dan label yang diterima</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Buka URI bitcoinore: atau permintaan pembayaran</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Buka URI bco: atau permintaan pembayaran</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>

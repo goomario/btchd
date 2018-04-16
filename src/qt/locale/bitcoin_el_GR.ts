@@ -350,8 +350,8 @@
         <translation>Εργαλειοθήκη καρτελών</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoinore: URIs)</source>
-        <translation>Αίτηση πληρωμών (δημιουργεί QR codes και διευθύνσεις bitcoinore: )</translation>
+        <source>Request payments (generates QR codes and bco: URIs)</source>
+        <translation>Αίτηση πληρωμών (δημιουργεί QR codes και διευθύνσεις bco: )</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -362,8 +362,8 @@
         <translation>Προβολή της λίστας των χρησιμοποιημένων διευθύνσεων και ετικετών λήψεως</translation>
     </message>
     <message>
-        <source>Open a bitcoinore: URI or payment request</source>
-        <translation>Άνοιγμα bitcoinore: URI αίτησης πληρωμής</translation>
+        <source>Open a bco: URI or payment request</source>
+        <translation>Άνοιγμα bco: URI αίτησης πληρωμής</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
