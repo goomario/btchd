@@ -553,7 +553,7 @@
     </message>
     <message>
         <source>A fatal error occurred. BCO can no longer continue safely and will quit.</source>
-        <translation>致命的なエラーが発生しました。BCO は安全に継続することができず終了するでしょう。</translation>
+        <translation>致命的なエラーが発生しました。Bitcoin は安全に継続することができず終了するでしょう。</translation>
     </message>
 </context>
 <context>

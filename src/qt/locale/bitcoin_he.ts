@@ -415,7 +415,7 @@
     </message>
     <message>
         <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>בקשת תשלומים (יצירה של קודים מסוג QR וסכימות כתובות משאב של :bitcoinore)</translation>
+        <translation>בקשת תשלומים (יצירה של קודים מסוג QR וסכימות כתובות משאב של :bco)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
