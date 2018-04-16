@@ -138,7 +138,7 @@
         <translation>Промени &amp;лозинку...</translation>
     </message>
     <message>
-        <source>Send coins to a Bitcoin address</source>
+        <source>Send coins to a BCO address</source>
         <translation>Пошаљите новац на BCO адресу</translation>
     </message>
     <message>

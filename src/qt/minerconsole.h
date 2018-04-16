@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Bitcoin Ore developers
+// Copyright (c) 2017-2018 The BCO Ore developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -24,7 +24,7 @@ class QStringList;
 class QTemporaryFile;
 QT_END_NAMESPACE
 
-/** Local Bitcoin Miner console. */
+/** Local BCO Miner console. */
 class MinerConsole : public QWidget
 {
     Q_OBJECT

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Bitcoin Ore developers
+// Copyright (c) 2017-2018 The BCO Ore developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
