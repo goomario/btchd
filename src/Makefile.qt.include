@@ -211,13 +211,7 @@ QT_MOC = \
   qt/overviewpage.moc \
   qt/rpcconsole.moc
 
-if ENABLE_MINER
-QT_MOC += qt/minerconsole.moc
-endif
 
-if ENABLE_PLOTTER
-QT_MOC += qt/plotconsole.moc
-endif
 
 QT_QRC_CPP = qt/qrc_bitcoin.cpp
 QT_QRC = qt/bitcoin.qrc

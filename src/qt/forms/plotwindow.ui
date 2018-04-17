@@ -19,10 +19,6 @@
   <property name="windowTitle">
    <string>Plot console</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../bitcoin.qrc">
-    <normaloff>:/icons/hd_plot</normaloff>:/icons/hd_plot</iconset>
-  </property>
   <layout class="QHBoxLayout" name="horizontalLayout" stretch="2,3">
    <item>
     <layout class="QVBoxLayout" name="optionsVverticalLayout">

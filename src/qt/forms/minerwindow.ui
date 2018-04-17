@@ -19,10 +19,6 @@
   <property name="windowTitle">
    <string>Miner console</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../bitcoin.qrc">
-    <normaloff>:/icons/tx_mined</normaloff>:/icons/tx_mined</iconset>
-  </property>
   <layout class="QHBoxLayout" name="horizontalLayout_1" stretch="1,2">
    <item>
     <layout class="QVBoxLayout" name="optionsVerticalLayout" stretch="0,0,0,0,0,0">
