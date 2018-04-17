@@ -1,6 +1,7 @@
 {
-    "window.zoomLevel": 0,
-
+    "files.associations": {
+        "*.moc": "cpp"
+    },
     "files.eol": "\n",
     "files.exclude": {
         "**/*.o": true,
@@ -9,6 +10,7 @@
         "**/.libs": true,
     },
     "files.watcherExclude": {
-        "./vsproject/.linux_*": true
+        "./vsproject/.linux_*": true,
+        "./depends": true
     },
 }
