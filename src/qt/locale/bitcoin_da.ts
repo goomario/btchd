@@ -3362,8 +3362,8 @@
         <translation>Tilvalg for forbindelser:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Ophavsret © %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Ophavsret © %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

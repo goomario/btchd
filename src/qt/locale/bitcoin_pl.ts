@@ -3159,8 +3159,8 @@ Zwróć uwagę, że poprawnie zweryfikowana wiadomość potwierdza to, że nadaw
         <translation>Opcje połączenia:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Prawa autorskie (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Prawa autorskie (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

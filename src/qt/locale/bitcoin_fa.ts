@@ -1730,8 +1730,8 @@
         <translation>گزینه‌های اتصال:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>حق تألیف (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>حق تألیف (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

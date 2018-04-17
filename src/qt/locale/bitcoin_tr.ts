@@ -3278,8 +3278,8 @@
         <translation>Bağlantı seçenekleri:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Telif hakkı (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Telif hakkı (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

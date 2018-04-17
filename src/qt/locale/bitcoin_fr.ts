@@ -3358,8 +3358,8 @@
         <translation>Options de connexion :</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Tous droits réservés (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Tous droits réservés (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

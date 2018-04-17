@@ -3331,8 +3331,8 @@ Esta sincronização inicial é muito exigente e pode expor problemas de hardwar
         <translation>Opções de conexão:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Copyright (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Copyright (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

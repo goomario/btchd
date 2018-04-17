@@ -3166,8 +3166,8 @@
         <translation>Yhteyden valinnat:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Tekijänoikeus (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Tekijänoikeus (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

@@ -3180,8 +3180,8 @@
         <translation>连接选项：</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>版权所有 (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>版权所有 (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

@@ -3314,8 +3314,8 @@
         <translation>Innstillinger for tilkobling:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Kopirett © %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Kopirett © %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

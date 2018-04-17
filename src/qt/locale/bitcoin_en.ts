@@ -4331,7 +4331,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <source>Copyright (C) %i-%i</source>
+        <source>Copyright (C) %s</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

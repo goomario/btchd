@@ -3355,8 +3355,8 @@
         <translation>연결 설정 : </translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Copyright (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Copyright (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

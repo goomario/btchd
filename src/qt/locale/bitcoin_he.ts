@@ -2982,8 +2982,8 @@
         <translation>הגדרות חיבור:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>כל הזכויות שמורות (C) %i-‏%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>כל הזכויות שמורות (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

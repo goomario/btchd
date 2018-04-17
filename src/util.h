@@ -340,7 +340,7 @@ template <typename Callable> void TraceThread(const char* name,  Callable func)
     }
 }
 
-std::string CopyrightHolders(const std::string& strPrefix);
+std::string CopyrightHolders(const std::string& strHolder);
 
 //! Substitute for C++14 std::make_unique.
 template <typename T, typename... Args>

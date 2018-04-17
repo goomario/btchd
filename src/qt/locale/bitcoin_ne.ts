@@ -488,8 +488,8 @@
         <translation>कनेक्सनको विकल्प:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>सर्वाधिकार (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>सर्वाधिकार (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

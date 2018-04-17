@@ -3359,8 +3359,8 @@
         <translation>連線選項:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>版權所有 (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>版權所有 (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

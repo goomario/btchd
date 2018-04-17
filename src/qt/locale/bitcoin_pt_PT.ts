@@ -3104,8 +3104,8 @@
         <translation>Opções de ligação:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Direitos de Autor (C) %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Direitos de Autor (C) %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>

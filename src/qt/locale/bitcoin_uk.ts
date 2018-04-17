@@ -2790,8 +2790,8 @@
         <translation>Параметри з'єднання:</translation>
     </message>
     <message>
-        <source>Copyright (C) %i-%i</source>
-        <translation>Всі права збережено. %i-%i</translation>
+        <source>Copyright (C) %s</source>
+        <translation>Всі права збережено. %s</translation>
     </message>
     <message>
         <source>Corrupted block database detected</source>
