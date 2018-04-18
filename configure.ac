@@ -307,7 +307,7 @@ CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
 AC_ARG_WITH([utils],
   [AS_HELP_STRING([--with-utils],
-  [build bitcoin-cli bitcoin-tx (default=yes)])],
+  [build bco-cli bco-tx (default=yes)])],
   [build_bitcoin_utils=$withval],
   [build_bitcoin_utils=yes])
 
@@ -319,7 +319,7 @@ AC_ARG_WITH([libs],
 
 AC_ARG_WITH([daemon],
   [AS_HELP_STRING([--with-daemon],
-  [build bitcoind daemon (default=yes)])],
+  [build bcod daemon (default=yes)])],
   [build_bitcoind=$withval],
   [build_bitcoind=yes])
 
@@ -457,20 +457,30 @@ case $host in
    *linux*)
      TARGET_OS=linux
      LEVELDB_TARGET_FLAGS="-DOS_LINUX"
+     CFLAGS="$CFLAGS -fPIC"
+     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *freebsd*)
      LEVELDB_TARGET_FLAGS="-DOS_FREEBSD"
+     CFLAGS="$CFLAGS -fPIC"
+     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *openbsd*)
      LEVELDB_TARGET_FLAGS="-DOS_OPENBSD"
+     CFLAGS="$CFLAGS -fPIC"
+     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *netbsd*)
      LEVELDB_TARGET_FLAGS="-DOS_NETBSD"
+     CFLAGS="$CFLAGS -fPIC"
+     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *)
      OTHER_OS=`echo ${host_os} | awk '{print toupper($0)}'`
      AC_MSG_WARN([Guessing LevelDB OS as OS_${OTHER_OS}, please check whether this is correct, if not add an entry to configure.ac.])
      LEVELDB_TARGET_FLAGS="-DOS_${OTHER_OS}"
+     CFLAGS="$CFLAGS -fPIC"
+     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
 esac
 
@@ -1075,11 +1085,11 @@ AC_SUBST(UNIVALUE_LIBS)
 
 BITCOIN_QT_PATH_PROGS([PROTOC], [protoc],$protoc_bin_path)
 
-AC_MSG_CHECKING([whether to build bitcoind])
+AC_MSG_CHECKING([whether to build bcod])
 AM_CONDITIONAL([BUILD_BITCOIND], [test x$build_bitcoind = xyes])
 AC_MSG_RESULT($build_bitcoind)
 
-AC_MSG_CHECKING([whether to build utils (bitcoin-cli bitcoin-tx)])
+AC_MSG_CHECKING([whether to build utils (bco-cli bco-tx)])
 AM_CONDITIONAL([BUILD_BITCOIN_UTILS], [test x$build_bitcoin_utils = xyes])
 AC_MSG_RESULT($build_bitcoin_utils)
 
@@ -1180,7 +1190,7 @@ if test x$bitcoin_enable_qt != xno; then
     AC_MSG_WARN("xgettext is required to update qt translations")
   fi
 
-  AC_MSG_CHECKING([whether to build test_bitcoin-qt])
+  AC_MSG_CHECKING([whether to build test_bco-qt])
   if test x$use_gui_tests$bitcoin_enable_qt_test = xyesyes; then
     AC_MSG_RESULT([yes])
     BUILD_TEST_QT="yes"
@@ -1191,7 +1201,7 @@ fi
 
 AM_CONDITIONAL([ENABLE_ZMQ], [test "x$use_zmq" = "xyes"])
 
-AC_MSG_CHECKING([whether to build test_bitcoin])
+AC_MSG_CHECKING([whether to build test_bco])
 if test x$use_tests = xyes; then
   AC_MSG_RESULT([yes])
   BUILD_TEST="yes"
