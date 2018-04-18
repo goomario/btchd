@@ -85,7 +85,7 @@ Section -Main SEC0000
     WriteRegStr HKCU "${REGKEY}\Components" Main 1
     # BCO tools
     SetOutPath $INSTDIR\tools
-    File /r @abs_top_srcdir@/release/tools/
+    File /r @abs_top_srcdir@/release/tools_win@WINDOWS_BITS@/
 SectionEnd
 
 Section -post SEC0001
