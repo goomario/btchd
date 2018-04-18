@@ -1012,6 +1012,14 @@
         <translation>显示默认的SOCKS5代理是否被用于在该类型的网络下连接同伴</translation>
     </message>
     <message>
+        <source>Hide the icon from the system tray.</source>
+        <translation>隐藏系統托盘图标</translation>
+    </message>
+    <message>
+        <source>&amp;Hide tray icon</source>
+        <translation>隐藏系統托盘图标(&amp;H)</translation>
+    </message>
+    <message>
         <source>Minimize instead of exit the application when the window is closed. When this option is enabled, the application will be closed only after selecting Exit in the menu.</source>
         <translation>窗口被关闭时最小化而不是退出应用程序。当此选项启用时，应用程序只会在菜单中选择退出时退出。</translation>
     </message>
@@ -1074,6 +1082,14 @@
     <message>
         <source>Map port using &amp;UPnP</source>
         <translation>使用 &amp;UPnP 映射端口</translation>
+    </message>
+    <message>
+        <source>Accept connections from outside.</source>
+        <translation>接受外來连接</translation>
+    </message>
+    <message>
+        <source>Allow incomin&amp;g connections</source>
+        <translation>接受外來连接(&amp;G)</translation>
     </message>
     <message>
         <source>Connect to the BCO network through a SOCKS5 proxy.</source>
@@ -1154,6 +1170,10 @@
     <message>
         <source>Whether to show coin control features or not.</source>
         <translation>是否需要交易源地址控制功能。</translation>
+    </message>
+    <message>
+        <source>&amp;Third party transaction URLs</source>
+        <translation>第三方交易网址链接(&amp;T)</translation>
     </message>
     <message>
         <source>&amp;OK</source>
@@ -2251,6 +2271,10 @@
     <message>
         <source>S&amp;ubtract fee from amount</source>
         <translation>从金额中减去交易费(&amp;U)</translation>
+    </message>
+    <message>
+        <source>Use available balance</source>
+        <translation>使用全部可用余额</translation>
     </message>
     <message>
         <source>Message:</source>
@@ -3671,6 +3695,10 @@
     <message>
         <source>Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: %s)</source>
         <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS5 代理 (默认: %s)</translation>
+    </message>
+    <message>
+        <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
+        <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS(&amp;)5 代理:</translation>
     </message>
     <message>
         <source>Warning: Unknown block versions being mined! It's possible unknown rules are in effect</source>
