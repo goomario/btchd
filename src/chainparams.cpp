@@ -176,13 +176,14 @@ public:
                 {250000, uint256S("0x000000000000003887df1f29024b06fc2200b55f8af8f35453d7be294df2d214")},
                 {279000, uint256S("0x0000000000000001ae8c72a0b0c301f67e3afca10e819efa9041e458e9bd7e40")},
                 {295000, uint256S("0x00000000000000004d9b4ef50f0f9d686fd69db2e03af35a100370c64632a983")},
+                {501948, uint256S("0x00000000000000000013e33aa9825f6aa13dc00e795be76395f76e5279c9c073")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 0000000000000000002d6cca6761c99b3c2e936f9a0e304b7c7651a993f461de (height 506081).
-            1516903077, // * UNIX timestamp of last known number of transactions
-            295363220,  // * total number of transactions between genesis and that timestamp
+            // Data as of block 00000000000000000013e33aa9825f6aa13dc00e795be76395f76e5279c9c073 (height 501948).
+            1514760341, // * UNIX timestamp of last known number of transactions
+            287825610,  // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
             3.5         // * estimated number of transactions per second after that timestamp
         };
@@ -204,8 +205,8 @@ public:
         consensus.BIP66Height = 330776; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
 
         // BCO hard fork
-        consensus.BCOHeight = BCO_FORK_BLOCK_HEIGHT;
-        consensus.BCOInitBlockCount = 16800;
+        consensus.BCOHeight = 1260527;
+        consensus.BCOInitBlockCount = 2000;
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -249,10 +250,10 @@ public:
         vFixedSeeds.clear();
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.emplace_back("testnet-seed.bitcoin.jonasschnelli.ch");
-        vSeeds.emplace_back("seed.tbtc.petertodd.org");
-        vSeeds.emplace_back("seed.testnet.bitcoin.sprovoost.nl");
-        vSeeds.emplace_back("testnet-seed.bluematt.me"); // Just a static list of stable node(s), only supports x9
+        vSeeds.push_back("testnet-seed0-bco.bitcoinore.org");
+        vSeeds.push_back("testnet-seed1-bco.bitcoinore.org");
+        vSeeds.push_back("testnet-seed2-bco.bitcoinore.org");
+        vSeeds.push_back("testnet-seed3-bco.bitcoinore.org");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
