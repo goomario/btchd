@@ -54,6 +54,9 @@
            <height>0</height>
           </size>
          </property>
+         <property name="echoMode">
+          <enum>QLineEdit::PasswordEchoOnEdit</enum>
+         </property>
          <property name="placeholderText">
           <string>Enter your passphrase</string>
          </property>
