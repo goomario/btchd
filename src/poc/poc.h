@@ -64,6 +64,9 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
 /** Get epoch second time*/
 int64_t GetEpochTime();
 
+/** Get forge escape second time */
+int64_t GetForgeEscape();
+
 }
 
 bool StartPOC();

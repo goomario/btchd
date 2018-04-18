@@ -26,8 +26,6 @@
 #include <QStringList>
 #include <QTemporaryFile>
 
-#include <qt/plotconsole.moc>
-
 namespace {
 
 const char passphraseSettingsKey[] = "PlotPassphrase";

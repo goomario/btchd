@@ -1012,6 +1012,10 @@
         <translation>显示默认的SOCKS5代理是否被用于在该类型的网络下连接同伴</translation>
     </message>
     <message>
+        <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
+        <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS&amp;5 代理:</translation>
+    </message>
+    <message>
         <source>Hide the icon from the system tray.</source>
         <translation>隐藏系統托盘图标</translation>
     </message>
@@ -3063,9 +3067,7 @@
     </message>
     <message>
         <source>Run in the background as a daemon and accept commands</source>
-        <translation>在后台运行并接受命令
-
-</translation>
+        <translation>在后台运行并接受命令</translation>
     </message>
     <message>
         <source>Unable to start HTTP server. See debug log for details.</source>
@@ -3621,8 +3623,7 @@
     </message>
     <message>
         <source>Password for JSON-RPC connections</source>
-        <translation>JSON-RPC 连接密码
-</translation>
+        <translation>JSON-RPC 连接密码</translation>
     </message>
     <message>
         <source>Execute command when the best block changes (%s in cmd is replaced by block hash)</source>
@@ -3695,10 +3696,6 @@
     <message>
         <source>Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: %s)</source>
         <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS5 代理 (默认: %s)</translation>
-    </message>
-    <message>
-        <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS(&amp;)5 代理:</translation>
     </message>
     <message>
         <source>Warning: Unknown block versions being mined! It's possible unknown rules are in effect</source>
@@ -3930,6 +3927,14 @@
     <message>
         <source>Error: Cannot create miner configuration file!</source>
         <translation>错误：无法创建挖矿配置文件！</translation>
+    </message>
+    <message>
+        <source>The new block will be forged in %1 second.</source>
+        <translation>将在%1秒后锻造新块。</translation>
+    </message>
+    <message>
+        <source>Forging...</source>
+        <translation>正在锻造......</translation>
     </message>
 </context>
 <context>

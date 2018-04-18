@@ -13,6 +13,8 @@
 
 #include <chainparams.h>
 #include <chainparamsbase.h>
+#include <poc/poc.h>
+#include <ui_interface.h>
 #include <util.h>
 
 #include <QDesktopWidget>
@@ -24,8 +26,7 @@
 #include <QStringList>
 #include <QTemporaryFile>
 #include <QTextStream>
-
-#include <qt/minerconsole.moc>
+#include <QTimer>
 
 namespace {
  
@@ -34,11 +35,22 @@ const char targetDeadlineSettingsKey[] = "MinerTargetDeadline";
 const char plotfilesSettingsKey[] = "MinerPlotfiles";
 
 const char creepMinerRelativePath[] = "tools/creepMiner";
+
+}
+
+// update deadline
+static void notifyBcoDeadlineChanged(MinerConsole *minerConsole, int32_t nHeight, uint64_t nNonce, uint64_t nSeed, uint64_t nNewDeadline)
+{
+    QMetaObject::invokeMethod(minerConsole, "deadlineChanged", Qt::QueuedConnection,
+                              Q_ARG(int32_t, nHeight),
+                              Q_ARG(uint64_t, nNonce),
+                              Q_ARG(uint64_t, nNewDeadline));
 }
 
 MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::MinerConsole)
+    ui(new Ui::MinerConsole),
+    checkForgeTimer(0)
 {
     ui->setupUi(this);
     ui->removePlotFileButton->setEnabled(false);
@@ -64,11 +76,19 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     // Update mining status
     notifyMiningStatusChanged(false);
 
+    // miner process
     minerProcess = std::unique_ptr<QProcess>(new QProcess());
     connect(minerProcess.get(), SIGNAL(started()), this, SLOT(onMiningStarted()));
     connect(minerProcess.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onMiningFinished(int, QProcess::ExitStatus)));
     connect(minerProcess.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(onMiningReadyReadStandardOutput()));
     connect(minerProcess.get(), SIGNAL(readyReadStandardError()), this, SLOT(onMiningReadyReadStandardError()));
+
+    // deadline change
+    uiInterface.NotifyBcoDeadlineChanged.connect(boost::bind(notifyBcoDeadlineChanged, this, _1, _2, _3, _4));
+    checkForgeTimer = new QTimer(this);
+    checkForgeTimer->setInterval(1000);
+    connect(checkForgeTimer, SIGNAL(timeout()), this, SLOT(onCheckDeadlineTimeout()));
+    connect(this, SIGNAL(deadlineChanged(int32_t, uint64_t, uint64_t)), this, SLOT(onDeadlineChanged(int32_t, uint64_t, uint64_t)));
 }
 
 MinerConsole::~MinerConsole()
@@ -80,6 +100,12 @@ MinerConsole::~MinerConsole()
 
     minerProcess.reset();
     minerConfigFile.reset();
+
+    if (checkForgeTimer && checkForgeTimer->isActive()) {
+        checkForgeTimer->stop();
+    }
+    delete checkForgeTimer;
+    uiInterface.NotifyBcoDeadlineChanged.disconnect(boost::bind(notifyBcoDeadlineChanged, this, _1, _2, _3, _4));
 
     delete ui;
 }
@@ -267,6 +293,7 @@ void MinerConsole::onMiningStarted()
 {
     notifyMiningStatusChanged(true);
     ui->switchMiningButton->setEnabled(true);
+    checkForgeTimer->start();
 
     ui->logPlainTextEdit->clear();
     appendLog(QStringList() << QString("Start miner") << "" << "");
@@ -276,6 +303,8 @@ void MinerConsole::onMiningFinished(int exitCode, QProcess::ExitStatus exitStatu
 {
     notifyMiningStatusChanged(false);
     ui->switchMiningButton->setEnabled(true);
+    checkForgeTimer->stop();
+    ui->forgeStatusLabel->clear();
 
     appendLog(QStringList() << "" << "" << QString("Stop miner (") + QString::number((int)exitStatus) + QString(")"));
 }
@@ -288,4 +317,21 @@ void MinerConsole::onMiningReadyReadStandardOutput()
 void MinerConsole::onMiningReadyReadStandardError()
 {
     appendLog(QString(minerProcess->readAllStandardError()).replace("\r\n", "\n").split("\n"));
+}
+
+void MinerConsole::onDeadlineChanged(int32_t, uint64_t, uint64_t nNewDeadline)
+{
+    ui->forgeStatusLabel->setText(tr("The new block will be forged in %1 second.").arg(nNewDeadline));
+}
+
+void MinerConsole::onCheckDeadlineTimeout()
+{
+    int64_t escape = poc::GetForgeEscape();
+    if (escape > 0) {
+        ui->forgeStatusLabel->setText(tr("The new block will be forged in %1 second.").arg(escape));
+    } else if (escape == 0) {
+        ui->forgeStatusLabel->setText(tr("Forging..."));
+    } else {
+        ui->forgeStatusLabel->clear();
+    }
 }

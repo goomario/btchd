@@ -10,6 +10,7 @@
 #include <crypto/sha256.h>
 #include <event2/thread.h>
 #include <miner.h>
+#include <ui_interface.h>
 #include <util.h>
 #include <utiltime.h>
 #include <validation.h>
@@ -402,6 +403,8 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
         gNextBlockNonce = nNonce;
         gNextBlockSeed = nAccountId;
         gNextBlockDeadline = deadline;
+
+        uiInterface.NotifyBcoDeadlineChanged(gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
     }
     return true;
 }
@@ -409,6 +412,22 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
 int64_t GetEpochTime()
 {
     return GetAdjustedTime() - (EPOCH_BEGINNING + 500)/1000;
+}
+
+int64_t GetForgeEscape()
+{
+    if (gNextBlockDeadline == 0) {
+        return -1;
+    } else {
+        LOCK(cs_main);
+        const CBlockIndex *pindexTip = chainActive.Tip();
+        int64_t nTime = std::max(pindexTip->GetMedianTimePast()+1, GetAdjustedTime());
+        int64_t escape = (int64_t)pindexTip->nTime + (int64_t)gNextBlockDeadline - nTime;
+        if (escape < 0) {
+            escape = 0;
+        }
+        return escape;
+    }
 }
 
 }

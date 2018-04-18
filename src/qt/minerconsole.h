@@ -22,6 +22,7 @@ namespace Ui {
 QT_BEGIN_NAMESPACE
 class QStringList;
 class QTemporaryFile;
+class QTimer;
 QT_END_NAMESPACE
 
 /** Local BCO Miner console. */
@@ -53,11 +54,20 @@ private Q_SLOTS:
     void onMiningReadyReadStandardOutput();
     void onMiningReadyReadStandardError();
 
+    // forge progress
+    void onDeadlineChanged(int32_t nHeight, uint64_t nNonce, uint64_t nNewDeadline);
+    void onCheckDeadlineTimeout();
+
+Q_SIGNALS:
+    void deadlineChanged(int32_t nHeight, uint64_t nNonce, uint64_t nNewDeadline);
+
 private:
     Ui::MinerConsole *ui;
 
     std::unique_ptr<QTemporaryFile> minerConfigFile;
     std::unique_ptr<QProcess> minerProcess;
+
+    QTimer *checkForgeTimer;
 };
 
 #endif // BITCOIN_QT_MINERCONSOLE_H
