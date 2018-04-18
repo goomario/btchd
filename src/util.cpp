@@ -978,7 +978,7 @@ std::string CopyrightHolders(const std::string& strHolder)
     // BCO
     strCopyrightHolders += strprintf(strHolder, strprintf("2017-%i ", COPYRIGHT_YEAR) + strprintf(_(COPYRIGHT_HOLDERS), _(COPYRIGHT_HOLDERS_SUBSTITUTION)));
     // BTC
-    strCopyrightHolders += "\n" + strprintf(strHolder, std::string("2009-2017 ") + _("The Bitcoin Core developers"));
+    strCopyrightHolders += "\n" + strprintf(strHolder, std::string("2009-2017 ") + strprintf(_("The %s developers"), "Bitcoin Core"));
 
     return strCopyrightHolders;
 }
