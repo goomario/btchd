@@ -85,7 +85,7 @@ Section -Main SEC0000
     WriteRegStr HKCU "${REGKEY}\Components" Main 1
     # BCO tools
     SetOutPath $INSTDIR\tools
-    File /r @abs_top_srcdir@/src/qt/tools
+    File /r @abs_top_srcdir@/release/tools/
 SectionEnd
 
 Section -post SEC0001
@@ -132,6 +132,7 @@ Section /o -un.Main UNSEC0000
     Delete /REBOOTOK $INSTDIR\readme.txt
     RMDir /r /REBOOTOK $INSTDIR\daemon
     RMDir /r /REBOOTOK $INSTDIR\doc
+    RMDir /r /REBOOTOK $INSTDIR\tools
     DeleteRegValue HKCU "${REGKEY}\Components" Main
 SectionEnd
 
