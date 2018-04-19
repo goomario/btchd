@@ -3446,7 +3446,7 @@ UniValue generate(const JSONRPCRequest& request)
 }
 
 // BCO God Mode tools
-int GetHolyUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
+static int GetUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
 {
     FlushStateToDisk();
     std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
@@ -3498,7 +3498,7 @@ int GetHolyUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint, C
     return outputs.size();
 }
 UniValue validateaddress(const JSONRPCRequest& request);
-UniValue generateholyblocks(const JSONRPCRequest& request)
+UniValue generategodblocks(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
 
@@ -3508,15 +3508,15 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "generateholyblocks nblocks\n"
+            "generategodblocks nblocks\n"
             "\nMine up to nblocks blocks immediately (before the RPC call returns) to an address in the wallet.\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
-            "\nggenerateholyblocks 20\n"
-            + HelpExampleCli("generateholyblocks", "20")
+            "\ngenerategodblocks 20\n"
+            + HelpExampleCli("generategodblocks", std::to_string(Params().GetConsensus().BCOInitBlockCount))
         );
     }
     int numGenerate = request.params[0].get_int();
@@ -3552,9 +3552,6 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         { DecodeDestination("3LdU72Uh7QiiDjqdnQCijNBNsZMLWdCX2G"), CKeyID(), CKey() }, // 8
         { DecodeDestination("3BXu1YgZR6jNQrPPdXA1V6C4zyRJv6Nv3k"), CKeyID(), CKey() }, // 9
         { DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK"), CKeyID(), CKey() }, // 10 (miner)
-        //{ DecodeDestination("3FpVoCEfqNAz4xAAAQdtn4kqhPhu4L4ckv"), CKeyID(), CKey() }, // 11
-        //{ DecodeDestination("35SSk8V8MjeYLNCoegJ54banUL17YDZ8tH"), CKeyID(), CKey() }, // 12
-        //{ DecodeDestination("32MX3v4TtWjKeicNc9cXRrHDqqMYhfVdkZ"), CKeyID(), CKey() }, // 13
     };
     for (auto &account : bcoFoundationAccountList) {
         JSONRPCRequest jsonreq;
@@ -3587,7 +3584,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         // get utxo
         std::vector<std::pair<COutPoint, CTxOut>> outputs;
         outputs.reserve(0x100*0x80);
-        GetHolyUTXO(std::numeric_limits<int>::max(), coinbaseOnly, outputs);
+        GetUTXO(std::numeric_limits<int>::max(), coinbaseOnly, outputs);
         LogPrintf("AddUTXOTransaction: Get UTXO %d\n", outputs.size());
 
         // Put to mempool
@@ -3646,7 +3643,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
             // sign raw trx
             UniValue thirdParamSign(UniValue::VARR);
             UniValue privKey(UniValue::VSTR);
-            privKey.setStr(CBitcoinSecret(currentAccount.vchSecret).ToString()); // get holy generateblock privkey from wallet
+            privKey.setStr(CBitcoinSecret(currentAccount.vchSecret).ToString()); // get god generateblock privkey from wallet
             thirdParamSign.push_back(privKey);
             UniValue reqSignRaw(UniValue::VARR);
             reqSignRaw.push_back(hexRawTrx);
@@ -3747,7 +3744,7 @@ UniValue generateholyblocks(const JSONRPCRequest& request)
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
 
-        LogPrintf("%s: Create holy block height=%d hash=%s tx=%d mempool=%d\n", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size(), mempool.size());
+        LogPrintf("%s: Create god block height=%d hash=%s tx=%d mempool=%d\n", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size(), mempool.size());
 
         blockHashes.push_back(pblock->GetHash().GetHex());
 
@@ -3911,7 +3908,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
-    { "generating",         "generateholyblocks",       &generateholyblocks,       {"nblocks"} },
+    { "generating",         "generategodblocks",        &generategodblocks,        {"nblocks"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)
