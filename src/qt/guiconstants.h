@@ -48,7 +48,7 @@ static const int MAX_URI_LENGTH = 255;
 /* Number of frames in spinner animation */
 #define SPINNER_FRAMES 36
 
-#define QAPP_ORG_NAME "BitcoinOre"
+#define QAPP_ORG_NAME "Bitcoinore"
 #define QAPP_ORG_DOMAIN "bitcoinore.org"
 #define QAPP_APP_NAME_DEFAULT "BCO-Qt"
 #define QAPP_APP_NAME_TESTNET "BCO-Qt-testnet"
