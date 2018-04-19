@@ -15,9 +15,7 @@
 
 #include <crypto/curve25519.h>
 
-extern "C" {
 #include <crypto/curve/curve25519_i64.h>
-}
 
 namespace crypto {
 

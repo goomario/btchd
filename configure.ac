@@ -457,30 +457,20 @@ case $host in
    *linux*)
      TARGET_OS=linux
      LEVELDB_TARGET_FLAGS="-DOS_LINUX"
-     CFLAGS="$CFLAGS -fPIC"
-     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *freebsd*)
      LEVELDB_TARGET_FLAGS="-DOS_FREEBSD"
-     CFLAGS="$CFLAGS -fPIC"
-     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *openbsd*)
      LEVELDB_TARGET_FLAGS="-DOS_OPENBSD"
-     CFLAGS="$CFLAGS -fPIC"
-     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *netbsd*)
      LEVELDB_TARGET_FLAGS="-DOS_NETBSD"
-     CFLAGS="$CFLAGS -fPIC"
-     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
    *)
      OTHER_OS=`echo ${host_os} | awk '{print toupper($0)}'`
      AC_MSG_WARN([Guessing LevelDB OS as OS_${OTHER_OS}, please check whether this is correct, if not add an entry to configure.ac.])
      LEVELDB_TARGET_FLAGS="-DOS_${OTHER_OS}"
-     CFLAGS="$CFLAGS -fPIC"
-     CXXFLAGS="$CXXFLAGS -fPIC"
      ;;
 esac
 
