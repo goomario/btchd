@@ -64,8 +64,8 @@ VIAddVersionKey ProductVersion "${VERSION}"
 VIAddVersionKey CompanyName "${COMPANY}"
 VIAddVersionKey CompanyWebsite "${URL}"
 VIAddVersionKey FileVersion "${VERSION}"
-VIAddVersionKey FileDescription ""
-VIAddVersionKey LegalCopyright ""
+VIAddVersionKey FileDescription "@PACKAGE_NAME@ setup for Windows @WINDOWS_BITS@-bit"
+VIAddVersionKey LegalCopyright "© Bitcoinore 2018"
 InstallDirRegKey HKCU "${REGKEY}" Path
 ShowUninstDetails show
 
