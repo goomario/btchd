@@ -50,9 +50,9 @@ Var StartMenuGroup
 # Installer attributes
 OutFile @abs_top_srcdir@/@PACKAGE_TARNAME@-${VERSION}-win@WINDOWS_BITS@-setup.exe
 !if "@WINDOWS_BITS@" == "64"
-InstallDir $PROGRAMFILES64\BitcoinOre
+InstallDir $PROGRAMFILES64\Bitcoinore
 !else
-InstallDir $PROGRAMFILES\BitcoinOre
+InstallDir $PROGRAMFILES\Bitcoinore
 !endif
 CRCCheck on
 XPStyle on
