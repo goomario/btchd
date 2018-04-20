@@ -8,6 +8,10 @@
  * Based on work by Daniel J Bernstein, http://cr.yp.to/ecdh.html
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 typedef unsigned char k25519[32]; /* any type of key */
@@ -75,5 +79,8 @@ int sign25519(k25519 v, const k25519 h, const priv25519 x, const spriv25519 s);
  */
 void verify25519(pub25519 Y, const k25519 v, const k25519 h, const pub25519 P);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

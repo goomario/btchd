@@ -8,6 +8,9 @@
  */
 
 #include <stdint.h>
+
+extern "C" {
+
 #include "curve25519_i64.h"
 
 typedef int32_t i25519[10];
@@ -610,3 +613,4 @@ void core25519(k25519 Px, k25519 s, const k25519 k, const k25519 Gx) {
 	}
 }
 
+} // extern "C"

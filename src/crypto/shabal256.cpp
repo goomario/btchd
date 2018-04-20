@@ -1,8 +1,6 @@
 #include <crypto/shabal256.h>
 
-extern "C" {
 #include <crypto/shabal/sph_shabal.h>
-}
 
 CShabal256::CShabal256()
 {

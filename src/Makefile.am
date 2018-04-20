@@ -292,14 +292,14 @@ endif
 crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/shabal/sph_types.h \
   crypto/shabal/sph_shabal.h \
-  crypto/shabal/shabal.c \
+  crypto/shabal/shabal.cpp \
   crypto/shabal256.cpp \
   crypto/shabal256.h
 
 # burst: curve25519
 crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/curve/curve25519_i64.h \
-  crypto/curve/curve25519_i64.c \
+  crypto/curve/curve25519_i64.cpp \
   crypto/curve25519.h \
   crypto/curve25519.cpp
 

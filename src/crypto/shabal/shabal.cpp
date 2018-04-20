@@ -33,6 +33,8 @@
 #include <stddef.h>
 #include <string.h>
 
+extern "C" {
+
 #include "sph_shabal.h"
 
 #ifdef _MSC_VER
@@ -525,7 +527,7 @@ shabal_init(void *cc, unsigned size)
 	default:
 		return;
 	}
-	sc = cc;
+	sc = (sph_shabal_context *) cc;
 	memcpy(sc->A, A_init, sizeof sc->A);
 	memcpy(sc->B, B_init, sizeof sc->B);
 	memcpy(sc->C, C_init, sizeof sc->C);
@@ -542,7 +544,7 @@ shabal_core(void *cc, const unsigned char *data, size_t len)
 	size_t ptr;
 	DECL_STATE
 
-	sc = cc;
+	sc = (sph_shabal_context *) cc;
 	buf = sc->buf;
 	ptr = sc->ptr;
 
@@ -600,7 +602,7 @@ shabal_close(void *cc, unsigned ub, unsigned n, void *dst, unsigned size_words)
 	size_t out_len;
 	DECL_STATE
 
-	sc = cc;
+	sc = (sph_shabal_context *) cc;
 	buf = sc->buf;
 	ptr = sc->ptr;
 	z = 0x80 >> n;
@@ -669,7 +671,7 @@ sph_shabal192_init(void *cc)
 void
 sph_shabal192(void *cc, const void *data, size_t len)
 {
-	shabal_core(cc, data, len);
+	shabal_core(cc, (const unsigned char *) data, len);
 }
 
 /* see sph_shabal.h */
@@ -697,7 +699,7 @@ sph_shabal224_init(void *cc)
 void
 sph_shabal224(void *cc, const void *data, size_t len)
 {
-	shabal_core(cc, data, len);
+	shabal_core(cc, (const unsigned char *) data, len);
 }
 
 /* see sph_shabal.h */
@@ -725,7 +727,7 @@ sph_shabal256_init(void *cc)
 void
 sph_shabal256(void *cc, const void *data, size_t len)
 {
-	shabal_core(cc, data, len);
+	shabal_core(cc, (const unsigned char *) data, len);
 }
 
 /* see sph_shabal.h */
@@ -753,7 +755,7 @@ sph_shabal384_init(void *cc)
 void
 sph_shabal384(void *cc, const void *data, size_t len)
 {
-	shabal_core(cc, data, len);
+	shabal_core(cc, (const unsigned char *) data, len);
 }
 
 /* see sph_shabal.h */
@@ -781,7 +783,7 @@ sph_shabal512_init(void *cc)
 void
 sph_shabal512(void *cc, const void *data, size_t len)
 {
-	shabal_core(cc, data, len);
+	shabal_core(cc, (const unsigned char *) data, len);
 }
 
 /* see sph_shabal.h */
@@ -797,3 +799,5 @@ sph_shabal512_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
 {
 	shabal_close(cc, ub, n, dst, 16);
 }
+
+} // extern "C"
