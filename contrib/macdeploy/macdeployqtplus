@@ -215,7 +215,7 @@ def getFrameworks(binaryPath, verbose):
     otoolLines.pop(0) # First line is the inspected binary
     if ".framework" in binaryPath or binaryPath.endswith(".dylib"):
         otoolLines.pop(0) # Frameworks and dylibs list themselves as a dependency.
-    
+
     libraries = []
     for line in otoolLines:
         line = line.replace("@loader_path", os.path.dirname(binaryPath))
@@ -225,7 +225,18 @@ def getFrameworks(binaryPath, verbose):
                 print("Found framework:")
                 print(info)
             libraries.append(info)
-    
+
+    # fixes libboost_system-mt.dylib missing.
+    if binaryPath.endswith("/Contents/MacOS/BCO-Qt"):
+        for lib in libraries:
+            if lib.installName.endswith("/libboost_thread-mt.dylib"):
+                for lib2 in getFrameworks(lib.installName, verbose):
+                    if lib2.installName.endswith("/libboost_system-mt.dylib"):
+                        libraries.append(lib2)
+                        print("Fixes libboost_system-mt.dylib missing.")
+                        break
+                break
+
     return libraries
 
 def runInstallNameTool(action, *args):
