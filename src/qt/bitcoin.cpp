@@ -80,6 +80,10 @@ Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 // Declare meta types used for QMetaObject::invokeMethod
 Q_DECLARE_METATYPE(bool*)
 Q_DECLARE_METATYPE(CAmount)
+Q_DECLARE_METATYPE(int32_t)
+Q_DECLARE_METATYPE(uint32_t)
+//Q_DECLARE_METATYPE(int64_t) // long int
+Q_DECLARE_METATYPE(uint64_t)
 
 static void InitMessage(const std::string &message)
 {
