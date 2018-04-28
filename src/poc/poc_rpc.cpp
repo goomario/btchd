@@ -121,7 +121,7 @@ static UniValue SubmitNonceAsSolo(const JSONRPCRequest& request)
 
     SubmitNonce(result,
         static_cast<uint64_t>(std::stoull(request.params[0].get_str())),
-        poc::GetAccountIdByPassPhrase(request.params[2].get_str()));
+        poc::GetAccountIdByPassPhrase(request.params[1].get_str()));
 
     return result;
 }
