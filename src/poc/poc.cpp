@@ -379,7 +379,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
     }
 
     uint64_t deadline = CalculateDeadline(prevBlockIndex, block);
-    return block.nTime > prevBlockIndex.nTime + deadline;
+    return deadline <= 24 * 60 * 60 && block.nTime > prevBlockIndex.nTime + deadline;
 }
 
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
