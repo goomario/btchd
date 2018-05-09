@@ -80,7 +80,7 @@ uint32_t CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirst
     return bnNew.GetCompact();
 }
 
-bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& params, int blockHeight)
+bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& params, int blockHeight, bool bCheckPoCDeadline)
 {
     // Get block height
     if (blockHeight == -1) {
@@ -102,7 +102,7 @@ bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& param
                 return false;
             }
 
-            return ::poc::VerifyGenerationSignature(*(iter->second), *pblock, params);
+            return ::poc::VerifyGenerationSignature(*(iter->second), *pblock, bCheckPoCDeadline, params);
         }
     }
 

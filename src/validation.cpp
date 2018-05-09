@@ -3746,7 +3746,7 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
             return error("%s: Check BCO block's time failed: %s", __func__, pindex->ToString());
 
         CBlockHeader blockHeader = pindex->GetBlockHeader();
-        if (!CheckProofOfWork(&blockHeader, consensus_params, pindex->nHeight))
+        if (!CheckProofOfWork(&blockHeader, consensus_params, pindex->nHeight, false))
             return error("%s: CheckProofOfWork failed: %s", __func__, pindex->ToString());
     }
 

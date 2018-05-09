@@ -56,7 +56,7 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
 
     if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
         // test
-        return 60;
+        return 1;
     }
 
     const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
@@ -361,7 +361,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
     }
 }
 
-bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
+bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, 
+    bool bForceCheckDeadline, const Consensus::Params& params)
 {
     if (block.GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN ||
         block.nBits != CalculateBaseTarget(prevBlockIndex, block, params)) {
@@ -372,30 +373,38 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
         // God Mode
         return true;
     }
-    
-    if (params.fPowAllowMinDifficultyBlocks) {
-        // test
+
+    // Optional check deadline. 
+    // If block forge time interval more than 30 minute, then force check block deadline.
+    if (!bForceCheckDeadline && (prevBlockIndex.nHeight + 1) % 100 != 0 && block.nTime < prevBlockIndex.nTime + 30 * 60) {
         return true;
     }
 
+    // Check deadline
     uint64_t deadline = CalculateDeadline(prevBlockIndex, block);
-    return deadline <= 24 * 60 * 60 && block.nTime > prevBlockIndex.nTime + deadline;
+    return deadline <= 30 * 24 * 60 * 60 && block.nTime > prevBlockIndex.nTime + deadline;
 }
 
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId, 
     uint64_t &deadline)
 {
-    LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ", deadline=%" PRIu64 "\n",
-        prevBlockIndex.nHeight + 1, nNonce, nAccountId, deadline);
+    LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 "\n",
+        prevBlockIndex.nHeight + 1, nNonce, nAccountId);
 
     CBlockHeader block;
     block.nVersion = ComputeBlockVersion(&prevBlockIndex, Params().GetConsensus());
     block.nNonce = nNonce;
     block.nPlotSeed = nAccountId;
 
-    deadline = CalculateDeadline(prevBlockIndex, block);
+    uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block);
+    if (calcDeadline > 30 * 24 * 60 * 60) {
+        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1dday, more than 30day.\n",
+            prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (30 * 24 * 60 * 60 * 1.0f));
+        return false;
+    }
 
+    deadline = calcDeadline;
     if (gNextBlockHeight != prevBlockIndex.nHeight + 1 
         || nAccountId != gNextBlockSeed 
         || deadline < gNextBlockDeadline) {
