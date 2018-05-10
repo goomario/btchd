@@ -559,7 +559,7 @@
     </message>
     <message>
         <source>A fatal error occurred. BCO can no longer continue safely and will quit.</source>
-        <translation>發生了致命的錯誤。Bitcoin 軟體沒辦法再繼續安全執行，只好結束。</translation>
+        <translation>發生了致命的錯誤。BCO 軟體沒辦法再繼續安全執行，只好結束。</translation>
     </message>
 </context>
 <context>
