@@ -1031,7 +1031,7 @@
     </message>
     <message>
         <source>&amp;Start %1 on system login</source>
-        <translation>系统登入时启动 %1 (&amp;S</translation>
+        <translation>系统登入时启动 %1 (&amp;S)</translation>
     </message>
     <message>
         <source>Size of &amp;database cache</source>
@@ -4199,15 +4199,15 @@
     </message>
     <message>
         <source>Plot files</source>
-        <translation>Plot 文件</translation>
+        <translation>挖矿文件</translation>
     </message>
     <message>
         <source>Add plot file</source>
-        <translation>添加 Plot 文件</translation>
+        <translation>添加挖矿文件</translation>
     </message>
     <message>
         <source>Remove plot file</source>
-        <translation>移除 Plot 文件</translation>
+        <translation>移除挖矿文件</translation>
     </message>
     <message>
         <source>Log</source>
@@ -4223,11 +4223,11 @@
     </message>
     <message>
         <source>Add Plot File</source>
-        <translation>添加 Plot 文件</translation>
+        <translation>添加挖矿文件</translation>
     </message>
     <message>
         <source>Plot File(*)</source>
-        <translation>Plot 文件(*)</translation>
+        <translation>挖矿文件(*)</translation>
     </message>
     <message>
         <source>Please input your passphrase!</source>
@@ -4235,7 +4235,7 @@
     </message>
     <message>
         <source>Please add your plot files!</source>
-        <translation>请添加 Plot 文件！</translation>
+        <translation>请添加挖矿文件！</translation>
     </message>
     <message>
         <source>Error: Cannot read miner default configuration file!</source>
@@ -4247,11 +4247,11 @@
     </message>
     <message>
         <source>The new block will be forged in %1 second.</source>
-        <translation>将在%1秒后锻造新块。</translation>
+        <translation>将在 %1 秒后锻造新块。</translation>
     </message>
     <message>
         <source>Forging...</source>
-        <translation>正在锻造......</translation>
+        <translation>正在锻造...</translation>
     </message>
     <message>
         <source>Show passphrase.</source>
@@ -4310,7 +4310,7 @@
     </message>
     <message>
         <source>Thread number</source>
-        <translation>CPU线程数</translation>
+        <translation>计算并行数</translation>
     </message>
     <message>
         <source>Memory(GB)</source>
@@ -4377,8 +4377,8 @@
         <translation>此脑密码的数字ID为: %1。</translation>
     </message>
     <message>
-        <source>100,000 nonces require approximately 25.5GB of storage(256KB per nonce).</source>
-        <translation>10万个块大约需要25.5GB的存储空间(每个块256KB)。</translation>
+        <source>100,000 nonces require approximately 24.41GB of storage (256KB per nonce).</source>
+        <translation>10万个块大约需要 24.41GB 的存储空间 (每个块256KB)。</translation>
     </message>
 </context>
 </TS>

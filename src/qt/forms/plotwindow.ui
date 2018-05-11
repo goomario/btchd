@@ -86,7 +86,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>100,000 nonces require approximately 25.5GB of storage(256KB per nonce).</string>
+          <string>100,000 nonces require approximately 24.41GB of storage (256KB per nonce).</string>
          </property>
          <property name="minimum">
           <number>1</number>
