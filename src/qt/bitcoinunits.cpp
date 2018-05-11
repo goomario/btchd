@@ -60,9 +60,9 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case BCO: return QString("BitcoinOres");
-    case mBCO: return QString("Milli-BitcoinOres (1 / 1" THIN_SP_UTF8 "000)");
-    case uBCO: return QString("Micro-BitcoinOres (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case BCO: return QString("BCOs");
+    case mBCO: return QString("Milli-BCOs (1 / 1" THIN_SP_UTF8 "000)");
+    case uBCO: return QString("Micro-BCOs (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     default: return QString("???");
     }
 }

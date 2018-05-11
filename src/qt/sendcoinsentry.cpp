@@ -27,6 +27,7 @@ SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *par
     ui->deleteButton->setIcon(platformStyle->SingleColorIcon(":/icons/remove"));
     ui->deleteButton_is->setIcon(platformStyle->SingleColorIcon(":/icons/remove"));
     ui->deleteButton_s->setIcon(platformStyle->SingleColorIcon(":/icons/remove"));
+    ui->payAmount->setContentsMargins(0, 0, 6, 0);
 
     setCurrentWidget(ui->SendCoins);
 
