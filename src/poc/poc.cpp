@@ -376,7 +376,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
 
     // Optional check deadline. 
     // If block forge time interval more than 30 minute, then force check block deadline.
-    if (!bForceCheckDeadline && (prevBlockIndex.nHeight + 1) % 100 != 0 && block.nTime < prevBlockIndex.nTime + 30 * 60) {
+    if (!bForceCheckDeadline && block.nTime < prevBlockIndex.nTime + 30 * 60) {
         return true;
     }
 
