@@ -421,7 +421,7 @@
     </message>
     <message>
         <source>Open &amp;Plotter</source>
-        <translation>打开P盘工具(&amp;P)</translation>
+        <translation>打开写盘控制台(&amp;P)</translation>
     </message>
     <message>
         <source>&amp;Help</source>
@@ -433,7 +433,7 @@
     </message>
     <message>
         <source>Open plot generator console</source>
-        <translation>打开P盘工具</translation>
+        <translation>打开写盘控制台</translation>
     </message>
     <message>
         <source>Tabs toolbar</source>
@@ -4230,7 +4230,7 @@
         <translation>Plot 文件(*)</translation>
     </message>
     <message>
-        <source>Please input your passphare!</source>
+        <source>Please input your passphrase!</source>
         <translation>请输入脑密码！</translation>
     </message>
     <message>
@@ -4253,16 +4253,28 @@
         <source>Forging...</source>
         <translation>正在锻造......</translation>
     </message>
+    <message>
+        <source>Show passphrase.</source>
+        <translation>显示脑密码。</translation>
+    </message>
+    <message>
+        <source>Hide passphrase.</source>
+        <translation>显示脑密码。</translation>
+    </message>
+    <message>
+        <source>Results beyond this range will not be submitted.</source>
+        <translation>超过此范围的结果不会被提交。</translation>
+    </message>
 </context>
 <context>
     <name>PlotConsole</name>
     <message>
         <source>Plot console</source>
-        <translation>P盘工具</translation>
+        <translation>写盘控制台</translation>
     </message>
     <message>
         <source>Open plot generator console</source>
-        <translation>打开P盘工具</translation>
+        <translation>打开写盘控制台</translation>
     </message>
     <message>
         <source>Passphrase</source>
@@ -4271,6 +4283,22 @@
     <message>
         <source>Enter your passphrase</source>
         <translation>输入你的脑密码</translation>
+    </message>
+    <message>
+        <source>Can only contain lowercase letters and spaces, and is between 20 and 255 characters.</source>
+        <translation>只能包含小写字母和空格，并且在20到255个字符之间。</translation>
+    </message>
+    <message>
+        <source>Please remeber your passphrase.</source>
+        <translation>请保存好你的脑密码。</translation>
+    </message>
+    <message>
+        <source>Gen</source>
+        <translation>生成</translation>
+    </message>
+    <message>
+        <source>Auto generate a passphrase.</source>
+        <translation>自动生成一个脑密码。</translation>
     </message>
     <message>
         <source>Start nonce</source>
@@ -4294,15 +4322,15 @@
     </message>
     <message>
         <source>Select your plot file folder</source>
-        <translation>选择 Plot 文件输出目录</translation>
+        <translation>选择数据文件输出目录</translation>
     </message>
     <message>
         <source>Start plot</source>
-        <translation>开始P盘</translation>
+        <translation>开始写盘</translation>
     </message>
     <message>
         <source>Stop plot</source>
-        <translation>终止P盘</translation>
+        <translation>终止写盘</translation>
     </message>
     <message>
         <source>Log</source>
@@ -4310,11 +4338,11 @@
     </message>
     <message>
         <source>The plot file size: %1GB.</source>
-        <translation>Plot 文件容量：%1GB.</translation>
+        <translation>数据文件容量: %1GB。</translation>
     </message>
     <message>
         <source>The destination folder free size: %1GB.</source>
-        <translation>目标文件夹可用容量：%1GB.</translation>
+        <translation>目标文件夹可用容量: %1GB。</translation>
     </message>
     <message>
         <source>This folder free size not enough!</source>
@@ -4322,19 +4350,35 @@
     </message>
     <message>
         <source>This folder max nonce number: %1</source>
-        <translation>目标文件夹最多可存储的块数量：%1</translation>
+        <translation>目标文件夹最多可存储的块数量: %1。</translation>
+    </message>
+    <message>
+        <source>Please select exist directory to save this plot file!</source>
+        <translation>请选择一个已经存在的目录来保存数据文件！</translation>
     </message>
     <message>
         <source>Select plot folder</source>
-        <translation>选择 Plot 文件输出目录</translation>
-    </message>
-    <message>
-        <source>Please input your passphare!</source>
-        <translation>请输入脑密码！</translation>
+        <translation>选择数据文件输出目录</translation>
     </message>
     <message>
         <source>Please input plot folder!</source>
-        <translation>请选择 Plot 文件的存储目录！</translation>
+        <translation>请选择数据文件的存储目录！</translation>
+    </message>
+    <message>
+        <source>Show passphrase.</source>
+        <translation>显示脑密码。</translation>
+    </message>
+    <message>
+        <source>Hide passphrase.</source>
+        <translation>隐藏脑密码。</translation>
+    </message>
+    <message>
+        <source>The Passphrase Digital ID: %1.</source>
+        <translation>此脑密码的数字ID为: %1。</translation>
+    </message>
+    <message>
+        <source>100,000 nonces require approximately 25.5GB of storage(256KB per nonce).</source>
+        <translation>10万个块大约需要25.5GB的存储空间(每个块256KB)。</translation>
     </message>
 </context>
 </TS>

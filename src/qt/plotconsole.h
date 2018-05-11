@@ -36,14 +36,17 @@ private:
     void notifyPlotStatusChanged(bool plotting);
     void saveSettings();
     void appendLog(const QStringList &lines);
+    void updatePlotInfo();
+    bool isShowPassphrase();
 
 public Q_SLOTS:
     void close();
 
 private Q_SLOTS:
-    void updatePlotInfo();
-    void plotSpinBoxValueChanged(int i);
-
+    void on_plotParamSpinBox_changed(int i);
+    void on_passphraseEdit_changed();
+    void on_togglePassphraseButton_clicked();
+    void on_genPassphraseButton_clicked();
     void on_setPlotPathButton_clicked();
     void on_startPlotButton_clicked();
 
@@ -55,6 +58,9 @@ private Q_SLOTS:
 
 private:
     Ui::PlotConsole *ui;
+    const PlatformStyle *platformStyle;
+
+    QString passphrase;
 
     std::unique_ptr<QProcess> plotProcess;
 };

@@ -13,13 +13,17 @@
 
 #include <chainparams.h>
 #include <chainparamsbase.h>
+#include "poc/passphrase.h"
 #include <poc/poc.h>
 #include <util.h>
 
 #include <QDesktopWidget>
+#include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
+#include <QRegExp>
 #include <QScrollBar>
 #include <QSettings>
 #include <QStorageInfo>
@@ -40,10 +44,12 @@ const char xplotterRelativePath[] = "tools/xplotter";
 
 PlotConsole::PlotConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::PlotConsole)
+    ui(new Ui::PlotConsole),
+    platformStyle(_platformStyle)
 {
     ui->setupUi(this);
-    connect(ui->noncesSpinBox, SIGNAL(valueChanged(int)), this, SLOT(plotSpinBoxValueChanged(int)));
+    connect(ui->noncesSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_plotParamSpinBox_changed(int)));
+    connect(ui->passphraseEdit->document(), SIGNAL(contentsChanged()), this, SLOT(on_passphraseEdit_changed()));
 
     QSettings settings;
     if (!restoreGeometry(settings.value("PlotConsoleWindowGeometry").toByteArray())) {
@@ -52,21 +58,23 @@ PlotConsole::PlotConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     }
 
     // Load config
-    ui->passphraseLineEdit->setText(settings.value(passphraseSettingsKey, "").toString());
+    ui->passphraseEdit->document()->setPlainText(settings.value(passphraseSettingsKey,"").toString());
     ui->startNonceSpinBox->setValue(settings.value(startNonceSettingsKey, "0").toInt());
     ui->noncesSpinBox->setValue(settings.value(noncesSettingsKey, "1").toInt());
     ui->threadsSpinBox->setValue(settings.value(threadNumberSettingsKey, "4").toInt());
     ui->memoryGBSpinBox->setValue(settings.value(memoryGBSettingsKey, "1").toInt());
     ui->plotfolderLineEdit->setText(settings.value(folderSettingsKey, "").toString());
 
-    // Update mining status
-    notifyPlotStatusChanged(false);
-
     plotProcess = std::unique_ptr<QProcess>(new QProcess());
     connect(plotProcess.get(), SIGNAL(started()), this, SLOT(onPlotStarted()));
     connect(plotProcess.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onPlotFinished(int, QProcess::ExitStatus)));
     connect(plotProcess.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(onPlotReadyReadStandardOutput()));
     connect(plotProcess.get(), SIGNAL(readyReadStandardError()), this, SLOT(onPlotReadyReadStandardError()));
+
+    on_togglePassphraseButton_clicked(); // default set to hide
+
+    // Update mining status
+    notifyPlotStatusChanged(false);
 
     updatePlotInfo();
 }
@@ -86,14 +94,19 @@ PlotConsole::~PlotConsole()
 void PlotConsole::notifyPlotStatusChanged(bool plotting)
 {
     ui->startPlotButton->setText(plotting ? tr("Stop plot") : tr("Start plot"));
-    ui->passphraseLineEdit->setReadOnly(plotting);
+    ui->passphraseEdit->setReadOnly(plotting || !isShowPassphrase());
     ui->threadsSpinBox->setEnabled(!plotting);
     ui->startNonceSpinBox->setEnabled(!plotting);
     ui->noncesSpinBox->setEnabled(!plotting);
     ui->memoryGBSpinBox->setEnabled(!plotting);
+    ui->plotfolderLineEdit->setEnabled(!plotting);
     ui->setPlotPathButton->setEnabled(!plotting);
+    ui->togglePassphraseButton->setEnabled(!plotting);
+    ui->genPassphraseButton->setEnabled(!plotting);
 
     if (plotting) {
+        if (isShowPassphrase()) on_togglePassphraseButton_clicked();
+
         saveSettings();
     }
 }
@@ -101,7 +114,7 @@ void PlotConsole::notifyPlotStatusChanged(bool plotting)
 void PlotConsole::saveSettings()
 {
     QSettings settings;
-    settings.setValue(passphraseSettingsKey, ui->passphraseLineEdit->text());
+    settings.setValue(passphraseSettingsKey, passphrase);
     settings.setValue(startNonceSettingsKey, ui->startNonceSpinBox->value());
     settings.setValue(noncesSettingsKey, ui->noncesSpinBox->value());
     settings.setValue(threadNumberSettingsKey, ui->threadsSpinBox->value());
@@ -151,24 +164,37 @@ void PlotConsole::updatePlotInfo()
 {
     QString info;
 
+    // Account
+    if (!passphrase.isEmpty()) {
+        info += tr("The Passphrase Digital ID: %1.").arg((uint64_t)poc::GetAccountIdByPassPhrase(passphrase.toUtf8().constData())) + "\n";
+    }
+
     // plot file size
-    int64_t requireByteSize = ui->noncesSpinBox->value() * 256LL * 1024;
-    info += tr("The plot file size: %1GB.").arg(1.0f * requireByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
+    int64_t requireByteSize = ui->noncesSpinBox->value() * 256LL * 1024; // 256KB
+    info += tr("The plot file size: %1GB.").arg(1.0f * requireByteSize / 1024 / 1024 / 1024, 5, 'f', 2) + "\n";
 
     // validate space
-    if (!ui->plotfolderLineEdit->text().isEmpty()) {
+    if (!ui->plotfolderLineEdit->text().isEmpty() && QDir(ui->plotfolderLineEdit->text()).exists()) {
         int64_t availableByteSize = (int64_t)QStorageInfo(ui->plotfolderLineEdit->text()).bytesAvailable();
-        info += "\n" + tr("The destination folder free size: %1GB.").arg(1.0f * availableByteSize / 1024 / 1024 / 1024, 5, 'f', 2);
+        info += tr("The destination folder free size: %1GB.").arg(1.0f * availableByteSize / 1024 / 1024 / 1024, 5, 'f', 2) + "\n";
         if (availableByteSize < requireByteSize) {
-            info += "\n" + tr("This folder free size not enough!");
-            info += "\n" + tr("This folder max nonce number: %1").arg((availableByteSize - 32 * 1024 * 1024) / (256LL*1024)); // reserved 32MB
+            info += tr("This folder free size not enough!") + "\n";
+            info += tr("This folder max nonce number: %1.").arg((availableByteSize - 32 * 1024 * 1024) / (256LL*1024)) + "\n"; // reserved 32MB
         }
+    } else {
+        info += tr("Please select exist directory to save this plot file!") + "\n";
     }
+    
 
     ui->plotinfoLabel->setText(info);
 }
 
-void PlotConsole::plotSpinBoxValueChanged(int)
+bool PlotConsole::isShowPassphrase()
+{
+    return passphrase == ui->passphraseEdit->document()->toPlainText();
+}
+
+void PlotConsole::on_plotParamSpinBox_changed(int)
 {
     updatePlotInfo();
 }
@@ -180,6 +206,53 @@ void PlotConsole::close()
     if (plotProcess->state() != QProcess::NotRunning) {
         plotProcess->kill();
     }
+}
+
+void PlotConsole::on_passphraseEdit_changed()
+{
+    QString text = ui->passphraseEdit->document()->toPlainText();
+    if (text.isEmpty()) {
+        // clear. not readonly
+        passphrase = "";
+        updatePlotInfo();
+    } else if (text != QString(std::string(text.length(), '*').c_str())) {
+        // passphrase
+        passphrase = text;
+        updatePlotInfo();
+    } else {
+        // set to "**********"
+        // ignore this text
+    }
+}
+
+void PlotConsole::on_togglePassphraseButton_clicked()
+{
+    if (!passphrase.isEmpty() && isShowPassphrase()) {
+        // hide, next action is show
+        ui->passphraseEdit->document()->setPlainText(QString(std::string(passphrase.length(), '*').c_str()));
+        ui->passphraseEdit->setReadOnly(true);
+        ui->togglePassphraseButton->setIcon(platformStyle->SingleColorIcon(":/icons/eye"));
+        ui->togglePassphraseButton->setToolTip(tr("Show passphrase."));
+    } else {
+        // show, next action is hide
+        ui->passphraseEdit->document()->setPlainText(passphrase);
+        ui->passphraseEdit->setReadOnly(false);
+        ui->togglePassphraseButton->setIcon(platformStyle->SingleColorIcon(":/icons/eye_close"));
+        ui->togglePassphraseButton->setToolTip(tr("Hide passphrase."));
+    }
+}
+
+void PlotConsole::on_genPassphraseButton_clicked()
+{
+    if (!isShowPassphrase())
+        on_togglePassphraseButton_clicked();
+
+    ui->passphraseEdit->document()->setPlainText(QString(poc::generatePassPhrase().c_str()));
+    ui->passphraseEdit->selectAll();
+
+    saveSettings();
+
+    QMessageBox::warning(this, tr("Plot console"), QString(tr("Please remeber your passphrase.")));
 }
 
 void PlotConsole::on_setPlotPathButton_clicked()
@@ -199,14 +272,20 @@ void PlotConsole::on_startPlotButton_clicked()
 {
     if (plotProcess->state() == QProcess::NotRunning) {
         // Start plot
-        if (ui->passphraseLineEdit->text().isEmpty()) {
-            QMessageBox::information(this, tr("Plot console"), QString(tr("Please input your passphare!")));
+        if (passphrase.isEmpty() || !QRegExp("^[a-z\\ ]{20,256}$").exactMatch(passphrase)) {
+            ui->passphraseEdit->setStyleSheet("QPlainTextEdit { color: red; }");
+            QMessageBox::information(this, tr("Plot console"),
+                QString(tr("Can only contain lowercase letters and spaces, and is between 20 and 255 characters.")));
             return;
         }
-        if (ui->plotfolderLineEdit->text().isEmpty()) {
-            QMessageBox::information(this, tr("Plot console"), QString(tr("Please input plot folder!")));
+        ui->passphraseEdit->setStyleSheet("");
+
+        if (ui->plotfolderLineEdit->text().isEmpty() || !QDir(ui->plotfolderLineEdit->text()).exists()) {
+            ui->plotfolderLineEdit->setStyleSheet("QLineEdit { color: red; }");
+            QMessageBox::information(this, tr("Plot console"), QString(tr("Please select exist directory to save this plot file!")));
             return;
         }
+        ui->plotfolderLineEdit->setStyleSheet("");
 
         ui->startPlotButton->setEnabled(false);
 
@@ -217,16 +296,20 @@ void PlotConsole::on_startPlotButton_clicked()
         const QString xplotterDir = QString((GetAppDir() / xplotterRelativePath).c_str());
         const QString xplotterFile = "XPlotter_sse";
 #endif
-        const QStringList arguments = QStringList() 
-            << "-id" << QString::number(poc::GetAccountIdByPassPhrase(ui->passphraseLineEdit->text().toStdString()))
-            << "-sn" << QString::number(ui->startNonceSpinBox->value())
-            << "-n" << QString::number(ui->noncesSpinBox->value())
-            << "-t" << QString::number(ui->threadsSpinBox->value())
-            << "-mem" << QString::number(ui->memoryGBSpinBox->value()) + "G"
-            << "-path" << ui->plotfolderLineEdit->text() + "/";
+        if (QFileInfo(xplotterDir + "/" + xplotterFile).exists()) {
+            const QStringList arguments = QStringList() 
+                << "-id" << QString::number(poc::GetAccountIdByPassPhrase(passphrase.toStdString()))
+                << "-sn" << QString::number(ui->startNonceSpinBox->value())
+                << "-n" << QString::number(ui->noncesSpinBox->value())
+                << "-t" << QString::number(ui->threadsSpinBox->value())
+                << "-mem" << QString::number(ui->memoryGBSpinBox->value()) + "G"
+                << "-path" << ui->plotfolderLineEdit->text() + "/";
 
-        plotProcess->setWorkingDirectory(xplotterDir);
-        plotProcess->start(xplotterDir + "/" + xplotterFile, arguments, QProcess::ReadOnly);
+            plotProcess->setWorkingDirectory(xplotterDir);
+            plotProcess->start(xplotterDir + "/" + xplotterFile, arguments, QProcess::ReadOnly);
+        } else {
+            ui->startPlotButton->setEnabled(true);
+        }
     } else {
         // Stop plot
         ui->startPlotButton->setEnabled(false);
