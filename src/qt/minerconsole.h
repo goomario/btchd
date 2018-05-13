@@ -37,12 +37,16 @@ public:
 private:
     void notifyMiningStatusChanged(bool mining);
     void saveSettings();
+    void savePlotfiles();
     void appendLog(const QStringList &lines);
+    bool isShowPassphrase();
 
 public Q_SLOTS:
     void close();
 
 private Q_SLOTS:
+    void on_passphraseEdit_changed();
+    void on_togglePassphraseButton_clicked();
     void on_plotfileList_itemSelectionChanged();
     void on_addPlotFileButton_clicked();
     void on_removePlotFileButton_clicked();
@@ -63,6 +67,9 @@ Q_SIGNALS:
 
 private:
     Ui::MinerConsole *ui;
+    const PlatformStyle *platformStyle;
+
+    QString passphrase;
 
     std::unique_ptr<QTemporaryFile> minerConfigFile;
     std::unique_ptr<QProcess> minerProcess;

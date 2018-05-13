@@ -18,6 +18,6 @@ uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *
 uint32_t CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params&);
 
 /** Check whether a block hash satisfies the proof-of-work requirement specified by nBits */
-bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params&, int blockHeight);
+bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params&, int blockHeight, bool bCheckPoCDeadline = true);
 
 #endif // BITCOIN_POW_H

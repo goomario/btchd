@@ -20,6 +20,7 @@
 #include <QDesktopWidget>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QSettings>
@@ -50,9 +51,11 @@ static void notifyBcoDeadlineChanged(MinerConsole *minerConsole, int32_t nHeight
 MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::MinerConsole),
+    platformStyle(_platformStyle),
     checkForgeTimer(0)
 {
     ui->setupUi(this);
+    connect(ui->passphraseEdit->document(), SIGNAL(contentsChanged()), this, SLOT(on_passphraseEdit_changed()));
     ui->removePlotFileButton->setEnabled(false);
 
     QSettings settings;
@@ -62,7 +65,7 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     }
 
     // Load config
-    ui->passphraseLineEdit->setText(settings.value(passphraseSettingsKey,"").toString());
+    ui->passphraseEdit->document()->setPlainText(settings.value(passphraseSettingsKey,"").toString());
     ui->targetDeadlineLineEdit->setText(settings.value(targetDeadlineSettingsKey, "").toString());
     ui->plotfileList->addItems(settings.value(plotfilesSettingsKey, "").toStringList());
     for (int i = 0; i < ui->plotfileList->count(); ) {
@@ -73,8 +76,7 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
         }
     }
 
-    // Update mining status
-    notifyMiningStatusChanged(false);
+    on_togglePassphraseButton_clicked(); // default set to hide
 
     // miner process
     minerProcess = std::unique_ptr<QProcess>(new QProcess());
@@ -89,6 +91,9 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     checkForgeTimer->setInterval(1000);
     connect(checkForgeTimer, SIGNAL(timeout()), this, SLOT(onCheckDeadlineTimeout()));
     connect(this, SIGNAL(deadlineChanged(int32_t, uint64_t, uint64_t)), this, SLOT(onDeadlineChanged(int32_t, uint64_t, uint64_t)));
+
+    // Update mining status
+    notifyMiningStatusChanged(false);
 }
 
 MinerConsole::~MinerConsole()
@@ -115,10 +120,13 @@ void MinerConsole::notifyMiningStatusChanged(bool mining)
     ui->switchMiningButton->setText(mining ? tr("Stop mining") : tr("Start mining"));
     ui->addPlotFileButton->setEnabled(!mining);
     ui->removePlotFileButton->setEnabled(!mining);
-    ui->passphraseLineEdit->setReadOnly(mining);
+    ui->passphraseEdit->setReadOnly(mining || !isShowPassphrase());
     ui->targetDeadlineLineEdit->setReadOnly(mining);
+    ui->togglePassphraseButton->setEnabled(!mining);
 
     if (mining) {
+        if (isShowPassphrase()) on_togglePassphraseButton_clicked();
+
         saveSettings();
     }
 }
@@ -126,13 +134,20 @@ void MinerConsole::notifyMiningStatusChanged(bool mining)
 void MinerConsole::saveSettings()
 {
     QSettings settings;
-    settings.setValue(passphraseSettingsKey, ui->passphraseLineEdit->text());
+    settings.setValue(passphraseSettingsKey, passphrase);
     settings.setValue(targetDeadlineSettingsKey, ui->targetDeadlineLineEdit->text());
 
+    savePlotfiles();
+}
+
+void MinerConsole::savePlotfiles()
+{
     QStringList plotfiles;
     for (int i = 0; i < ui->plotfileList->count(); i++) {
         plotfiles.append(ui->plotfileList->item(i)->text());
     }
+
+    QSettings settings;
     settings.setValue(plotfilesSettingsKey, plotfiles);
 }
 
@@ -167,6 +182,44 @@ void MinerConsole::close()
     minerConfigFile.reset();
 }
 
+bool MinerConsole::isShowPassphrase()
+{
+    return passphrase == ui->passphraseEdit->document()->toPlainText();
+}
+
+
+void MinerConsole::on_passphraseEdit_changed()
+{
+    QString text = ui->passphraseEdit->document()->toPlainText();
+    if (text.isEmpty()) {
+        // clear. not readonly
+        passphrase = "";
+    } else if (text != QString(std::string(text.length(), '*').c_str())) {
+        // passphrase
+        passphrase = text;
+    } else {
+        // set to "**********"
+        // ignore this text
+    }
+}
+
+void MinerConsole::on_togglePassphraseButton_clicked()
+{
+    if (!passphrase.isEmpty() && isShowPassphrase()) {
+        // hide, next action is show
+        ui->passphraseEdit->document()->setPlainText(QString(std::string(passphrase.length(), '*').c_str()));
+        ui->passphraseEdit->setReadOnly(true);
+        ui->togglePassphraseButton->setIcon(platformStyle->SingleColorIcon(":/icons/eye"));
+        ui->togglePassphraseButton->setToolTip(tr("Show passphrase."));
+    } else {
+        // show, next action is hide
+        ui->passphraseEdit->document()->setPlainText(passphrase);
+        ui->passphraseEdit->setReadOnly(false);
+        ui->togglePassphraseButton->setIcon(platformStyle->SingleColorIcon(":/icons/eye_close"));
+        ui->togglePassphraseButton->setToolTip(tr("Hide passphrase."));
+    }
+}
+
 void MinerConsole::on_plotfileList_itemSelectionChanged()
 {
     if (minerProcess->state() == QProcess::NotRunning) {
@@ -181,16 +234,18 @@ void MinerConsole::on_addPlotFileButton_clicked()
         return;
     }
 
+    for (int i = 0; i < ui->plotfileList->count(); i++) {
+        if (ui->plotfileList->item(i)->text() == path) {
+            // File exist in list
+            ui->plotfileList->setCurrentRow(i);
+            return;
+        }
+    }
+
     ui->plotfileList->addItem(path);
     ui->plotfileList->setCurrentRow(ui->plotfileList->count() - 1);
 
-    // update setting
-    QSettings settings;
-    QStringList plotfiles;
-    for (int i = 0; i < ui->plotfileList->count(); i++) {
-        plotfiles.append(ui->plotfileList->item(i)->text());
-    }
-    settings.setValue(plotfilesSettingsKey, plotfiles);
+    savePlotfiles();
 }
 
 void MinerConsole::on_removePlotFileButton_clicked()
@@ -199,13 +254,7 @@ void MinerConsole::on_removePlotFileButton_clicked()
     if (row != -1) {
         delete ui->plotfileList->takeItem(row);
 
-        // update setting
-        QSettings settings;
-        QStringList plotfiles;
-        for (int i = 0; i < ui->plotfileList->count(); i++) {
-            plotfiles.append(ui->plotfileList->item(i)->text());
-        }
-        settings.setValue(plotfilesSettingsKey, plotfiles);
+        savePlotfiles();
     }
 }
 
@@ -213,10 +262,13 @@ void MinerConsole::on_switchMiningButton_clicked()
 {
     if (minerProcess->state() == QProcess::NotRunning) {
         // Start mining
-        if (ui->passphraseLineEdit->text().isEmpty()) {
+        if (passphrase.isEmpty()) {
+            ui->passphraseEdit->setStyleSheet("QPlainTextEdit { color: red; }");
             QMessageBox::information(this, tr("Miner console"), QString(tr("Please input your passphare!")));
             return;
         }
+        ui->passphraseEdit->setStyleSheet("");
+
         if (ui->plotfileList->count() == 0) {
             QMessageBox::information(this, tr("Miner console"), QString(tr("Please add your plot files!")));
             return;
@@ -245,7 +297,7 @@ void MinerConsole::on_switchMiningButton_clicked()
             }
 
             configContent = configContent
-                .replace("${passphrase}", ui->passphraseLineEdit->text())
+                .replace("${passphrase}", passphrase)
                 .replace("${targetDeadline}", ui->targetDeadlineLineEdit->text())
                 .replace("${miningInfo}", QString("http://127.0.0.1:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
                 .replace("${submission}", QString("http://127.0.0.1:") + QString::number(BaseParams().RPCPort()) + QString("/burst"))
@@ -278,8 +330,12 @@ void MinerConsole::on_switchMiningButton_clicked()
             const QString creepMinerFile = "creepMiner";
             const QStringList arguments = QStringList() << "--config" << minerConfigFile->fileName();
 #endif
-            minerProcess->setWorkingDirectory(creepMinerDir);
-            minerProcess->start(creepMinerDir + "/" + creepMinerFile, arguments, QProcess::ReadOnly);
+            if (QFileInfo(creepMinerDir + "/" + creepMinerFile).exists()) {
+                minerProcess->setWorkingDirectory(creepMinerDir);
+                minerProcess->start(creepMinerDir + "/" + creepMinerFile, arguments, QProcess::ReadOnly);
+            } else {
+                ui->switchMiningButton->setEnabled(true);
+            }
         }
     } else {
         // Stop mining

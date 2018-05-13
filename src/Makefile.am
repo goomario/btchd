@@ -186,6 +186,8 @@ libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
 # POC core #
 POC_CORE = \
+  poc/passphrase.h \
+  poc/passphrase-en.cpp \
   poc/poc.h \
   poc/poc.cpp \
   poc/poc_rpc.cpp

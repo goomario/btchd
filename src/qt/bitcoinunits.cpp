@@ -17,9 +17,9 @@ BitcoinUnits::BitcoinUnits(QObject *parent):
 QList<BitcoinUnits::Unit> BitcoinUnits::availableUnits()
 {
     QList<BitcoinUnits::Unit> unitlist;
-    unitlist.append(BTC);
-    unitlist.append(mBTC);
-    unitlist.append(uBTC);
+    unitlist.append(BCO);
+    unitlist.append(mBCO);
+    unitlist.append(uBCO);
     return unitlist;
 }
 
@@ -27,9 +27,9 @@ bool BitcoinUnits::valid(int unit)
 {
     switch(unit)
     {
-    case BTC:
-    case mBTC:
-    case uBTC:
+    case BCO:
+    case mBCO:
+    case uBCO:
         return true;
     default:
         return false;
@@ -40,9 +40,9 @@ QString BitcoinUnits::longName(int unit)
 {
     switch(unit)
     {
-    case BTC: return QString("BCO");
-    case mBTC: return QString("mBCO");
-    case uBTC: return QString::fromUtf8("µBCO (bits)");
+    case BCO: return QString("BCO");
+    case mBCO: return QString("mBCO");
+    case uBCO: return QString::fromUtf8("µBCO (bits)");
     default: return QString("???");
     }
 }
@@ -51,7 +51,7 @@ QString BitcoinUnits::shortName(int unit)
 {
     switch(unit)
     {
-    case uBTC: return QString::fromUtf8("bits");
+    case uBCO: return QString::fromUtf8("bits");
     default:   return longName(unit);
     }
 }
@@ -60,9 +60,9 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case BTC: return QString("BitcoinOres");
-    case mBTC: return QString("Milli-BitcoinOres (1 / 1" THIN_SP_UTF8 "000)");
-    case uBTC: return QString("Micro-BitcoinOres (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case BCO: return QString("BCOs");
+    case mBCO: return QString("Milli-BCOs (1 / 1" THIN_SP_UTF8 "000)");
+    case uBCO: return QString("Micro-BCOs (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     default: return QString("???");
     }
 }
@@ -71,9 +71,9 @@ qint64 BitcoinUnits::factor(int unit)
 {
     switch(unit)
     {
-    case BTC:  return 100000000;
-    case mBTC: return 100000;
-    case uBTC: return 100;
+    case BCO:  return 100000000;
+    case mBCO: return 100000;
+    case uBCO: return 100;
     default:   return 100000000;
     }
 }
@@ -82,9 +82,9 @@ int BitcoinUnits::decimals(int unit)
 {
     switch(unit)
     {
-    case BTC: return 8;
-    case mBTC: return 5;
-    case uBTC: return 2;
+    case BCO: return 8;
+    case mBCO: return 5;
+    case uBCO: return 2;
     default: return 0;
     }
 }

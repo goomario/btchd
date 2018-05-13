@@ -53,7 +53,7 @@ uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight);
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
 
 /** Verify generation singnature */
-bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
+bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, bool bForceCheckDeadline, const Consensus::Params& params);
 
 /** Try generate block (mine) */
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
