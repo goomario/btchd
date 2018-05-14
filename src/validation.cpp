@@ -1153,8 +1153,8 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
         // Accelerate creation, half rewards
         const int nBCOFirstSubsidyHalvingHeight = consensusParams.BCOHeight;
         const int nBCOSecondSubsidyHalvingHeight = consensusParams.BCOHeight
-            + 2 * ((consensusParams.BCOHeight / consensusParams.nSubsidyHalvingInterval + 1) * consensusParams.nSubsidyHalvingInterval 
-                - consensusParams.BCOHeight);
+            + 2 * ((consensusParams.BCOHeight / consensusParams.nSubsidyHalvingInterval + 1) * consensusParams.nSubsidyHalvingInterval
+                        - consensusParams.BCOHeight);
 
         halvings = nBCOFirstSubsidyHalvingHeight / consensusParams.nSubsidyHalvingInterval + 1;
         if (nHeight >= nBCOSecondSubsidyHalvingHeight) {
