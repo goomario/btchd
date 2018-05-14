@@ -1144,21 +1144,32 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
+    int halvings;
+    if (nHeight < consensusParams.BCOHeight) {
+        // BTC block
+        halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
+    } else {
+        // BCO block
+        // Accelerate creation, half rewards
+        const int nBCOFirstSubsidyHalvingHeight = consensusParams.BCOHeight;
+        const int nBCOSecondSubsidyHalvingHeight = consensusParams.BCOHeight
+            + 2 * ((consensusParams.BCOHeight / consensusParams.nSubsidyHalvingInterval + 1) * consensusParams.nSubsidyHalvingInterval 
+                - consensusParams.BCOHeight);
+
+        halvings = nBCOFirstSubsidyHalvingHeight / consensusParams.nSubsidyHalvingInterval + 1;
+        if (nHeight >= nBCOSecondSubsidyHalvingHeight) {
+            // Halving reward per 42,0000 blocks
+            halvings += (nHeight - nBCOSecondSubsidyHalvingHeight) / (consensusParams.nSubsidyHalvingInterval * 2) + 1;
+        }
+    }
+
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)
         return 0;
 
     CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
+    // Subsidy is cut in half every 210,000 (BCO 210,000*2) blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
-
-    // BCO block
-    if (nHeight >= consensusParams.BCOHeight) {
-        // Accelerate creation, half rewards
-        nSubsidy /= 2;
-    }
-
     return nSubsidy;
 }
 
