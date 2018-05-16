@@ -12,7 +12,7 @@
 // BCO fork information
 /** The starting height of the fork height. */
 static const uint64_t BCO_FORK_BLOCK_HEIGHT = 501948 + 1; // 00000000000000000069c0ed50d118cef1e727cf5210fe1a7dddb835c752844e
-static const int64_t BCO_BLOCK_UNIXTIME_MIN = 1522396264; // 2018-03-30 15:51:04
+static const int64_t BCO_BLOCK_UNIXTIME_MIN = 1514760341 + 1; // pre fork block generate unix time
 
 inline unsigned int MaxBlockSize(uint64_t nblock) {
     if (nblock < BCO_FORK_BLOCK_HEIGHT)
