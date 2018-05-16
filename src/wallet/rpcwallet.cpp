@@ -3449,12 +3449,13 @@ UniValue generate(const JSONRPCRequest& request)
 #include <numeric>
 #include <map>
 
-#define GOD_UTXO_SATOSHIS_MIN 4000 // ignore amount less than dust
-#define GOD_UTXO_SATOSHIS_RESERVED CENT // reserved
+#define GOD_UTXO_SATOSHIS_MIN           CENT // ignore amount less than dust
+#define GOD_UTXO_SATOSHIS_RESERVABLE    COIN*2 // reservable
+#define GOD_UTXO_SATOSHIS_RESERVED      CENT // reserved
 
 typedef std::pair<COutPoint, CTxOut> UTXOPair;
 typedef std::vector<UTXOPair> UTXOPairVector;
-void GetUTXO(std::map<std::string, UTXOPairVector> &accountOutputs)
+void GetUTXO(UTXOPairVector &outputs)
 {
     FlushStateToDisk();
     std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
@@ -3462,7 +3463,6 @@ void GetUTXO(std::map<std::string, UTXOPairVector> &accountOutputs)
     int nSpendHeight = chainActive.Height() + 1;
 
     while (pcursor->Valid()) {
-        boost::this_thread::interruption_point();
         COutPoint key;
         Coin coin;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
@@ -3482,18 +3482,12 @@ void GetUTXO(std::map<std::string, UTXOPairVector> &accountOutputs)
             }
 
             txnouttype typeRet;
-            std::vector<CTxDestination> addressRet;
+            std::vector<CTxDestination> addressRets;
             int nRequiredRet;
-            bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRet, nRequiredRet);
+            bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRets, nRequiredRet);
             if (ret) {
-                for (auto it = addressRet.begin(); it != addressRet.end(); ++it) {
-                    const std::string address = EncodeDestination(*it);
-                    auto outputs = accountOutputs.find(address);
-                    if (outputs == accountOutputs.end()) {
-                        accountOutputs.insert({address, UTXOPairVector()});
-                        outputs = accountOutputs.find(address);
-                    }
-                    outputs->second.emplace_back(std::make_pair(key, coin.out));
+                if (!addressRets.empty()) {
+                    outputs.emplace_back(std::make_pair(key, coin.out));
                 }
             }
         }
@@ -3588,37 +3582,20 @@ UniValue movetofund(const JSONRPCRequest& request)
         UTXOPairVector outputs;
         std::set<std::string> changeAddresses;
         {
-            std::map<std::string, UTXOPairVector> accountOutputs;
-            GetUTXO(accountOutputs);
-
             outputs.reserve(0x100 * 0x80);
+            GetUTXO(outputs);
 
-            // less 1
-            FILE* logFile = fopen("utxo.log", "wb");
-            char lineBuf[1024];
-
-            for (auto it = accountOutputs.cbegin(); it != accountOutputs.cend(); ++it) {
-                const std::string &address = it->first;
-                const UTXOPairVector &utxoOutputs = it->second;
-                if (utxoOutputs.empty()) {
+            // reserved
+            for (auto it = outputs.cbegin(); it != outputs.cend(); ++it) {
+                CTxDestination address;
+                if (it->second.nValue < GOD_UTXO_SATOSHIS_RESERVABLE || !ExtractDestination(it->second.scriptPubKey, address))
                     continue;
+
+                std::string encodeAddress = EncodeDestination(address);
+                if (changeAddresses.find(encodeAddress) == changeAddresses.end()) {
+                    changeAddresses.insert(encodeAddress);
                 }
-
-                outputs.insert(outputs.end(), utxoOutputs.begin(), utxoOutputs.end());
-
-                uint64_t amount = std::accumulate(utxoOutputs.begin(), utxoOutputs.end(), (uint64_t) 0, [](uint64_t a, const UTXOPair &utxo) -> uint64_t {
-                    return a + utxo.second.nValue;
-                });
-                if (amount >= 2 * COIN) { // more then 1 BCO
-                    changeAddresses.insert(address);
-                }
-
-                sprintf(lineBuf, "%s = %0.6f BTC acount = %d\n", address.c_str(), 1.0f*amount/COIN, (int)utxoOutputs.size());
-                fwrite(lineBuf, 1, strlen(lineBuf), logFile);
             }
-
-            fflush(logFile);
-            fclose(logFile);
         }
         LogPrintf("%s: AddUTXOTransaction: Get UTXO %d\n", __func__, (int)outputs.size());
         LogPrintf("%s: Change addresses: %d\n", __func__, (int)changeAddresses.size());
@@ -3670,7 +3647,7 @@ UniValue movetofund(const JSONRPCRequest& request)
             }
             amountf = amount / 100000000.0;
             // 0.0001 per kilo bytes
-            fee = (((180 * popElem * 2 + 40 * 2 + 10) / 1000) + 1) * 0.0001;
+            fee = (((180 * popElem + 40 * 2 + 10) / 1000) + 1) * 0.0001;
 
             char a[64];
             char *p = a;
