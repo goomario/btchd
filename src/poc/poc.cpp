@@ -399,7 +399,7 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block);
     if (calcDeadline > 30 * 24 * 60 * 60) {
-        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1dday, more than 30day.\n",
+        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1fday, more than 30day.\n",
             prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (30 * 24 * 60 * 60 * 1.0f));
         return false;
     }
