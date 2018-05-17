@@ -83,9 +83,10 @@ public:
         consensus.BIP66Height = 363725; // 00000000000000000379eaa19dce8c9b722d46ae6a57c2f1a988119488b50931
 
         // BCO hard fork
-        consensus.BCOHeight = BCO_FORK_BLOCK_HEIGHT;
+        consensus.BCOHeight = 501948 + 1; // 00000000000000000069c0ed50d118cef1e727cf5210fe1a7dddb835c752844e
         consensus.BCOInitBlockCount = 763; // [501949, 502711]
         consensus.BCOGodSignaturePubkey = "035333e2ac29f1596f5c7ba6806b8cadaf786eb58f741b49d0f0f15d1147efa1e3"; // 3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK
+        BCOUpdateConsensus(consensus.BCOHeight, 1526447652);
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -200,15 +201,17 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 210000;
-        consensus.BIP16Height = 514; // 00000000040b4e986385315e14bee30ad876d8b47f748025b26683116d21aa65
-        consensus.BIP34Height = 21111;
-        consensus.BIP34Hash = uint256S("0x0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8");
-        consensus.BIP65Height = 581885; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
-        consensus.BIP66Height = 330776; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
+        consensus.BIP16Height = 0; 
+        consensus.BIP34Height = 0;
+        consensus.BIP34Hash = uint256S("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943");
+        consensus.BIP65Height = 0;
+        consensus.BIP66Height = 0;
 
         // BCO hard fork
-        consensus.BCOHeight = 1260527;
-        consensus.BCOInitBlockCount = 2000;
+        consensus.BCOHeight = 504 + 1; // 00000000f243e099d9df8f789f93c75e634bd1dddb406e48fa66dbdaea30079c
+        consensus.BCOInitBlockCount = 1;
+        consensus.BCOGodSignaturePubkey = "020fdfd743cf355dadb42d96f235315c955ac5c5c6cb0631c210ab3f495a10978f"; // 2NDiHsswXsr6JiKNjWrrbuQA6nwU9Zi4ypB
+        BCOUpdateConsensus(consensus.BCOHeight, 1526549466);
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -223,19 +226,19 @@ public:
 
         // Deployment of BIP68, BIP112, and BIP113.
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1456790400; // March 1st, 2016
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1493596800; // May 1st, 2017
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1296747260; // fork point
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1546185600; // December 31, 2018
 
         // Deployment of SegWit (BIP141, BIP143, and BIP147)
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1462060800; // May 1st 2016
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1493596800; // May 1st 2017
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1296747260; // fork point
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1546185600; // December 31, 2018
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000002830dab7f76dbb7d63");
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000001f901f901f9");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x0000000002e9e7b00e1f6dc5123a04aad68dd0f0968d8c7aa45f6640795c37b1"); //1135275
+        consensus.defaultAssumeValid = uint256S("0x00000000f243e099d9df8f789f93c75e634bd1dddb406e48fa66dbdaea30079c"); // 504
 
         pchMessageStart[0] = 0x0b;
         pchMessageStart[1] = 0x11;
@@ -274,15 +277,17 @@ public:
 
         checkpointData = {
             {
-                {546, uint256S("000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70")},
+                {0, uint256S("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943")},
+                {504, uint256S("0x00000000f243e099d9df8f789f93c75e634bd1dddb406e48fa66dbdaea30079c")},
+                {505, uint256S("0xf237e4f70a1a07c7fb6b38c57bcb49a6566d7de53808fe43ac6f0b12553734a3")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 000000000000033cfa3c975eb83ecf2bb4aaedf68e6d279f6ed2b427c64caff9 (height 1260526)
-            1516903490,
-            17082348,
-            0.09
+            // Data as of block f237e4f70a1a07c7fb6b38c57bcb49a6566d7de53808fe43ac6f0b12553734a3 (height 505)
+            1526549466,
+            1362,
+            0.02
         };
 
     }
@@ -303,8 +308,9 @@ public:
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
 
         // BCO hard fork
-        consensus.BCOHeight = 500;
-        consensus.BCOInitBlockCount = 10;
+        consensus.BCOHeight = 1;
+        consensus.BCOInitBlockCount = 0;
+        BCOUpdateConsensus(consensus.BCOHeight, 0);
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
