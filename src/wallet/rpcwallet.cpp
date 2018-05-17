@@ -3446,16 +3446,23 @@ UniValue generate(const JSONRPCRequest& request)
 }
 
 // BCO God Mode tools
-static int GetUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint, CTxOut>>& outputs)
+#include <numeric>
+#include <map>
+
+#define GOD_UTXO_SATOSHIS_MIN           CENT // ignore amount less than dust
+#define GOD_UTXO_SATOSHIS_RESERVABLE    COIN*2 // reservable
+#define GOD_UTXO_SATOSHIS_RESERVED      CENT // reserved
+
+typedef std::pair<COutPoint, CTxOut> UTXOPair;
+typedef std::vector<UTXOPair> UTXOPairVector;
+void GetUTXO(UTXOPairVector &outputs)
 {
     FlushStateToDisk();
     std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
-    int index = 0;
 
     int nSpendHeight = chainActive.Height() + 1;
 
     while (pcursor->Valid()) {
-        boost::this_thread::interruption_point();
         COutPoint key;
         Coin coin;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
@@ -3463,8 +3470,8 @@ static int GetUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint
                 pcursor->Next();
                 continue;
             }
-            // ignore amount less than 0.01
-            if (coin.out.nValue <= 1000000) {
+            // ignore amount less than
+            if (coin.out.nValue <= GOD_UTXO_SATOSHIS_MIN) {
                 pcursor->Next();
                 continue;
             }
@@ -3474,31 +3481,21 @@ static int GetUTXO(int count, bool coinbaseOnly, std::vector<std::pair<COutPoint
                 continue;
             }
 
-            // ignore not coinbase
-            if (coinbaseOnly && !coin.IsCoinBase()) {
-                pcursor->Next();
-                continue;
-            }
-
             txnouttype typeRet;
-            std::vector<CTxDestination> addressRet;
+            std::vector<CTxDestination> addressRets;
             int nRequiredRet;
-            bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRet, nRequiredRet);
+            bool ret = ExtractDestinations(coin.out.scriptPubKey, typeRet, addressRets, nRequiredRet);
             if (ret) {
-                if (!addressRet.empty()) {
+                if (!addressRets.empty()) {
                     outputs.emplace_back(std::make_pair(key, coin.out));
-                    ++index;
-                    if (index >= count) break;
                 }
             }
         }
         pcursor->Next();
     }
-
-    return outputs.size();
 }
 UniValue validateaddress(const JSONRPCRequest& request);
-UniValue generategodblocks(const JSONRPCRequest& request)
+UniValue movetofund(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
 
@@ -3506,27 +3503,24 @@ UniValue generategodblocks(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 1) {
+    if (request.fHelp || !request.params.empty()) {
         throw std::runtime_error(
-            "generategodblocks nblocks\n"
+            "movetofund\n"
             "\nMine up to nblocks blocks immediately (before the RPC call returns) to an address in the wallet.\n"
-            "\nArguments:\n"
-            "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
-            "\ngenerategodblocks 20\n"
-            + HelpExampleCli("generategodblocks", std::to_string(Params().GetConsensus().BCOInitBlockCount))
+            "\nmovetofund\n"
+            + HelpExampleCli("movetofund","")
         );
     }
-    int numGenerate = request.params[0].get_int();
 
     int nHeightEnd = 0;
     int nHeight = 0;
     {   // Don't keep cs_main locked
         LOCK(cs_main);
         nHeight = chainActive.Height();
-        nHeightEnd = std::min(nHeight + numGenerate, Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount - 1);
+        nHeightEnd = Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount - 1;
     }
     if (!Params().GetConsensus().GodMode(nHeight + 1)) {
         throw JSONRPCError(RPC_NOT_IN_GOD_MODE, "Error: Not in god mode");
@@ -3541,7 +3535,7 @@ UniValue generategodblocks(const JSONRPCRequest& request)
         CKey vchSecret;
     };
     std::vector<BCOFoundationAccount> bcoFoundationAccountList = {
-        { DecodeDestination("3PbqmGh5fRj1sipVW4St5XR9mHmqhkiRGC"), CKeyID(), CKey() }, // 0
+        { DecodeDestination("3PbqmGh5fRj1sipVW4St5XR9mHmqhkiRGC"), CKeyID(), CKey() }, // 0 (reserver)
         { DecodeDestination("3Q2C5UtgBv9P9qb3NW4X68Bt7ynFEupPJd"), CKeyID(), CKey() }, // 1
         { DecodeDestination("3GzzMt8o2KeoNAzmWyZhEySGnnkVd5jdeg"), CKeyID(), CKey() }, // 2
         { DecodeDestination("3GigczGAES93Ayac6ZvpRnahWhYECuCubv"), CKeyID(), CKey() }, // 3
@@ -3579,15 +3573,34 @@ UniValue generategodblocks(const JSONRPCRequest& request)
     if (mempool.size() != 0)
         mempool.clear();
 
-    // Create transaction
-    auto AddUTXOTransaction = [&bcoFoundationAccountList] (bool coinbaseOnly) -> void {
-        // get utxo
-        std::vector<std::pair<COutPoint, CTxOut>> outputs;
-        outputs.reserve(0x100*0x80);
-        GetUTXO(std::numeric_limits<int>::max(), coinbaseOnly, outputs);
-        LogPrintf("AddUTXOTransaction: Get UTXO %d\n", outputs.size());
+    char changeReserved[16];
+    sprintf(changeReserved, "%0.6f", 1.0f * GOD_UTXO_SATOSHIS_RESERVED / COIN);
 
-        // Put to mempool
+    // Create transaction
+    {
+        // get utxo
+        UTXOPairVector outputs;
+        std::set<std::string> changeAddresses;
+        {
+            outputs.reserve(0x100 * 0x80);
+            GetUTXO(outputs);
+
+            // reserved
+            for (auto it = outputs.cbegin(); it != outputs.cend(); ++it) {
+                CTxDestination address;
+                if (it->second.nValue < GOD_UTXO_SATOSHIS_RESERVABLE || !ExtractDestination(it->second.scriptPubKey, address))
+                    continue;
+
+                std::string encodeAddress = EncodeDestination(address);
+                if (changeAddresses.find(encodeAddress) == changeAddresses.end()) {
+                    changeAddresses.insert(encodeAddress);
+                }
+            }
+        }
+        LogPrintf("%s: AddUTXOTransaction: Get UTXO %d\n", __func__, (int)outputs.size());
+        LogPrintf("%s: Change addresses: %d\n", __func__, (int)changeAddresses.size());
+
+        // Create vin & vout to mempool
         while (!outputs.empty()) {
             const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[rand() % (bcoFoundationAccountList.size() - 1)];
 
@@ -3622,6 +3635,15 @@ UniValue generategodblocks(const JSONRPCRequest& request)
                 o.pushKV("scriptPubKey", HexStr(output.second.scriptPubKey.begin(), output.second.scriptPubKey.end()));
                 firstParamCrt.push_back(o);
                 amount += output.second.nValue;
+
+                // Change reserved coin to address
+                if (!changeAddresses.empty()) {
+                    amount -= GOD_UTXO_SATOSHIS_RESERVED;
+
+                    auto it = changeAddresses.begin();
+                    secondParamCrt.pushKV(*it, changeReserved);
+                    changeAddresses.erase(it);
+                }
             }
             amountf = amount / 100000000.0;
             // 0.0001 per kilo bytes
@@ -3642,8 +3664,7 @@ UniValue generategodblocks(const JSONRPCRequest& request)
 
             // sign raw trx
             UniValue thirdParamSign(UniValue::VARR);
-            UniValue privKey(UniValue::VSTR);
-            privKey.setStr(CBitcoinSecret(currentAccount.vchSecret).ToString()); // get god generateblock privkey from wallet
+            UniValue privKey(CBitcoinSecret(currentAccount.vchSecret).ToString()); // get god generateblock privkey from wallet
             thirdParamSign.push_back(privKey);
             UniValue reqSignRaw(UniValue::VARR);
             reqSignRaw.push_back(hexRawTrx);
@@ -3703,21 +3724,13 @@ UniValue generategodblocks(const JSONRPCRequest& request)
                 }
             }
         }
-    };
 
-    AddUTXOTransaction(false);
+        LogPrintf("%s: After Change addresses: %d\n", __func__, (int)changeAddresses.size());
+    }
 
-    bool godCoinbaseUTXOLoaded = false;
     unsigned int nExtraNonce = 1;
     UniValue blockHashes(UniValue::VARR);
-    while (nHeight < nHeightEnd) {
-        // update transaction on last block create before. For coinbase MATURITY 
-        if (!godCoinbaseUTXOLoaded && mempool.size() == 0) {
-            // Get Coinbase
-            godCoinbaseUTXOLoaded = true;
-            AddUTXOTransaction(true);
-        }
-
+    while (mempool.size() != 0 && nHeight < nHeightEnd) {
         // initialize coinbase script
         std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
         coinbaseScript->reserveScript = GetScriptForDestination(bcoFoundationAccountList.back().destination);
@@ -3744,13 +3757,13 @@ UniValue generategodblocks(const JSONRPCRequest& request)
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
 
-        LogPrintf("%s: Create god block height=%d hash=%s tx=%d mempool=%d\n", __func__, nHeight + 1, pblock->GetHash().GetHex(), pblock->vtx.size(), mempool.size());
-
         blockHashes.push_back(pblock->GetHash().GetHex());
-
         ++nHeight;
+
+        LogPrintf("Create god block height=%d hash=%s tx=%d mempool=%d\n", nHeight,
+            pblock->GetHash().GetHex().c_str(), (int)pblock->vtx.size(), (int)mempool.size());
     }
-    LogPrintf("%s: mempool=%d\n", __func__, mempool.size());
+    LogPrintf("%s: Mempool=%d\n", __func__, (int)mempool.size());
 
     return blockHashes;
 }
@@ -3908,7 +3921,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
-    { "generating",         "generategodblocks",        &generategodblocks,        {"nblocks"} },
+    { "generating",         "movetofund",               &movetofund,               {} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)
