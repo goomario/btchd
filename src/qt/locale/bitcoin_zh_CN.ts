@@ -1639,7 +1639,7 @@
     </message>
     <message>
         <source>Name</source>
-        <translation>姓名</translation>
+        <translation>名称</translation>
     </message>
     <message>
         <source>Number of connections</source>
@@ -1839,7 +1839,7 @@
     </message>
     <message>
         <source>Use up and down arrows to navigate history, and %1 to clear screen.</source>
-        <translation>使用上下方向键浏览历史,  以及 %1 清除屏幕。</translation>
+        <translation>使用上下方向键浏览历史，以及 %1 清除屏幕。</translation>
     </message>
     <message>
         <source>Type %1 for an overview of available commands.</source>
