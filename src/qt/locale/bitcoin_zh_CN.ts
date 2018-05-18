@@ -3415,6 +3415,14 @@
         <translation>调试/测试选项:</translation>
     </message>
     <message>
+        <source>What type of addresses to use ("legacy", "p2sh-segwit", or "bech32", default: "%s")</source>
+        <translation>使用的地址类型 ("legacy"、"p2sh-segwit" 或 "bech32"。默认: "%s")</translation>
+    </message>
+    <message>
+        <source>What type of change to use ("legacy", "p2sh-segwit", or "bech32". Default is same as -addresstype, except when -addresstype=p2sh-segwit a native segwit output is used when sending to a native segwit address)</source>
+        <translation>使用的找零地址类型 ("legacy"、"p2sh-segwit" 或 "bech32"。 默认值与 -addresstype 相同，除非 -addresstype=p2sh-segwit 在发送到本地 segwit 地址时使用本地 segwit 输出)</translation>
+    </message>
+    <message>
         <source>Do not load the wallet and disable wallet RPC calls</source>
         <translation>不要加载钱包和禁用钱包的 RPC 调用</translation>
     </message>
@@ -3664,7 +3672,7 @@
     </message>
     <message>
         <source>Fees (in %s/kB) smaller than this are considered zero fee for relaying, mining and transaction creation (default: %s)</source>
-        <translation>交易费(in %s/kB)比这更小的在关联、挖掘和生成交易时将被视为零费交易 (默认: %s)</translation>
+        <translation>费用(以 %s/kB 为单位)小于这个值被认为是中继、挖矿和创建交易的零费用 (默认: %s)</translation>
     </message>
     <message>
         <source>If paytxfee is not set, include enough fee so transactions begin confirmation on average within n blocks (default: %u)</source>
@@ -3676,7 +3684,7 @@
     </message>
     <message>
         <source>Maximum size of data in data carrier transactions we relay and mine (default: %u)</source>
-        <translation>Maximum size of data in data carrier transactions we relay and mine (default: %u)</translation>
+        <translation>中继和矿数据的载体交易最大容量 (默认: %u)</translation>
     </message>
     <message>
         <source>Randomize credentials for every proxy connection. This enables Tor stream isolation (default: %u)</source>
@@ -3940,7 +3948,7 @@
     </message>
     <message>
         <source>Set maximum BIP141 block weight to this * 4. Deprecated, use blockmaxweight</source>
-        <translation>设置 BIP141 区块重量的最大值为指定的值乘以4。此设置即将被淘汰，请改用 blockmaxweight</translation>
+        <translation>设置 BIP141 区块重量的最大值为指定的值乘以4。此设置即将被淘汰，请改用 -blockmaxweight</translation>
     </message>
     <message>
         <source>Sets the serialization of raw transaction or block hex returned in non-verbose mode, non-segwit(0) or segwit(1) (default: %d)</source>
@@ -4044,7 +4052,7 @@
     </message>
     <message>
         <source>Listen for JSON-RPC connections on &lt;port&gt; (default: %u or testnet: %u)</source>
-        <translation>使用 &lt;port&gt;端口监听 JSON-RPC 连接 (默认: %u ; testnet: %u)</translation>
+        <translation>使用 &lt;port&gt;端口监听 JSON-RPC 连接 (默认: %u, testnet: %u)</translation>
     </message>
     <message>
         <source>Listen for connections on &lt;port&gt; (default: %u or testnet: %u)</source>
@@ -4072,11 +4080,11 @@
     </message>
     <message>
         <source>Relay and mine data carrier transactions (default: %u)</source>
-        <translation>Relay and mine data carrier transactions (default: %u)</translation>
+        <translation>中继和矿数据的载体交易 (默认: %u)</translation>
     </message>
     <message>
         <source>Relay non-P2SH multisig (default: %u)</source>
-        <translation>是否转发 非P2SH格式的多签名交易 (默认: %u)</translation>
+        <translation>是否转发非 P2SH 格式的多签名交易 (默认: %u)</translation>
     </message>
     <message>
         <source>Set key pool size to &lt;n&gt; (default: %u)</source>
@@ -4084,7 +4092,7 @@
     </message>
     <message>
         <source>Set maximum BIP141 block weight (default: %d)</source>
-        <translation>设置BIP141最大区块权重 (默认: %d)</translation>
+        <translation>设置 BIP141 最大区块权重 (默认: %d)</translation>
     </message>
     <message>
         <source>Set the number of threads to service RPC calls (default: %d)</source>
