@@ -84,7 +84,7 @@ public:
 
         // BCO hard fork
         consensus.BCOHeight = BCO_FORK_BLOCK_HEIGHT;
-        consensus.BCOInitBlockCount = 757; // [501949, 502705]
+        consensus.BCOInitBlockCount = 763; // [501949, 502711]
         consensus.BCOGodSignaturePubkey = "035333e2ac29f1596f5c7ba6806b8cadaf786eb58f741b49d0f0f15d1147efa1e3"; // 3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -176,14 +176,16 @@ public:
                 {250000, uint256S("0x000000000000003887df1f29024b06fc2200b55f8af8f35453d7be294df2d214")},
                 {279000, uint256S("0x0000000000000001ae8c72a0b0c301f67e3afca10e819efa9041e458e9bd7e40")},
                 {295000, uint256S("0x00000000000000004d9b4ef50f0f9d686fd69db2e03af35a100370c64632a983")},
-                {501948, uint256S("0x00000000000000000013e33aa9825f6aa13dc00e795be76395f76e5279c9c073")},
+                {501948, uint256S("0x00000000000000000013e33aa9825f6aa13dc00e795be76395f76e5279c9c073")}, // BCO prefork block
+                {501949, uint256S("0x6b5ab3f58c382f185357761a98d097b7b8c712ba06ab8b4dc7efc5c6feb3b23c")}, // BCO fork genesis block
+                {502711, uint256S("0x2f240aef7be669008814ce8fb0d3e46d545890e1b52f3c763abc78f150338b5a")}, // BCO last god block
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 00000000000000000013e33aa9825f6aa13dc00e795be76395f76e5279c9c073 (height 501948).
-            1514760341, // * UNIX timestamp of last known number of transactions
-            287825610,  // * total number of transactions between genesis and that timestamp
+            // Data as of block 2f240aef7be669008814ce8fb0d3e46d545890e1b52f3c763abc78f150338b5a (height 502711).
+            1526447959, // * UNIX timestamp of last known number of transactions
+            287905743,  // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
             3.5         // * estimated number of transactions per second after that timestamp
         };
