@@ -55,7 +55,7 @@ public:
         READWRITE(nTime);
 
         // bits & nonce compatiable
-        if (static_cast<int64_t>(nTime) >= BCO_BLOCK_UNIXTIME_MIN) {
+        if (static_cast<int64_t>(nTime) >= BCOBlockMinTimestamp()) {
             READWRITE(nBits);
             READWRITE(nNonce);
             READWRITE(nPlotSeed);

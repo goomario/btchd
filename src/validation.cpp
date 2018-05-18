@@ -1135,7 +1135,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
 
-    if (pindex->nHeight >= consensusParams.BCOHeight && pindex->GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN)
+    if (pindex->nHeight >= consensusParams.BCOHeight && pindex->GetBlockTime() < BCOBlockMinTimestamp())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): Block version doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
 
@@ -3201,7 +3201,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
                                  strprintf("rejected nVersion=0x%08x nHeight=%d block", nHeight, block.nVersion));
 
     // Check BCO block's timestamp
-    if (nHeight >= consensusParams.BCOHeight && block.GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN)
+    if (nHeight >= consensusParams.BCOHeight && block.GetBlockTime() < BCOBlockMinTimestamp())
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "BCO block's timestamp is too early");
 
     return true;
@@ -3760,7 +3760,7 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
     // Poc CheckProofOfWork depends previous block
     for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
         CBlockIndex *pindex = it->second;
-        if (pindex->nHeight >= consensus_params.BCOHeight && pindex->GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN)
+        if (pindex->nHeight >= consensus_params.BCOHeight && pindex->GetBlockTime() < BCOBlockMinTimestamp())
             return error("%s: Check BCO block's time failed: %s", __func__, pindex->ToString());
 
         CBlockHeader blockHeader = pindex->GetBlockHeader();

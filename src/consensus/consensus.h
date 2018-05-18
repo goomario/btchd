@@ -10,12 +10,12 @@
 #include <stdint.h>
 
 // BCO fork information
-/** The starting height of the fork height. */
-static const uint64_t BCO_FORK_BLOCK_HEIGHT = 501948 + 1; // 00000000000000000069c0ed50d118cef1e727cf5210fe1a7dddb835c752844e
-static const int64_t BCO_BLOCK_UNIXTIME_MIN = 1514760341 + 1; // pre fork block generate unix time
+void BCOUpdateConsensus(uint64_t nForkHeight, int64_t nBlockMinTimestamp);
+uint64_t BCOForkBlockHeight();
+int64_t BCOBlockMinTimestamp();
 
 inline unsigned int MaxBlockSize(uint64_t nblock) {
-    if (nblock < BCO_FORK_BLOCK_HEIGHT)
+    if (nblock < BCOForkBlockHeight())
         return 4000*1000; // 4MB
 
     return (8*1000*1000); // 8MB
@@ -26,7 +26,7 @@ inline unsigned int MaxBlockSigops(uint64_t nblock) {
 }
 
 inline unsigned int MaxBlockSerializedSize(uint64_t nblock) {
-    if (nblock < BCO_FORK_BLOCK_HEIGHT)
+    if (nblock < BCOForkBlockHeight())
         return 4000*1000;
 
     return (8*1000*1000);

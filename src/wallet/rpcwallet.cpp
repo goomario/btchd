@@ -3535,17 +3535,7 @@ UniValue movetofund(const JSONRPCRequest& request)
         CKey vchSecret;
     };
     std::vector<BCOFoundationAccount> bcoFoundationAccountList = {
-        { DecodeDestination("3PbqmGh5fRj1sipVW4St5XR9mHmqhkiRGC"), CKeyID(), CKey() }, // 0 (reserver)
-        { DecodeDestination("3Q2C5UtgBv9P9qb3NW4X68Bt7ynFEupPJd"), CKeyID(), CKey() }, // 1
-        { DecodeDestination("3GzzMt8o2KeoNAzmWyZhEySGnnkVd5jdeg"), CKeyID(), CKey() }, // 2
-        { DecodeDestination("3GigczGAES93Ayac6ZvpRnahWhYECuCubv"), CKeyID(), CKey() }, // 3
-        { DecodeDestination("3GpcLFUvKbviDFcWDG5a3FNGG4NsJp86rc"), CKeyID(), CKey() }, // 4
-        { DecodeDestination("3K8A38VWGYqWEWawMBheztnV792gshQDmX"), CKeyID(), CKey() }, // 5
-        { DecodeDestination("37oN8wG3bAMsGTraPks4PmynUavZ8Y1pAv"), CKeyID(), CKey() }, // 6
-        { DecodeDestination("3LjkwSnS2gB5oZB5vsH2DgZDHgdZseVHeX"), CKeyID(), CKey() }, // 7
-        { DecodeDestination("3LdU72Uh7QiiDjqdnQCijNBNsZMLWdCX2G"), CKeyID(), CKey() }, // 8
-        { DecodeDestination("3BXu1YgZR6jNQrPPdXA1V6C4zyRJv6Nv3k"), CKeyID(), CKey() }, // 9
-        { DecodeDestination("3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK"), CKeyID(), CKey() }, // 10 (miner)
+        { DecodeDestination("2NDiHsswXsr6JiKNjWrrbuQA6nwU9Zi4ypB"), CKeyID(), CKey() },
     };
     for (auto &account : bcoFoundationAccountList) {
         JSONRPCRequest jsonreq;
@@ -3602,7 +3592,8 @@ UniValue movetofund(const JSONRPCRequest& request)
 
         // Create vin & vout to mempool
         while (!outputs.empty()) {
-            const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[rand() % (bcoFoundationAccountList.size() - 1)];
+            const BCOFoundationAccount &currentAccount = bcoFoundationAccountList[bcoFoundationAccountList.size() > 1 ?
+                (rand() % (bcoFoundationAccountList.size() - 1)) : 0];
 
             // 128 vins per trx and 256 trxs per block
             // vin
