@@ -1,4 +1,6 @@
-// Copyright (c) 2018 bitconore.org
+// Copyright (c) 2017-2018 The BCO Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <poc/poc.h>
 #include <chainparams.h>
@@ -364,7 +366,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, 
     bool bForceCheckDeadline, const Consensus::Params& params)
 {
-    if (block.GetBlockTime() < BCO_BLOCK_UNIXTIME_MIN ||
+    if (block.GetBlockTime() < BCOBlockMinTimestamp() ||
         block.nBits != CalculateBaseTarget(prevBlockIndex, block, params)) {
         return false;
     }
