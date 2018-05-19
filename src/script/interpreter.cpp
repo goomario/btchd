@@ -875,7 +875,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     popstack(stack);
                     stack.push_back(vchHash);
                 }
-                break;                                   
+                break;
 
                 case OP_CODESEPARATOR:
                 {
@@ -899,12 +899,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 
                     // Drop the signature in scripts when SIGHASH_FORKID is not used.
                     if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
-                        if (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO)) {
-                            //scriptCode.FindAndDelete(CScript(vchSig));
-                            return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
-                        }
-                    } else {
-                        if (!vchSig.empty() && vchSig[vchSig.size() - 1] & (SIGHASH_FORKID_BCO)) {
+                        if (!vchSig.empty() && !(vchSig.back() & SIGHASH_FORKID_BCO)) {
                             return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                         }
                     }
@@ -975,19 +970,12 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     {
                         valtype& vchSig = stacktop(-isig-k);
                         if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
-                            if (!vchSig.empty() && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO)) {
-                                //scriptCode.FindAndDelete(CScript(vchSig));
+                            if (!vchSig.empty() && !(vchSig.back() & SIGHASH_FORKID_BCO)) {
                                 return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
                             }
                         }
                         if (sigversion == SIGVERSION_BASE) {
                             scriptCode.FindAndDelete(CScript(vchSig));
-                        }
-                        if (!(flags & SCRIPT_ENABLE_SIGHASH_FORKID)) {
-                            if (!vchSig.empty() && vchSig[vchSig.size() - 1] & SIGHASH_FORKID_BCO) {
-                                //scriptCode.FindAndDelete(CScript(vchSig));
-                                return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
-                            }
                         }
                     }
 
