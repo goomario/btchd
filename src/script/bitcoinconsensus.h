@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-#define BITCOINCONSENSUS_API_VER 1
+#define BITCOINCONSENSUS_API_VER 2
 
 typedef enum bitcoinconsensus_error_t
 {
@@ -60,7 +60,8 @@ enum
     bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID_GOD        = (1U << 19), // enable BCO in god mode
     bitcoinconsensus_SCRIPT_FLAGS_VERIFY_ALL                 = bitcoinconsensus_SCRIPT_FLAGS_VERIFY_P2SH | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_DERSIG |
                                                                bitcoinconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY |
-                                                               bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS
+                                                               bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS |
+                                                               bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID | bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID_GOD
 };
 
 /// Returns 1 if the input nIn of the serialized transaction pointed to by

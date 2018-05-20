@@ -199,6 +199,6 @@ size_t CountWitnessSigOps(const CScript& scriptSig, const CScript& scriptPubKey,
 
 // BCO paramters
 namespace Consensus { struct Params; }
-void InitBCOParams(const Consensus::Params * params);
+void BCOInitInterpreterParams(const Consensus::Params * params);
 
 #endif // BITCOIN_SCRIPT_INTERPRETER_H

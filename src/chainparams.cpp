@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chainparams.h>
+#include <chainparamsseeds.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
 #include <script/interpreter.h>
@@ -12,8 +13,6 @@
 #include <utilstrencodings.h>
 
 #include <assert.h>
-
-#include <chainparamsseeds.h>
 
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -84,9 +83,9 @@ public:
 
         // BCO hard fork
         consensus.BCOHeight = 501948 + 1; // 00000000000000000069c0ed50d118cef1e727cf5210fe1a7dddb835c752844e
+        consensus.BCOMinTimestamp = 1526447652;
         consensus.BCOInitBlockCount = 763; // [501949, 502711]
         consensus.BCOGodSignaturePubkey = "035333e2ac29f1596f5c7ba6806b8cadaf786eb58f741b49d0f0f15d1147efa1e3"; // 3NJPB7HfQnevydKRmygcMbja3gxjRq5VKK
-        BCOUpdateConsensus(consensus.BCOHeight, 1526447652);
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -209,9 +208,9 @@ public:
 
         // BCO hard fork
         consensus.BCOHeight = 504 + 1; // 00000000f243e099d9df8f789f93c75e634bd1dddb406e48fa66dbdaea30079c
-        consensus.BCOInitBlockCount = 1;
+        consensus.BCOMinTimestamp = 1526549466;
+        consensus.BCOInitBlockCount = 1; // [505, 505]
         consensus.BCOGodSignaturePubkey = "020fdfd743cf355dadb42d96f235315c955ac5c5c6cb0631c210ab3f495a10978f"; // 2NDiHsswXsr6JiKNjWrrbuQA6nwU9Zi4ypB
-        BCOUpdateConsensus(consensus.BCOHeight, 1526549466);
 
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -309,8 +308,8 @@ public:
 
         // BCO hard fork
         consensus.BCOHeight = 1;
+        consensus.BCOMinTimestamp = 0;
         consensus.BCOInitBlockCount = 0;
-        BCOUpdateConsensus(consensus.BCOHeight, 0);
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -400,7 +399,10 @@ void SelectParams(const std::string& network)
     globalChainParams = CreateChainParams(network);
 
     // Init interpreter paramters
-    InitBCOParams(&Params().GetConsensus());
+    BCOInitInterpreterParams(&Params().GetConsensus());
+
+    // Update consensus
+    BCOUpdateConsensus(Params().GetConsensus().BCOHeight, Params().GetConsensus().BCOMinTimestamp);
 }
 
 void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)

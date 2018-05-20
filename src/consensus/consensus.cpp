@@ -4,10 +4,12 @@
 
 #include <consensus/consensus.h>
 
+#include <limits>
+
 // BCO fork information
 /** The starting height of the fork height. */
-static uint64_t BCO_FORK_BLOCK_HEIGHT = 0;
-static int64_t BCO_BLOCK_UNIXTIME_MIN = 0;
+static uint64_t BCO_FORK_BLOCK_HEIGHT = std::numeric_limits<uint64_t>::max();
+static int64_t BCO_BLOCK_UNIXTIME_MIN = std::numeric_limits<int64_t>::max();
 
 void BCOUpdateConsensus(uint64_t nForkHeight, int64_t nBlockMinTimestamp)
 {
