@@ -68,6 +68,8 @@ struct Params {
     /**                 init([height,height+count) as god mode block */
     /** Block height at which UAHF kicks in */
     int BCOHeight;
+    /** Block min block timestamp */
+    int64_t BCOMinTimestamp;
     /** Block height at which UAHF kicks in */
     int BCOInitBlockCount;
     /** BCO signature data for god mode verify script*/

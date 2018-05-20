@@ -38,7 +38,7 @@ inline bool set_error(ScriptError* ret, const ScriptError serror)
 
 } // namespace
 
-void InitBCOParams(const Consensus::Params *params) {
+void BCOInitInterpreterParams(const Consensus::Params *params) {
     pGlobalConsensusParams = params; 
 }
 
@@ -1198,7 +1198,8 @@ PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo)
     }
 }
 
-uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache, uint32_t flags)
+uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, 
+    SigVersion sigversion, const PrecomputedTransactionData* cache, unsigned int forkFlags)
 {
     assert(nIn < txTo.vin.size());
 
@@ -1244,9 +1245,10 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         ss << txTo.nLockTime;
         // Sighash type
         ss << nHashType;
-        if ((nHashType & SIGHASH_FORKID_BCO) && (flags & SCRIPT_ENABLE_SIGHASH_FORKID)) {
-            std::string bco_flags = (nHashType & SIGHASH_FORKID_BCOGOD) ? "bcogod" : "bco";
-            ss << bco_flags;
+        if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) && (nHashType & SIGHASH_FORKID_BCOGOD)) {
+            ss << std::string("bcogod");
+        } else if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID) && (nHashType & SIGHASH_FORKID_BCO)) {
+            ss << std::string("bco");
         }
 
         return ss.GetHash();
@@ -1268,10 +1270,12 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
-    if ((nHashType & SIGHASH_FORKID_BCO) && (flags & SCRIPT_ENABLE_SIGHASH_FORKID)) {
-        std::string bco_flags = (nHashType & SIGHASH_FORKID_BCOGOD) ? "bcogod" : "bco";
-        ss << bco_flags;
+    if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) && (nHashType & SIGHASH_FORKID_BCOGOD)) {
+        ss << std::string("bcogod");
+    } else if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID) && (nHashType & SIGHASH_FORKID_BCO)) {
+        ss << std::string("bco");
     }
+
     return ss.GetHash();
 }
 
@@ -1293,7 +1297,7 @@ bool TransactionSignatureChecker::CheckSig(const std::vector<unsigned char>& vch
     int nHashType = vchSig.back();
     vchSig.pop_back();
 
-    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata);
+    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata, forkFlags);
 
     if (!VerifySignature(vchSig, pubkey, sighash))
         return false;

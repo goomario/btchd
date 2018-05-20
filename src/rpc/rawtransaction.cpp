@@ -662,7 +662,7 @@ UniValue combinerawtransaction(const JSONRPCRequest& request)
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {
             if (txv.vin.size() > i) {
-                sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(txv, i));
+                sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount, STANDARD_SCRIPT_VERIFY_FLAGS), sigdata, DataFromTransaction(txv, i));
             }
         }
 
@@ -893,7 +893,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
     const CKeyStore& keystore = *pkeystore;
 
-    int nHashType = SIGHASH_ALL | SIGHASH_FORKID_BCO | (godMode ? SIGHASH_FORKID_BCOGOD : 0);
+    int nHashType = SIGHASH_ALL | SIGHASH_FORKID_BCO | (godMode ? SIGHASH_FORKID_BCOGOD : 0); // default
     if (!request.params[3].isNull()) {
         static std::map<std::string, int> mapSigHashValues = {
             {std::string("ALL"), int(SIGHASH_ALL)},
@@ -935,6 +935,17 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
     bool fHashSingle = ((nHashType & ~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO | SIGHASH_FORKID_BCOGOD)) == SIGHASH_SINGLE);
 
+    unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
+    if (nHashType&SIGHASH_FORKID_BCO) {
+        // add for id
+        flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
+        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
+    } else {
+        // remove fork id
+        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID;
+        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
+    }
+
     // Script verification errors
     UniValue vErrors(UniValue::VARR);
 
@@ -958,15 +969,12 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
             ProduceSignature(MutableTransactionSignatureCreator(&keystore, &mtx, i, amount, nHashType), prevPubKey, sigdata);
 
         if (!godMode)
-            sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(mtx, i));
+            sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount, flags), sigdata, DataFromTransaction(mtx, i));
 
         UpdateTransaction(mtx, i, sigdata);
 
-        unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
-        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
-
         ScriptError serror = SCRIPT_ERR_OK;
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, TransactionSignatureChecker(&txConst, i, amount), &serror)) {
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, TransactionSignatureChecker(&txConst, i, amount, flags), &serror)) {
             if (serror == SCRIPT_ERR_INVALID_STACK_OPERATION) {
                 // Unable to sign input and verification failed (possible attempt to partially sign).
                 TxInErrorToJSON(txin, vErrors, "Unable to sign input, invalid stack size (possibly missing key)");
