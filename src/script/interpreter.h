@@ -139,7 +139,8 @@ enum SigVersion
     SIGVERSION_WITNESS_V0 = 1,
 };
 
-uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr, uint32_t flags = SCRIPT_ENABLE_SIGHASH_FORKID);
+uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount,
+    SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr, unsigned int forkFlags = 0);
 
 class BaseSignatureChecker
 {
@@ -169,13 +170,14 @@ private:
     unsigned int nIn;
     const CAmount amount;
     const PrecomputedTransactionData* txdata;
+    const unsigned int forkFlags; // for check fork flags
 
 protected:
     virtual bool VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
 
 public:
-    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr) {}
-    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
+    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, unsigned int forkFlags = 0) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr), forkFlags(forkFlags) {}
+    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn, unsigned int forkFlags) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn), forkFlags(forkFlags) {}
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckSequence(const CScriptNum& nSequence) const override;
@@ -187,7 +189,7 @@ private:
     const CTransaction txTo;
 
 public:
-    MutableTransactionSignatureChecker(const CMutableTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn) : TransactionSignatureChecker(&txTo, nInIn, amountIn), txTo(*txToIn) {}
+    MutableTransactionSignatureChecker(const CMutableTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, unsigned int forkFlags = 0) : TransactionSignatureChecker(&txTo, nInIn, amountIn, forkFlags), txTo(*txToIn) {}
 };
 
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* error = nullptr);

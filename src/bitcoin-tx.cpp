@@ -651,6 +651,17 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
 
     bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
 
+    unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
+    if (nHashType&SIGHASH_FORKID_BCO) {
+        // add fork id
+        flags != SCRIPT_ENABLE_SIGHASH_FORKID;
+        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
+    } else {
+        // remove fork id
+        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID;
+        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
+    }
+
     // Sign what we can:
     for (unsigned int i = 0; i < mergedTx.vin.size(); i++) {
         CTxIn& txin = mergedTx.vin[i];
@@ -669,13 +680,10 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
 
         // ... and merge in other signatures:
         for (const CTransaction& txv : txVariants)
-            sigdata = CombineSignatures(prevPubKey, MutableTransactionSignatureChecker(&mergedTx, i, amount), sigdata, DataFromTransaction(txv, i));
+            sigdata = CombineSignatures(prevPubKey, MutableTransactionSignatureChecker(&mergedTx, i, amount, flags), sigdata, DataFromTransaction(txv, i));
         UpdateTransaction(mergedTx, i, sigdata);
 
-        unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
-        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
-
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, MutableTransactionSignatureChecker(&mergedTx, i, amount)))
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, MutableTransactionSignatureChecker(&mergedTx, i, amount, flags)))
             fComplete = false;
     }
 
