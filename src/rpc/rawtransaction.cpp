@@ -938,7 +938,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
     unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
     if (nHashType&SIGHASH_FORKID_BCO) {
         // add for id
-        flags != SCRIPT_ENABLE_SIGHASH_FORKID;
+        flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
         flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
     } else {
         // remove fork id

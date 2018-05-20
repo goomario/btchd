@@ -1246,9 +1246,9 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         // Sighash type
         ss << nHashType;
         if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) && (nHashType & SIGHASH_FORKID_BCOGOD)) {
-            ss << "bcogod";
+            ss << std::string("bcogod");
         } else if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID) && (nHashType & SIGHASH_FORKID_BCO)) {
-            ss << "bco";
+            ss << std::string("bco");
         }
 
         return ss.GetHash();
@@ -1271,9 +1271,9 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
     if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) && (nHashType & SIGHASH_FORKID_BCOGOD)) {
-        ss << "bcogod";
+        ss << std::string("bcogod");
     } else if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID) && (nHashType & SIGHASH_FORKID_BCO)) {
-        ss << "bco";
+        ss << std::string("bco");
     }
 
     return ss.GetHash();

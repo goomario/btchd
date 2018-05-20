@@ -654,7 +654,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
     unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
     if (nHashType&SIGHASH_FORKID_BCO) {
         // add fork id
-        flags != SCRIPT_ENABLE_SIGHASH_FORKID;
+        flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
         flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
     } else {
         // remove fork id
