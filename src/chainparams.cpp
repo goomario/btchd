@@ -200,11 +200,11 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 210000;
-        consensus.BIP16Height = 0; 
-        consensus.BIP34Height = 0;
-        consensus.BIP34Hash = uint256S("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943");
-        consensus.BIP65Height = 0;
-        consensus.BIP66Height = 0;
+        consensus.BIP16Height = 505;
+        consensus.BIP34Height = 505;
+        consensus.BIP34Hash = uint256S("0xf237e4f70a1a07c7fb6b38c57bcb49a6566d7de53808fe43ac6f0b12553734a3");
+        consensus.BIP65Height = 505;
+        consensus.BIP66Height = 505;
 
         // BCO hard fork
         consensus.BCOHeight = 504 + 1; // 00000000f243e099d9df8f789f93c75e634bd1dddb406e48fa66dbdaea30079c

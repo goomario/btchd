@@ -24,10 +24,10 @@ namespace poc {
 static const arith_uint256 TWO64 = arith_uint256(std::numeric_limits<uint64_t>::max()) + 1;
 
 /** Burst initial base target */
-static const uint64_t INITIAL_BASE_TARGET = 18325193796L;
+static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
 /** Burst max target */
-static const uint64_t MAX_BASE_TARGET = 18325193796L;
+static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
 uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);
 
@@ -60,7 +60,8 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
 /** Try generate block (mine) */
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId, 
-    uint64_t &deadline);
+    uint64_t &deadline,
+    const Consensus::Params& params);
 
 
 /** Get epoch second time*/

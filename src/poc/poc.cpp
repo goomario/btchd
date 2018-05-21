@@ -24,9 +24,6 @@
 
 namespace {
 
-// Millis: 2014-08-11 02:00:00.0
-//const static int64_t EPOCH_BEGINNING = 1407722400000LL;
-
 // Millis: 2018-01-25 00:00:00.0
 const static int64_t EPOCH_BEGINNING = 1516809600000LL;
 
@@ -49,16 +46,11 @@ static const int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE;
 
 static const int HASH_CAP = 4096;
 
-uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block)
+uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
-    if (prevBlockIndex.nHeight + 1 <= Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
+    if (prevBlockIndex.nHeight + 1 <= params.BCOHeight + params.BCOInitBlockCount) {
         // genesis block & god mode block
         return 0;
-    }
-
-    if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
-        // test
-        return 1;
     }
 
     const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
@@ -366,43 +358,43 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, 
     bool bForceCheckDeadline, const Consensus::Params& params)
 {
-    if (block.GetBlockTime() < BCOBlockMinTimestamp() ||
-        block.nBits != CalculateBaseTarget(prevBlockIndex, block, params)) {
+    if (block.GetBlockTime() < BCOBlockMinTimestamp()) {
         return false;
     }
 
-    if (prevBlockIndex.nHeight + 1 < Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount) {
-        // God Mode
-        return true;
-    }
-
-    // Optional check deadline. 
+    // Optional check deadline.
     // If block forge time interval more than 30 minute, then force check block deadline.
     if (!bForceCheckDeadline && block.nTime < prevBlockIndex.nTime + 30 * 60) {
         return true;
     }
 
+    // Check base target
+    if (block.nBits != CalculateBaseTarget(prevBlockIndex, block, params)) {
+        return false;
+    }
+
     // Check deadline
-    uint64_t deadline = CalculateDeadline(prevBlockIndex, block);
-    return deadline <= 30 * 24 * 60 * 60 && block.nTime > prevBlockIndex.nTime + deadline;
+    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
+    return deadline <= 365 * 24 * 60 * 60 && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
 }
 
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nAccountId, 
-    uint64_t &deadline)
+    const uint64_t &nNonce, const uint64_t &nAccountId,
+    uint64_t &deadline, 
+    const Consensus::Params& params)
 {
     LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 "\n",
         prevBlockIndex.nHeight + 1, nNonce, nAccountId);
 
     CBlockHeader block;
-    block.nVersion = ComputeBlockVersion(&prevBlockIndex, Params().GetConsensus());
+    block.nVersion = ComputeBlockVersion(&prevBlockIndex, params);
     block.nNonce = nNonce;
     block.nPlotSeed = nAccountId;
 
-    uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block);
-    if (calcDeadline > 30 * 24 * 60 * 60) {
+    uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
+    if (calcDeadline > 365 * 24 * 60 * 60) {
         LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1fday, more than 30day.\n",
-            prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (30 * 24 * 60 * 60 * 1.0f));
+            prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (24 * 60 * 60 * 1.0f));
         return false;
     }
 
