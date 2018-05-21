@@ -27,6 +27,9 @@ namespace {
 // Millis: 2018-01-25 00:00:00.0
 const static int64_t EPOCH_BEGINNING = 1516809600000LL;
 
+// Seconds: Dead target for deadline
+const static int64_t DEADLINE_DEADTARGET = 365 * 24 * 60 * 60;
+
 // shabal256
 uint256 shabal256(const uint256 &genSig, int64_t nMix64)
 {
@@ -375,7 +378,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
 
     // Check deadline
     uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
-    return deadline <= 365 * 24 * 60 * 60 && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
+    return deadline <= DEADLINE_DEADTARGET && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
 }
 
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
@@ -392,9 +395,10 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     block.nPlotSeed = nAccountId;
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
-    if (calcDeadline > 365 * 24 * 60 * 60) {
-        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1fday, more than 30day.\n",
-            prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (24 * 60 * 60 * 1.0f));
+    if (calcDeadline > DEADLINE_DEADTARGET) {
+        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
+            prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (24 * 60 * 60 * 1.0f),
+            DEADLINE_DEADTARGET / (24 * 60 * 60));
         return false;
     }
 
