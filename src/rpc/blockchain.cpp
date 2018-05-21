@@ -1575,43 +1575,6 @@ UniValue reconsiderblock(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-UniValue verifyblock(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() != 1)
-        throw std::runtime_error(
-            "verifyblock \"blockhash\"\n"
-            "\nVerify block.\n"
-            "\nArguments:\n"
-            "1. \"blockhash\"   (string, required) the hash of the block to reconsider\n"
-            "\nResult:\n"
-            "\nExamples:\n"
-            + HelpExampleCli("verifyblock", "\"blockhash\"")
-            + HelpExampleRpc("verifyblock", "\"blockhash\"")
-        );
-
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
-
-    LOCK(cs_main);
-    if (mapBlockIndex.count(hash) == 0)
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
-
-    CBlockIndex* pblockindex = mapBlockIndex[hash];
-    if (pblockindex->pprev == NULL)
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Previous block not found");
-
-    CBlock block;
-    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
-        throw JSONRPCError(RPC_DATABASE_ERROR, "Load block fail");
-
-    CValidationState state;
-    if (TestBlockValidity(state, Params(), block, pblockindex->pprev, true, true)) {
-        return NullUniValue;
-    } else {
-        throw JSONRPCError(RPC_DATABASE_ERROR, state.GetRejectReason());
-    }
-}
-
 UniValue getchaintxstats(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() > 2)
@@ -1739,7 +1702,6 @@ static const CRPCCommand commands[] =
     /* Not shown in help */
     { "hidden",             "invalidateblock",        &invalidateblock,        {"blockhash"} },
     { "hidden",             "reconsiderblock",        &reconsiderblock,        {"blockhash"} },
-    { "hidden",             "verifyblock",            &verifyblock,            {"blockhash"} },
     { "hidden",             "waitfornewblock",        &waitfornewblock,        {"timeout"} },
     { "hidden",             "waitforblock",           &waitforblock,           {"blockhash","timeout"} },
     { "hidden",             "waitforblockheight",     &waitforblockheight,     {"height","timeout"} },

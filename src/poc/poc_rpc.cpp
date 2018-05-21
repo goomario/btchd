@@ -59,7 +59,7 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     }
 
     uint64_t deadline;
-    if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline)) {
+    if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline, Params().GetConsensus())) {
         result.pushKV("result", "Generate failed");
         return;
     }
