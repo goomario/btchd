@@ -565,10 +565,22 @@ std::map<std::string, std::string> HTTPRequest::GetParameters()
             for (evkeyval *val = kv.tqh_first; val != nullptr; val = val->next.tqe_next) {
                 parameters.insert(std::make_pair(val->key, val->value));
             }
-
         }
 
         free(decoded_uri);
+    }
+
+    // Processing "application/x-www-form-urlencoded" content for post query
+    if (GetRequestMethod() == POST) {
+        const std::string body = ReadBody();
+        if (!body.empty()) {
+            struct evkeyvalq kv;
+            if (evhttp_parse_query_str(body.c_str(), &kv) == 0) {
+                for (evkeyval *val = kv.tqh_first; val != nullptr; val = val->next.tqe_next) {
+                    parameters.insert(std::make_pair(val->key, val->value));
+                }
+            }
+        }
     }
 
     return parameters;
