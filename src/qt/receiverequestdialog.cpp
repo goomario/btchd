@@ -11,11 +11,13 @@
 #include <qt/optionsmodel.h>
 
 #include <QClipboard>
+#include <QDialogButtonBox>
 #include <QDrag>
 #include <QMenu>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPixmap>
+#include <QPushButton>
 #if QT_VERSION < 0x050000
 #include <QUrl>
 #endif
@@ -94,6 +96,7 @@ ReceiveRequestDialog::ReceiveRequestDialog(QWidget *parent) :
     model(0)
 {
     ui->setupUi(this);
+    if (ui->buttonBox->button(QDialogButtonBox::Close)) ui->buttonBox->button(QDialogButtonBox::Close)->setText(tr("Close"));
 
 #ifndef USE_QRCODE
     ui->btnSaveAs->setVisible(false);
