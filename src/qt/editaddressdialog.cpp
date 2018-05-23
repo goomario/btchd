@@ -9,7 +9,9 @@
 #include <qt/guiutil.h>
 
 #include <QDataWidgetMapper>
+#include <QDialogButtonBox>
 #include <QMessageBox>
+#include <QPushButton>
 
 extern OutputType g_address_type;
 
@@ -21,6 +23,8 @@ EditAddressDialog::EditAddressDialog(Mode _mode, QWidget *parent) :
     model(0)
 {
     ui->setupUi(this);
+    if (ui->buttonBox->button(QDialogButtonBox::Ok)) ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Ok"));
+    if (ui->buttonBox->button(QDialogButtonBox::Cancel)) ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
 
     GUIUtil::setupAddressWidget(ui->addressEdit, this);
 
