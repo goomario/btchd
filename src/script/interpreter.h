@@ -176,11 +176,13 @@ protected:
     virtual bool VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
 
 public:
-    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, unsigned int forkFlags = 0) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr), forkFlags(forkFlags) {}
+    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, unsigned int forkFlags) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr), forkFlags(forkFlags) {}
     TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn, unsigned int forkFlags) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn), forkFlags(forkFlags) {}
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckSequence(const CScriptNum& nSequence) const override;
+
+    inline unsigned int GetForkFlags() const { return forkFlags; }
 };
 
 class MutableTransactionSignatureChecker : public TransactionSignatureChecker
