@@ -218,17 +218,73 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
     return true;
 }
 
+static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const std::map<std::string, std::string>& parameters)
+{
+    // submitNonce
+    const auto nonce = parameters.find("nonce");
+    if (nonce != parameters.cend()) {
+        const auto accountId = parameters.find("accountId");
+        const auto secretPhrase = parameters.find("secretPhrase");
+        if (accountId != parameters.cend()) {
+            // Pool
+            jreq.strMethod = "submitNonceToPool";
+            jreq.params.pushKV("nonce", nonce->second);
+            jreq.params.pushKV("accountId", accountId->second);
+            jreq.params.pushKV("secretPhrase", secretPhrase->second);
+        }
+        else if (secretPhrase != parameters.cend()) {
+            // Solo
+            jreq.strMethod = "submitNonceAsSolo";
+            jreq.params.pushKV("nonce", nonce->second);
+            jreq.params.pushKV("secretPhrase", secretPhrase->second);
+        }
+        else {
+            BurstJSONErrorReply(req, 1, "Incorrect request");
+            return false;
+        }
+    }
+    else {
+        BurstJSONErrorReply(req, 1, "Incorrect request");
+        return false;
+    }
+    return true;
+}
+
+static bool AdjustGetBlockParam(JSONRPCRequest& jreq, HTTPRequest* req, const std::map<std::string, std::string>& parameters)
+{
+    jreq.strMethod = "getBlock";
+
+    auto findAndFill = [&](const char* key) {
+        const auto param = parameters.find(key);
+        jreq.params.pushKV(key, param != parameters.cend() ? param->second : "");
+    };
+
+    findAndFill("block");
+    findAndFill("height");
+    findAndFill("timestamp");
+    return true;
+}
+
 static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
 {
+    if (req->GetRequestMethod() != HTTPRequest::POST) {
+        LogPrintf("The uri: %s\n", req->GetURI().c_str());
+        req->WriteReply(HTTP_BAD_METHOD, "JSONRPC server handles only POST requests");
+        return false;
+    }
+
     JSONRPCRequest jreq;
     try {
         // Parse request
         const std::map<std::string,std::string> parameters = req->GetParameters();
         const auto requestType = parameters.find("requestType");
         if (requestType == parameters.cend()) {
+            LogPrintf("Not find requestType, threadid=%ld \n", std::this_thread::get_id());
             BurstJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
+        if(requestType->second != "getMiningInfo")
+            LogPrintf("HTTPReq_BurstJSONRPC, threadid=%ld, method=%s \n", std::this_thread::get_id(), requestType->second.c_str());
 
         const time_t startTime = ::time(nullptr);
 
@@ -236,31 +292,14 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         jreq.URI = req->GetURI();
         jreq.params.setObject();
         if (requestType->second == "submitNonce") {
-            // submitNonce
-            const auto nonce = parameters.find("nonce");
-            if (nonce != parameters.cend()) {
-                const auto accountId = parameters.find("accountId");
-                const auto secretPhrase = parameters.find("secretPhrase");
-                if (accountId != parameters.cend()) {
-                    // Pool
-                    jreq.strMethod = "submitNonceToPool";
-                    jreq.params.pushKV("nonce", nonce->second);
-                    jreq.params.pushKV("accountId", accountId->second);
-                } else if (secretPhrase != parameters.cend()) {
-                    // Solo
-                    jreq.strMethod = "submitNonceAsSolo";
-                    jreq.params.pushKV("nonce", nonce->second);
-                    jreq.params.pushKV("secretPhrase", secretPhrase->second);
-                } else {
-                    BurstJSONErrorReply(req, 1, "Incorrect request");
-                    return false;
-                }
-            }
-            else {
-                BurstJSONErrorReply(req, 1, "Incorrect request");
+            if (!AdjustSubmitNonceParam(jreq, req, parameters))
                 return false;
-            }
-        } else {
+        } 
+        else if (requestType->second == "getBlock") {
+            if (!AdjustGetBlockParam(jreq, req, parameters))
+                return false;
+        }
+        else {
             jreq.strMethod = requestType->second;
             for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
                 if (it->first == "requestType") {

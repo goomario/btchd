@@ -30,6 +30,7 @@ static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
 static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
 uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);
+uint64_t parseAccountId(const std::string& account);
 
 /**
  * Get account Id

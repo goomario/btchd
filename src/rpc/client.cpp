@@ -26,6 +26,11 @@ public:
  */
 static const CRPCConvertParam vRPCConvertParams[] =
 {
+    // BCO rpc new add
+    { "sendMoney", 2, "feeNQT" },
+    { "sendMoney", 3, "amountNQT" },
+    { "getGuaranteedBalance", 1, "numOfConfirm"},
+
     { "setmocktime", 0, "timestamp" },
     { "generate", 0, "nblocks" },
     { "generate", 1, "maxtries" },

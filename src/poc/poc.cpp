@@ -21,6 +21,7 @@
 #include <threadinterrupt.h>
 
 #include <inttypes.h>
+#include <string>
 
 namespace {
 
@@ -227,6 +228,24 @@ uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase)
         ((uint64_t)publicKeyHash[5]) << 40 | \
         ((uint64_t)publicKeyHash[6]) << 48 | \
         ((uint64_t)publicKeyHash[7]) << 56;
+}
+
+uint64_t parseAccountId(const std::string& account) 
+{
+    if (account.empty()) {
+        return 0;
+    }
+
+    std::string accountUpper;
+    std::transform(account.begin(), account.end(), back_inserter(accountUpper), ::toupper);
+
+    if (accountUpper.substr(0, 6) == ("BURST-")) {
+        return 0; //TODO Crypto.rsDecode(account.substring(6));
+    }
+    else {
+        //parseUnsignedLong(account);
+        return std::atoll(account.c_str());
+    }
 }
 
 uint64_t GetBlockGenerator(const CBlockHeader &block)
