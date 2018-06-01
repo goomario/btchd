@@ -196,14 +196,12 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
         result.push_back(Pair("scoopNum", (uint64_t)poc::GetBlockScoopNum(genSig, pBlockIndex->nHeight)));
         result.push_back(Pair("generator", std::to_string(poc::GetBlockGenerator(block))));
         result.push_back(Pair("generatorRS", poc::GetBlockGeneratorRS(block)));
-        result.push_back(Pair("generatorPublicKey", ""));
         result.push_back(Pair("generationSignature", genSig.GetHex()));
     }
     else {
         result.push_back(Pair("scoopNum", 0));
         result.push_back(Pair("generator", ""));
         result.push_back(Pair("generatorRS", ""));
-        result.push_back(Pair("generatorPublicKey", ""));
         result.push_back(Pair("generationSignature", ""));
     }
 
@@ -225,8 +223,7 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
     }
     result.push_back(Pair("blockReward", std::to_string(coinbaseReward/100000000)));
     result.push_back(Pair("transactions", txs));
-
-    result.push_back(Pair("requestProcessingTime", 0));
+    result.push_back(Pair("generatorPublicKey", ""));
 
     // previous
     if (pBlockIndex->pprev != nullptr) {
@@ -260,7 +257,6 @@ static UniValue getBlockById(const uint64_t blockId)
 static UniValue getBlockByHeight(int height)
 {
     UniValue result(UniValue::VOBJ);
-    LogPrintf("----getBlockByHeight %ld\n", height);
     CBlockIndex *pBlockIndex = chainActive[height];
     if (pBlockIndex == nullptr) {
         result.pushKV("result", "Block height not found ");
@@ -372,19 +368,67 @@ static UniValue getTime(const JSONRPCRequest& request)
     return result;
 }
 
-//TODO will solo call this?
+static bool IsOwnKey(CWallet * const pwallet, const CScript& scriptPubKey)
+{
+    CTxDestination addr;
+    if (!ExtractDestination(scriptPubKey, addr))
+        return false;
+    if (!IsValidDestination(addr)) {
+        return false;
+    }
+    auto keyid = GetKeyForDestination(*pwallet, addr);
+    if (keyid.IsNull()) {
+        return false;
+    }
+    CKey vchSecret;
+    if (!pwallet->GetKey(keyid, vchSecret)) {
+        return false;
+    }
+    LogPrintf("%s\n",CBitcoinSecret(vchSecret).ToString().c_str());
+    return true;
+}
+
+static bool IsOwnBlockOfHeight(CWallet * const pwallet, int height)
+{
+    CBlockIndex *pBlockIndex = chainActive[height];
+    if (pBlockIndex == nullptr) return false;
+
+    CBlock block;
+    if (!ReadBlockFromDisk(block, pBlockIndex, Params().GetConsensus())) 
+        return false;
+
+    for (const auto& tx : block.vtx)
+    {
+        if (tx->IsCoinBase())
+            return IsOwnKey(pwallet, tx->vout[0].scriptPubKey);
+    }
+    return false;
+}
+
 static UniValue getRewardRecipient(const JSONRPCRequest& request)
 {
+    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 1) {
+    if (request.params.size() != 2) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
-    //uint64_t nAccountId = poc::parseAccountId(request.params[0].get_str());
-    result.pushKV("rewardRecipient", std::to_string( pool_pubkey == 0 
-        ? poc::parseAccountId(request.params[0].get_str()) 
-        : pool_pubkey)
-    );
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    std::string strHeight = request.params[1].get_str();
+    bool bOwn = IsOwnBlockOfHeight(pwallet, static_cast<int>(std::stol(strHeight.c_str())));
+    uint64_t pubkey = 0;
+    if( bOwn) 
+        pubkey = poc::GetAccountIdByPassPhrase(request.params[0].get_str());
+
+    result.pushKV("rewardRecipient", std::to_string(pubkey));
+
     return result;
 }
 
@@ -530,7 +574,7 @@ static const CRPCCommand commands[] =
     { "poc",              "getAccountId",             &poc::rpc::getAccountId,          { "passPhrase" } },
     { "poc",              "getAccount",               &poc::rpc::getAccount,            { "account" } },
     { "poc",              "getTime",                  &poc::rpc::getTime,               { } },
-    { "poc",              "getRewardRecipient",       &poc::rpc::getRewardRecipient,    { "account" } },
+    { "poc",              "getRewardRecipient",       &poc::rpc::getRewardRecipient,    { "account", "height" } },
     { "poc",              "sendMoney",                &poc::rpc::sendMoney,             { "recipient", "recipaddr", "feeNQT" , "amountNQT"} },
     { "poc",              "getGuaranteedBalance",     &poc::rpc::getGuaranteedBalance,  { "account", "numberOfConfirmations" } },
 };
