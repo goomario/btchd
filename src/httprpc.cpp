@@ -283,9 +283,6 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
             BurstJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
-        if(requestType->second != "getMiningInfo")
-            LogPrintf("HTTPReq_BurstJSONRPC, threadid=%ld, method=%s \n", std::this_thread::get_id(), requestType->second.c_str());
-
         const time_t startTime = ::time(nullptr);
 
         // Set the request
