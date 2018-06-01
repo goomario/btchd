@@ -423,7 +423,6 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
 
     deadline = calcDeadline;
     if (gNextBlockHeight != prevBlockIndex.nHeight + 1 
-        || nAccountId != gNextBlockSeed 
         || deadline < gNextBlockDeadline) {
         gNextBlockHeight = prevBlockIndex.nHeight + 1;
         gNextBlockNonce = nNonce;

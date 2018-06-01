@@ -236,7 +236,6 @@ static UniValue getBlockById(const uint64_t blockId)
 {
     CBlockIndex *pBlockIndex = nullptr;
     UniValue result(UniValue::VOBJ);
-    LogPrintf("----getBlockById %ld\n", blockId);
     for (const std::pair<const uint256, CBlockIndex*>& item : mapBlockIndex)
     {
         if (poc::GetBlockId(*(item.second)) == blockId) {
@@ -384,7 +383,6 @@ static bool IsOwnKey(CWallet * const pwallet, const CScript& scriptPubKey)
     if (!pwallet->GetKey(keyid, vchSecret)) {
         return false;
     }
-    LogPrintf("%s\n",CBitcoinSecret(vchSecret).ToString().c_str());
     return true;
 }
 
@@ -498,8 +496,6 @@ static UniValue sendMoney(const JSONRPCRequest& request)
 
     CAmount amountNQT = AmountFromValue(request.params[3]);
 
-    LogPrintf("Param is:%s,%s,%ld,%ld \n", request.params[0].get_str().c_str(), recipaddr.c_str(), feeNQT, amountNQT);
-
     ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
@@ -531,9 +527,6 @@ static UniValue sendMoney(const JSONRPCRequest& request)
 
     UniValue res(UniValue::VOBJ);
     res.pushKV("transaction", wtx.GetHash().GetHex());
-
-    LogPrintf("SendMoney Tx: %s\n", wtx.GetHash().GetHex().c_str());
-    
     return res;
 }
 
@@ -559,6 +552,26 @@ static UniValue getGuaranteedBalance(const JSONRPCRequest& request)
     return result;
 }
 
+static UniValue checkAddressValid(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "checkAddressValid parameter help\n"
+        );
+    }
+    if (request.params.size() != 1) {
+        throw std::runtime_error(
+            "checkAddressValid parameter size != 1\n"
+        );
+    }
+
+    std::string addr = request.params[0].get_str();
+    CTxDestination dest = DecodeDestination(addr);
+
+    UniValue res(UniValue::VOBJ);
+    res.pushKV("valid", IsValidDestination(dest) );
+    return res;
+}
 }// namespace rpc
 }// namespace poc
 
@@ -577,6 +590,7 @@ static const CRPCCommand commands[] =
     { "poc",              "getRewardRecipient",       &poc::rpc::getRewardRecipient,    { "account", "height" } },
     { "poc",              "sendMoney",                &poc::rpc::sendMoney,             { "recipient", "recipaddr", "feeNQT" , "amountNQT"} },
     { "poc",              "getGuaranteedBalance",     &poc::rpc::getGuaranteedBalance,  { "account", "numberOfConfirmations" } },
+    { "poc",              "checkAddressValid",        &poc::rpc::checkAddressValid,     { "addr" } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)
