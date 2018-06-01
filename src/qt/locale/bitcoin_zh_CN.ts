@@ -139,7 +139,7 @@
     </message>
     <message>
         <source>Enter the new passphrase to the wallet.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</source>
-        <translation>输入钱包的新密码。&lt;br/&gt;密码请用&lt;b&gt;10 个以上的随机字符&lt;/b&gt;，或是&lt;b&gt;8 个以上的字词&lt;/b&gt;。</translation>
+        <translation>输入钱包的新密码。&lt;br/&gt;密码请用&lt;b&gt; 10个以上的随机字符&lt;/b&gt;或是&lt;b&gt; 8个以上的字词&lt;/b&gt;。</translation>
     </message>
     <message>
         <source>Encrypt wallet</source>
@@ -285,7 +285,7 @@
     </message>
     <message>
         <source>About &amp;Qt</source>
-        <translation>关于Qt(&amp;Q)</translation>
+        <translation>关于 Qt(&amp;Q)</translation>
     </message>
     <message>
         <source>Show information about Qt</source>
@@ -524,34 +524,24 @@
         <translation>更新中...</translation>
     </message>
     <message>
-        <source>Date: %1
-</source>
-        <translation>日期: %1
-</translation>
+        <source>Date: %1</source>
+        <translation>日期: %1</translation>
     </message>
     <message>
-        <source>Amount: %1
-</source>
-        <translation>金额: %1
-</translation>
+        <source>Amount: %1</source>
+        <translation>金额: %1</translation>
     </message>
     <message>
-        <source>Type: %1
-</source>
-        <translation>类型: %1
-</translation>
+        <source>Type: %1</source>
+        <translation>类型: %1</translation>
     </message>
     <message>
-        <source>Label: %1
-</source>
-        <translation>标签: %1
-</translation>
+        <source>Label: %1</source>
+        <translation>标签: %1</translation>
     </message>
     <message>
-        <source>Address: %1
-</source>
-        <translation>地址: %1
-</translation>
+        <source>Address: %1</source>
+        <translation>地址: %1</translation>
     </message>
     <message>
         <source>Sent transaction</source>
@@ -610,11 +600,11 @@
     </message>
     <message>
         <source>After Fee:</source>
-        <translation>加上交易费用后:</translation>
+        <translation>加上交易费用后：</translation>
     </message>
     <message>
         <source>Change:</source>
-        <translation>找零金额:</translation>
+        <translation>找零金额：</translation>
     </message>
     <message>
         <source>(un)select all</source>
@@ -705,11 +695,11 @@
         <translation>(锁定 %1 枚)</translation>
     </message>
     <message>
-        <source>yes</source>
+        <source>Yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <source>no</source>
+        <source>No</source>
         <translation>否</translation>
     </message>
     <message>
@@ -786,6 +776,14 @@
     <message>
         <source>New key generation failed.</source>
         <translation>产生新的密钥失败了。</translation>
+    </message>
+    <message>
+        <source>Ok</source>
+        <translation>确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
     </message>
 </context>
 <context>
@@ -1004,7 +1002,7 @@
     </message>
     <message>
         <source>URI:</source>
-        <translation>URI:</translation>
+        <translation>URI：</translation>
     </message>
     <message>
         <source>Select payment request file</source>
@@ -1055,7 +1053,7 @@
     </message>
     <message>
         <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS&amp;5 代理:</translation>
+        <translation>通过 Tor 隐藏服务连接节点时使用不同的 SOCKS&amp;5 代理：</translation>
     </message>
     <message>
         <source>Hide the icon from the system tray.</source>
@@ -1075,7 +1073,7 @@
     </message>
     <message>
         <source>Active command-line options that override above options:</source>
-        <translation>有效的命令行参数覆盖上述选项:</translation>
+        <translation>有效的命令行参数覆盖上述选项：</translation>
     </message>
     <message>
         <source>Open the %1 configuration file from the working directory.</source>
@@ -1286,7 +1284,7 @@
     </message>
     <message>
         <source>Watch-only:</source>
-        <translation>仅观察:</translation>
+        <translation>仅观察：</translation>
     </message>
     <message>
         <source>Available:</source>
@@ -1330,7 +1328,7 @@
     </message>
     <message>
         <source>Spendable:</source>
-        <translation>可使用:</translation>
+        <translation>可使用：</translation>
     </message>
     <message>
         <source>Recent transactions</source>
@@ -1357,8 +1355,7 @@
     </message>
     <message>
         <source>Cannot start bco: click-to-pay handler</source>
-        <translation>无法启动 BCO 协议的“
-一键支付”处理器</translation>
+        <translation>无法启动 BCO 的一键支付</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1366,7 +1363,7 @@
     </message>
     <message>
         <source>Payment request fetch URL is invalid: %1</source>
-        <translation>取得付款请求的 URL 无效: %1</translation>
+        <translation>取得付款请求的 URL 无效：%1</translation>
     </message>
     <message>
         <source>Invalid payment address %1</source>
@@ -1573,7 +1570,7 @@
     </message>
     <message>
         <source>Error: Cannot parse configuration file: %1. Only use key=value syntax.</source>
-        <translation>错误：无法解析配置文件：%1。只接受 key=value语法。</translation>
+        <translation>错误：无法解析配置文件：%1。只接受”key=value“语法。</translation>
     </message>
     <message>
         <source>Error: %1</source>
@@ -1596,7 +1593,7 @@
     </message>
     <message>
         <source>PNG Image (*.png)</source>
-        <translation>PNG 图像(*.png)</translation>
+        <translation>PNG 图像 (*.png)</translation>
     </message>
 </context>
 <context>
@@ -1791,11 +1788,11 @@
     </message>
     <message>
         <source>In:</source>
-        <translation>输入:</translation>
+        <translation>输入：</translation>
     </message>
     <message>
         <source>Out:</source>
-        <translation>输出:</translation>
+        <translation>输出：</translation>
     </message>
     <message>
         <source>Debug log file</source>
@@ -1894,15 +1891,15 @@
     <name>ReceiveCoinsDialog</name>
     <message>
         <source>&amp;Amount:</source>
-        <translation>总额(&amp;A):</translation>
+        <translation>总额(&amp;A)：</translation>
     </message>
     <message>
         <source>&amp;Label:</source>
-        <translation>标签(&amp;L):</translation>
+        <translation>标签(&amp;L)：</translation>
     </message>
     <message>
         <source>&amp;Message:</source>
-        <translation>消息(&amp;M):</translation>
+        <translation>消息(&amp;M)：</translation>
     </message>
     <message>
         <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BCO network.</source>
@@ -2031,6 +2028,10 @@
         <source>Error encoding URI into QR Code.</source>
         <translation>把 URI 编码成二维码时发生错误。</translation>
     </message>
+    <message>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
 </context>
 <context>
     <name>RecentRequestsTableModel</name>
@@ -2087,27 +2088,27 @@
     </message>
     <message>
         <source>Quantity:</source>
-        <translation>总量:</translation>
+        <translation>总量：</translation>
     </message>
     <message>
         <source>Bytes:</source>
-        <translation>字节:</translation>
+        <translation>字节：</translation>
     </message>
     <message>
         <source>Amount:</source>
-        <translation>金额:</translation>
+        <translation>金额：</translation>
     </message>
     <message>
         <source>Fee:</source>
-        <translation>费用:</translation>
+        <translation>费用：</translation>
     </message>
     <message>
         <source>After Fee:</source>
-        <translation>加上交易费用后:</translation>
+        <translation>加上交易费用后：</translation>
     </message>
     <message>
         <source>Change:</source>
-        <translation>找零金额:</translation>
+        <translation>找零金额：</translation>
     </message>
     <message>
         <source>If this is activated, but the change address is empty or invalid, change will be sent to a newly generated address.</source>
@@ -2119,7 +2120,7 @@
     </message>
     <message>
         <source>Transaction Fee:</source>
-        <translation>交易费用:</translation>
+        <translation>交易费用：</translation>
     </message>
     <message>
         <source>Choose...</source>
@@ -2159,11 +2160,11 @@
     </message>
     <message>
         <source>Recommended:</source>
-        <translation>推荐:</translation>
+        <translation>推荐：</translation>
     </message>
     <message>
         <source>Custom:</source>
-        <translation>自定义:</translation>
+        <translation>自定义：</translation>
     </message>
     <message>
         <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
@@ -2183,11 +2184,11 @@
     </message>
     <message>
         <source>Dust:</source>
-        <translation>小额:</translation>
+        <translation>小额：</translation>
     </message>
     <message>
         <source>Confirmation time target:</source>
-        <translation>确认时间目标:</translation>
+        <translation>确认时间目标：</translation>
     </message>
     <message>
         <source>Enable Replace-By-Fee</source>
@@ -2203,7 +2204,7 @@
     </message>
     <message>
         <source>Balance:</source>
-        <translation>余额:</translation>
+        <translation>余额：</translation>
     </message>
     <message>
         <source>Confirm the send action</source>
@@ -2342,15 +2343,15 @@
     <name>SendCoinsEntry</name>
     <message>
         <source>A&amp;mount:</source>
-        <translation>金额(&amp;M):</translation>
+        <translation>金额(&amp;M)：</translation>
     </message>
     <message>
         <source>Pay &amp;To:</source>
-        <translation>付给(&amp;T):</translation>
+        <translation>付给(&amp;T)：</translation>
     </message>
     <message>
         <source>&amp;Label:</source>
-        <translation>标签(&amp;L):</translation>
+        <translation>标签(&amp;L)：</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2394,7 +2395,7 @@
     </message>
     <message>
         <source>Message:</source>
-        <translation>消息:</translation>
+        <translation>消息：</translation>
     </message>
     <message>
         <source>This is an unauthenticated payment request.</source>
@@ -2414,7 +2415,7 @@
     </message>
     <message>
         <source>Pay To:</source>
-        <translation>支付给:</translation>
+        <translation>支付给：</translation>
     </message>
     <message>
         <source>Memo:</source>
@@ -3098,15 +3099,15 @@
     </message>
     <message>
         <source>Current fee:</source>
-        <translation>当前交易费:</translation>
+        <translation>当前交易费：</translation>
     </message>
     <message>
         <source>Increase:</source>
-        <translation>增加量:</translation>
+        <translation>增加量：</translation>
     </message>
     <message>
         <source>New fee:</source>
-        <translation>新交易费:</translation>
+        <translation>新交易费：</translation>
     </message>
     <message>
         <source>Confirm fee bump</source>
@@ -3160,7 +3161,7 @@
     <name>bitcoin-core</name>
     <message>
         <source>Options:</source>
-        <translation>选项:</translation>
+        <translation>选项：</translation>
     </message>
     <message>
         <source>Specify data directory</source>
@@ -3392,7 +3393,7 @@
     </message>
     <message>
         <source>Chain selection options:</source>
-        <translation>区块链选择选项:</translation>
+        <translation>区块链选择选项：</translation>
     </message>
     <message>
         <source>Change index out of range</source>
@@ -3412,15 +3413,15 @@
     </message>
     <message>
         <source>Debugging/Testing options:</source>
-        <translation>调试/测试选项:</translation>
+        <translation>调试/测试选项：</translation>
     </message>
     <message>
-        <source>What type of addresses to use ("legacy", "p2sh-segwit", or "bech32", default: "%s")</source>
-        <translation>使用的地址类型 ("legacy"、"p2sh-segwit" 或 "bech32"。默认: "%s")</translation>
+        <source>What type of addresses to use (&quot;legacy&quot;, &quot;p2sh-segwit&quot;, or &quot;bech32&quot;, default: &quot;%s&quot;)</source>
+        <translation>使用的地址类型 (&quot;legacy&quot;、&quot;p2sh-segwit&quot; 或 &quot;bech32&quot;。默认: &quot;%s&quot;)</translation>
     </message>
     <message>
-        <source>What type of change to use ("legacy", "p2sh-segwit", or "bech32". Default is same as -addresstype, except when -addresstype=p2sh-segwit a native segwit output is used when sending to a native segwit address)</source>
-        <translation>使用的找零地址类型 ("legacy"、"p2sh-segwit" 或 "bech32"。 默认值与 -addresstype 相同，除非 -addresstype=p2sh-segwit 在发送到本地 segwit 地址时使用本地 segwit 输出)</translation>
+        <source>What type of change to use (&quot;legacy&quot;, &quot;p2sh-segwit&quot;, or &quot;bech32&quot;. Default is same as -addresstype, except when -addresstype=p2sh-segwit a native segwit output is used when sending to a native segwit address)</source>
+        <translation>使用的找零地址类型 (&quot;legacy&quot;、&quot;p2sh-segwit&quot; 或 &quot;bech32&quot;。 默认值与 -addresstype 相同，除非 -addresstype=p2sh-segwit 在发送到本地 segwit 地址时使用本地 segwit 输出)</translation>
     </message>
     <message>
         <source>Do not load the wallet and disable wallet RPC calls</source>
@@ -3635,6 +3636,14 @@
         <translation>正在验证区块...</translation>
     </message>
     <message>
+        <source>(press q to shutdown and continue later)</source>
+        <translation>（按下 Q 键关闭，稍后继续）</translation>
+    </message>
+    <message>
+        <source>press q to shutdown</source>
+        <translation>按下 Q 键关闭</translation>
+    </message>
+    <message>
         <source>Wallet debugging/testing options:</source>
         <translation>钱包调试/测试选项：</translation>
     </message>
@@ -3644,7 +3653,7 @@
     </message>
     <message>
         <source>Wallet options:</source>
-        <translation>钱包选项:</translation>
+        <translation>钱包选项：</translation>
     </message>
     <message>
         <source>Allow JSON-RPC connections from specified source. Valid for &lt;ip&gt; are a single IP (e.g. 1.2.3.4), a network/netmask (e.g. 1.2.3.4/255.255.255.0) or a network/CIDR (e.g. 1.2.3.4/24). This option can be specified multiple times</source>
@@ -3764,7 +3773,7 @@
     </message>
     <message>
         <source>Node relay options:</source>
-        <translation>节点中继选项:</translation>
+        <translation>节点中继选项：</translation>
     </message>
     <message>
         <source>RPC server options:</source>
@@ -4000,7 +4009,7 @@
     </message>
     <message>
         <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>使用单独的SOCK(&amp;)5代理通过Tor隐藏服务访问对等点:</translation>
+        <translation>使用单独的SOCK(&amp;)5代理通过Tor隐藏服务访问对等点：</translation>
     </message>
     <message>
         <source>Warning: Unknown block versions being mined! It&apos;s possible unknown rules are in effect</source>
@@ -4358,7 +4367,7 @@
     </message>
     <message>
         <source>This folder max nonce number: %1</source>
-        <translation>目标文件夹最多可存储的块数量: %1。</translation>
+        <translation>目标文件夹最多可存储的块数量: %1</translation>
     </message>
     <message>
         <source>Please select exist directory to save this plot file!</source>
