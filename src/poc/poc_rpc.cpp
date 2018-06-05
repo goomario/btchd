@@ -145,10 +145,22 @@ static UniValue getConstants(const JSONRPCRequest& request)
 {
     UniValue result(UniValue::VOBJ);
 
-    auto genesis = Params().GenesisBlock();
-    auto blockID=poc::GetBlockId(genesis);
-    result.pushKV("genesisBlockId",std::to_string(blockID));
-    result.pushKV("genesisAccountId", "0");
+    uint64_t blockId = 0, accountId = 0; 
+    int height = Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount;
+    CBlockIndex * pBlockIndex = chainActive[height];
+
+    if (pBlockIndex) {
+        blockId = poc::GetBlockId(*pBlockIndex);
+        accountId = pBlockIndex->GetBlockHeader().nPlotSeed;
+    }else {
+        LogPrintf("Not find BCO fork height block:%ld\n", height);
+        auto genesis = Params().GenesisBlock();
+        blockId = poc::GetBlockId(genesis);
+        accountId = genesis.nPlotSeed;
+    }
+
+    result.pushKV("genesisBlockId", std::to_string(blockId));
+    result.pushKV("genesisAccountId", std::to_string(accountId));
     return result;
 }
 
