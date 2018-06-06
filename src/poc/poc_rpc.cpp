@@ -69,7 +69,7 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
         return;
     }
 
-    uint64_t deadline;
+    uint64_t deadline = std::numeric_limits<uint64_t>::max();
     if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline, Params().GetConsensus())) {
         result.pushKV("result", "Generate failed");
         return;
@@ -176,7 +176,6 @@ static UniValue getBlockchainStatus(const JSONRPCRequest& request)
 
     result.push_back(Pair("application", PACKAGE_NAME));
     result.push_back(Pair("version", PACKAGE_VERSION));
-    result.push_back(Pair("time", poc::GetEpochTime()));
     result.push_back(Pair("lastBlock", std::to_string(poc::GetBlockId(*pBlockIndex))));
     result.push_back(Pair("cumulativeDifficulty", pBlockIndex->nChainWork.GetLow64()));
     result.push_back(Pair("numberOfBlocks", pBlockIndex->nHeight + 1));
@@ -375,7 +374,7 @@ static UniValue getAccount(const JSONRPCRequest& request)
 static UniValue getTime(const JSONRPCRequest& request)
 {
     UniValue result(UniValue::VOBJ);
-    result.pushKV("time", GetEpochTime() );
+    result.pushKV("time", GetAdjustedTime());
     return result;
 }
 

@@ -25,9 +25,6 @@
 
 namespace {
 
-// Millis: 2018-01-25 00:00:00.0
-const static int64_t EPOCH_BEGINNING = 1516809600000LL;
-
 // Seconds: Dead target for deadline
 const static int64_t DEADLINE_DEADTARGET = 365 * 24 * 60 * 60;
 
@@ -432,11 +429,6 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
         uiInterface.NotifyBcoDeadlineChanged(gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
     }
     return true;
-}
-
-int64_t GetEpochTime()
-{
-    return GetAdjustedTime() - (EPOCH_BEGINNING + 500)/1000;
 }
 
 int64_t GetForgeEscape()

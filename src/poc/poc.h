@@ -64,10 +64,6 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     uint64_t &deadline,
     const Consensus::Params& params);
 
-
-/** Get epoch second time*/
-int64_t GetEpochTime();
-
 /** Get forge escape second time */
 int64_t GetForgeEscape();
 
