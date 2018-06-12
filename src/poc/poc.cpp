@@ -21,11 +21,9 @@
 #include <threadinterrupt.h>
 
 #include <inttypes.h>
+#include <string>
 
 namespace {
-
-// Millis: 2018-01-25 00:00:00.0
-const static int64_t EPOCH_BEGINNING = 1516809600000LL;
 
 // Seconds: Dead target for deadline
 const static int64_t DEADLINE_DEADTARGET = 365 * 24 * 60 * 60;
@@ -229,6 +227,24 @@ uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase)
         ((uint64_t)publicKeyHash[7]) << 56;
 }
 
+uint64_t parseAccountId(const std::string& account) 
+{
+    if (account.empty()) {
+        return 0;
+    }
+
+    std::string accountUpper;
+    std::transform(account.begin(), account.end(), back_inserter(accountUpper), ::toupper);
+
+    if (accountUpper.substr(0, 6) == ("BURST-")) {
+        return 0; //TODO Crypto.rsDecode(account.substring(6));
+    }
+    else {
+        //parseUnsignedLong(account);
+        return std::atoll(account.c_str());
+    }
+}
+
 uint64_t GetBlockGenerator(const CBlockHeader &block)
 {
     return block.nPlotSeed;
@@ -404,7 +420,6 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
 
     deadline = calcDeadline;
     if (gNextBlockHeight != prevBlockIndex.nHeight + 1 
-        || nAccountId != gNextBlockSeed 
         || deadline < gNextBlockDeadline) {
         gNextBlockHeight = prevBlockIndex.nHeight + 1;
         gNextBlockNonce = nNonce;
@@ -414,11 +429,6 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
         uiInterface.NotifyBcoDeadlineChanged(gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
     }
     return true;
-}
-
-int64_t GetEpochTime()
-{
-    return GetAdjustedTime() - (EPOCH_BEGINNING + 500)/1000;
 }
 
 int64_t GetForgeEscape()

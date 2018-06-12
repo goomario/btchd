@@ -30,6 +30,7 @@ static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
 static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
 uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);
+uint64_t parseAccountId(const std::string& account);
 
 /**
  * Get account Id
@@ -62,10 +63,6 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId, 
     uint64_t &deadline,
     const Consensus::Params& params);
-
-
-/** Get epoch second time*/
-int64_t GetEpochTime();
 
 /** Get forge escape second time */
 int64_t GetForgeEscape();
