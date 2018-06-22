@@ -236,7 +236,7 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
     }
 
     std::stringstream ss;
-    ss << std::fixed << std::setprecision(8) << double(coinbaseReward) / 100000000.0;
+    ss << std::fixed << std::setprecision(8) << double(coinbaseReward) / COIN;
 
     result.push_back(Pair("blockReward", ss.str()));
     result.push_back(Pair("transactions", txs));
