@@ -19,6 +19,8 @@
 #include <utilmoneystr.h>
 #include <consensus/validation.h>
 #include <base58.h>
+#include <sstream>
+#include <iomanip>
 
 namespace poc {
 namespace rpc {
@@ -232,7 +234,11 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
         }
         txs.push_back(tx->GetHash().GetHex());
     }
-    result.push_back(Pair("blockReward", std::to_string(coinbaseReward/100000000)));
+
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(8) << double(coinbaseReward) / 100000000.0;
+
+    result.push_back(Pair("blockReward", ss.str()));
     result.push_back(Pair("transactions", txs));
     result.push_back(Pair("generatorPublicKey", ""));
 
