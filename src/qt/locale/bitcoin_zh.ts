@@ -111,8 +111,8 @@
         <translation>仅支付全额的%1</translation>
     </message>
     <message>
-        <source>Warning: Invalid BCO address</source>
-        <translation>警告：BCO地址无效</translation>
+        <source>Warning: Invalid BTCHD address</source>
+        <translation>警告：BTCHD地址无效</translation>
     </message>
     </context>
 <context>

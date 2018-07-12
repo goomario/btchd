@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The BCO Ore developers
+// Copyright (c) 2017-2018 The BTCHD Ore developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -25,7 +25,7 @@ class QTemporaryFile;
 class QTimer;
 QT_END_NAMESPACE
 
-/** Local BCO Miner console. */
+/** Local BTCHD Miner console. */
 class MinerConsole : public QWidget
 {
     Q_OBJECT

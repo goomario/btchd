@@ -29,16 +29,16 @@
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>BCO-Qt</string>
+  <string>BTCHD-Qt</string>
   
   <key>CFBundleName</key>
-  <string>BCO-Qt</string>
+  <string>BTCHD-Qt</string>
 
   <key>LSHasLocalizedDisplayName</key>
   <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>org.bitcoinore.BCO-Qt</string>
+  <string>net.btchd.BTCHD-Qt</string>
 
   <key>CFBundleURLTypes</key>
   <array>
@@ -46,10 +46,10 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleURLName</key>
-      <string>org.bitcoinore.BCOPayment</string>
+      <string>net.btchd.BTCHDPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
-        <string>bco</string>
+        <string>btchd</string>
       </array>
     </dict>
   </array>
@@ -58,9 +58,9 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>org.bitcoinore.paymentrequest</string>
+      <string>net.btchd.paymentrequest</string>
       <key>UTTypeDescription</key>
-      <string>BCO payment request</string>
+      <string>BTCHD payment request</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
@@ -68,10 +68,10 @@
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.mime-type</key>
-        <string>application/x-bco-payment-request</string>
+        <string>application/x-btchd-payment-request</string>
         <key>public.filename-extension</key>
         <array>
-          <string>bcopaymentrequest</string>
+          <string>btchdpaymentrequest</string>
         </array>
       </dict>
     </dict>
@@ -84,7 +84,7 @@
       <string>Editor</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>org.bitcoinore.paymentrequest</string>
+        <string>net.btchd.paymentrequest</string>
       </array>
       <key>LSHandlerRank</key>
       <string>Owner</string>

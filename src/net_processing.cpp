@@ -31,7 +31,7 @@
 #include <utilstrencodings.h>
 
 #if defined(NDEBUG)
-# error "BCO cannot be compiled without assertions."
+# error "BTCHD cannot be compiled without assertions."
 #endif
 
 std::atomic<int64_t> nTimeBestReceived(0); // Used only to inform the wallet of when we last received a block
@@ -1590,18 +1590,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
         }
 
-        if (nVersion < MIN_PEER_PROTO_VERSION || nVersion == BCO_PRERELEASE_VERSION)
+        if (nVersion < MIN_PEER_PROTO_VERSION)
         {
             // disconnect from peers older than this proto version
             LogPrint(BCLog::NET, "peer=%d using obsolete version %i; disconnecting\n", pfrom->GetId(), nVersion);
-            if (nVersion == BCO_PRERELEASE_VERSION) {
-                // main net test on pre release
-                connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
-                                    strprintf("Version %d is test for pre release", nVersion)));
-            } else {
-                connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
-                                    strprintf("Version must be %d or greater", MIN_PEER_PROTO_VERSION)));
-            }
+            connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
+                                strprintf("Version must be %d or greater", MIN_PEER_PROTO_VERSION)));
             pfrom->fDisconnect = true;
             return false;
         }

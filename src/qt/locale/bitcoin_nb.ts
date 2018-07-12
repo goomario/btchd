@@ -62,12 +62,12 @@
         <translation>Mottaksadresser</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Dette er dine BCO-adresser for sending av betalinger. Sjekk alltid beløpet og mottakeradressen før sending av mynter.</translation>
+        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Dette er dine BTCHD-adresser for sending av betalinger. Sjekk alltid beløpet og mottakeradressen før sending av mynter.</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Dette er dine BCO-adresser for å sende betalinger med. Det er anbefalt å bruke en ny mottaksadresse for hver transaksjon.</translation>
+        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Dette er dine BTCHD-adresser for å sende betalinger med. Det er anbefalt å bruke en ny mottaksadresse for hver transaksjon.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -342,8 +342,8 @@
         <translation>Reindekserer blokker på harddisk...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Send til en BCO-adresse</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Send til en BTCHD-adresse</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -366,8 +366,8 @@
         <translation>&amp;Verifiser melding...</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -394,12 +394,12 @@
         <translation>Krypter de private nøklene som tilhører lommeboken din</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Signer en melding med BCO-adressene dine for å bevise at du eier dem</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Signer en melding med BTCHD-adressene dine for å bevise at du eier dem</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Bekreft meldinger for å være sikker på at de ble signert av en angitt BCO-adresse</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Bekreft meldinger for å være sikker på at de ble signert av en angitt BTCHD-adresse</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -418,8 +418,8 @@
         <translation>Verktøylinje for faner</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>Forespør betalinger (genererer QR-koder og bco: URIer)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>Forespør betalinger (genererer QR-koder og btchd: URIer)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,16 +430,16 @@
         <translation>Vis listen over bruke mottaksadresser og merkelapper</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>Åpne en bco: URI eller betalingsetterspørring</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>Åpne en btchd: URI eller betalingsetterspørring</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
         <translation>&amp;Kommandolinjevalg</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BCO network</source>
-        <translation><numerusform>%n aktiv forbindelse til BCO-nettverket</numerusform><numerusform>%n aktive forbindelser til BCO-nettverket</numerusform></translation>
+        <source>%n active connection(s) to BTCHD network</source>
+        <translation><numerusform>%n aktiv forbindelse til BTCHD-nettverket</numerusform><numerusform>%n aktive forbindelser til BTCHD-nettverket</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -482,8 +482,8 @@
         <translation>Oppdatert</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BCO command-line options</source>
-        <translation>Vis %1 hjelpemeldingen for å få en liste med mulige BCO kommandolinjevalg.</translation>
+        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <translation>Vis %1 hjelpemeldingen for å få en liste med mulige BTCHD kommandolinjevalg.</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -552,8 +552,8 @@
         <translation>Lommeboken er &lt;b&gt;kryptert&lt;/b&gt; og for tiden &lt;b&gt;låst&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BCO can no longer continue safely and will quit.</source>
-        <translation>En fatal feil har inntruffet. BCO kan ikke lenger trygt fortsette, og må derfor avslutte.</translation>
+        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
+        <translation>En fatal feil har inntruffet. BTCHD kan ikke lenger trygt fortsette, og må derfor avslutte.</translation>
     </message>
 </context>
 <context>
@@ -746,8 +746,8 @@
         <translation>Rediger utsendingsadresse</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BCO address.</source>
-        <translation>Den angitte adressen "%1" er ikke en gyldig BCO-adresse.</translation>
+        <source>The entered address "%1" is not a valid BTCHD address.</source>
+        <translation>Den angitte adressen "%1" er ikke en gyldig BTCHD-adresse.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -875,8 +875,8 @@
         <translation>Bruk en egendefinert datamappe:</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -887,8 +887,8 @@
         <translation>Omtrent %1GB data vil bli lagret i denne mappen.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the BCO block chain.</source>
-        <translation>%1 vil laste ned og lagre en kopi av BCO blokkjeden.</translation>
+        <source>%1 will download and store a copy of the BTCHD block chain.</source>
+        <translation>%1 vil laste ned og lagre en kopi av BTCHD blokkjeden.</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -918,12 +918,12 @@
         <translation>Skjema</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
-        <translation>Det kan hende nylige transaksjoner ikke vises enda, og at lommeboksaldoen dermed blir uriktig. Denne informasjonen vil rette seg når synkronisering av lommeboka mot BCO-nettverket er fullført, som anvist nedenfor.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
+        <translation>Det kan hende nylige transaksjoner ikke vises enda, og at lommeboksaldoen dermed blir uriktig. Denne informasjonen vil rette seg når synkronisering av lommeboka mot BTCHD-nettverket er fullført, som anvist nedenfor.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
-        <translation>Forsøk på å bruke BCO som er påvirket av transaksjoner som ikke er vist enda godtas ikke av nettverket.</translation>
+        <translation>Forsøk på å bruke BTCHD som er påvirket av transaksjoner som ikke er vist enda godtas ikke av nettverket.</translation>
     </message>
     <message>
         <source>Number of blocks left</source>
@@ -1092,8 +1092,8 @@
         <translation>&amp;Bruk ubekreftet veksel</translation>
     </message>
     <message>
-        <source>Automatically open the BCO client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Åpne automatisk BCO klientporten på ruteren. Dette virker kun om din ruter støtter UPnP og dette er påslått.</translation>
+        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Åpne automatisk BTCHD klientporten på ruteren. Dette virker kun om din ruter støtter UPnP og dette er påslått.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1108,8 +1108,8 @@
         <translation>Tillatt innkommend&amp;e tilkoblinger</translation>
     </message>
     <message>
-        <source>Connect to the BCO network through a SOCKS5 proxy.</source>
-        <translation>Koble til BCO-nettverket gjennom en SOCKS5 proxy.</translation>
+        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
+        <translation>Koble til BTCHD-nettverket gjennom en SOCKS5 proxy.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1144,8 +1144,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BCO network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Koble til BCO-nettverket gjennom en separat SOCKS5 mellomtjener for Tor skjulte tjenester.</translation>
+        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>Koble til BTCHD-nettverket gjennom en separat SOCKS5 mellomtjener for Tor skjulte tjenester.</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1247,8 +1247,8 @@
         <translation>Skjema</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BCO network after a connection is established, but this process has not completed yet.</source>
-        <translation>Informasjonen som vises kan være foreldet. Din lommebok synkroniseres automatisk med BCO-nettverket etter at tilkobling er opprettet, men denne prosessen er ikke ferdig enda.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Informasjonen som vises kan være foreldet. Din lommebok synkroniseres automatisk med BTCHD-nettverket etter at tilkobling er opprettet, men denne prosessen er ikke ferdig enda.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1322,8 +1322,8 @@
         <translation>Feil ved betalingsforespørsel</translation>
     </message>
     <message>
-        <source>Cannot start bco: click-to-pay handler</source>
-        <translation>Kan ikke starte bco: Klikk-og-betal håndterer</translation>
+        <source>Cannot start btchd: click-to-pay handler</source>
+        <translation>Kan ikke starte btchd: Klikk-og-betal håndterer</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1338,8 +1338,8 @@
         <translation>Ugyldig betalingsadresse %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BCO address or malformed URI parameters.</source>
-        <translation>URI kan ikke fortolkes! Dette kan være forårsaket av en ugyldig BCO-adresse eller feilformede URI-parametre.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
+        <translation>URI kan ikke fortolkes! Dette kan være forårsaket av en ugyldig BTCHD-adresse eller feilformede URI-parametre.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1440,8 +1440,8 @@
         <translation>Beløp</translation>
     </message>
     <message>
-        <source>Enter a BCO address (e.g. %1)</source>
-        <translation>Oppgi en BCO-adresse (f.eks. %1)</translation>
+        <source>Enter a BTCHD address (e.g. %1)</source>
+        <translation>Oppgi en BTCHD-adresse (f.eks. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1856,8 +1856,8 @@
         <translation>&amp;Melding:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BCO network.</source>
-        <translation>En valgfri melding å tilknytte betalingsetterspørringen, som vil bli vist når forespørselen er åpnet. Meldingen vil ikke bli sendt med betalingen over BCO-nettverket.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
+        <translation>En valgfri melding å tilknytte betalingsetterspørringen, som vil bli vist når forespørselen er åpnet. Meldingen vil ikke bli sendt med betalingen over BTCHD-nettverket.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2093,8 +2093,8 @@
         <translation>Skjul</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
-        <translation>Betaling av bare minimumsavgiften går helt fint så lenge det er mindre transaksjonsvolum enn plass i blokkene. Men vær klar over at dette kan ende opp i en transaksjon som aldri blir bekreftet når det er mer etterspørsel etter BCO-transaksjoner enn nettverket kan behandle.</translation>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</source>
+        <translation>Betaling av bare minimumsavgiften går helt fint så lenge det er mindre transaksjonsvolum enn plass i blokkene. Men vær klar over at dette kan ende opp i en transaksjon som aldri blir bekreftet når det er mer etterspørsel etter BTCHD-transaksjoner enn nettverket kan behandle.</translation>
     </message>
     <message>
         <source>(read the tooltip)</source>
@@ -2249,8 +2249,8 @@
         <translation><numerusform>Antatt bekreftelsesbegynnelse innen %n blokk.</numerusform><numerusform>Antatt bekreftelsesbegynnelse innen %n blokker.</numerusform></translation>
     </message>
     <message>
-        <source>Warning: Invalid BCO address</source>
-        <translation>Advarsel Ugyldig BCO-adresse</translation>
+        <source>Warning: Invalid BTCHD address</source>
+        <translation>Advarsel Ugyldig BTCHD-adresse</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2292,8 +2292,8 @@
         <translation>Dette er en normal betaling.</translation>
     </message>
     <message>
-        <source>The BCO address to send the payment to</source>
-        <translation>BCO-adressen betalingen skal sendes til</translation>
+        <source>The BTCHD address to send the payment to</source>
+        <translation>BTCHD-adressen betalingen skal sendes til</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2340,8 +2340,8 @@
         <translation>Skriv inn en merkelapp for denne adressen for å legge den til listen av brukte adresser</translation>
     </message>
     <message>
-        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>En melding som var tilknyttet bitcoinen: URI vil bli lagret med transaksjonen for din oversikt. Denne meldingen vil ikke bli sendt over BCO-nettverket.</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
+        <translation>En melding som var tilknyttet bitcoinen: URI vil bli lagret med transaksjonen for din oversikt. Denne meldingen vil ikke bli sendt over BTCHD-nettverket.</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2389,8 +2389,8 @@
         <translation>Du kan signere meldinger/avtaler med adresser for å bevise at du kan motta bitcoins sendt til dem. Vær forsiktig med å signere noe vagt eller tilfeldig, siden phishing-angrep kan prøve å lure deg til å signere din identitet over til dem. Bare signer fullt detaljerte utsagn som du er enig i.</translation>
     </message>
     <message>
-        <source>The BCO address to sign the message with</source>
-        <translation>BCO-adressen meldingen skal signeres med</translation>
+        <source>The BTCHD address to sign the message with</source>
+        <translation>BTCHD-adressen meldingen skal signeres med</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2421,8 +2421,8 @@
         <translation>Kopier valgt signatur til utklippstavle</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BCO address</source>
-        <translation>Signer meldingen for å bevise at du eier denne BCO-adressen</translation>
+        <source>Sign the message to prove you own this BTCHD address</source>
+        <translation>Signer meldingen for å bevise at du eier denne BTCHD-adressen</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2445,12 +2445,12 @@
         <translation>Skriv inn mottakerens adresse, melding (forsikre deg om at du kopier linjeskift, mellomrom, faner osv. nøyaktig) og underskrift nedenfor for å bekrefte meldingen. Vær forsiktig så du ikke leser mer ut av signaturen enn hva som er i den signerte meldingen i seg selv, for å unngå å bli lurt av et man-in-the-middle-angrep. Merk at dette bare beviser at den som signerer kan motta med adressen, dette beviser ikke hvem som har sendt transaksjoner!</translation>
     </message>
     <message>
-        <source>The BCO address the message was signed with</source>
-        <translation>BCO-adressen meldingen ble signert med</translation>
+        <source>The BTCHD address the message was signed with</source>
+        <translation>BTCHD-adressen meldingen ble signert med</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BCO address</source>
-        <translation>Verifiser meldingen for å være sikker på at den ble signert av den angitte BCO-adressen</translation>
+        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
+        <translation>Verifiser meldingen for å være sikker på at den ble signert av den angitte BTCHD-adressen</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3142,8 +3142,8 @@
         <translation>Kunne ikke starte HTTP-tjener. Se feilrettingslogg for detaljer.</translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Core</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Core</translation>
     </message>
     <message>
         <source>The %s developers</source>

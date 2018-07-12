@@ -520,8 +520,8 @@ std::string HelpMessage(HelpMessageMode mode)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/bitcoinoreorg/bitcoinore>";
-    const std::string URL_WEBSITE = "<http://bitcoinore.org>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/bitcoinoreorg/btchd>";
+    const std::string URL_WEBSITE = "<http://btchd.net>";
 
     return CopyrightHolders(_("Copyright (C) %s")) + "\n" +
            "\n" +

@@ -82,8 +82,8 @@
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
-const char * const BITCOIN_CONF_FILENAME = "bco.conf";
-const char * const BITCOIN_PID_FILENAME = "bcod.pid";
+const char * const BITCOIN_CONF_FILENAME = "btchd.conf";
+const char * const BITCOIN_PID_FILENAME = "btchdd.pid";
 const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
 
 ArgsManager gArgs;
@@ -559,7 +559,7 @@ static std::string FormatException(const std::exception* pex, const char* pszThr
     char pszModule[MAX_PATH] = "";
     GetModuleFileNameA(nullptr, pszModule, sizeof(pszModule));
 #else
-    const char* pszModule = "bco";
+    const char* pszModule = "btchd";
 #endif
     if (pex)
         return strprintf(
@@ -596,7 +596,7 @@ const fs::path &GetAppDir()
         } else if (getcwd(path, sizeof(path) / sizeof(path[0])) != NULL) {
             appPathCached = path;
         } else {
-            appPathCached = "/opt/bco";
+            appPathCached = "/opt/btchd";
         }
 #endif
     }
@@ -606,13 +606,13 @@ const fs::path &GetAppDir()
 
 fs::path GetDefaultDataDir()
 {
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\bco
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\bco
-    // Mac: ~/Library/Application Support/bco
-    // Unix: ~/.bco
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\btchd
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\btchd
+    // Mac: ~/Library/Application Support/btchd
+    // Unix: ~/.btchd
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "bco";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "btchd";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -622,10 +622,10 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/bco";
+    return pathRet / "Library/Application Support/btchd";
 #else
     // Unix
-    return pathRet / ".bco";
+    return pathRet / ".btchd";
 #endif
 #endif
 }
@@ -687,7 +687,7 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
 {
     fs::ifstream streamConfig(GetConfigFile(confPath));
     if (!streamConfig.good())
-        return; // No bco.conf file is OK
+        return; // No btchd.conf file is OK
 
     {
         LOCK(cs_args);
@@ -696,7 +696,7 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
 
         for (boost::program_options::detail::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
         {
-            // Don't overwrite existing settings so command line settings override bco.conf
+            // Don't overwrite existing settings so command line settings override btchd.conf
             std::string strKey = std::string("-") + it->string_key;
             std::string strValue = it->value[0];
             InterpretNegativeSetting(strKey, strValue);
@@ -975,7 +975,7 @@ int GetNumCores()
 std::string CopyrightHolders(const std::string& strHolder)
 {
     std::string strCopyrightHolders;
-    // BCO
+    // BTCHD
     strCopyrightHolders += strprintf(strHolder, strprintf("2017-%i ", COPYRIGHT_YEAR) + strprintf(_(COPYRIGHT_HOLDERS), _(COPYRIGHT_HOLDERS_SUBSTITUTION)));
     // BTC
     strCopyrightHolders += "\n" + strprintf(strHolder, std::string("2009-2017 ") + strprintf(_("The %s developers"), "Bitcoin Core"));

@@ -315,8 +315,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Đánh chỉ số (indexing) lại các khối (blocks) trên ổ đĩa ...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Gửi coins đến tài khoản BCO</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Gửi coins đến tài khoản BTCHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -339,8 +339,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>&amp;Tin nhắn xác thực</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -367,12 +367,12 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Mã hoá các khoá bí mật trong Ví của bạn.</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Dùng địa chỉ BCO của bạn ký các tin nhắn để xác minh những nội dung tin nhắn đó là của bạn.</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Dùng địa chỉ BTCHD của bạn ký các tin nhắn để xác minh những nội dung tin nhắn đó là của bạn.</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Kiểm tra các tin nhắn để chắc chắn rằng chúng được ký bằng các địa chỉ BCO xác định.</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Kiểm tra các tin nhắn để chắc chắn rằng chúng được ký bằng các địa chỉ BTCHD xác định.</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -391,8 +391,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Thanh công cụ (toolbar)</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>Yêu cầu thanh toán(tạo mã QR và địa chỉ bco: URLs)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>Yêu cầu thanh toán(tạo mã QR và địa chỉ btchd: URLs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -403,16 +403,16 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Hiện thỉ danh sách các địa chỉ và nhãn đã dùng để nhận.</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>Mở bco:URL hoặc yêu cầu thanh toán</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>Mở btchd:URL hoặc yêu cầu thanh toán</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
         <translation>7Tùy chọn dòng lệnh</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BCO network</source>
-        <translation><numerusform>%n liên kết hoạt động với mạng lưới BCO</numerusform></translation>
+        <source>%n active connection(s) to BTCHD network</source>
+        <translation><numerusform>%n liên kết hoạt động với mạng lưới BTCHD</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -455,8 +455,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Đã cập nhật</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BCO command-line options</source>
-        <translation>Hiển thị tin nhắn trợ giúp %1 để có được danh sách với các tùy chọn dòng lệnh BCO.</translation>
+        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <translation>Hiển thị tin nhắn trợ giúp %1 để có được danh sách với các tùy chọn dòng lệnh BTCHD.</translation>
     </message>
     <message>
         <source>Connecting to peers...</source>
@@ -636,8 +636,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Sử dụng vị trí dữ liệu mặc định</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -689,8 +689,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Ví</translation>
     </message>
     <message>
-        <source>Connect to the BCO network through a SOCKS5 proxy.</source>
-        <translation>Kết nối đến máy chủ BCO thông qua SOCKS5 proxy.</translation>
+        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
+        <translation>Kết nối đến máy chủ BTCHD thông qua SOCKS5 proxy.</translation>
     </message>
     <message>
         <source>Proxy &amp;IP:</source>
@@ -1207,8 +1207,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Lựa chọn:</translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Core</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Core</translation>
     </message>
     <message>
         <source>(default: %u)</source>

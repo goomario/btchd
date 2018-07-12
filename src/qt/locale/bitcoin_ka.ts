@@ -62,11 +62,11 @@
         <translation>მიმღები მისამართი</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation>ეს არის თქვენი ბიტკოინ-მისამართები, რომელთაგანაც შეგიძლიათ გადახდა. აუცილებლად შეამოწმეთ თანხა და მიმღები მისამართი გაგზავნამდე.</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
         <translation>ეს არის თქვენი ბიტკოინ-მისამართები, რომლებზეც შეგიძლიათ მიიღოთ თანხები. რეკომენდებულია ყოველი ტრანსაქციისათვის ახალი მიმღები მისამართის გამოყენება.</translation>
     </message>
     <message>
@@ -286,8 +286,8 @@
         <translation>დისკზე ბლოკების რეინდექსაცია...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>მონეტების გაგზავნა BCO-მისამართზე</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>მონეტების გაგზავნა BTCHD-მისამართზე</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -310,8 +310,8 @@
         <translation>&amp;ვერიფიკაცია</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -338,12 +338,12 @@
         <translation>თქვენი საფულის პირადი გასაღებების დაშიფრვა</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>მესიჯებზე ხელმოწერა თქვენი BCO-მისამართებით იმის დასტურად, რომ ის თქვენია</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>მესიჯებზე ხელმოწერა თქვენი BTCHD-მისამართებით იმის დასტურად, რომ ის თქვენია</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>შეამოწმეთ, რომ მესიჯები ხელმოწერილია მითითებული BCO-მისამართით</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>შეამოწმეთ, რომ მესიჯები ხელმოწერილია მითითებული BTCHD-მისამართით</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -362,8 +362,8 @@
         <translation>ბარათების პანელი</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>გადახდის მოთხოვნა (შეიქმნება QR-კოდები და bco: ბმულები)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>გადახდის მოთხოვნა (შეიქმნება QR-კოდები და btchd: ბმულები)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -374,8 +374,8 @@
         <translation>გამოყენებული მიღების მისამართებისა და ნიშნულების სიის ჩვენება</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>bco: URI-ის ან გადახდის მოთხოვნის გახსნა</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>btchd: URI-ის ან გადახდის მოთხოვნის გახსნა</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -655,8 +655,8 @@
         <translation>მითითებული კატალოგის გამოყენება:</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -764,8 +764,8 @@
         <translation>დაუდასტურებელი ხურდის გამოყენების აკრძალვის შემდეგ მათი გამოყენება შეუძლებელი იქნება, სანამ ტრანსაქციას არ ექნება ერთი დასტური მაინც. ეს აისახება თქვენი ნაშთის დათვლაზეც.</translation>
     </message>
     <message>
-        <source>Automatically open the BCO client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>როუტერში BCO-კლიენტის პორტის ავტომატური გახსნა. მუშაობს, თუ თქვენს როუტერს ჩართული აქვს UPnP.</translation>
+        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>როუტერში BTCHD-კლიენტის პორტის ავტომატური გახსნა. მუშაობს, თუ თქვენს როუტერს ჩართული აქვს UPnP.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -875,8 +875,8 @@
         <translation>ფორმა</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BCO network after a connection is established, but this process has not completed yet.</source>
-        <translation>ნაჩვენები ინფორმაცია შეიძლება მოძველებული იყოს. თქვენი საფულე ავტომატურად სინქრონიზდება BCO-ის ქსელთან კავშირის დამყარების შემდეგ, ეს პროცესი ჯერ არ არის დასრულებული.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>ნაჩვენები ინფორმაცია შეიძლება მოძველებული იყოს. თქვენი საფულე ავტომატურად სინქრონიზდება BTCHD-ის ქსელთან კავშირის დამყარების შემდეგ, ეს პროცესი ჯერ არ არის დასრულებული.</translation>
     </message>
     <message>
         <source>Available:</source>
@@ -1064,7 +1064,7 @@
         <translation>&amp;მესიჯი:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BCO network.</source>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
         <translation>არააუცილებელი მესიჯი, რომელიც ერთვის გადახდის მოთხოვნას და ნაჩვენები იქნება მოთხოვნის გახსნისას. შენიშვნა: მესიჯი არ გაყვება გადახდას ბითქოინის ქსელში.</translation>
     </message>
     <message>
@@ -1308,7 +1308,7 @@
         <translation>შეიყვანეთ ამ მისამართის ნიშნული გამოყენებული მისამართების სიაში დასამატებლად</translation>
     </message>
     <message>
-        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
         <translation>მესიჯი, რომელიც თან ერთვის მონეტებს:  URI, რომელიც შეინახება ტრანსაქციასთან ერთად თქვენთვის. შენიშვნა: მესიჯი არ გაყვება გადახდას ბითქოინის ქსელში.</translation>
     </message>
     <message>
@@ -1369,7 +1369,7 @@
         <translation>მიმდინარე ხელმოწერის კოპირება კლიპბორდში</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BCO address</source>
+        <source>Sign the message to prove you own this BTCHD address</source>
         <translation>მოაწერეთ ხელი იმის დასადასტურებლად, რომ ეს მისამართი თქვენია</translation>
     </message>
     <message>
@@ -1389,8 +1389,8 @@
         <translation>მესიჯის &amp;ვერიფიკაცია</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BCO address</source>
-        <translation>შეამოწმეთ, რომ მესიჯი ხელმოწერილია მითითებული BCO-მისამართით</translation>
+        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
+        <translation>შეამოწმეთ, რომ მესიჯი ხელმოწერილია მითითებული BTCHD-მისამართით</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -1506,8 +1506,8 @@
         <translation>რეზიდენტულად გაშვება და კომანდების მიღება</translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Core</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Core</translation>
     </message>
     <message>
         <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>

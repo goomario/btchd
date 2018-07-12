@@ -142,8 +142,8 @@
         <translation>Reindexando bloques en el disco...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Enviar monedas a una dirección BCO</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Enviar monedas a una dirección BTCHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -158,8 +158,8 @@
         <translation>Abre la consola de depuración y diágnostico</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -186,12 +186,12 @@
         <translation>Encriptar las llaves privadas que pertenecen a tu billetera</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Firma mensajes con tus direcciones BCO para probar que eres dueño de ellas</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Firma mensajes con tus direcciones BTCHD para probar que eres dueño de ellas</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Verificar mensajes para asegurar que estaban firmados con direcciones BCO especificas</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Verificar mensajes para asegurar que estaban firmados con direcciones BTCHD especificas</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -437,8 +437,8 @@
         <translation>Usa un directorio de datos personalizado:</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Error: Specified data directory "%1" cannot be created.</source>
@@ -708,8 +708,8 @@
         <translation>Correr en segundo plano como daemon y aceptar comandos</translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Core</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Core</translation>
     </message>
     <message>
         <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>

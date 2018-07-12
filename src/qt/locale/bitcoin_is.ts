@@ -62,12 +62,12 @@
         <translation>Færslugildi sem þiggja til sín</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Þetta eru BCO færslugildin sem senda greiðslur. Skoðið ævinlega vel upphæðina og færslugildin sem þiggja greiðslur áður en mynt er send.</translation>
+        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Þetta eru BTCHD færslugildin sem senda greiðslur. Skoðið ævinlega vel upphæðina og færslugildin sem þiggja greiðslur áður en mynt er send.</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Þetta eru BCO færslugildin sem þiggja greiðslur. Mælt er með að nota aldrei sama færslugildið til að þiggja fleiri en eina greiðslu.</translation>
+        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Þetta eru BTCHD færslugildin sem þiggja greiðslur. Mælt er með að nota aldrei sama færslugildið til að þiggja fleiri en eina greiðslu.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -169,7 +169,7 @@
     </message>
     <message>
         <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINS&lt;/b&gt;!</source>
-        <translation>Viðvörun: Ef þú dulkóðar veskið og týnir lykilsetningunn þá munt þú &lt;b&gt;TAPA ALLRI ÞINNI BCO MYNT&lt;/b&gt;!</translation>
+        <translation>Viðvörun: Ef þú dulkóðar veskið og týnir lykilsetningunn þá munt þú &lt;b&gt;TAPA ALLRI ÞINNI BTCHD MYNT&lt;/b&gt;!</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>
@@ -338,8 +338,8 @@
         <translation>Endurraða blokkum á drifi...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Senda mynt í BCO færslugildi</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Senda mynt í BTCHD færslugildi</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -362,8 +362,8 @@
         <translation>&amp;Yfirfara skilaboð...</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -390,12 +390,12 @@
         <translation>Dulkóða einkalyklana sem tilheyra veskinu þínu</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Kvitta undir skilaboð með BCO færslugildunum þínum til að sanna að þú eigir þau</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Kvitta undir skilaboð með BTCHD færslugildunum þínum til að sanna að þú eigir þau</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Yfirfara skilaboð til að tryggja að kvittað hafi verið fyrir þau með tilteknum BCO færslugildum</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Yfirfara skilaboð til að tryggja að kvittað hafi verið fyrir þau með tilteknum BTCHD færslugildum</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -414,8 +414,8 @@
         <translation>Tólaborð flipa</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>Óska eftir greiðslum (býr til QR kóða og bco: URI)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>Óska eftir greiðslum (býr til QR kóða og btchd: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,8 +426,8 @@
         <translation>Sýna færslugildi sem notuð hafa verið til að taka við mynt og merkingar þeirra</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>Opna bco: URI eða greiðslubeiðni</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>Opna btchd: URI eða greiðslubeiðni</translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -466,8 +466,8 @@
         <translation>Uppfært</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BCO command-line options</source>
-        <translation>Sýna %1 hjálparskilaboðin til að fá lista yfir valkosti BCO aðgerðir í skipanalínu</translation>
+        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <translation>Sýna %1 hjálparskilaboðin til að fá lista yfir valkosti BTCHD aðgerðir í skipanalínu</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -536,8 +536,8 @@
         <translation>Veskið er &lt;b&gt;dulkóðað&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BCO can no longer continue safely and will quit.</source>
-        <translation>Alvarleg villa átti sér stað. BCO getur ekki haldið áfram með öruggum hætti og stoppar hér.</translation>
+        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
+        <translation>Alvarleg villa átti sér stað. BTCHD getur ekki haldið áfram með öruggum hætti og stoppar hér.</translation>
     </message>
 </context>
 <context>
@@ -654,8 +654,8 @@
         <translation>Breyta sendingarfærslugildi</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BCO address.</source>
-        <translation>Færslugildið sem slegið var inn "%1" er ekki leyfilegt BCO færslugildi.</translation>
+        <source>The entered address "%1" is not a valid BTCHD address.</source>
+        <translation>Færslugildið sem slegið var inn "%1" er ekki leyfilegt BTCHD færslugildi.</translation>
     </message>
     </context>
 <context>
@@ -667,8 +667,8 @@
 <context>
     <name>Intro</name>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -849,8 +849,8 @@
         <translation>Skiptimynt:</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
-        <translation>Það er í lagi að greiða einungis lágmarksupphæðina svo framarlega sem færslurúmtakið er minna en plássið í blokkunum. En gætið þess að þegar það er meiri eftirspurn eftir BCO færslum en netið getur unnið úr þá gæti svo farið að færslurnar verða aldrei samþykktar.</translation>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</source>
+        <translation>Það er í lagi að greiða einungis lágmarksupphæðina svo framarlega sem færslurúmtakið er minna en plássið í blokkunum. En gætið þess að þegar það er meiri eftirspurn eftir BTCHD færslum en netið getur unnið úr þá gæti svo farið að færslurnar verða aldrei samþykktar.</translation>
     </message>
     <message>
         <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>

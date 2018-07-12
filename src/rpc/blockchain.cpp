@@ -64,7 +64,7 @@ double GetDifficulty(const CChain& chain, const CBlockIndex* blockindex)
             blockindex = chain.Tip();
     }
 
-    // BCO block difficulty
+    // BTCHD block difficulty
     return (double)((poc::TWO64 / blockindex->nBaseTarget).GetLow64());
 }
 
@@ -1027,8 +1027,8 @@ UniValue gettxout(const JSONRPCRequest& request)
             "     \"hex\" : \"hex\",        (string) \n"
             "     \"reqSigs\" : n,          (numeric) Number of required signatures\n"
             "     \"type\" : \"pubkeyhash\", (string) The type, eg pubkeyhash\n"
-            "     \"addresses\" : [          (array of string) array of BCO addresses\n"
-            "        \"address\"     (string) BCO address\n"
+            "     \"addresses\" : [          (array of string) array of BTCHD addresses\n"
+            "        \"address\"     (string) BTCHD address\n"
             "        ,...\n"
             "     ]\n"
             "  },\n"

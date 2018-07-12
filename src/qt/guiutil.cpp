@@ -127,7 +127,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
 #if QT_VERSION >= 0x040700
     // We don't want translators to use own addresses in translations
     // and this is the only place, where this address is supplied.
-    widget->setPlaceholderText(QObject::tr("Enter a BCO address (e.g. %1)").arg(
+    widget->setPlaceholderText(QObject::tr("Enter a BTCHD address (e.g. %1)").arg(
         QString::fromStdString(DummyAddress(Params()))));
 #endif
     widget->setValidator(new BitcoinAddressEntryValidator(parent));
@@ -145,8 +145,8 @@ void setupAmountWidget(QLineEdit *widget, QWidget *parent)
 
 bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 {
-    // return if URI is not valid or is no bco: URI
-    if(!uri.isValid() || uri.scheme() != QString("bco"))
+    // return if URI is not valid or is no btchd: URI
+    if(!uri.isValid() || uri.scheme() != QString("btchd"))
         return false;
 
     SendCoinsRecipient rv;
@@ -186,7 +186,7 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
         {
             if(!i->second.isEmpty())
             {
-                if(!BitcoinUnits::parse(BitcoinUnits::BCO, i->second, &rv.amount))
+                if(!BitcoinUnits::parse(BitcoinUnits::BTCHD, i->second, &rv.amount))
                 {
                     return false;
                 }
@@ -206,14 +206,14 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 
 bool parseBitcoinURI(QString uri, SendCoinsRecipient *out)
 {
-    // Convert bco:// to bco:
+    // Convert btchd:// to btchd:
     //
-    //    Cannot handle this later, because bco:// will cause Qt to see the part after // as host,
+    //    Cannot handle this later, because btchd:// will cause Qt to see the part after // as host,
     //    which will lower-case it (and thus invalidate the address).
-    const QString prefix("bco://");
+    const QString prefix("btchd://");
     if(uri.startsWith(prefix, Qt::CaseInsensitive))
     {
-        uri.replace(0, prefix.length(), "bco:");
+        uri.replace(0, prefix.length(), "btchd:");
     }
     QUrl uriInstance(uri);
     return parseBitcoinURI(uriInstance, out);
@@ -221,12 +221,12 @@ bool parseBitcoinURI(QString uri, SendCoinsRecipient *out)
 
 QString formatBitcoinURI(const SendCoinsRecipient &info)
 {
-    QString ret = QString("bco:%1").arg(info.address);
+    QString ret = QString("btchd:%1").arg(info.address);
     int paramCount = 0;
 
     if (info.amount)
     {
-        ret += QString("?amount=%1").arg(BitcoinUnits::format(BitcoinUnits::BCO, info.amount, false, BitcoinUnits::separatorNever));
+        ret += QString("?amount=%1").arg(BitcoinUnits::format(BitcoinUnits::BTCHD, info.amount, false, BitcoinUnits::separatorNever));
         paramCount++;
     }
 
@@ -428,7 +428,7 @@ bool openBitcoinConf()
     
     configFile.close();
     
-    /* Open bco.conf with the associated application */
+    /* Open btchd.conf with the associated application */
     return QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathConfig)));
 }
 
@@ -616,15 +616,15 @@ fs::path static StartupShortcutPath()
 {
     std::string chain = ChainNameFromCommandLine();
     if (chain == CBaseChainParams::MAIN)
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "BCO.lnk";
+        return GetSpecialFolderPath(CSIDL_STARTUP) / "BTCHD.lnk";
     if (chain == CBaseChainParams::TESTNET) // Remove this special case when CBaseChainParams::TESTNET = "testnet4"
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "BCO (testnet).lnk";
-    return GetSpecialFolderPath(CSIDL_STARTUP) / strprintf("BCO (%s).lnk", chain);
+        return GetSpecialFolderPath(CSIDL_STARTUP) / "BTCHD (testnet).lnk";
+    return GetSpecialFolderPath(CSIDL_STARTUP) / strprintf("BTCHD (%s).lnk", chain);
 }
 
 bool GetStartOnSystemStartup()
 {
-    // check for BCO*.lnk
+    // check for BTCHD*.lnk
     return fs::exists(StartupShortcutPath());
 }
 
@@ -759,9 +759,9 @@ bool SetStartOnSystemStartup(bool fAutoStart)
         optionFile << "[Desktop Entry]\n";
         optionFile << "Type=Application\n";
         if (chain == CBaseChainParams::MAIN)
-            optionFile << "Name=BCO\n";
+            optionFile << "Name=BTCHD\n";
         else
-            optionFile << strprintf("Name=BCO (%s)\n", chain);
+            optionFile << strprintf("Name=BTCHD (%s)\n", chain);
         optionFile << "Exec=" << pszExePath << strprintf(" -min -testnet=%d -regtest=%d\n", gArgs.GetBoolArg("-testnet", false), gArgs.GetBoolArg("-regtest", false));
         optionFile << "Terminal=false\n";
         optionFile << "Hidden=false\n";

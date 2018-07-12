@@ -62,12 +62,12 @@
         <translation>Adresses de réception</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Ceci sont vos addresses BCO pour envoyer vos paiements. Il faut toujours verifier les montants et l'addresse de reception avant de valider la transaction.</translation>
+        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Ceci sont vos addresses BTCHD pour envoyer vos paiements. Il faut toujours verifier les montants et l'addresse de reception avant de valider la transaction.</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ceci sont vos addresses BCO pour recevoir vos paiements. Il est recommandé d'utiliser une nouvelle adresse de recepetion pour chaque transaction</translation>
+        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Ceci sont vos addresses BTCHD pour recevoir vos paiements. Il est recommandé d'utiliser une nouvelle adresse de recepetion pour chaque transaction</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -342,8 +342,8 @@
         <translation>Réindexer les blocs sur le disque...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Envoyer des pièces à une adresse BCO</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Envoyer des pièces à une adresse BTCHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -366,8 +366,8 @@
         <translation>&amp;Vérification du message</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -394,12 +394,12 @@
         <translation>Crypter les clé privées qui appartiennent votre portefeuille</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Signer vos messages avec vos adresses BCO pour prouver que vous les détenez</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Signer vos messages avec vos adresses BTCHD pour prouver que vous les détenez</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Vérifier les messages pour s'assurer qu'ils soient signés avec les adresses BCO spécifiées</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Vérifier les messages pour s'assurer qu'ils soient signés avec les adresses BTCHD spécifiées</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -418,8 +418,8 @@
         <translation>Barre d'outils des onglets</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>Demander des paiements (générer QR codes et bco: URIs)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>Demander des paiements (générer QR codes et btchd: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,16 +430,16 @@
         <translation>Afficher la liste des labels et adresses de réception utilisées</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>Ouvrir un bco: URI ou demande de paiement</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>Ouvrir un btchd: URI ou demande de paiement</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
         <translation>&amp;Options de ligne de commande</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BCO network</source>
-        <translation><numerusform>%n connexion active avec le réseau BCO</numerusform><numerusform>%n connexions actives avec le réseau BCO</numerusform></translation>
+        <source>%n active connection(s) to BTCHD network</source>
+        <translation><numerusform>%n connexion active avec le réseau BTCHD</numerusform><numerusform>%n connexions actives avec le réseau BTCHD</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -478,8 +478,8 @@
         <translation>À jour</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BCO command-line options</source>
-        <translation>Afficher le %1 message d'aide pour récupérer une liste des options de ligne de commande BCO</translation>
+        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <translation>Afficher le %1 message d'aide pour récupérer une liste des options de ligne de commande BTCHD</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -548,8 +548,8 @@
         <translation>Le porte-monnaie est &lt;b&gt;chiffré&lt;/b&gt; et est actuellement &lt;b&gt;verrouillé&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BCO can no longer continue safely and will quit.</source>
-        <translation>Une erreur fatale a eu lieu. BCO ne peut plus continuer en toute sécurité et va s'éteindre</translation>
+        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
+        <translation>Une erreur fatale a eu lieu. BTCHD ne peut plus continuer en toute sécurité et va s'éteindre</translation>
     </message>
 </context>
 <context>
@@ -742,8 +742,8 @@
         <translation>Éditer l'adresse d'envoi</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BCO address.</source>
-        <translation>L'adresse entrée "%1" n'est pas une adresse BCO valide.</translation>
+        <source>The entered address "%1" is not a valid BTCHD address.</source>
+        <translation>L'adresse entrée "%1" n'est pas une adresse BTCHD valide.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -843,8 +843,8 @@
         <translation>Utiliser votre propre répertoire</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Error: Specified data directory "%1" cannot be created.</source>
@@ -928,8 +928,8 @@
         <translation>Expert</translation>
     </message>
     <message>
-        <source>Automatically open the BCO client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Ouvrir le port du client BCO automatiquement sur le routeur. Cela ne fonctionne que si votre routeur supporte l'UPnP et si la fonctionnalité est activée.</translation>
+        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Ouvrir le port du client BTCHD automatiquement sur le routeur. Cela ne fonctionne que si votre routeur supporte l'UPnP et si la fonctionnalité est activée.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1128,8 +1128,8 @@
         <translation>Montant</translation>
     </message>
     <message>
-        <source>Enter a BCO address (e.g. %1)</source>
-        <translation>Entrer une adresse BCO (e.g. %1)</translation>
+        <source>Enter a BTCHD address (e.g. %1)</source>
+        <translation>Entrer une adresse BTCHD (e.g. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1693,8 +1693,8 @@
         <translation>Payer seulement les frais obligatoire de %1</translation>
     </message>
     <message>
-        <source>Warning: Invalid BCO address</source>
-        <translation>Attention: Adresse BCO Invalide</translation>
+        <source>Warning: Invalid BTCHD address</source>
+        <translation>Attention: Adresse BTCHD Invalide</translation>
     </message>
     <message>
         <source>(no label)</source>
@@ -2282,8 +2282,8 @@
         <translation>Impossible de démarrer le serveur HTTP. Voir le journal de débogage pour plus de détails.</translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Core</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Core</translation>
     </message>
     <message>
         <source>&lt;category&gt; can be:</source>

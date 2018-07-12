@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The BCO Core developers
+// Copyright (c) 2017-2018 The BTCHD Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -147,7 +147,7 @@ static UniValue getConstants(const JSONRPCRequest& request)
         blockId = poc::GetBlockId(*pBlockIndex);
         accountId = pBlockIndex->GetBlockHeader().nGeneratorId;
     }else {
-        LogPrintf("Not find BCO fork height block:%ld\n", height);
+        LogPrintf("Not find BTCHD fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);
         accountId = genesis.nGeneratorId;

@@ -56,9 +56,9 @@ public:
      */
     enum Unit
     {
-        BCO,
-        mBCO,
-        uBCO
+        BTCHD,
+        mBTCHD,
+        uBTCHD
     };
 
     enum SeparatorStyle

@@ -55,10 +55,10 @@ static int AppInitRawTx(int argc, char* argv[])
     if (argc<2 || gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help"))
     {
         // First part of help message is specific to this utility
-        std::string strUsage = strprintf(_("%s bco-tx utility version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n\n" +
+        std::string strUsage = strprintf(_("%s btchd-tx utility version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n\n" +
             _("Usage:") + "\n" +
-              "  bco-tx [options] <hex-tx> [commands]  " + _("Update hex-encoded bco transaction") + "\n" +
-              "  bco-tx [options] -create [commands]   " + _("Create hex-encoded bco transaction") + "\n" +
+              "  btchd-tx [options] <hex-tx> [commands]  " + _("Update hex-encoded btchd transaction") + "\n" +
+              "  btchd-tx [options] -create [commands]   " + _("Create hex-encoded btchd transaction") + "\n" +
               "\n";
 
         fprintf(stdout, "%s", strUsage.c_str());

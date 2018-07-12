@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Name=BTCHD Core
+Comment=Connect to the BTCHD P2P Network
+Comment[de]=Verbinde mit dem BTCHD peer-to-peer Netzwerk
+Comment[fr]=BTCHD, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=BTCHD, eşten eşe kriptografik sanal para birimi
+Exec=btchd-qt %u
+Terminal=false
+Type=Application
+Icon=bitcoin128
+MimeType=x-scheme-handler/btchd;
+Categories=Office;Finance;
+StartupWMClass=BTCHD-qt

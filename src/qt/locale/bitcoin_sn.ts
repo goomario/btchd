@@ -98,8 +98,8 @@
         <translation>Vhura &amp;URI</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -165,8 +165,8 @@
 <context>
     <name>Intro</name>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     </context>
 <context>
@@ -194,8 +194,8 @@
         <translation>Marii </translation>
     </message>
     <message>
-        <source>Enter a BCO address (e.g. %1)</source>
-        <translation>Nyora kero ye BCO (sekuti %1)</translation>
+        <source>Enter a BTCHD address (e.g. %1)</source>
+        <translation>Nyora kero ye BTCHD (sekuti %1)</translation>
     </message>
     <message>
         <source>%1 d</source>

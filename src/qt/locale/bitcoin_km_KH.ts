@@ -90,8 +90,8 @@
 <context>
     <name>BitcoinGUI</name>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>ផ្ញើកាក់ទៅកាន់ អាសយដ្ឋាន BCO មួយ</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>ផ្ញើកាក់ទៅកាន់ អាសយដ្ឋាន BTCHD មួយ</translation>
     </message>
     <message>
         <source>Wallet</source>

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/usr/local/bin/bcod -datadir=/bco/data/ -externalip=$EXTERNALIP -maxtipage=$MAXTIPAGE
+/usr/local/bin/btchdd -datadir=/btchd/data/ -externalip=$EXTERNALIP -maxtipage=$MAXTIPAGE

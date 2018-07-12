@@ -14,8 +14,8 @@
 <context>
     <name>BitcoinGUI</name>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     </context>
 <context>
@@ -33,8 +33,8 @@
 <context>
     <name>Intro</name>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     </context>
 <context>
@@ -160,8 +160,8 @@
 <context>
     <name>bitcoin-core</name>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Jezrga</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Jezrga</translation>
     </message>
     </context>
 </TS>
