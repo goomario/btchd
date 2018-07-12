@@ -24,7 +24,7 @@ bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& param
 {
     if (pblock->hashPrevBlock.IsNull()) {
         // Genesis
-        return true;
+        return pblock->GetHash() == params.hashGenesisBlock;
     }
 
     auto iter = mapBlockIndex.find(pblock->hashPrevBlock);
