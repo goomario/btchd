@@ -49,8 +49,8 @@ static const int HASH_CAP = 4096;
 
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
-    if (prevBlockIndex.nHeight + 1 <= params.BCOHeight + params.BCOInitBlockCount) {
-        // genesis block & god mode block
+    if (prevBlockIndex.nHeight + 1 <= params.BtchdFundMingingHeight) {
+        // Fund
         return 0;
     }
 
@@ -91,7 +91,7 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
         .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
         .Finalize((unsigned char*)base.begin());
 
-    return base.GetUint64(0) / prevBlockIndex.nBits;
+    return base.GetUint64(0) / prevBlockIndex.nBaseTarget;
 }
 
 std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
@@ -129,7 +129,7 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
     pblock->nNonce = nNonce;
-    pblock->nPlotSeed = nAccountId;
+    pblock->nGeneratorId = nAccountId;
 
     return std::make_shared<CBlock>(*pblock);
 }
@@ -247,7 +247,7 @@ uint64_t parseAccountId(const std::string& account)
 
 uint64_t GetBlockGenerator(const CBlockHeader &block)
 {
-    return block.nPlotSeed;
+    return block.nGeneratorId;
 }
 
 std::string GetBlockGeneratorRS(const CBlockHeader &block)
@@ -257,11 +257,11 @@ std::string GetBlockGeneratorRS(const CBlockHeader &block)
 
 uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock)
 {
-    // 使用hashMerkleRoot和nPlotSeed做签名
+    // 使用 hashMerkleRoot 和 nGeneratorId 做签名
     uint256 result;
     CShabal256()
         .Write((const unsigned char*)prevBlock.hashMerkleRoot.begin(), prevBlock.hashMerkleRoot.size())
-        .Write((const unsigned char*)&prevBlock.nPlotSeed, sizeof(prevBlock.nPlotSeed))
+        .Write((const unsigned char*)&prevBlock.nGeneratorId, sizeof(prevBlock.nGeneratorId))
         .Finalize((unsigned char*)result.begin());
     return result;
 }
@@ -283,26 +283,24 @@ uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight)
 
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
-    assert(prevBlockIndex.nHeight + 1 >= params.BCOHeight);
-    int nPocGenesisBlockHeight = params.BCOHeight + params.BCOInitBlockCount;
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight <= nPocGenesisBlockHeight) {
+    if (nHeight <= params.BtchdFundMingingHeight) {
         // genesis block & god mode block
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < nPocGenesisBlockHeight + 4) {
+    } else if (nHeight < params.BtchdFundMingingHeight + 4) {
         // < 4
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < nPocGenesisBlockHeight + 2700) {
+    } else if (nHeight < params.BtchdFundMingingHeight + 2700) {
         // < 2700
         // [N-1,N-2,N-3,N-4]
-        uint64_t avgBaseTarget = prevBlockIndex.nBits;
+        uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
         for (int i = nHeight - 2; i >= nHeight - 4; i--) {
             pLastindex = pLastindex->pprev;
             if (pLastindex == nullptr) {
                 break;
             }
-            avgBaseTarget += pLastindex->nBits;
+            avgBaseTarget += pLastindex->nBaseTarget;
         }
         avgBaseTarget /= 4;
         assert(pLastindex != nullptr);
@@ -310,7 +308,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
 
-        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPowTargetSpacing / 2 * 4); // 5m * 4blocks
+        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPowTargetSpacing * 4); // 5m * 4blocks
         if (newBaseTarget > MAX_BASE_TARGET) {
             newBaseTarget = MAX_BASE_TARGET;
         }
@@ -329,19 +327,19 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         return newBaseTarget;
     } else {
         // [N-1,N-2,N-3,...,N-25]
-        uint64_t avgBaseTarget = prevBlockIndex.nBits;
+        uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
         for (int i = nHeight - 2, blockCounter = 1; i >= nHeight - 25; i--,blockCounter++) {
             pLastindex = pLastindex->pprev;
             if (pLastindex == nullptr) {
                 break;
             }
-            avgBaseTarget = (avgBaseTarget * blockCounter + pLastindex->nBits) / (blockCounter + 1);
+            avgBaseTarget = (avgBaseTarget * blockCounter + pLastindex->nBaseTarget) / (blockCounter + 1);
         }
         assert(pLastindex != nullptr);
         
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = params.nPowTargetSpacing / 2 * 24; // 5m * 24blocks
+        int64_t targetTimespan = params.nPowTargetSpacing * 24; // 5m * 24blocks
 
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;
@@ -351,7 +349,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
             diffTime = targetTimespan * 2;
         }
 
-        uint64_t curBaseTarget = prevBlockIndex.nBits;
+        uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
         uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
 
         if (newBaseTarget > MAX_BASE_TARGET) {
@@ -374,13 +372,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
     }
 }
 
-bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, 
-    bool bForceCheckDeadline, const Consensus::Params& params)
+bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, bool bForceCheckDeadline, const Consensus::Params& params)
 {
-    if (block.GetBlockTime() < BCOBlockMinTimestamp()) {
-        return false;
-    }
-
     // Optional check deadline.
     // If block forge time interval more than 30 minute, then force check block deadline.
     if (!bForceCheckDeadline && block.nTime < prevBlockIndex.nTime + 30 * 60) {
@@ -388,7 +381,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
     }
 
     // Check base target
-    if (block.nBits != CalculateBaseTarget(prevBlockIndex, block, params)) {
+    if (block.nBaseTarget != CalculateBaseTarget(prevBlockIndex, block, params)) {
         return false;
     }
 
@@ -408,7 +401,7 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     CBlockHeader block;
     block.nVersion = ComputeBlockVersion(&prevBlockIndex, params);
     block.nNonce = nNonce;
-    block.nPlotSeed = nAccountId;
+    block.nGeneratorId = nAccountId;
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
     if (calcDeadline > DEADLINE_DEADTARGET) {

@@ -46,14 +46,11 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     if (pindexLast == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
     }
-    if (pindexLast->nHeight + 1 < Params().GetConsensus().BCOHeight) {
-        throw std::runtime_error("Not yet to the BCO fork height!");
-    }
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("height", pindexLast->nHeight + 1);
     result.pushKV("generationSignature", HexStr(poc::GetBlockGenerationSignature(pindexLast->GetBlockHeader())));
-    result.pushKV("baseTarget", std::to_string(pindexLast->nBits));
+    result.pushKV("baseTarget", std::to_string(pindexLast->nBaseTarget));
 
     return result;
 }
@@ -64,11 +61,6 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     const CBlockIndex *pBlockIndex = chainActive.Tip();
     if (pBlockIndex == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
-    }
-
-    if (pBlockIndex->nHeight + 1 < Params().GetConsensus().BCOHeight) {
-        result.pushKV("result", "Not yet to the BCO fork height");
-        return;
     }
 
     uint64_t deadline = std::numeric_limits<uint64_t>::max();
@@ -148,17 +140,17 @@ static UniValue getConstants(const JSONRPCRequest& request)
     UniValue result(UniValue::VOBJ);
 
     uint64_t blockId = 0, accountId = 0; 
-    int height = Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount;
+    int height = 0;
     CBlockIndex * pBlockIndex = chainActive[height];
 
     if (pBlockIndex) {
         blockId = poc::GetBlockId(*pBlockIndex);
-        accountId = pBlockIndex->GetBlockHeader().nPlotSeed;
+        accountId = pBlockIndex->GetBlockHeader().nGeneratorId;
     }else {
         LogPrintf("Not find BCO fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);
-        accountId = genesis.nPlotSeed;
+        accountId = genesis.nGeneratorId;
     }
 
     result.pushKV("genesisBlockId", std::to_string(blockId));
@@ -201,10 +193,10 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
     result.push_back(Pair("block", poc::GetBlockId(block)));
     result.push_back(Pair("blockSignature", "")); // N/A
     result.push_back(Pair("height", pBlockIndex->nHeight));
-    result.push_back(Pair("baseTarget", std::to_string(block.nBits)));
+    result.push_back(Pair("baseTarget", std::to_string(block.nBaseTarget)));
     result.push_back(Pair("nonce", std::to_string(block.nNonce)));
     result.push_back(Pair("timestamp", (uint64_t)block.nTime));
-    if (pprevBlockIndex != nullptr && pBlockIndex->nHeight >= Params().GetConsensus().BCOHeight) {
+    if (pprevBlockIndex != nullptr) {
         const uint256 genSig = poc::GetBlockGenerationSignature(pprevBlockIndex->GetBlockHeader());
         result.push_back(Pair("scoopNum", (uint64_t)poc::GetBlockScoopNum(genSig, pBlockIndex->nHeight)));
         result.push_back(Pair("generator", std::to_string(poc::GetBlockGenerator(block))));

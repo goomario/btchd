@@ -6,20 +6,9 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
-#include <consensus/consensus.h>
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <uint256.h>
-
-// Read/Write 4byte data to/from 8byte var
-#define READWRITE32_64(obj) \
-    { \
-        assert ((obj) < static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())); \
-        void *pobj = static_cast<void*>(&(obj)); \
-        READWRITE(*(static_cast<uint32_t*>(pobj))); \
-        *(static_cast<uint32_t*>(pobj) + 1) = 0; \
-    } \
-
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -36,9 +25,9 @@ public:
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint32_t nTime;
-    uint64_t nBits; // uint32_t => uint64_t. BCO / baseTarget
-    uint64_t nNonce; // uint32_t => uint64_t. BCO / nonce
-    uint64_t nPlotSeed; // BCO / Plot file seed
+    uint64_t nBaseTarget;
+    uint64_t nNonce;
+    uint64_t nGeneratorId;
 
     CBlockHeader()
     {
@@ -53,16 +42,9 @@ public:
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-
-        // bits & nonce compatiable
-        if (static_cast<int64_t>(nTime) >= BCOBlockMinTimestamp()) {
-            READWRITE(nBits);
-            READWRITE(nNonce);
-            READWRITE(nPlotSeed);
-        } else {
-            READWRITE32_64(nBits);
-            READWRITE32_64(nNonce);
-        }
+        READWRITE(nBaseTarget);
+        READWRITE(nNonce);
+        READWRITE(nGeneratorId);
     }
 
     void SetNull()
@@ -71,14 +53,14 @@ public:
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
         nTime = 0;
-        nBits = 0;
+        nBaseTarget = 0;
         nNonce = 0;
-        nPlotSeed = 0;
+        nGeneratorId = 0;
     }
 
     bool IsNull() const
     {
-        return (nBits == 0);
+        return (nBaseTarget == 0);
     }
 
     uint256 GetHash() const;
@@ -132,9 +114,9 @@ public:
         block.hashPrevBlock  = hashPrevBlock;
         block.hashMerkleRoot = hashMerkleRoot;
         block.nTime          = nTime;
-        block.nBits          = nBits;
+        block.nBaseTarget    = nBaseTarget;
         block.nNonce         = nNonce;
-        block.nPlotSeed      = nPlotSeed;
+        block.nGeneratorId   = nGeneratorId;
         return block;
     }
 

@@ -52,10 +52,6 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     if (nOldTime < nNewTime)
         pblock->nTime = nNewTime;
 
-    // Updating time can change work required on testnet:
-    if (consensusParams.fPowAllowMinDifficultyBlocks)
-        pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, consensusParams);
-
     return nNewTime - nOldTime;
 }
 
@@ -68,7 +64,7 @@ BlockAssembler::BlockAssembler(const CChainParams& params, const Options& option
 {
     blockMinFeeRate = options.blockMinFeeRate;
     // Limit weight to between 4K and MaxBlockSize-4K for sanity:
-    unsigned int nAbsMaxSize = MaxBlockSize(std::numeric_limits<uint64_t>::max());
+    unsigned int nAbsMaxSize = MAX_BLOCK_WEIGHT;
     nBlockMaxWeight = std::max<size_t>(4000, std::min<size_t>(nAbsMaxSize - 4000, options.nBlockMaxWeight));
 }
 
@@ -175,7 +171,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
     pblock->nNonce         = 0;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
@@ -208,7 +204,7 @@ bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost
     // TODO: switch to weight-based accounting for packages instead of vsize-based accounting.
     if (nBlockWeight + WITNESS_SCALE_FACTOR * packageSize >= nBlockMaxWeight)
         return false;
-    if (nBlockSigOpsCost + packageSigOpsCost >= MaxBlockSigops(nHeight))
+    if (nBlockSigOpsCost + packageSigOpsCost >= MAX_BLOCK_SIGOPS_COST)
         return false;
     return true;
 }
