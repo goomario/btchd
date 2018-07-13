@@ -27,7 +27,7 @@ public:
     uint32_t nTime;
     uint64_t nBaseTarget;
     uint64_t nNonce;
-    uint64_t nGeneratorId;
+    uint64_t nPlotterId;
 
     CBlockHeader()
     {
@@ -44,7 +44,7 @@ public:
         READWRITE(nTime);
         READWRITE(nBaseTarget);
         READWRITE(nNonce);
-        READWRITE(nGeneratorId);
+        READWRITE(nPlotterId);
     }
 
     void SetNull()
@@ -55,7 +55,7 @@ public:
         nTime = 0;
         nBaseTarget = 0;
         nNonce = 0;
-        nGeneratorId = 0;
+        nPlotterId = 0;
     }
 
     bool IsNull() const
@@ -116,7 +116,7 @@ public:
         block.nTime          = nTime;
         block.nBaseTarget    = nBaseTarget;
         block.nNonce         = nNonce;
-        block.nGeneratorId   = nGeneratorId;
+        block.nPlotterId     = nPlotterId;
         return block;
     }
 

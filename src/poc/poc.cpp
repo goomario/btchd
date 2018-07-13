@@ -129,7 +129,7 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
     pblock->nNonce = nNonce;
-    pblock->nGeneratorId = nAccountId;
+    pblock->nPlotterId = nAccountId;
 
     return std::make_shared<CBlock>(*pblock);
 }
@@ -247,7 +247,7 @@ uint64_t parseAccountId(const std::string& account)
 
 uint64_t GetBlockGenerator(const CBlockHeader &block)
 {
-    return block.nGeneratorId;
+    return block.nPlotterId;
 }
 
 std::string GetBlockGeneratorRS(const CBlockHeader &block)
@@ -257,11 +257,11 @@ std::string GetBlockGeneratorRS(const CBlockHeader &block)
 
 uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock)
 {
-    // 使用 hashMerkleRoot 和 nGeneratorId 做签名
+    // 使用 hashMerkleRoot 和 nPlotterId 做签名
     uint256 result;
     CShabal256()
         .Write((const unsigned char*)prevBlock.hashMerkleRoot.begin(), prevBlock.hashMerkleRoot.size())
-        .Write((const unsigned char*)&prevBlock.nGeneratorId, sizeof(prevBlock.nGeneratorId))
+        .Write((const unsigned char*)&prevBlock.nPlotterId, sizeof(prevBlock.nPlotterId))
         .Finalize((unsigned char*)result.begin());
     return result;
 }
@@ -401,7 +401,7 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     CBlockHeader block;
     block.nVersion = ComputeBlockVersion(&prevBlockIndex, params);
     block.nNonce = nNonce;
-    block.nGeneratorId = nAccountId;
+    block.nPlotterId = nAccountId;
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
     if (calcDeadline > DEADLINE_DEADTARGET) {

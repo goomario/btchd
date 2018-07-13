@@ -212,7 +212,7 @@ public:
     uint32_t nTime;
     uint64_t nBaseTarget;
     uint64_t nNonce;
-    uint64_t nGeneratorId;
+    uint64_t nPlotterId;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -241,7 +241,7 @@ public:
         nTime          = 0;
         nBaseTarget    = 0;
         nNonce         = 0;
-        nGeneratorId   = 0;
+        nPlotterId     = 0;
     }
 
     CBlockIndex()
@@ -258,7 +258,7 @@ public:
         nTime          = block.nTime;
         nBaseTarget    = block.nBaseTarget;
         nNonce         = block.nNonce;
-        nGeneratorId   = block.nGeneratorId;
+        nPlotterId     = block.nPlotterId;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -289,7 +289,7 @@ public:
         block.nTime          = nTime;
         block.nBaseTarget    = nBaseTarget;
         block.nNonce         = nNonce;
-        block.nGeneratorId   = nGeneratorId;
+        block.nPlotterId     = nPlotterId;
         return block;
     }
 
@@ -409,7 +409,7 @@ public:
         READWRITE(nTime);
         READWRITE(nBaseTarget);
         READWRITE(nNonce);
-        READWRITE(nGeneratorId);
+        READWRITE(nPlotterId);
     }
 
     uint256 GetBlockHash() const
@@ -421,7 +421,7 @@ public:
         block.nTime           = nTime;
         block.nBaseTarget     = nBaseTarget;
         block.nNonce          = nNonce;
-        block.nGeneratorId    = nGeneratorId;
+        block.nPlotterId      = nPlotterId;
         return block.GetHash();
     }
 

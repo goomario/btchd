@@ -145,12 +145,12 @@ static UniValue getConstants(const JSONRPCRequest& request)
 
     if (pBlockIndex) {
         blockId = poc::GetBlockId(*pBlockIndex);
-        accountId = pBlockIndex->GetBlockHeader().nGeneratorId;
+        accountId = pBlockIndex->GetBlockHeader().nPlotterId;
     }else {
         LogPrintf("Not find BTCHD fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);
-        accountId = genesis.nGeneratorId;
+        accountId = genesis.nPlotterId;
     }
 
     result.pushKV("genesisBlockId", std::to_string(blockId));

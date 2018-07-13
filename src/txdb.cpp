@@ -284,7 +284,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nTime          = diskindex.nTime;
                 pindexNew->nBaseTarget    = diskindex.nBaseTarget;
                 pindexNew->nNonce         = diskindex.nNonce;
-                pindexNew->nGeneratorId   = diskindex.nGeneratorId;
+                pindexNew->nPlotterId     = diskindex.nPlotterId;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
 
