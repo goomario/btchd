@@ -2529,6 +2529,12 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
     CBlockIndex *pindexMostWork = nullptr;
     CBlockIndex *pindexNewTip = nullptr;
     int nStopAtHeight = gArgs.GetArg("-stopatheight", DEFAULT_STOPATHEIGHT);
+
+    // TODO felix Stop on dead height for btchd version 1
+    if (nStopAtHeight <= 0 || nStopAtHeight > chainparams.GetConsensus().BtchdV1DeadHeight) {
+        nStopAtHeight = chainparams.GetConsensus().BtchdV1DeadHeight
+    }
+
     do {
         boost::this_thread::interruption_point();
 
