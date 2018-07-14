@@ -1140,8 +1140,8 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 210,000 (BTCHD 210,000*2) blocks which will occur approximately every 4 years.
+    CAmount nSubsidy = 25 * COIN;
+    // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
     return nSubsidy;
 }
@@ -2532,7 +2532,7 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
 
     // TODO felix Stop on dead height for btchd version 1
     if (nStopAtHeight <= 0 || nStopAtHeight > chainparams.GetConsensus().BtchdV1DeadHeight) {
-        nStopAtHeight = chainparams.GetConsensus().BtchdV1DeadHeight
+        nStopAtHeight = chainparams.GetConsensus().BtchdV1DeadHeight;
     }
 
     do {
