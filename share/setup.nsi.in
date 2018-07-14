@@ -50,9 +50,9 @@ Var StartMenuGroup
 # Installer attributes
 OutFile @abs_top_srcdir@/@PACKAGE_TARNAME@-${VERSION}-win@WINDOWS_BITS@-setup.exe
 !if "@WINDOWS_BITS@" == "64"
-InstallDir $PROGRAMFILES64\Bitcoinore
+InstallDir $PROGRAMFILES64\BTCHD
 !else
-InstallDir $PROGRAMFILES\Bitcoinore
+InstallDir $PROGRAMFILES\BTCHD
 !endif
 CRCCheck on
 XPStyle on
@@ -65,7 +65,7 @@ VIAddVersionKey CompanyName "${COMPANY}"
 VIAddVersionKey CompanyWebsite "${URL}"
 VIAddVersionKey FileVersion "${VERSION}"
 VIAddVersionKey FileDescription "@PACKAGE_NAME@ setup for Windows @WINDOWS_BITS@-bit"
-VIAddVersionKey LegalCopyright "© Bitcoinore 2018"
+VIAddVersionKey LegalCopyright "© BTCHD 2018"
 InstallDirRegKey HKCU "${REGKEY}" Path
 ShowUninstDetails show
 
