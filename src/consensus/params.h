@@ -49,10 +49,14 @@ struct BIP9Deployment {
 struct Params {
     /** BTCHD Fund address */
     std::string BtchdFundAddress;
-    /** BTCHD fund mining height*/
-    int BtchdFundMingingHeight;
-    /** BTCHD dead height for version 1 */
-    int BtchdV1DeadHeight;
+    /** BTCHD fund pre-mining height */
+    int BtchdFundPreMingingHeight;
+    /** BTCHD fund royalty percent */
+    int BtchdFundRoyaltyPercent;
+    /** BTCHD fund royalty percent on low mortgage */
+    int BtchdFundRoyaltyPercentOnLowMortgage;
+    /** BTCHD miner no mortgage height before */
+    int BtchdNoMortgageHeight;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;

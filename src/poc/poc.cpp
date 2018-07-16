@@ -47,53 +47,6 @@ static const int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE;
 
 static const int HASH_CAP = 4096;
 
-uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
-{
-    if (prevBlockIndex.nHeight + 1 <= params.BtchdFundMingingHeight) {
-        // Fund
-        return 0;
-    }
-
-    const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
-    const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
-    const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
-    const uint64_t nonce = htobe64(block.nNonce);
-
-    std::unique_ptr<uint8_t> _gendata(new uint8_t[PLOT_SIZE + 16]);
-    uint8_t *const gendata = _gendata.get();
-    memcpy(gendata + PLOT_SIZE, (const unsigned char*)&addr, 8);
-    memcpy(gendata + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
-    for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
-        int len = PLOT_SIZE + 16 - i;
-        if (len > HASH_CAP) {
-            len = HASH_CAP;
-        }
-
-        uint256 temp;
-        CShabal256()
-            .Write((const unsigned char*)gendata + i, len)
-            .Finalize((unsigned char*)temp.begin());
-        memcpy((uint8_t*)gendata + i - HASH_SIZE, (const uint8_t*)temp.begin(), HASH_SIZE);
-    }
-    uint256 base;
-    CShabal256()
-        .Write((const unsigned char*)gendata, PLOT_SIZE + 16)
-        .Finalize((unsigned char*)base.begin());
-
-    uint8_t data[PLOT_SIZE];
-    for (int i = 0; i < PLOT_SIZE; i++) {
-        data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
-    }
-    _gendata.reset(nullptr);
-
-    CShabal256()
-        .Write((const unsigned char*)genSig.begin(), genSig.size())
-        .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
-        .Finalize((unsigned char*)base.begin());
-
-    return base.GetUint64(0) / prevBlockIndex.nBaseTarget;
-}
-
 std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId)
 {
@@ -121,8 +74,9 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
 
     CBlock *pblock = &pblocktemplate->block;
 
+    unsigned int nHeight = prevBlockIndex.nHeight + 1; // Height first in coinbase required for block.version=2
     CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << (prevBlockIndex.nHeight + 1) << CScriptNum(static_cast<int64_t>(nNonce))) + COINBASE_FLAGS;
+    txCoinbase.vin[0].scriptSig = (CScript() << nHeight<< CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nAccountId))) + COINBASE_FLAGS;
     assert(txCoinbase.vin[0].scriptSig.size() <= 100);
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
@@ -281,17 +235,62 @@ uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight)
     return UintToArith256(shabal256(genSig, htobe64(nHeight))) % 4096;
 }
 
+uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
+{
+    if (prevBlockIndex.nHeight + 1 <= params.BtchdFundPreMingingHeight) {
+        // Fund
+        return 0;
+    }
+
+    const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
+    const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
+    const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
+    const uint64_t nonce = htobe64(block.nNonce);
+
+    std::unique_ptr<uint8_t> _gendata(new uint8_t[PLOT_SIZE + 16]);
+    uint8_t *const gendata = _gendata.get();
+    memcpy(gendata + PLOT_SIZE, (const unsigned char*)&addr, 8);
+    memcpy(gendata + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
+    for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
+        int len = PLOT_SIZE + 16 - i;
+        if (len > HASH_CAP) {
+            len = HASH_CAP;
+        }
+
+        uint256 temp;
+        CShabal256()
+            .Write((const unsigned char*)gendata + i, len)
+            .Finalize((unsigned char*)temp.begin());
+        memcpy((uint8_t*)gendata + i - HASH_SIZE, (const uint8_t*)temp.begin(), HASH_SIZE);
+    }
+    uint256 base;
+    CShabal256()
+        .Write((const unsigned char*)gendata, PLOT_SIZE + 16)
+        .Finalize((unsigned char*)base.begin());
+
+    uint8_t data[PLOT_SIZE];
+    for (int i = 0; i < PLOT_SIZE; i++) {
+        data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
+    }
+    _gendata.reset(nullptr);
+
+    CShabal256()
+        .Write((const unsigned char*)genSig.begin(), genSig.size())
+        .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
+        .Finalize((unsigned char*)base.begin());
+
+    return base.GetUint64(0) / prevBlockIndex.nBaseTarget;
+}
+
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight <= params.BtchdFundMingingHeight) {
+    if (nHeight <= params.BtchdFundPreMingingHeight) {
         // genesis block & god mode block
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BtchdFundMingingHeight + 4) {
-        // < 4
+    } else if (nHeight < params.BtchdFundPreMingingHeight + 4) {
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BtchdFundMingingHeight + 2700) {
-        // < 2700
+    } else if (nHeight < params.BtchdFundPreMingingHeight + 2700) {
         // [N-1,N-2,N-3,N-4]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;

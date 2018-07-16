@@ -230,7 +230,6 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
             jreq.strMethod = "submitNonceToPool";
             jreq.params.pushKV("nonce", nonce->second);
             jreq.params.pushKV("accountId", accountId->second);
-            jreq.params.pushKV("secretPhrase", secretPhrase->second);
         }
         else if (secretPhrase != parameters.cend()) {
             // Solo

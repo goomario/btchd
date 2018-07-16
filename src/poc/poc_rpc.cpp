@@ -25,7 +25,6 @@
 namespace poc {
 namespace rpc {
 
-static uint64_t pool_pubkey=0;
 static UniValue getMiningInfo(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
@@ -41,10 +40,18 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
         );
     }
 
+    if (IsInitialBlockDownload()) {
+        throw std::runtime_error("Is initial block downloading!");
+    }
+
     LOCK(cs_main);
     const CBlockIndex *pindexLast = chainActive.Tip();
     if (pindexLast == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
+    }
+
+    if (pindexLast->nHeight >= Params().GetConsensus().BtchdNoMortgageHeight) {
+        throw std::runtime_error("This version not support mortgage feature. Please check http://btchd.net.");
     }
 
     UniValue result(UniValue::VOBJ);
@@ -57,14 +64,22 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
 
 static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId)
 {
+    if (IsInitialBlockDownload()) {
+        throw std::runtime_error("Is initial block downloading!");
+    }
+
     LOCK(cs_main);
-    const CBlockIndex *pBlockIndex = chainActive.Tip();
-    if (pBlockIndex == nullptr) {
+    const CBlockIndex *pindexLast = chainActive.Tip();
+    if (pindexLast == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
     }
 
+    if (pindexLast->nHeight >= Params().GetConsensus().BtchdNoMortgageHeight) {
+        throw std::runtime_error("This version not support mortgage feature. Please check http://btchd.net.");
+    }
+
     uint64_t deadline = std::numeric_limits<uint64_t>::max();
-    if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline, Params().GetConsensus())) {
+    if (!poc::TryGenerateBlock(*pindexLast, nNonce, nAccountId, deadline, Params().GetConsensus())) {
         result.pushKV("result", "Generate failed");
         return;
     }
@@ -95,8 +110,6 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
         result.pushKV("result", "Missing parameters");
         return result;
     }
-
-    pool_pubkey = poc::GetAccountIdByPassPhrase(request.params[2].get_str());
 
     SubmitNonce(result, 
         static_cast<uint64_t>(std::stoull(request.params[0].get_str())), 
@@ -146,7 +159,7 @@ static UniValue getConstants(const JSONRPCRequest& request)
     if (pBlockIndex) {
         blockId = poc::GetBlockId(*pBlockIndex);
         accountId = pBlockIndex->GetBlockHeader().nPlotterId;
-    }else {
+    } else {
         LogPrintf("Not find BTCHD fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);

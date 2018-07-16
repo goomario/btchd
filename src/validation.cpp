@@ -1929,6 +1929,32 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                block.vtx[0]->GetValueOut(), blockReward),
                                REJECT_INVALID, "bad-cb-amount");
 
+    if (block.vtx[0]->vout.size() < 2)
+        return state.DoS(100,
+                         error("ConnectBlock(): coinbase require 2 out ([0] to miner, [1] to fund)"),
+                         REJECT_INVALID, "bad-cb-miner_fund");
+
+    CAmount fundRoyalty = block.vtx[0]->vout[1].nValue;
+    CAmount minerReward = blockReward - fundRoyalty;
+    if (pindex->nHeight <= chainparams.GetConsensus().BtchdFundPreMingingHeight) {
+        // Fund pre-mining
+        if (fundRoyalty != blockReward)
+            return state.DoS(100,
+                         error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
+                               fundRoyalty, blockReward),
+                               REJECT_INVALID, "bad-cb-amount-fund_pre_mining");
+    } else if (pindex->nHeight <= chainparams.GetConsensus().BtchdNoMortgageHeight) {
+        // No mortgage
+        if (minerReward != blockReward)
+            return state.DoS(100,
+                         error("ConnectBlock(): coinbase pays too less to miner (actual=%d vs limit=%d)",
+                               minerReward, blockReward),
+                               REJECT_INVALID, "bad-cb-amount-miner_no_mortgage");
+    } else {
+        // Coming soon
+        return error("ConnectBlock(): New version for mortgage coming soon, please check http://btchd.net");
+    }
+
     if (!control.Wait())
         return state.DoS(100, error("%s: CheckQueue failed. height=%d hash=%s", __func__, pindex->nHeight, pindex->GetBlockHash().GetHex()), REJECT_INVALID, "block-validation-failed");
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
@@ -2530,11 +2556,6 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
     CBlockIndex *pindexNewTip = nullptr;
     int nStopAtHeight = gArgs.GetArg("-stopatheight", DEFAULT_STOPATHEIGHT);
 
-    // TODO felix Stop on dead height for btchd version 1
-    if (nStopAtHeight <= 0 || nStopAtHeight > chainparams.GetConsensus().BtchdV1DeadHeight) {
-        nStopAtHeight = chainparams.GetConsensus().BtchdV1DeadHeight;
-    }
-
     do {
         boost::this_thread::interruption_point();
 
@@ -3126,8 +3147,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     }
 
     // Enforce rule that the coinbase starts with serialized block height
-    if (nHeight >= consensusParams.BIP34Height)
-    {
+    if (nHeight >= consensusParams.BIP34Height) {
         CScript expect = CScript() << nHeight;
         if (block.vtx[0]->vin[0].scriptSig.size() < expect.size() ||
             !std::equal(expect.begin(), expect.end(), block.vtx[0]->vin[0].scriptSig.begin())) {

@@ -89,13 +89,18 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("merkleroot", blockindex->hashMerkleRoot.GetHex()));
     result.push_back(Pair("time", (int64_t)blockindex->nTime));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
+    result.push_back(Pair("plotterId", (uint64_t)blockindex->nPlotterId));
     result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
     result.push_back(Pair("baseTarget", (uint64_t)blockindex->nBaseTarget));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
 
-    if (blockindex->pprev)
+    if (blockindex->pprev) {
+        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
+    } else {
+        result.push_back(Pair("deadline", (uint64_t)0));
+    }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
@@ -134,13 +139,18 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("tx", txs));
     result.push_back(Pair("time", block.GetBlockTime()));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
+    result.push_back(Pair("plotterId", (uint64_t)blockindex->nPlotterId));
     result.push_back(Pair("nonce", (uint64_t)block.nNonce));
     result.push_back(Pair("baseTarget", (uint64_t)block.nBaseTarget));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
 
-    if (blockindex->pprev)
+    if (blockindex->pprev) {
+        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
+    } else {
+        result.push_back(Pair("deadline", (uint64_t)0));
+    }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));

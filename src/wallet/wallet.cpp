@@ -1050,6 +1050,8 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
              * the mostly recently created transactions from newer versions of the wallet.
              */
 
+            // BTCHD Note Dont check address usage
+            /*
             // loop though all outputs
             for (const CTxOut& txout: tx.vout) {
                 // extract addresses and check if they match with an unused keypool key
@@ -1066,7 +1068,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
                         }
                     }
                 }
-            }
+            }*/
 
             CWalletTx wtx(this, ptx);
 
@@ -3682,8 +3684,6 @@ void CReserveKey::ReturnKey()
 
 void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
 {
-    // BTCHD Note Not remark used
-    /*
     AssertLockHeld(cs_wallet);
     bool internal = setInternalKeyPool.count(keypool_id);
     if (!internal) assert(setExternalKeyPool.count(keypool_id));
@@ -3703,7 +3703,7 @@ void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
         walletdb.ErasePool(index);
         LogPrintf("keypool index %d removed\n", index);
         it = setKeyPool->erase(it);
-    }*/
+    }
 }
 
 void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)

@@ -20,10 +20,14 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     CMutableTransaction txNew;
     txNew.nVersion = 1;
     txNew.vin.resize(1);
-    txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.vout.resize(2);
+    txNew.vin[0].scriptSig = CScript() << static_cast<unsigned int>(0)
+        << CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(0))
+        << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
     txNew.vout[0].nValue = genesisReward;
     txNew.vout[0].scriptPubKey = genesisOutputScript;
+    txNew.vout[1].nValue = 0;
+    txNew.vout[1].scriptPubKey = genesisOutputScript;
 
     CBlock genesis;
     genesis.nTime       = nTime;
@@ -41,16 +45,17 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  * transaction cannot be spent since it did not originally exist in the
  * database.
  *
- * CBlock(hash=000000000019d6, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=4a5e1e, nTime=1531292789, nBaseTarget=18325193796, nNonce=0, vtx=1)
- *   CTransaction(hash=4a5e1e, ver=1, vin.size=1, vout.size=1, nLockTime=0)
+ * CBlock(hash=8cec494f7f02ad, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=6b80acabaf0fef, nTime=1531292789, nBaseTarget=18325193796, nNonce=0, vtx=1)
+ *   CTransaction(hash=6b80acabaf0fef, ver=1, vin.size=1, vout.size=2, nLockTime=0)
  *     CTxIn(COutPoint(000000, -1), coinbase 04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73)
- *     CTxOut(nValue=25.00000000, scriptPubKey=0x5F1DF16B2B704C8A578D0B)
+ *     CTxOut(nValue=25.00000000, scriptPubKey=0x2102CD2103A86877937A05)
+ *     CTxOut(nValue=00.00000000, scriptPubKey=0x2102CD2103A86877937A05)
  *   vMerkleTree: 4a5e1e
  */
 static CBlock CreateGenesisBlock(uint32_t nTime, uint64_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CAmount& genesisReward)
 {
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-    const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    const CScript genesisOutputScript = CScript() << ParseHex("02cd2103a86877937a05eff85cf487424b52796542149f2888f9a17fbe6d66ce9d") << OP_CHECKSIG;
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBaseTarget, nVersion, genesisReward);
 }
 
@@ -76,19 +81,21 @@ public:
     CMainParams() {
         strNetworkID = "main";
 
-        consensus.BtchdFundAddress = "";
-        consensus.BtchdFundMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
-        consensus.BtchdV1DeadHeight = 84000 + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdFundAddress = "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y";
+        consensus.BtchdFundPreMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
+        consensus.BtchdFundRoyaltyPercent = 5; // 5%
+        consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
+        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016;
 
-        consensus.BIP16Height = 0; // always enforce P2SH BIP16
-        consensus.BIP34Height = 0; // BIP34 has not activated
-        consensus.BIP65Height = 0; // BIP65 activated
-        consensus.BIP66Height = 0; // BIP66 activated
+        consensus.BIP16Height = 0; // Always enforce P2SH BIP16
+        consensus.BIP34Height = 0; // Always enforce BIP34
+        consensus.BIP65Height = 0; // Always enforce BIP65
+        consensus.BIP66Height = 0; // Always enforce BIP66
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -121,10 +128,10 @@ public:
         nDefaultPort = 8733;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1531292789, 0, poc::INITIAL_BASE_TARGET, 1, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 0, poc::INITIAL_BASE_TARGET, 2, 25 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xd0a07edbcd17fc59632f85851b58a3b14e92b62a8ca8fd7953cc619466c296b7"));
-        assert(genesis.hashMerkleRoot == uint256S("0xf56bb02f08b16777fddd8f3e9ea67d7041bf26ec50d8b726cfc72f1288d73a0a"));
+        assert(consensus.hashGenesisBlock == uint256S("0x8cec494f7f02ad25b3abf418f7d5647885000e010c34e16c039711e4061497b0"));
+        assert(genesis.hashMerkleRoot == uint256S("0x6b80acabaf0fef45e2cad0b8b63d07cff1b35640e81f3ab3d83120dd8bc48164"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
@@ -158,7 +165,7 @@ public:
 
         checkpointData = {
             {
-                { 0, uint256S("0xd0a07edbcd17fc59632f85851b58a3b14e92b62a8ca8fd7953cc619466c296b7")},
+                { 0, uint256S("0x8cec494f7f02ad25b3abf418f7d5647885000e010c34e16c039711e4061497b0")},
             }
         };
 
@@ -180,19 +187,21 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
 
-        consensus.BtchdFundAddress = "";
-        consensus.BtchdFundMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
-        consensus.BtchdV1DeadHeight = 84000 + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdFundAddress = "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw";
+        consensus.BtchdFundPreMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
+        consensus.BtchdFundRoyaltyPercent = 5; // 5%
+        consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
+        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016;
 
-        consensus.BIP16Height = 0; // always enforce P2SH BIP16
-        consensus.BIP34Height = 0; // BIP34 has not activated
-        consensus.BIP65Height = 0; // BIP65 activated
-        consensus.BIP66Height = 0; // BIP66 activated
+        consensus.BIP16Height = 0; // Always enforce P2SH BIP16
+        consensus.BIP34Height = 0; // Always enforce BIP34
+        consensus.BIP65Height = 0; // Always enforce BIP65
+        consensus.BIP66Height = 0; // Always enforce BIP66
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -220,10 +229,10 @@ public:
         nDefaultPort = 18733;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1531292789, 1, poc::INITIAL_BASE_TARGET, 1, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 1, poc::INITIAL_BASE_TARGET, 2, 25 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x6cc87b1ef2cd436415476c15b5d6c23441da888c3f4b1b32caf032115ffa699b"));
-        assert(genesis.hashMerkleRoot == uint256S("0xf56bb02f08b16777fddd8f3e9ea67d7041bf26ec50d8b726cfc72f1288d73a0a"));
+        assert(consensus.hashGenesisBlock == uint256S("0xb67faee747224b7646d66cd08763f33d72b594da8e884535c2f95904fe3cf8c1"));
+        assert(genesis.hashMerkleRoot == uint256S("0xb8f17dd05a0d3fe40963d189ee0397ff909ce33bd1c9821898d2400b89ea75e6"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -250,7 +259,7 @@ public:
 
         checkpointData = {
             {
-                {0, uint256S("0x6cc87b1ef2cd436415476c15b5d6c23441da888c3f4b1b32caf032115ffa699b")},
+                {0, uint256S("0xb67faee747224b7646d66cd08763f33d72b594da8e884535c2f95904fe3cf8c1")},
             }
         };
 
@@ -273,18 +282,20 @@ public:
         strNetworkID = "regtest";
 
         consensus.BtchdFundAddress = "";
-        consensus.BtchdFundMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
-        consensus.BtchdV1DeadHeight = 84000 + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdFundPreMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
+        consensus.BtchdFundRoyaltyPercent = 5; // 5%
+        consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
+        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
 
         consensus.nSubsidyHalvingInterval = 300;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144;
 
-        consensus.BIP16Height = 0; // always enforce P2SH BIP16 on regtest
-        consensus.BIP34Height = 0; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
-        consensus.BIP65Height = 0; // BIP65 activated on regtest (Used in rpc activation tests)
-        consensus.BIP66Height = 0; // BIP66 activated on regtest (Used in rpc activation tests)
+        consensus.BIP16Height = 0; // Always enforce P2SH BIP16
+        consensus.BIP34Height = 0; // Always enforce BIP34
+        consensus.BIP65Height = 0; // Always enforce BIP65
+        consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
@@ -309,10 +320,10 @@ public:
         nDefaultPort = 18744;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1531292789, 2, poc::INITIAL_BASE_TARGET, 1, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 2, poc::INITIAL_BASE_TARGET, 2, 25 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x4280c5e185074478d40001a7066d9a8df07d5392cd23420d5cf7a17a967e50dd"));
-        assert(genesis.hashMerkleRoot == uint256S("0xf56bb02f08b16777fddd8f3e9ea67d7041bf26ec50d8b726cfc72f1288d73a0a"));
+        assert(consensus.hashGenesisBlock == uint256S("0x8414542ce030252cd4958545e6043b8c4e48182756fe39325851af58922b7df6"));
+        assert(genesis.hashMerkleRoot == uint256S("0xb17eff00d4b76e03a07e98f256850a13cd42c3246dc6927be56db838b171d79b"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.
@@ -323,7 +334,7 @@ public:
 
         checkpointData = {
             {
-                {0, uint256S("0x4280c5e185074478d40001a7066d9a8df07d5392cd23420d5cf7a17a967e50dd")},
+                {0, uint256S("0x8414542ce030252cd4958545e6043b8c4e48182756fe39325851af58922b7df6")},
             }
         };
 
