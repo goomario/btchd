@@ -165,15 +165,19 @@ public:
 
         checkpointData = {
             {
-                { 0, uint256S("0x8cec494f7f02ad25b3abf418f7d5647885000e010c34e16c039711e4061497b0")},
+                { 0, uint256S("0x8cec494f7f02ad25b3abf418f7d5647885000e010c34e16c039711e4061497b0") },
+                { 21000, uint256S("0x11615342b6a851394b596ccd19012224111a8226458cf643623e3d7202d5f0cd") },
+                { 42000, uint256S("0xc310775fdc8c7db8937a8a8bfb484977656a65c1decfaa4a08a956936e6373d9") },
+                { 63000, uint256S("0x1d6bb1fa686040982fb236a1dcaf9bc046db602f0dbafae3c719b55fbd498b72") },
+                { 84000, uint256S("0x8d1846b9e447624d86bbf81d4f02dbe52f08efb692c1c3a15a231297fc05b214") },
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block xxx (height xxx)
-            0, // * UNIX timestamp of last known number of transactions
-            0, // * total number of transactions between genesis and that timestamp
-               //   (the tx=... number in the SetBestChain debug.log lines)
+            // Data as of block 8d1846b9e447624d86bbf81d4f02dbe52f08efb692c1c3a15a231297fc05b214 (height 84000)
+            18325193796, // * UNIX timestamp of last known number of transactions
+            84001, // * total number of transactions between genesis and that timestamp
+                   //   (the tx=... number in the SetBestChain debug.log lines)
             0  // * estimated number of transactions per second after that timestamp
         };
     }
@@ -188,10 +192,10 @@ public:
         strNetworkID = "test";
 
         consensus.BtchdFundAddress = "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw";
-        consensus.BtchdFundPreMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
+        consensus.BtchdFundPreMingingHeight = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
-        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 100;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.nPowTargetSpacing = 5 * 60;
@@ -282,10 +286,10 @@ public:
         strNetworkID = "regtest";
 
         consensus.BtchdFundAddress = "";
-        consensus.BtchdFundPreMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
+        consensus.BtchdFundPreMingingHeight = 840; // 21M * 0.1% = 0.021M, 0.021M/25=840
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
-        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 10;
 
         consensus.nSubsidyHalvingInterval = 300;
         consensus.nPowTargetSpacing = 5 * 60;
