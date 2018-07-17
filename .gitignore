@@ -120,3 +120,5 @@ contrib/devtools/split-debug.sh
 # embed tools
 src/qt/tools
 release/
+
+.vscode/
