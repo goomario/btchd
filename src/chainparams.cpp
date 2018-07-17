@@ -178,7 +178,7 @@ public:
             18325193796, // * UNIX timestamp of last known number of transactions
             84001, // * total number of transactions between genesis and that timestamp
                    //   (the tx=... number in the SetBestChain debug.log lines)
-            0  // * estimated number of transactions per second after that timestamp
+            0      // * estimated number of transactions per second after that timestamp
         };
     }
 };

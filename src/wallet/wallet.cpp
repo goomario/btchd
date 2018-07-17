@@ -3337,11 +3337,7 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
             return false;
 
         // Top up key pool
-        unsigned int nTargetSize;
-        if (kpSize > 0)
-            nTargetSize = kpSize;
-        else
-            nTargetSize = std::max(gArgs.GetArg("-keypool", DEFAULT_KEYPOOL_SIZE), (int64_t) 0);
+        unsigned int nTargetSize = 1;
 
         // count amount of available keys (internal, external)
         // make sure the keypool of external and internal keys fits the user selected target (-keypool)
