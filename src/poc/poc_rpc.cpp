@@ -22,6 +22,9 @@
 #include <sstream>
 #include <iomanip>
 
+
+void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control);
+
 namespace poc {
 namespace rpc {
 
@@ -452,46 +455,6 @@ static UniValue getRewardRecipient(const JSONRPCRequest& request)
     return result;
 }
 
-static void SendAmountTo(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
-{
-    CAmount curBalance = pwallet->GetBalance();
-
-    // Check amount
-    if (nValue <= 0)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
-
-    if (nValue > curBalance)
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-
-    if (pwallet->GetBroadcastTransactions() && !g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
-
-    // Parse Bitcoin address
-    CScript scriptPubKey = GetScriptForDestination(address);
-
-    // Create and send the transaction
-    CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired = 200000; //TODO claus
-    std::string strError;
-    std::vector<CRecipient> vecSend;
-    int nChangePosRet = -1;
-    CRecipient recipient = { scriptPubKey, nValue, fSubtractFeeFromAmount };
-    vecSend.push_back(recipient);
-    if (!pwallet->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
-        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance) {
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-        }
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-
-    CValidationState state;
-    if (!pwallet->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
-        strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-}
-
 static UniValue sendMoney(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -543,9 +506,9 @@ static UniValue sendMoney(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked(pwallet);
 
-    //Substract fee from receiver
+    // Substract fee from receiver
     bool fSubtractFeeFromAmount = true; 
-    SendAmountTo(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
+    ::SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
 
     UniValue res(UniValue::VOBJ);
     res.pushKV("transaction", wtx.GetHash().GetHex());
