@@ -136,9 +136,6 @@ void ReceiveCoinsDialog::on_receiveButton_clicked()
     QString label = ui->reqLabel->text();
     /* Generate new receiving address */
     OutputType address_type = model->getDefaultAddressType();
-    if (address_type != OUTPUT_TYPE_LEGACY) {
-        address_type = OUTPUT_TYPE_P2SH_SEGWIT;
-    }
     address = model->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", address_type);
     SendCoinsRecipient info(address, label,
         ui->reqAmount->value(), ui->reqMessage->text());
