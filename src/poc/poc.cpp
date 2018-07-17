@@ -39,14 +39,6 @@ uint256 shabal256(const uint256 &genSig, int64_t nMix64)
     return result;
 }
 
-static const int HASH_SIZE = 32;
-static const int HASHES_PER_SCOOP = 2;
-static const int SCOOP_SIZE = HASHES_PER_SCOOP * HASH_SIZE;
-static const int SCOOPS_PER_PLOT = 4096; // original 1MB/plot = 16384
-static const int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE;
-
-static const int HASH_CAP = 4096;
-
 std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
     const uint64_t &nNonce, const uint64_t &nAccountId)
 {
@@ -235,6 +227,14 @@ uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight)
     return UintToArith256(shabal256(genSig, htobe64(nHeight))) % 4096;
 }
 
+static constexpr int HASH_SIZE = 32;
+static constexpr int HASHES_PER_SCOOP = 2;
+static constexpr int SCOOP_SIZE = HASHES_PER_SCOOP * HASH_SIZE;
+static constexpr int SCOOPS_PER_PLOT = 4096; // original 1MB/plot = 16384
+static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE;
+
+static const int HASH_CAP = 4096;
+
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
     if (prevBlockIndex.nHeight + 1 <= params.BtchdFundPreMingingHeight) {
@@ -273,6 +273,19 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
         data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
     }
     _gendata.reset(nullptr);
+
+    // PoC2 Rearrangement
+    //
+    // [0] [1] [2] [3] ... [N-1]
+    // [1] <-> [N-1]
+    // [3] <-> [N-3]
+    // [5] <-> [N-5]
+    uint8_t hashBuffer[HASH_SIZE];
+    for (int pos = 32, revPos = PLOT_SIZE - HASH_SIZE; pos < (PLOT_SIZE / 2); pos += 64, revPos -= 64) {
+        memcpy(hashBuffer, data + pos, HASH_SIZE); // Copy low scoop second hash to buffer
+        memcpy(data + pos, data + revPos, HASH_SIZE); // Copy high scoop second hash to low scoop second hash
+        memcpy(data + revPos, hashBuffer, HASH_SIZE); // Copy buffer to high scoop second hash
+    }
 
     CShabal256()
         .Write((const unsigned char*)genSig.begin(), genSig.size())
