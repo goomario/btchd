@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The BCO Core developers
+// Copyright (c) 2017-2018 The BTCHD Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,10 +22,12 @@
 #include <sstream>
 #include <iomanip>
 
+
+void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control);
+
 namespace poc {
 namespace rpc {
 
-static uint64_t pool_pubkey=0;
 static UniValue getMiningInfo(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
@@ -41,38 +43,46 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
         );
     }
 
+    if (IsInitialBlockDownload()) {
+        throw std::runtime_error("Is initial block downloading!");
+    }
+
     LOCK(cs_main);
     const CBlockIndex *pindexLast = chainActive.Tip();
     if (pindexLast == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
     }
-    if (pindexLast->nHeight + 1 < Params().GetConsensus().BCOHeight) {
-        throw std::runtime_error("Not yet to the BCO fork height!");
+
+    if (pindexLast->nHeight >= Params().GetConsensus().BtchdNoMortgageHeight) {
+        throw std::runtime_error("This version not support mortgage feature. Please check http://btchd.net.");
     }
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("height", pindexLast->nHeight + 1);
     result.pushKV("generationSignature", HexStr(poc::GetBlockGenerationSignature(pindexLast->GetBlockHeader())));
-    result.pushKV("baseTarget", std::to_string(pindexLast->nBits));
+    result.pushKV("baseTarget", std::to_string(pindexLast->nBaseTarget));
 
     return result;
 }
 
 static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId)
 {
+    if (IsInitialBlockDownload()) {
+        throw std::runtime_error("Is initial block downloading!");
+    }
+
     LOCK(cs_main);
-    const CBlockIndex *pBlockIndex = chainActive.Tip();
-    if (pBlockIndex == nullptr) {
+    const CBlockIndex *pindexLast = chainActive.Tip();
+    if (pindexLast == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
     }
 
-    if (pBlockIndex->nHeight + 1 < Params().GetConsensus().BCOHeight) {
-        result.pushKV("result", "Not yet to the BCO fork height");
-        return;
+    if (pindexLast->nHeight >= Params().GetConsensus().BtchdNoMortgageHeight) {
+        throw std::runtime_error("This version not support mortgage feature. Please check http://btchd.net.");
     }
 
     uint64_t deadline = std::numeric_limits<uint64_t>::max();
-    if (!poc::TryGenerateBlock(*pBlockIndex, nNonce, nAccountId, deadline, Params().GetConsensus())) {
+    if (!poc::TryGenerateBlock(*pindexLast, nNonce, nAccountId, deadline, Params().GetConsensus())) {
         result.pushKV("result", "Generate failed");
         return;
     }
@@ -103,8 +113,6 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
         result.pushKV("result", "Missing parameters");
         return result;
     }
-
-    pool_pubkey = poc::GetAccountIdByPassPhrase(request.params[2].get_str());
 
     SubmitNonce(result, 
         static_cast<uint64_t>(std::stoull(request.params[0].get_str())), 
@@ -148,17 +156,17 @@ static UniValue getConstants(const JSONRPCRequest& request)
     UniValue result(UniValue::VOBJ);
 
     uint64_t blockId = 0, accountId = 0; 
-    int height = Params().GetConsensus().BCOHeight + Params().GetConsensus().BCOInitBlockCount;
+    int height = 0;
     CBlockIndex * pBlockIndex = chainActive[height];
 
     if (pBlockIndex) {
         blockId = poc::GetBlockId(*pBlockIndex);
-        accountId = pBlockIndex->GetBlockHeader().nPlotSeed;
-    }else {
-        LogPrintf("Not find BCO fork height block:%ld\n", height);
+        accountId = pBlockIndex->GetBlockHeader().nPlotterId;
+    } else {
+        LogPrintf("Not find BTCHD fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);
-        accountId = genesis.nPlotSeed;
+        accountId = genesis.nPlotterId;
     }
 
     result.pushKV("genesisBlockId", std::to_string(blockId));
@@ -201,10 +209,10 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
     result.push_back(Pair("block", poc::GetBlockId(block)));
     result.push_back(Pair("blockSignature", "")); // N/A
     result.push_back(Pair("height", pBlockIndex->nHeight));
-    result.push_back(Pair("baseTarget", std::to_string(block.nBits)));
+    result.push_back(Pair("baseTarget", std::to_string(block.nBaseTarget)));
     result.push_back(Pair("nonce", std::to_string(block.nNonce)));
     result.push_back(Pair("timestamp", (uint64_t)block.nTime));
-    if (pprevBlockIndex != nullptr && pBlockIndex->nHeight >= Params().GetConsensus().BCOHeight) {
+    if (pprevBlockIndex != nullptr) {
         const uint256 genSig = poc::GetBlockGenerationSignature(pprevBlockIndex->GetBlockHeader());
         result.push_back(Pair("scoopNum", (uint64_t)poc::GetBlockScoopNum(genSig, pBlockIndex->nHeight)));
         result.push_back(Pair("generator", std::to_string(poc::GetBlockGenerator(block))));
@@ -447,46 +455,6 @@ static UniValue getRewardRecipient(const JSONRPCRequest& request)
     return result;
 }
 
-static void SendAmountTo(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
-{
-    CAmount curBalance = pwallet->GetBalance();
-
-    // Check amount
-    if (nValue <= 0)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
-
-    if (nValue > curBalance)
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-
-    if (pwallet->GetBroadcastTransactions() && !g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
-
-    // Parse Bitcoin address
-    CScript scriptPubKey = GetScriptForDestination(address);
-
-    // Create and send the transaction
-    CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired = 200000; //TODO claus
-    std::string strError;
-    std::vector<CRecipient> vecSend;
-    int nChangePosRet = -1;
-    CRecipient recipient = { scriptPubKey, nValue, fSubtractFeeFromAmount };
-    vecSend.push_back(recipient);
-    if (!pwallet->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
-        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance) {
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-        }
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-
-    CValidationState state;
-    if (!pwallet->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
-        strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-}
-
 static UniValue sendMoney(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -538,9 +506,9 @@ static UniValue sendMoney(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked(pwallet);
 
-    //Substract fee from receiver
+    // Substract fee from receiver
     bool fSubtractFeeFromAmount = true; 
-    SendAmountTo(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
+    ::SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
 
     UniValue res(UniValue::VOBJ);
     res.pushKV("transaction", wtx.GetHash().GetHex());

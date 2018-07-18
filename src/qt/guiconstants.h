@@ -35,7 +35,7 @@ static const bool DEFAULT_SPLASHSCREEN = true;
 #define COLOR_BLACK QColor(0, 0, 0)
 
 /* Tooltips longer than this (in characters) are converted into rich text,
-   so that they can be word-wrapped.
+ * so that they can be word-wrapped.
  */
 static const int TOOLTIP_WRAP_THRESHOLD = 80;
 
@@ -48,9 +48,9 @@ static const int MAX_URI_LENGTH = 255;
 /* Number of frames in spinner animation */
 #define SPINNER_FRAMES 36
 
-#define QAPP_ORG_NAME "Bitcoinore"
-#define QAPP_ORG_DOMAIN "bitcoinore.org"
-#define QAPP_APP_NAME_DEFAULT "BCO-Qt"
-#define QAPP_APP_NAME_TESTNET "BCO-Qt-testnet"
+#define QAPP_ORG_NAME "BTCHD"
+#define QAPP_ORG_DOMAIN "btchd.net"
+#define QAPP_APP_NAME_DEFAULT "BTCHD-Qt"
+#define QAPP_APP_NAME_TESTNET "BTCHD-Qt-testnet"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H

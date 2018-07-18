@@ -210,10 +210,9 @@ public:
     int32_t nVersion;
     uint256 hashMerkleRoot;
     uint32_t nTime;
-    uint64_t nBits; // uint32_t => uint64_t. baseTarget of BCO
-    uint64_t nNonce; // uint32_t => uint64_t. nonce of BCO
-
-    uint64_t nPlotSeed; // BCO / plot file seed
+    uint64_t nBaseTarget;
+    uint64_t nNonce;
+    uint64_t nPlotterId;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -240,9 +239,9 @@ public:
         nVersion       = 0;
         hashMerkleRoot = uint256();
         nTime          = 0;
-        nBits          = 0;
+        nBaseTarget    = 0;
         nNonce         = 0;
-        nPlotSeed      = 0;
+        nPlotterId     = 0;
     }
 
     CBlockIndex()
@@ -257,9 +256,9 @@ public:
         nVersion       = block.nVersion;
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
-        nBits          = block.nBits;
+        nBaseTarget    = block.nBaseTarget;
         nNonce         = block.nNonce;
-        nPlotSeed      = block.nPlotSeed;
+        nPlotterId     = block.nPlotterId;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -288,9 +287,9 @@ public:
             block.hashPrevBlock = pprev->GetBlockHash();
         block.hashMerkleRoot = hashMerkleRoot;
         block.nTime          = nTime;
-        block.nBits          = nBits;
+        block.nBaseTarget    = nBaseTarget;
         block.nNonce         = nNonce;
-        block.nPlotSeed      = nPlotSeed;
+        block.nPlotterId     = nPlotterId;
         return block;
     }
 
@@ -408,16 +407,9 @@ public:
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-
-        // bits & nonce compatiable
-        if (static_cast<int64_t>(nTime) >= BCOBlockMinTimestamp()) {
-            READWRITE(nBits);
-            READWRITE(nNonce);
-            READWRITE(nPlotSeed);
-        } else {
-            READWRITE32_64(nBits);
-            READWRITE32_64(nNonce);
-        }
+        READWRITE(nBaseTarget);
+        READWRITE(nNonce);
+        READWRITE(nPlotterId);
     }
 
     uint256 GetBlockHash() const
@@ -427,9 +419,9 @@ public:
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
         block.nTime           = nTime;
-        block.nBits           = nBits;
+        block.nBaseTarget     = nBaseTarget;
         block.nNonce          = nNonce;
-        block.nPlotSeed       = nPlotSeed;
+        block.nPlotterId      = nPlotterId;
         return block.GetHash();
     }
 

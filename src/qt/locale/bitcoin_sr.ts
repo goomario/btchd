@@ -138,8 +138,8 @@
         <translation>Промени &amp;лозинку...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Пошаљите новац на BCO адресу</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Пошаљите новац на BTCHD адресу</translation>
     </message>
     <message>
         <source>Change the passphrase used for wallet encryption</source>

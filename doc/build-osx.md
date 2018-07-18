@@ -40,17 +40,17 @@ from the root of the repository.
 
 **Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
 
-Build BCO Core
+Build BTCHD Core
 ------------------------
 
-1. Clone the BCO source code and cd into `bco-src`
+1. Clone the BTCHD source code and cd into `btchd-src`
 
-        git clone https://github.com/bitcoinoreorg/bitcoinore bco-src
-        cd bco-src
+        git clone https://github.com/bitcoinoreorg/btchd btchd-src
+        cd btchd-src
 
-2.  Build bco-core:
+2.  Build btchd-core:
 
-    Configure and build the headless bco binaries as well as the GUI (if Qt is found).
+    Configure and build the headless btchd binaries as well as the GUI (if Qt is found).
 
     You can disable the GUI build by passing `--without-gui` to configure.
 
@@ -69,37 +69,37 @@ Build BCO Core
 Running
 -------
 
-BCO Core is now available at `./src/bcod`
+BTCHD Core is now available at `./src/btchdd`
 
 Before running, it's recommended you create an RPC configuration file.
 
-    echo -e "rpcuser=bitcoinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/bco/bco.conf"
+    echo -e "rpcuser=bitcoinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/btchd/btchd.conf"
 
-    chmod 600 "/Users/${USER}/Library/Application Support/bco/bco.conf"
+    chmod 600 "/Users/${USER}/Library/Application Support/btchd/btchd.conf"
 
-The first time you run bcod, it will start downloading the blockchain. This process could take several hours.
+The first time you run btchdd, it will start downloading the blockchain. This process could take several hours.
 
 You can monitor the download process by looking at the debug.log file:
 
-    tail -f $HOME/Library/Application\ Support/bco/debug.log
+    tail -f $HOME/Library/Application\ Support/btchd/debug.log
 
 Other commands:
 -------
 
-    ./src/bcod -daemon # Starts the bco daemon.
-    ./src/bco-cli --help # Outputs a list of command-line options.
-    ./src/bco-cli help # Outputs a list of RPC commands when the daemon is running.
+    ./src/btchdd -daemon # Starts the btchd daemon.
+    ./src/btchd-cli --help # Outputs a list of command-line options.
+    ./src/btchd-cli help # Outputs a list of RPC commands when the daemon is running.
 
 Using Qt Creator as IDE
 ------------------------
-You can use Qt Creator as an IDE, for BCO development.
+You can use Qt Creator as an IDE, for BTCHD development.
 Download and install the community edition of [Qt Creator](https://www.qt.io/download/).
 Uncheck everything except Qt Creator during the installation process.
 
 1. Make sure you installed everything through Homebrew mentioned above
 2. Do a proper ./configure --enable-debug
 3. In Qt Creator do "New Project" -> Import Project -> Import Existing Project
-4. Enter "bco-qt" as project name, enter src/qt as location
+4. Enter "btchd-qt" as project name, enter src/qt as location
 5. Leave the file selection as it is
 6. Confirm the "summary page"
 7. In the "Projects" tab select "Manage Kits..."

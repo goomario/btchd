@@ -24,8 +24,6 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
-    SIGHASH_FORKID_BCO = 0x10, // Signature hash flag for BCO
-    SIGHASH_FORKID_BCOGOD = 0x20, // Signature hash flag for BCO god mode
     SIGHASH_ANYONECANPAY = 0x80,
 };
 
@@ -113,14 +111,6 @@ enum
     // Public keys in segregated witness scripts must be compressed
     //
     SCRIPT_VERIFY_WITNESS_PUBKEYTYPE = (1U << 15),
-
-    // Do we accept signature using SIGHASH_FORKID_BCO
-    //
-    SCRIPT_ENABLE_SIGHASH_FORKID = (1U << 18),
-
-    // Do we accept signature using SIGHASH_FORKID_BCOGOD
-    //
-    SCRIPT_ENABLE_SIGHASH_FORKID_GOD = (1U << 19),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);
@@ -140,7 +130,7 @@ enum SigVersion
 };
 
 uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount,
-    SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr, unsigned int forkFlags = 0);
+    SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr);
 
 class BaseSignatureChecker
 {
@@ -170,19 +160,16 @@ private:
     unsigned int nIn;
     const CAmount amount;
     const PrecomputedTransactionData* txdata;
-    const unsigned int forkFlags; // for check fork flags
 
 protected:
     virtual bool VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
 
 public:
-    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, unsigned int forkFlags) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr), forkFlags(forkFlags) {}
-    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn, unsigned int forkFlags) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn), forkFlags(forkFlags) {}
+    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr) {}
+    TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckSequence(const CScriptNum& nSequence) const override;
-
-    inline unsigned int GetForkFlags() const { return forkFlags; }
 };
 
 class MutableTransactionSignatureChecker : public TransactionSignatureChecker
@@ -191,16 +178,12 @@ private:
     const CTransaction txTo;
 
 public:
-    MutableTransactionSignatureChecker(const CMutableTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, unsigned int forkFlags = 0) : TransactionSignatureChecker(&txTo, nInIn, amountIn, forkFlags), txTo(*txToIn) {}
+    MutableTransactionSignatureChecker(const CMutableTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn) : TransactionSignatureChecker(&txTo, nInIn, amountIn), txTo(*txToIn) {}
 };
 
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* error = nullptr);
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror = nullptr);
 
 size_t CountWitnessSigOps(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags);
-
-// BCO paramters
-namespace Consensus { struct Params; }
-void BCOInitInterpreterParams(const Consensus::Params * params);
 
 #endif // BITCOIN_SCRIPT_INTERPRETER_H

@@ -62,12 +62,12 @@
         <translation>Receiving addresses</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>These are your BCO addresses for sending payments. Always check the amount and the receiving address before sending coins.</translation>
+        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</translation>
     </message>
     <message>
-        <source>These are your BCO addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>These are your BCO addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</translation>
+        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -342,8 +342,8 @@
         <translation>Reindexing blocks on disk...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Send coins to a BCO address</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Send coins to a BTCHD address</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -366,8 +366,8 @@
         <translation>&amp;Verify message...</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -394,12 +394,12 @@
         <translation>Encrypt the private keys that belong to your wallet</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Sign messages with your BCO addresses to prove you own them</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Sign messages with your BTCHD addresses to prove you own them</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Verify messages to ensure they were signed with specified BCO addresses</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Verify messages to ensure they were signed with specified BTCHD addresses</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -418,8 +418,8 @@
         <translation>Tabs toolbar</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>Request payments (generates QR codes and bco: URIs)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>Request payments (generates QR codes and btchd: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -430,16 +430,16 @@
         <translation>Show the list of used receiving addresses and labels</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>Open a bco: URI or payment request</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>Open a btchd: URI or payment request</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
         <translation>&amp;Command-line options</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BCO network</source>
-        <translation><numerusform>%n active connection to BCO network</numerusform><numerusform>%n active connections to BCO network</numerusform></translation>
+        <source>%n active connection(s) to BTCHD network</source>
+        <translation><numerusform>%n active connection to BTCHD network</numerusform><numerusform>%n active connections to BTCHD network</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -482,8 +482,8 @@
         <translation>Up to date</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BCO command-line options</source>
-        <translation>Show the %1 help message to get a list with possible BCO command-line options</translation>
+        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <translation>Show the %1 help message to get a list with possible BTCHD command-line options</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -552,8 +552,8 @@
         <translation>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BCO can no longer continue safely and will quit.</source>
-        <translation>A fatal error occurred. BCO can no longer continue safely and will quit.</translation>
+        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
+        <translation>A fatal error occurred. BTCHD can no longer continue safely and will quit.</translation>
     </message>
 </context>
 <context>
@@ -746,8 +746,8 @@
         <translation>Edit sending address</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BCO address.</source>
-        <translation>The entered address "%1" is not a valid BCO address.</translation>
+        <source>The entered address "%1" is not a valid BTCHD address.</source>
+        <translation>The entered address "%1" is not a valid BTCHD address.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -875,8 +875,8 @@
         <translation>Use a custom data directory:</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -887,8 +887,8 @@
         <translation>Approximately %1 GB of data will be stored in this directory.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the BCO block chain.</source>
-        <translation>%1 will download and store a copy of the BCO block chain.</translation>
+        <source>%1 will download and store a copy of the BTCHD block chain.</source>
+        <translation>%1 will download and store a copy of the BTCHD block chain.</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -918,8 +918,8 @@
         <translation>Form</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BCO network, as detailed below.</source>
-        <translation>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronising with the BCO network, as detailed below.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
+        <translation>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronising with the BTCHD network, as detailed below.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
@@ -1092,8 +1092,8 @@
         <translation>&amp;Spend unconfirmed change</translation>
     </message>
     <message>
-        <source>Automatically open the BCO client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Automatically open the BCO client port on the router. This only works when your router supports UPnP and it is enabled.</translation>
+        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1108,8 +1108,8 @@
         <translation>Allow incomin&amp;g connections</translation>
     </message>
     <message>
-        <source>Connect to the BCO network through a SOCKS5 proxy.</source>
-        <translation>Connect to the BCO network through a SOCKS5 proxy.</translation>
+        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
+        <translation>Connect to the BTCHD network through a SOCKS5 proxy.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1144,8 +1144,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BCO network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Connect to the BCO network through a separate SOCKS5 proxy for Tor hidden services.</translation>
+        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1251,8 +1251,8 @@
         <translation>Form</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BCO network after a connection is established, but this process has not completed yet.</source>
-        <translation>The displayed information may be out of date. Your Wallet automatically synchronises with the BCO Network after a connection is established, but this process has not been completed yet.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>The displayed information may be out of date. Your Wallet automatically synchronises with the BTCHD Network after a connection is established, but this process has not been completed yet.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1326,8 +1326,8 @@
         <translation>Payment request error</translation>
     </message>
     <message>
-        <source>Cannot start bco: click-to-pay handler</source>
-        <translation>Cannot start bco: click-to-pay handler</translation>
+        <source>Cannot start btchd: click-to-pay handler</source>
+        <translation>Cannot start btchd: click-to-pay handler</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1342,8 +1342,8 @@
         <translation>Invalid payment address %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BCO address or malformed URI parameters.</source>
-        <translation>URI cannot be parsed! This can be caused by an invalid BCO address or malformed URI parameters.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
+        <translation>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1444,8 +1444,8 @@
         <translation>Amount</translation>
     </message>
     <message>
-        <source>Enter a BCO address (e.g. %1)</source>
-        <translation>Enter a BCO address (e.g. %1)</translation>
+        <source>Enter a BTCHD address (e.g. %1)</source>
+        <translation>Enter a BTCHD address (e.g. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1868,8 +1868,8 @@
         <translation>&amp;Message:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BCO network.</source>
-        <translation>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BCO network.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
+        <translation>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2113,8 +2113,8 @@
         <translation>Hide</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</source>
-        <translation>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BCO transactions than the network can process.</translation>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</source>
+        <translation>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</translation>
     </message>
     <message>
         <source>(read the tooltip)</source>
@@ -2285,8 +2285,8 @@
         <translation><numerusform>Estimated to begin confirmation within %n block.</numerusform><numerusform>Estimated to begin confirmation within %n blocks.</numerusform></translation>
     </message>
     <message>
-        <source>Warning: Invalid BCO address</source>
-        <translation>Warning: Invalid BCO address</translation>
+        <source>Warning: Invalid BTCHD address</source>
+        <translation>Warning: Invalid BTCHD address</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2328,8 +2328,8 @@
         <translation>This is a normal payment.</translation>
     </message>
     <message>
-        <source>The BCO address to send the payment to</source>
-        <translation>The BCO address to send the payment to</translation>
+        <source>The BTCHD address to send the payment to</source>
+        <translation>The BTCHD address to send the payment to</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2376,8 +2376,8 @@
         <translation>Enter a label for this address to add it to the list of used addresses</translation>
     </message>
     <message>
-        <source>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</source>
-        <translation>A message that was attached to the bco: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BCO network.</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
+        <translation>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2425,8 +2425,8 @@
         <translation>You can sign messages/agreements with your addresses to prove you can receive bitcoins sent to them. Be careful not to sign anything vague or random, as phishing attacks may try to trick you into signing your identity over to them. Only sign fully-detailed statements you agree to.</translation>
     </message>
     <message>
-        <source>The BCO address to sign the message with</source>
-        <translation>The BCO address to sign the message with</translation>
+        <source>The BTCHD address to sign the message with</source>
+        <translation>The BTCHD address to sign the message with</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2457,8 +2457,8 @@
         <translation>Copy the current signature to the system clipboard</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BCO address</source>
-        <translation>Sign the message to prove you own this BCO address</translation>
+        <source>Sign the message to prove you own this BTCHD address</source>
+        <translation>Sign the message to prove you own this BTCHD address</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2481,12 +2481,12 @@
         <translation>Enter the receiver's address, message (ensure you copy line breaks, spaces, tabs, etc. exactly) and signature below to verify the message. Be careful not to read more into the signature than what is in the signed message itself, to avoid being tricked by a man-in-the-middle attack. Note that this only proves the signing party receives with the address, it cannot prove sendership of any transaction!</translation>
     </message>
     <message>
-        <source>The BCO address the message was signed with</source>
-        <translation>The BCO address the message was signed with</translation>
+        <source>The BTCHD address the message was signed with</source>
+        <translation>The BTCHD address the message was signed with</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BCO address</source>
-        <translation>Verify the message to ensure it was signed with the specified BCO address</translation>
+        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
+        <translation>Verify the message to ensure it was signed with the specified BTCHD address</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3178,8 +3178,8 @@
         <translation>Unable to start HTTP server. See debug log for details.</translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>BCO Core</translation>
+        <source>BTCHD Core</source>
+        <translation>BTCHD Core</translation>
     </message>
     <message>
         <source>The %s developers</source>

@@ -16,15 +16,9 @@
 #include <utilstrencodings.h>
 #include <validation.h>
 
-extern const Consensus::Params *pGlobalConsensusParams;
-
-
 typedef std::vector<unsigned char> valtype;
 
-TransactionSignatureCreator::TransactionSignatureCreator(const CKeyStore* keystoreIn, const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, int nHashTypeIn) : BaseSignatureCreator(keystoreIn), txTo(txToIn), nIn(nInIn), nHashType(nHashTypeIn), amount(amountIn),
-    checker(txTo, nIn, amountIn,
-        ((nHashTypeIn&SIGHASH_FORKID_BCO)?SCRIPT_ENABLE_SIGHASH_FORKID:0) |
-        ((nHashTypeIn&SIGHASH_FORKID_BCOGOD)?SCRIPT_ENABLE_SIGHASH_FORKID_GOD:0)) {}
+TransactionSignatureCreator::TransactionSignatureCreator(const CKeyStore* keystoreIn, const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, int nHashTypeIn) : BaseSignatureCreator(keystoreIn), txTo(txToIn), nIn(nInIn), nHashType(nHashTypeIn), amount(amountIn), checker(txTo, nIn, amountIn) {}
 
 bool TransactionSignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& address, const CScript& scriptCode, SigVersion sigversion) const
 {
@@ -36,17 +30,11 @@ bool TransactionSignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, 
     if (sigversion == SIGVERSION_WITNESS_V0 && !key.IsCompressed())
         return false;
 
-    uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, nullptr, checker.GetForkFlags());
+    uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, nullptr);
     if (!key.Sign(hash, vchSig))
         return false;
     vchSig.push_back((unsigned char)nHashType);
     return true;
-}
-
-bool TransactionSignatureCreator::IsGod() const
-{
-    assert(!(nHashType & SIGHASH_FORKID_BCOGOD) || (nHashType & SIGHASH_FORKID_BCO));
-    return (nHashType & SIGHASH_FORKID_BCOGOD) != 0;
 }
 
 static bool Sign1(const CKeyID& address, const BaseSignatureCreator& creator, const CScript& scriptCode, std::vector<valtype>& ret, SigVersion sigversion)
@@ -155,25 +143,6 @@ static CScript PushAll(const std::vector<valtype>& values)
 
 bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
 {
-    // BCO God Mode
-    if (creator.IsGod()) {
-        // signature data for god mode
-        std::vector<valtype> result;
-
-        std::vector<unsigned char> data;
-        data = ParseHex(pGlobalConsensusParams->BCOGodSignaturePubkey);
-        CPubKey PubKey(data);
-        CKeyID address = PubKey.GetID();
-
-        if (!Sign1(address, creator, fromPubKey, result, SIGVERSION_BASE))
-            return false;
-
-        result.push_back(ToByteVector(PubKey));
-        sigdata.scriptSig = PushAll(result);
-
-        return VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS | SCRIPT_ENABLE_SIGHASH_FORKID_GOD, creator.Checker());
-    }
-
     CScript script = fromPubKey;
     std::vector<valtype> result;
     txnouttype whichType;
@@ -453,13 +422,8 @@ bool DummySignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, const 
     vchSig[4 + 33] = 0x02;
     vchSig[5 + 33] = 32;
     vchSig[6 + 33] = 0x01;
-    vchSig[6 + 33 + 32] = SIGHASH_ALL | SIGHASH_FORKID_BCO;
+    vchSig[6 + 33 + 32] = SIGHASH_ALL;
     return true;
-}
-
-bool DummySignatureCreator::IsGod() const
-{
-    return false;
 }
 
 bool IsSolvable(const CKeyStore& store, const CScript& script)
@@ -475,7 +439,7 @@ bool IsSolvable(const CKeyStore& store, const CScript& script)
     static_assert(STANDARD_SCRIPT_VERIFY_FLAGS & SCRIPT_VERIFY_WITNESS_PUBKEYTYPE, "IsSolvable requires standard script flags to include WITNESS_PUBKEYTYPE");
     if (ProduceSignature(creator, script, sigs)) {
         // VerifyScript check is just defensive, and should never fail.
-        assert(VerifyScript(sigs.scriptSig, script, &sigs.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS | (creator.IsGod() ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0), creator.Checker()));
+        assert(VerifyScript(sigs.scriptSig, script, &sigs.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker()));
         return true;
     }
     return false;

@@ -55,10 +55,10 @@ static int AppInitRawTx(int argc, char* argv[])
     if (argc<2 || gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help"))
     {
         // First part of help message is specific to this utility
-        std::string strUsage = strprintf(_("%s bco-tx utility version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n\n" +
+        std::string strUsage = strprintf(_("%s btchd-tx utility version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n\n" +
             _("Usage:") + "\n" +
-              "  bco-tx [options] <hex-tx> [commands]  " + _("Update hex-encoded bco transaction") + "\n" +
-              "  bco-tx [options] -create [commands]   " + _("Create hex-encoded bco transaction") + "\n" +
+              "  btchd-tx [options] <hex-tx> [commands]  " + _("Update hex-encoded btchd transaction") + "\n" +
+              "  btchd-tx [options] -create [commands]   " + _("Create hex-encoded btchd transaction") + "\n" +
               "\n";
 
         fprintf(stdout, "%s", strUsage.c_str());
@@ -240,7 +240,7 @@ static void MutateTxAddInput(CMutableTransaction& tx, const std::string& strInpu
     uint256 txid(uint256S(strTxid));
 
     static const unsigned int minTxOutSz = 9;
-    static const unsigned int maxVout = MaxBlockSize(std::numeric_limits<uint64_t>::max()) / (WITNESS_SCALE_FACTOR * minTxOutSz);
+    static const unsigned int maxVout = MAX_BLOCK_WEIGHT / (WITNESS_SCALE_FACTOR * minTxOutSz);
 
     // extract and validate vout
     std::string strVout = vStrInputParts[1];
@@ -510,22 +510,6 @@ static const struct {
     {"ALL|ANYONECANPAY", SIGHASH_ALL|SIGHASH_ANYONECANPAY},
     {"NONE|ANYONECANPAY", SIGHASH_NONE|SIGHASH_ANYONECANPAY},
     {"SINGLE|ANYONECANPAY", SIGHASH_SINGLE|SIGHASH_ANYONECANPAY},
-
-    // Add signature options for BCO Chain
-    {"ALL|FORKID", SIGHASH_ALL|SIGHASH_FORKID_BCO},
-    {"NONE|FORKID", SIGHASH_NONE|SIGHASH_FORKID_BCO},
-    {"SINGLE|FORKID", SIGHASH_SINGLE|SIGHASH_FORKID_BCO},
-    {"ALL|FORKID|ANYONECANPAY", SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY},
-    {"NONE|FORKID|ANYONECANPAY", SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY},
-    {"SINGLE|FORKID|ANYONECANPAY", SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY},
-
-     // Add signature options for BCO Chain in God mode
-    {"ALL|FORKID|GOD", SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD},
-    {"NONE|FORKID|GOD", SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD},
-    {"SINGLE|FORKID|GOD", SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD},
-    {"ALL|FORKID|GOD|ANYONECANPAY", SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY },
-    {"NONE|FORKID|GOD|ANYONECANPAY", SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY },
-    {"SINGLE|FORKID|GOD|ANYONECANPAY", SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY },
 };
 
 static bool findSighashFlags(int& flags, const std::string& flagStr)
@@ -652,15 +636,6 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
     bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
 
     unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
-    if (nHashType&SIGHASH_FORKID_BCO) {
-        // add fork id
-        flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
-        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
-    } else {
-        // remove fork id
-        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID;
-        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
-    }
 
     // Sign what we can:
     for (unsigned int i = 0; i < mergedTx.vin.size(); i++) {
@@ -680,10 +655,10 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
 
         // ... and merge in other signatures:
         for (const CTransaction& txv : txVariants)
-            sigdata = CombineSignatures(prevPubKey, MutableTransactionSignatureChecker(&mergedTx, i, amount, flags), sigdata, DataFromTransaction(txv, i));
+            sigdata = CombineSignatures(prevPubKey, MutableTransactionSignatureChecker(&mergedTx, i, amount), sigdata, DataFromTransaction(txv, i));
         UpdateTransaction(mergedTx, i, sigdata);
 
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, MutableTransactionSignatureChecker(&mergedTx, i, amount, flags)))
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, MutableTransactionSignatureChecker(&mergedTx, i, amount)))
             fComplete = false;
     }
 

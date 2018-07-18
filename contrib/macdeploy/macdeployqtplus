@@ -155,7 +155,7 @@ class FrameworkInfo(object):
 class ApplicationBundleInfo(object):
     def __init__(self, path):
         self.path = path
-        appName = "BCO-Qt"
+        appName = "BTCHD-Qt"
         self.binaryPath = os.path.join(path, "Contents", "MacOS", appName)
         if not os.path.exists(self.binaryPath):
             raise RuntimeError("Could not find bundle binary for " + path)
@@ -227,7 +227,7 @@ def getFrameworks(binaryPath, verbose):
             libraries.append(info)
 
     # fixes libboost_system-mt.dylib missing.
-    if binaryPath.endswith("/Contents/MacOS/BCO-Qt"):
+    if binaryPath.endswith("/Contents/MacOS/BTCHD-Qt"):
         for lib in libraries:
             if lib.installName.endswith("/libboost_thread-mt.dylib"):
                 for lib2 in getFrameworks(lib.installName, verbose):
@@ -614,7 +614,7 @@ else:
 
 # ------------------------------------------------
 
-target = os.path.join("dist", "BCO-Qt.app")
+target = os.path.join("dist", "BTCHD-Qt.app")
 
 if verbose >= 2:
     print("+ Copying source bundle +")

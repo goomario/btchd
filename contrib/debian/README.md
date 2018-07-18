@@ -1,21 +1,21 @@
 
 Debian
 ====================
-This directory contains files used to package bcod/bco-qt
-for Debian-based Linux systems. If you compile bcod/bco-qt yourself, there are some useful files here.
+This directory contains files used to package btchdd/btchd-qt
+for Debian-based Linux systems. If you compile btchdd/btchd-qt yourself, there are some useful files here.
 
-## bco: URI support ##
+## btchd: URI support ##
 
 
-bco-qt.desktop  (Gnome / Open Desktop)
+btchd-qt.desktop  (Gnome / Open Desktop)
 To install:
 
-	sudo desktop-file-install bco-qt.desktop
+	sudo desktop-file-install btchd-qt.desktop
 	sudo update-desktop-database
 
 If you build yourself, you will either need to modify the paths in
-the .desktop file or copy or symlink your bco-qt binary to `/usr/bin`
-and the `../../share/pixmaps/bco128.png` to `/usr/share/pixmaps`
+the .desktop file or copy or symlink your btchd-qt binary to `/usr/bin`
+and the `../../share/pixmaps/btchd128.png` to `/usr/share/pixmaps`
 
-bco-qt.protocol (KDE)
+btchd-qt.protocol (KDE)
 

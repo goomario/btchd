@@ -142,8 +142,8 @@
         <translation>Reindexando bloques en disco...</translation>
     </message>
     <message>
-        <source>Send coins to a BCO address</source>
-        <translation>Enviar monedas a una dirección BCO</translation>
+        <source>Send coins to a BTCHD address</source>
+        <translation>Enviar monedas a una dirección BTCHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -166,8 +166,8 @@
         <translation>&amp;Verificar mensaje...</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -194,12 +194,12 @@
         <translation>Cifrar las claves privadas de su monedero</translation>
     </message>
     <message>
-        <source>Sign messages with your BCO addresses to prove you own them</source>
-        <translation>Firmar mensajes con sus direcciones BCO para demostrar la propiedad</translation>
+        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <translation>Firmar mensajes con sus direcciones BTCHD para demostrar la propiedad</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BCO addresses</source>
-        <translation>Verificar mensajes comprobando que están firmados con direcciones BCO concretas</translation>
+        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <translation>Verificar mensajes comprobando que están firmados con direcciones BTCHD concretas</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -218,8 +218,8 @@
         <translation>Barra de pestañas</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bco: URIs)</source>
-        <translation>Solicitar pagos (genera codigo QR y URL's de BCO)</translation>
+        <source>Request payments (generates QR codes and btchd: URIs)</source>
+        <translation>Solicitar pagos (genera codigo QR y URL's de BTCHD)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -230,8 +230,8 @@
         <translation>Muestra la lista de direcciones de recepción y etiquetas</translation>
     </message>
     <message>
-        <source>Open a bco: URI or payment request</source>
-        <translation>Abrir un bco: URI o petición de pago</translation>
+        <source>Open a btchd: URI or payment request</source>
+        <translation>Abrir un btchd: URI o petición de pago</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -421,8 +421,8 @@
         <translation>Utilice un directorio de datos personalizado:</translation>
     </message>
     <message>
-        <source>BCO</source>
-        <translation>BCO</translation>
+        <source>BTCHD</source>
+        <translation>BTCHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -498,8 +498,8 @@
         <translation>Experto</translation>
     </message>
     <message>
-        <source>Automatically open the BCO client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Abrir automáticamente el puerto del cliente BCO en el router. Esta opción solo funciona si el router admite UPnP y está activado.</translation>
+        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Abrir automáticamente el puerto del cliente BTCHD en el router. Esta opción solo funciona si el router admite UPnP y está activado.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -597,8 +597,8 @@
         <translation>Desde</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BCO network after a connection is established, but this process has not completed yet.</source>
-        <translation>La información mostrada puede estar desactualizada. Su monedero se sincroniza automáticamente con la red BCO después de que se haya establecido una conexión, pero este proceso aún no se ha completado.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>La información mostrada puede estar desactualizada. Su monedero se sincroniza automáticamente con la red BTCHD después de que se haya establecido una conexión, pero este proceso aún no se ha completado.</translation>
     </message>
     <message>
         <source>Your current spendable balance</source>
@@ -1011,8 +1011,8 @@
         <translation>Copiar la firma actual al portapapeles del sistema</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BCO address</source>
-        <translation>Firmar el mensaje para demostrar que se posee esta dirección BCO</translation>
+        <source>Sign the message to prove you own this BTCHD address</source>
+        <translation>Firmar el mensaje para demostrar que se posee esta dirección BTCHD</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -1031,8 +1031,8 @@
         <translation>&amp;Verificar mensaje</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BCO address</source>
-        <translation>Verificar el mensaje para comprobar que fue firmado con la dirección BCO indicada</translation>
+        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
+        <translation>Verificar el mensaje para comprobar que fue firmado con la dirección BTCHD indicada</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -1115,8 +1115,8 @@
 </translation>
     </message>
     <message>
-        <source>BCO Core</source>
-        <translation>Núcleo de BCO</translation>
+        <source>BTCHD Core</source>
+        <translation>Núcleo de BTCHD</translation>
     </message>
     <message>
         <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>

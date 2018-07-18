@@ -1050,6 +1050,8 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
              * the mostly recently created transactions from newer versions of the wallet.
              */
 
+            // BTCHD Note Dont check address usage
+            /*
             // loop though all outputs
             for (const CTxOut& txout: tx.vout) {
                 // extract addresses and check if they match with an unused keypool key
@@ -1066,7 +1068,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
                         }
                     }
                 }
-            }
+            }*/
 
             CWalletTx wtx(this, ptx);
 
@@ -2612,7 +2614,7 @@ bool CWallet::SignTransaction(CMutableTransaction &tx)
         const CScript& scriptPubKey = mi->second.tx->vout[input.prevout.n].scriptPubKey;
         const CAmount& amount = mi->second.tx->vout[input.prevout.n].nValue;
         SignatureData sigdata;
-        if (!ProduceSignature(TransactionSignatureCreator(this, &txNewConst, nIn, amount, SIGHASH_ALL|SIGHASH_FORKID_BCO), scriptPubKey, sigdata)) {
+        if (!ProduceSignature(TransactionSignatureCreator(this, &txNewConst, nIn, amount, SIGHASH_ALL), scriptPubKey, sigdata)) {
             return false;
         }
         UpdateTransaction(tx, nIn, sigdata);
@@ -3014,7 +3016,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 const CScript& scriptPubKey = coin.txout.scriptPubKey;
                 SignatureData sigdata;
 
-                if (!ProduceSignature(TransactionSignatureCreator(this, &txNewConst, nIn, coin.txout.nValue, SIGHASH_ALL|SIGHASH_FORKID_BCO), scriptPubKey, sigdata))
+                if (!ProduceSignature(TransactionSignatureCreator(this, &txNewConst, nIn, coin.txout.nValue, SIGHASH_ALL), scriptPubKey, sigdata))
                 {
                     strFailReason = _("Signing transaction failed");
                     return false;
@@ -3335,11 +3337,7 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
             return false;
 
         // Top up key pool
-        unsigned int nTargetSize;
-        if (kpSize > 0)
-            nTargetSize = kpSize;
-        else
-            nTargetSize = std::max(gArgs.GetArg("-keypool", DEFAULT_KEYPOOL_SIZE), (int64_t) 0);
+        unsigned int nTargetSize = 1;
 
         // count amount of available keys (internal, external)
         // make sure the keypool of external and internal keys fits the user selected target (-keypool)
@@ -3402,7 +3400,7 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
 
         auto it = setKeyPool.begin();
         nIndex = *it;
-        setKeyPool.erase(it);
+        //setKeyPool.erase(it); // BTCHD Note Do not remove for BTCHD
         if (!walletdb.ReadPool(nIndex, keypool)) {
             throw std::runtime_error(std::string(__func__) + ": read failed");
         }
@@ -3414,7 +3412,7 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
         }
 
         assert(keypool.vchPubKey.IsValid());
-        m_pool_key_to_index.erase(keypool.vchPubKey.GetID());
+        //m_pool_key_to_index.erase(keypool.vchPubKey.GetID()); // BTCHD Note Do not remove for BTCHD
         LogPrintf("keypool reserve %d\n", nIndex);
     }
 }
@@ -3444,6 +3442,8 @@ void CWallet::ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey)
 
 bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
 {
+    internal = false; // BTCHD Note Always get external public key
+
     CKeyPool keypool;
     {
         LOCK(cs_wallet);
@@ -3456,7 +3456,7 @@ bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
             result = GenerateNewKey(walletdb, internal);
             return true;
         }
-        KeepKey(nIndex);
+        //KeepKey(nIndex); // BTCHD Note Dont remove any key
         result = keypool.vchPubKey;
     }
     return true;
@@ -3640,6 +3640,8 @@ std::set<CTxDestination> CWallet::GetAccountAddresses(const std::string& strAcco
 
 bool CReserveKey::GetReservedKey(CPubKey& pubkey, bool internal)
 {
+    internal = false; // BTCHD Note Always get external public key
+
     if (nIndex == -1)
     {
         CKeyPool keypool;
@@ -3658,8 +3660,11 @@ bool CReserveKey::GetReservedKey(CPubKey& pubkey, bool internal)
 
 void CReserveKey::KeepKey()
 {
+    // BTCHD Note Dont remove any key
+    /*
     if (nIndex != -1)
         pwallet->KeepKey(nIndex);
+    */
     nIndex = -1;
     vchPubKey = CPubKey();
 }
@@ -3705,7 +3710,8 @@ void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
         return;
 
     script = rKey;
-    script->reserveScript = CScript() << ToByteVector(pubkey) << OP_CHECKSIG;
+    //script->reserveScript = CScript() << ToByteVector(pubkey) << OP_CHECKSIG;
+    script->reserveScript = GetScriptForDestination(GetDestinationForKey(pubkey, g_address_type)); // BTCHD must uniform script pubkey
 }
 
 void CWallet::LockCoin(const COutPoint& output)
@@ -4237,9 +4243,8 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
     if (key.IsCompressed() && (type == OUTPUT_TYPE_P2SH_SEGWIT || type == OUTPUT_TYPE_BECH32)) {
         CTxDestination witdest = WitnessV0KeyHash(key.GetID());
         CScript witprog = GetScriptForDestination(witdest);
-        // TODO: Felix IsSolvable() return false on active block height on fork block pre.
         // Make sure the resulting program is solvable.
-        //assert(IsSolvable(*this, witprog));
+        assert(IsSolvable(*this, witprog));
         AddCScript(witprog);
     }
 }

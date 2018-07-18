@@ -1,13 +1,13 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: BCO
+Upstream-Name: BTCHD
 Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
- irc://#bitcoinore@freenode.net
-Source: https://github.com/bitcoinoreorg/bitcoinore
+ irc://#btchd@freenode.net
+Source: https://github.com/bitcoinoreorg/btchd
 
 Files: *
-Copyright: 2017-2018, BCO Core Developers
+Copyright: 2017-2018, BTCHD Core Developers
 License: Expat
-Comment: The BCO Core Developers encompasses the current developers listed on bitcoinore.org,
+Comment: The BTCHD Core Developers encompasses the current developers listed on btchd.net,
          as well as the numerous contributors to the project.
 
 Files: debian/*
@@ -87,7 +87,7 @@ Comment: Modifications of Stephan Hutchings Typicons
 
 Files: src/qt/res/icons/about.png
        src/qt/res/icons/bitcoin.*
-       share/pixmaps/bco*
+       share/pixmaps/btchd*
        src/qt/res/src/bitcoin.svg
 Copyright: Bitboy, Jonas Schnelli
 License: public-domain

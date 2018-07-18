@@ -6,6 +6,7 @@
 #include <miner.h>
 
 #include <amount.h>
+#include <base58.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <coins.h>
@@ -52,10 +53,6 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     if (nOldTime < nNewTime)
         pblock->nTime = nNewTime;
 
-    // Updating time can change work required on testnet:
-    if (consensusParams.fPowAllowMinDifficultyBlocks)
-        pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, consensusParams);
-
     return nNewTime - nOldTime;
 }
 
@@ -68,7 +65,7 @@ BlockAssembler::BlockAssembler(const CChainParams& params, const Options& option
 {
     blockMinFeeRate = options.blockMinFeeRate;
     // Limit weight to between 4K and MaxBlockSize-4K for sanity:
-    unsigned int nAbsMaxSize = MaxBlockSize(std::numeric_limits<uint64_t>::max());
+    unsigned int nAbsMaxSize = MAX_BLOCK_WEIGHT;
     nBlockMaxWeight = std::max<size_t>(4000, std::min<size_t>(nAbsMaxSize - 4000, options.nBlockMaxWeight));
 }
 
@@ -159,13 +156,25 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockWeight = nBlockWeight;
 
     // Create coinbase transaction.
+    CAmount blockReward = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
+    coinbaseTx.vout.resize(2);
     coinbaseTx.vin[0].prevout.SetNull();
-    coinbaseTx.vout.resize(1);
-    coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+    coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
+    if (nHeight <= chainparams.GetConsensus().BtchdFundPreMingingHeight) {
+        // Fund pre-mining
+        coinbaseTx.vout[0].nValue = 0;
+    } else if (nHeight <= chainparams.GetConsensus().BtchdNoMortgageHeight) {
+        // No mortgage
+        coinbaseTx.vout[0].nValue = blockReward;
+    } else {
+        // Coming soon
+        coinbaseTx.vout[0].nValue = blockReward * (100 - chainparams.GetConsensus().BtchdFundRoyaltyPercentOnLowMortgage) / 100;
+    }
+    coinbaseTx.vout[1].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BtchdFundAddress));
+    coinbaseTx.vout[1].nValue = blockReward - coinbaseTx.vout[0].nValue;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
     pblocktemplate->vTxFees[0] = -nFees;
@@ -175,7 +184,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
     pblock->nNonce         = 0;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
@@ -208,7 +217,7 @@ bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost
     // TODO: switch to weight-based accounting for packages instead of vsize-based accounting.
     if (nBlockWeight + WITNESS_SCALE_FACTOR * packageSize >= nBlockMaxWeight)
         return false;
-    if (nBlockSigOpsCost + packageSigOpsCost >= MaxBlockSigops(nHeight))
+    if (nBlockSigOpsCost + packageSigOpsCost >= MAX_BLOCK_SIGOPS_COST)
         return false;
     return true;
 }

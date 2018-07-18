@@ -23,7 +23,7 @@ QT_BEGIN_NAMESPACE
 class QStringList;
 QT_END_NAMESPACE
 
-/** Local BCO plot console. */
+/** Local BTCHD plot console. */
 class PlotConsole : public QWidget
 {
     Q_OBJECT

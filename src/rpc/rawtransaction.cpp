@@ -120,7 +120,7 @@ UniValue getrawtransaction(const JSONRPCRequest& request)
             "         \"reqSigs\" : n,            (numeric) The required sigs\n"
             "         \"type\" : \"pubkeyhash\",  (string) The type, eg 'pubkeyhash'\n"
             "         \"addresses\" : [           (json array of string)\n"
-            "           \"address\"        (string) BCO address\n"
+            "           \"address\"        (string) BTCHD address\n"
             "           ,...\n"
             "         ]\n"
             "       }\n"
@@ -337,7 +337,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "     ]\n"
             "2. \"outputs\"               (object, required) a json object with outputs\n"
             "    {\n"
-            "      \"address\": x.xxx,    (numeric or string, required) The key is the BCO address, the numeric value (can be string) is the " + CURRENCY_UNIT + " amount\n"
+            "      \"address\": x.xxx,    (numeric or string, required) The key is the BTCHD address, the numeric value (can be string) is the " + CURRENCY_UNIT + " amount\n"
             "      \"data\": \"hex\"      (string, required) The key is \"data\", the value is hex encoded data\n"
             "      ,...\n"
             "    }\n"
@@ -422,7 +422,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         } else {
             CTxDestination destination = DecodeDestination(name_);
             if (!IsValidDestination(destination)) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid BCO address: ") + name_);
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid BTCHD address: ") + name_);
             }
 
             if (!destinations.insert(destination).second) {
@@ -487,7 +487,7 @@ UniValue decoderawtransaction(const JSONRPCRequest& request)
             "         \"reqSigs\" : n,            (numeric) The required sigs\n"
             "         \"type\" : \"pubkeyhash\",  (string) The type, eg 'pubkeyhash'\n"
             "         \"addresses\" : [           (json array of string)\n"
-            "           \"12tvKAXCxZjSmdNbao16dKXC8tRWfcF5oc\"   (string) BCO address\n"
+            "           \"12tvKAXCxZjSmdNbao16dKXC8tRWfcF5oc\"   (string) BTCHD address\n"
             "           ,...\n"
             "         ]\n"
             "       }\n"
@@ -534,7 +534,7 @@ UniValue decodescript(const JSONRPCRequest& request)
             "  \"type\":\"type\", (string) The output type\n"
             "  \"reqSigs\": n,    (numeric) The required signatures\n"
             "  \"addresses\": [   (json array of string)\n"
-            "     \"address\"     (string) BCO address\n"
+            "     \"address\"     (string) BTCHD address\n"
             "     ,...\n"
             "  ],\n"
             "  \"p2sh\",\"address\" (string) address of P2SH script wrapping this redeem script (not returned if the script is already a P2SH).\n"
@@ -662,7 +662,7 @@ UniValue combinerawtransaction(const JSONRPCRequest& request)
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {
             if (txv.vin.size() > i) {
-                sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount, STANDARD_SCRIPT_VERIFY_FLAGS), sigdata, DataFromTransaction(txv, i));
+                sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(txv, i));
             }
         }
 
@@ -794,9 +794,6 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
     }
 #endif
 
-    // God mode
-    const bool godMode = Params().GetConsensus().GodMode(chainActive.Height() + 1);
-
     // Add previous txouts given in the RPC call:
     if (!request.params[1].isNull()) {
         UniValue prevTxs = request.params[1].get_array();
@@ -845,55 +842,32 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
             // if redeemScript given and not using the local wallet (private keys
             // given), add redeemScript to the tempKeystore so it can be signed:
             if (fGivenKeys && (scriptPubKey.IsPayToScriptHash() || scriptPubKey.IsPayToWitnessScriptHash())) {
-                if (godMode) {
-                    RPCTypeCheckObj(prevOut,
-                        {
-                            {"txid", UniValueType(UniValue::VSTR)},
-                            {"vout", UniValueType(UniValue::VNUM)},
-                            {"scriptPubKey", UniValueType(UniValue::VSTR)}, 
-                        });
-                } else {
-                    RPCTypeCheckObj(prevOut,
-                        {
-                            {"txid", UniValueType(UniValue::VSTR)},
-                            {"vout", UniValueType(UniValue::VNUM)},
-                            {"scriptPubKey", UniValueType(UniValue::VSTR)},
-                            {"redeemScript", UniValueType(UniValue::VSTR)},
-                        });
-                    UniValue v = find_value(prevOut, "redeemScript");
-                    if (!v.isNull()) {
-                        std::vector<unsigned char> rsData(ParseHexV(v, "redeemScript"));
-                        CScript redeemScript(rsData.begin(), rsData.end());
-                        tempKeystore.AddCScript(redeemScript);
-                        // Automatically also add the P2WSH wrapped version of the script (to deal with P2SH-P2WSH).
-                        tempKeystore.AddCScript(GetScriptForWitness(redeemScript));
-                    }
+                RPCTypeCheckObj(prevOut,
+                    {
+                        {"txid", UniValueType(UniValue::VSTR)},
+                        {"vout", UniValueType(UniValue::VNUM)},
+                        {"scriptPubKey", UniValueType(UniValue::VSTR)},
+                        {"redeemScript", UniValueType(UniValue::VSTR)},
+                    });
+                UniValue v = find_value(prevOut, "redeemScript");
+                if (!v.isNull()) {
+                    std::vector<unsigned char> rsData(ParseHexV(v, "redeemScript"));
+                    CScript redeemScript(rsData.begin(), rsData.end());
+                    tempKeystore.AddCScript(redeemScript);
+                    // Automatically also add the P2WSH wrapped version of the script (to deal with P2SH-P2WSH).
+                    tempKeystore.AddCScript(GetScriptForWitness(redeemScript));
                 }
             }
         }
     }
 
 #ifdef ENABLE_WALLET
-    const CKeyStore* pkeystore = ((fGivenKeys || !pwallet) ? (&tempKeystore) : pwallet);
-    if (godMode && pkeystore == &tempKeystore) {
-        // Add god mode signature key to tempKeystore
-        std::vector<unsigned char> data;
-        data = ParseHex(Params().GetConsensus().BCOGodSignaturePubkey);
-        CPubKey pubKey(data);
-
-        CKey vchSecret;
-        if (!pwallet->GetKey(pubKey.GetID(), vchSecret)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "BCO god mode signature private key for pubkey " + pubKey.GetID().GetHex() + " is not known");
-        }
-        tempKeystore.AddKey(vchSecret);
-    }
+    const CKeyStore& keystore = ((fGivenKeys || !pwallet) ? tempKeystore : *pwallet);
 #else
-    const CKeyStore* pkeystore = &tempKeystore;
+    const CKeyStore& keystore = tempKeystore;
 #endif
 
-    const CKeyStore& keystore = *pkeystore;
-
-    int nHashType = SIGHASH_ALL | SIGHASH_FORKID_BCO | (godMode ? SIGHASH_FORKID_BCOGOD : 0); // default
+    int nHashType = SIGHASH_ALL;
     if (!request.params[3].isNull()) {
         static std::map<std::string, int> mapSigHashValues = {
             {std::string("ALL"), int(SIGHASH_ALL)},
@@ -902,49 +876,18 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
             {std::string("NONE|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_ANYONECANPAY)},
             {std::string("SINGLE"), int(SIGHASH_SINGLE)},
             {std::string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY)},
-
-            // BCO
-            {std::string("ALL|FORKID"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO)},
-            {std::string("ALL|FORKID|ANYONECANPAY"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY)},
-            {std::string("NONE|FORKID"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO)},
-            {std::string("NONE|FORKID|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY)},
-            {std::string("SINGLE|FORKID"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO)},
-            {std::string("SINGLE|FORKID|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_ANYONECANPAY)},
-
-            // BCO GOD
-            {std::string("ALL|FORKID|GOD"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD)},
-            {std::string("ALL|FORKID|GOD|ANYONECANPAY"), int(SIGHASH_ALL|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY)},
-            {std::string("NONE|FORKID|GOD"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO)},
-            {std::string("NONE|FORKID|GOD|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY)},
-            {std::string("SINGLE|FORKID|GOD"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD)},
-            {std::string("SINGLE|FORKID|GOD|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_FORKID_BCO|SIGHASH_FORKID_BCOGOD|SIGHASH_ANYONECANPAY)},
         };
         std::string strHashType = request.params[3].get_str();
         if (mapSigHashValues.count(strHashType)) {
             nHashType = mapSigHashValues[strHashType];
-            if ((nHashType & SIGHASH_FORKID_BCO) == 0) {
-                throw JSONRPCError(RPC_INVALID_PARAMETER,"Signature must use FORKID");
-            }
-            if ((nHashType & SIGHASH_FORKID_BCOGOD) != 0 && (nHashType & SIGHASH_FORKID_BCO) == 0) {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "Signature God must use FORKID");
-            }
         }
         else
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid sighash param");
     }
 
-    bool fHashSingle = ((nHashType & ~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO | SIGHASH_FORKID_BCOGOD)) == SIGHASH_SINGLE);
+    bool fHashSingle = ((nHashType & ~(SIGHASH_ANYONECANPAY)) == SIGHASH_SINGLE);
 
     unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
-    if (nHashType&SIGHASH_FORKID_BCO) {
-        // add for id
-        flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
-        flags |= (nHashType&SIGHASH_FORKID_BCOGOD) ? SCRIPT_ENABLE_SIGHASH_FORKID_GOD : 0;
-    } else {
-        // remove fork id
-        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID;
-        flags &= ~SCRIPT_ENABLE_SIGHASH_FORKID_GOD;
-    }
 
     // Script verification errors
     UniValue vErrors(UniValue::VARR);
@@ -968,13 +911,12 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
         if (!fHashSingle || (i < mtx.vout.size()))
             ProduceSignature(MutableTransactionSignatureCreator(&keystore, &mtx, i, amount, nHashType), prevPubKey, sigdata);
 
-        if (!godMode)
-            sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount, flags), sigdata, DataFromTransaction(mtx, i));
+        sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(mtx, i));
 
         UpdateTransaction(mtx, i, sigdata);
 
         ScriptError serror = SCRIPT_ERR_OK;
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, TransactionSignatureChecker(&txConst, i, amount, flags), &serror)) {
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, TransactionSignatureChecker(&txConst, i, amount), &serror)) {
             if (serror == SCRIPT_ERR_INVALID_STACK_OPERATION) {
                 // Unable to sign input and verification failed (possible attempt to partially sign).
                 TxInErrorToJSON(txin, vErrors, "Unable to sign input, invalid stack size (possibly missing key)");

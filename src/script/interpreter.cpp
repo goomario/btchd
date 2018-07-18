@@ -17,9 +17,6 @@
 
 typedef std::vector<unsigned char> valtype;
 
-// BCO paramters
-const Consensus::Params *pGlobalConsensusParams = nullptr;
-
 namespace {
 
 inline bool set_success(ScriptError* ret)
@@ -37,10 +34,6 @@ inline bool set_error(ScriptError* ret, const ScriptError serror)
 }
 
 } // namespace
-
-void BCOInitInterpreterParams(const Consensus::Params *params) {
-    pGlobalConsensusParams = params; 
-}
 
 bool CastToBool(const valtype& vch)
 {
@@ -200,7 +193,7 @@ bool static IsDefinedHashtypeSignature(const valtype &vchSig) {
     if (vchSig.size() == 0) {
         return false;
     }
-    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_ANYONECANPAY | SIGHASH_FORKID_BCO | SIGHASH_FORKID_BCOGOD));
+    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_ANYONECANPAY));
     if (nHashType < SIGHASH_ALL || nHashType > SIGHASH_SINGLE)
         return false;
 
@@ -897,13 +890,6 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     // Subset of script starting at the most recent codeseparator
                     CScript scriptCode(pbegincodehash, pend);
 
-                    // Drop the signature in scripts when SIGHASH_FORKID is not used.
-                    if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
-                        if (!vchSig.empty() && !(vchSig.back() & SIGHASH_FORKID_BCO)) {
-                            return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
-                        }
-                    }
-
                     // Drop the signature in pre-segwit scripts but not segwit scripts
                     if (sigversion == SIGVERSION_BASE) {
                         scriptCode.FindAndDelete(CScript(vchSig));
@@ -969,11 +955,6 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     for (int k = 0; k < nSigsCount; k++)
                     {
                         valtype& vchSig = stacktop(-isig-k);
-                        if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
-                            if (!vchSig.empty() && !(vchSig.back() & SIGHASH_FORKID_BCO)) {
-                                return set_error(serror, SCRIPT_ERR_CHECKSIGVERIFY);
-                            }
-                        }
                         if (sigversion == SIGVERSION_BASE) {
                             scriptCode.FindAndDelete(CScript(vchSig));
                         }
@@ -1199,7 +1180,7 @@ PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo)
 }
 
 uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, 
-    SigVersion sigversion, const PrecomputedTransactionData* cache, unsigned int forkFlags)
+    SigVersion sigversion, const PrecomputedTransactionData* cache)
 {
     assert(nIn < txTo.vin.size());
 
@@ -1245,11 +1226,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         ss << txTo.nLockTime;
         // Sighash type
         ss << nHashType;
-        if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) && (nHashType & SIGHASH_FORKID_BCOGOD)) {
-            ss << std::string("bcogod");
-        } else if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID) && (nHashType & SIGHASH_FORKID_BCO)) {
-            ss << std::string("bco");
-        }
+        ss << std::string("btchd");
 
         return ss.GetHash();
     }
@@ -1270,11 +1247,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
-    if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) && (nHashType & SIGHASH_FORKID_BCOGOD)) {
-        ss << std::string("bcogod");
-    } else if ((forkFlags & SCRIPT_ENABLE_SIGHASH_FORKID) && (nHashType & SIGHASH_FORKID_BCO)) {
-        ss << std::string("bco");
-    }
+    ss << std::string("btchd");
 
     return ss.GetHash();
 }
@@ -1297,7 +1270,7 @@ bool TransactionSignatureChecker::CheckSig(const std::vector<unsigned char>& vch
     int nHashType = vchSig.back();
     vchSig.pop_back();
 
-    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata, GetForkFlags());
+    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata);
 
     if (!VerifySignature(vchSig, pubkey, sighash))
         return false;
@@ -1449,36 +1422,6 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
     bool hadWitness = false;
 
     set_error(serror, SCRIPT_ERR_UNKNOWN_ERROR);
-    // If FORKID is enabled, we also ensure strict encoding.
-    if (flags & SCRIPT_ENABLE_SIGHASH_FORKID) {
-        flags |= SCRIPT_VERIFY_STRICTENC;
-    }
-
-    // BCO God Mode
-    if (flags & SCRIPT_ENABLE_SIGHASH_FORKID_GOD) {
-        assert(flags & SCRIPT_ENABLE_SIGHASH_FORKID);
-        std::vector<std::vector<unsigned char> > stack, stackCopy;
-        if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
-            // serror is set
-            return false;
-        if (flags & SCRIPT_VERIFY_P2SH)
-            stackCopy = stack;
-        std::vector<unsigned char> data;
-        data = ParseHex(pGlobalConsensusParams->BCOGodSignaturePubkey);
-
-        CPubKey pubKey(data);
-        valtype vchSig = stack.size() < 2 ? valtype() : stack[stack.size() - 2];
-
-        bool fSuccess = checker.CheckSig(vchSig, data, scriptPubKey, SIGVERSION_BASE);
-
-        if (!fSuccess)
-            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
-        if (stack.empty())
-            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
-        if (CastToBool(stack.back()) == false)
-            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
-        return set_success(serror);
-    }
 
     if ((flags & SCRIPT_VERIFY_SIGPUSHONLY) != 0 && !scriptSig.IsPushOnly()) {
         return set_error(serror, SCRIPT_ERR_SIG_PUSHONLY);

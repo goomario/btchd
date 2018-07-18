@@ -56,12 +56,9 @@ enum
     bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY = (1U << 10), // enable CHECKSEQUENCEVERIFY (BIP112)
     bitcoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS             = (1U << 11), // enable WITNESS (BIP141)
 
-    bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID            = (1U << 18), // enable BCO
-    bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID_GOD        = (1U << 19), // enable BCO in god mode
     bitcoinconsensus_SCRIPT_FLAGS_VERIFY_ALL                 = bitcoinconsensus_SCRIPT_FLAGS_VERIFY_P2SH | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_DERSIG |
                                                                bitcoinconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY |
-                                                               bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS |
-                                                               bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID | bitcoinconsensus_SCRIPT_ENABLE_SIGHASH_FORKID_GOD
+                                                               bitcoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | bitcoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS
 };
 
 /// Returns 1 if the input nIn of the serialized transaction pointed to by
