@@ -109,7 +109,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 3) {
+    if (request.params.size() != 2) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
