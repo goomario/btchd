@@ -564,7 +564,7 @@ static const CRPCCommand commands[] =
 { //  category              name                      actor (function)                  argNames
   //  --------------------- ------------------------  -----------------------           ----------
     { "poc",              "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "poc",              "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "secretPhrase"} },
+    { "poc",              "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId" } },
     { "poc",              "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase"} },
     { "poc",              "getConstants",             &poc::rpc::getConstants,          { } },
     { "poc",              "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
