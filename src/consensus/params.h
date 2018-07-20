@@ -47,15 +47,15 @@ struct BIP9Deployment {
  * Parameters that influence chain consensus.
  */
 struct Params {
-    /** BTCHD Fund address */
+    /** BitcoinHD Fund address */
     std::string BtchdFundAddress;
-    /** BTCHD fund pre-mining height */
+    /** BitcoinHD fund pre-mining height */
     int BtchdFundPreMingingHeight;
-    /** BTCHD fund royalty percent */
+    /** BitcoinHD fund royalty percent */
     int BtchdFundRoyaltyPercent;
-    /** BTCHD fund royalty percent on low mortgage */
+    /** BitcoinHD fund royalty percent on low mortgage */
     int BtchdFundRoyaltyPercentOnLowMortgage;
-    /** BTCHD miner no mortgage height before */
+    /** BitcoinHD miner no mortgage height before */
     int BtchdNoMortgageHeight;
 
     uint256 hashGenesisBlock;

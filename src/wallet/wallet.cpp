@@ -1050,7 +1050,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
              * the mostly recently created transactions from newer versions of the wallet.
              */
 
-            // BTCHD Note Dont check address usage
+            // BitcoinHD Note Dont check address usage
             /*
             // loop though all outputs
             for (const CTxOut& txout: tx.vout) {
@@ -3400,7 +3400,7 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
 
         auto it = setKeyPool.begin();
         nIndex = *it;
-        //setKeyPool.erase(it); // BTCHD Note Do not remove for BTCHD
+        //setKeyPool.erase(it); // BitcoinHD Note Do not remove for BitcoinHD
         if (!walletdb.ReadPool(nIndex, keypool)) {
             throw std::runtime_error(std::string(__func__) + ": read failed");
         }
@@ -3412,7 +3412,7 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
         }
 
         assert(keypool.vchPubKey.IsValid());
-        //m_pool_key_to_index.erase(keypool.vchPubKey.GetID()); // BTCHD Note Do not remove for BTCHD
+        //m_pool_key_to_index.erase(keypool.vchPubKey.GetID()); // BitcoinHD Note Do not remove for BitcoinHD
         LogPrintf("keypool reserve %d\n", nIndex);
     }
 }
@@ -3442,7 +3442,7 @@ void CWallet::ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey)
 
 bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
 {
-    internal = false; // BTCHD Note Always get external public key
+    internal = false; // BitcoinHD Note Always get external public key
 
     CKeyPool keypool;
     {
@@ -3456,7 +3456,7 @@ bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
             result = GenerateNewKey(walletdb, internal);
             return true;
         }
-        //KeepKey(nIndex); // BTCHD Note Dont remove any key
+        //KeepKey(nIndex); // BitcoinHD Note Dont remove any key
         result = keypool.vchPubKey;
     }
     return true;
@@ -3640,7 +3640,7 @@ std::set<CTxDestination> CWallet::GetAccountAddresses(const std::string& strAcco
 
 bool CReserveKey::GetReservedKey(CPubKey& pubkey, bool internal)
 {
-    internal = false; // BTCHD Note Always get external public key
+    internal = false; // BitcoinHD Note Always get external public key
 
     if (nIndex == -1)
     {
@@ -3660,7 +3660,7 @@ bool CReserveKey::GetReservedKey(CPubKey& pubkey, bool internal)
 
 void CReserveKey::KeepKey()
 {
-    // BTCHD Note Dont remove any key
+    // BitcoinHD Note Dont remove any key
     /*
     if (nIndex != -1)
         pwallet->KeepKey(nIndex);
@@ -3711,7 +3711,7 @@ void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
 
     script = rKey;
     //script->reserveScript = CScript() << ToByteVector(pubkey) << OP_CHECKSIG;
-    script->reserveScript = GetScriptForDestination(GetDestinationForKey(pubkey, g_address_type)); // BTCHD must uniform script pubkey
+    script->reserveScript = GetScriptForDestination(GetDestinationForKey(pubkey, g_address_type)); // BitcoinHD must uniform script pubkey
 }
 
 void CWallet::LockCoin(const COutPoint& output)
