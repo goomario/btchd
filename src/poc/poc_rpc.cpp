@@ -22,8 +22,31 @@
 #include <sstream>
 #include <iomanip>
 
-
 void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control);
+
+static CAmount GetTxReceivedAmount(CWallet* const pwallet, const CWalletTx& wtx, const std::string& addr, int nMinDepth, bool fLong, const isminefilter& filter)
+{
+    CAmount nFee;
+    std::string strSentAccount;
+    std::list<COutputEntry> listReceived;
+    std::list<COutputEntry> listSent;
+    CAmount totalAmount = 0;
+
+    wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount, filter);
+
+    // Received
+    if (listReceived.size() > 0)
+    {
+        for (const COutputEntry& r : listReceived)
+        {   
+            if (EncodeDestination(r.destination) == addr) {
+                totalAmount += r.amount;
+            }
+        }
+    }
+
+    return totalAmount;
+}
 
 namespace poc {
 namespace rpc {
@@ -238,7 +261,7 @@ static void FillBlockInfo(CBlockIndex* pBlockIndex, UniValue& result)
     for (const auto& tx : block.vtx)
     {
         if (tx->IsCoinBase()) {
-            coinbaseReward = tx->GetValueOut();
+            coinbaseReward = tx->vout[0].nValue;
         }
         txs.push_back(tx->GetHash().GetHex());
     }
@@ -557,6 +580,71 @@ static UniValue checkAddressValid(const JSONRPCRequest& request)
     res.pushKV("valid", IsValidDestination(dest) );
     return res;
 }
+
+static UniValue getTransactionAmount(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "getTransactionAmount parameter help\n"
+        );
+    }
+    if (request.params.size() != 3) {
+        throw std::runtime_error(
+            "getTransactionAmount parameter size != 3\n"
+        );
+    }
+    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+    ObserveSafeMode();
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    uint256 hash;
+    hash.SetHex(request.params[0].get_str());
+    std::string addr = request.params[1].get_str();
+    int minDepth = std::atoi(request.params[2].get_str().c_str());
+
+    isminefilter filter = ISMINE_SPENDABLE;
+
+    UniValue entry(UniValue::VOBJ);
+    auto it = pwallet->mapWallet.find(hash);
+    if (it == pwallet->mapWallet.end()) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid or non-wallet transaction id");
+    }
+    const CWalletTx& wtx = it->second;
+    if (wtx.IsCoinBase())
+        return NullUniValue;
+
+    if (wtx.IsCoinBase()) {
+        entry.push_back(Pair("amount", "0"));
+        entry.push_back(Pair("code", 1));
+        return entry;
+    }
+
+    int txDepth = wtx.GetDepthInMainChain();
+    if (txDepth < minDepth) {
+        entry.push_back(Pair("amount", "0"));
+        entry.push_back(Pair("code", 2));
+        entry.push_back(Pair("depth", txDepth));
+        return entry;
+    }
+
+    CAmount amount = GetTxReceivedAmount(pwallet, wtx, addr, minDepth, false, filter);
+
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(8) << double(amount) / COIN;
+
+    entry.push_back(Pair("amount", ss.str()));
+    entry.push_back(Pair("code", 0));
+
+    return entry;
+}
 }// namespace rpc
 }// namespace poc
 
@@ -576,6 +664,7 @@ static const CRPCCommand commands[] =
     { "poc",              "sendMoney",                &poc::rpc::sendMoney,             { "recipient", "recipaddr", "feeNQT" , "amountNQT"} },
     { "poc",              "getGuaranteedBalance",     &poc::rpc::getGuaranteedBalance,  { "account", "numberOfConfirmations" } },
     { "poc",              "checkAddressValid",        &poc::rpc::checkAddressValid,     { "addr" } },
+    { "poc",              "getTransactionAmount",     &poc::rpc::getTransactionAmount,  { "txid", "addr", "depth" } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)
