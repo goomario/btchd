@@ -971,6 +971,8 @@ if test x$use_pkgconfig = xyes; then
       else
           AC_DEFINE_UNQUOTED([ENABLE_ZMQ],[0],[Define to 1 to enable ZMQ functions])
       fi
+
+      PKG_CHECK_MODULES([SQLITE3], [sqlite3 > 3.0],,[AC_MSG_ERROR(sqlite3  not found.)])
     ]
   )
 else
@@ -1016,6 +1018,9 @@ else
     BITCOIN_QT_CHECK([AC_CHECK_LIB([qrencode], [main],[QR_LIBS=-lqrencode], [have_qrencode=no])])
     BITCOIN_QT_CHECK([AC_CHECK_HEADER([qrencode.h],, have_qrencode=no)])
   fi
+
+  AC_CHECK_HEADER([sqlite3.h],, AC_MSG_ERROR(sqlite3 headers missing),)
+  AC_CHECK_LIB([sqlite3],     [main],SQLITE3_LIBS=-lsqlite3, AC_MSG_ERROR(sqlite3 missing))
 fi
 
 save_CXXFLAGS="${CXXFLAGS}"
@@ -1295,6 +1300,7 @@ AC_SUBST(EVENT_PTHREADS_LIBS)
 AC_SUBST(ZMQ_LIBS)
 AC_SUBST(PROTOBUF_LIBS)
 AC_SUBST(QR_LIBS)
+AC_SUBST(SQLITE3_LIBS)
 AC_CONFIG_FILES([Makefile src/Makefile doc/man/Makefile share/setup.nsi share/qt/Info.plist test/config.ini])
 AC_CONFIG_FILES([contrib/devtools/split-debug.sh],[chmod +x contrib/devtools/split-debug.sh])
 AC_CONFIG_FILES([doc/Doxyfile])

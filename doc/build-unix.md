@@ -104,6 +104,11 @@ ZMQ dependencies (provides ZMQ API 4.x):
 
     sudo apt-get install libzmq3-dev
 
+Sqlite3 dependencies:
+
+    sudo apt-get install libsqlite3-dev
+
+
 Dependencies for the GUI: Ubuntu & Debian
 -----------------------------------------
 

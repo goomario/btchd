@@ -5,13 +5,16 @@
 #include <coins.h>
 
 #include <consensus/consensus.h>
+#include <pubkey.h>
 #include <random.h>
+#include <script/standard.h>
 
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
+CAmount CCoinsView::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const { return 0L; }
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
 {
@@ -28,6 +31,7 @@ void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
+CAmount CCoinsViewBacked::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const { return base->GetAccountAmount(nAccountId, nHeight); }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
@@ -45,6 +49,7 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
     if (!base->GetCoin(outpoint, tmp))
         return cacheCoins.end();
     CCoinsMap::iterator ret = cacheCoins.emplace(std::piecewise_construct, std::forward_as_tuple(outpoint), std::forward_as_tuple(std::move(tmp))).first;
+    ret->second.aCoin.Update(ret->second.coin);
     if (ret->second.coin.IsSpent()) {
         // The parent only has an empty entry for this outpoint; we can consider our
         // version as fresh.
@@ -63,7 +68,7 @@ bool CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return false;
 }
 
-void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possible_overwrite) {
+void CCoinsViewCache::AddCoin(int nHeight, const COutPoint &outpoint, Coin&& coin, bool possible_overwrite) {
     assert(!coin.IsSpent());
     if (coin.out.scriptPubKey.IsUnspendable()) return;
     CCoinsMap::iterator it;
@@ -81,6 +86,10 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
     }
     it->second.coin = std::move(coin);
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
+    it->second.aCoin.Update(it->second.coin);
+    if (it->second.coin.IsSpent()) {
+        it->second.aCoin.nHeightSpent = nHeight;
+    }
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 }
 
@@ -91,11 +100,11 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
+        cache.AddCoin(nHeight, COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
     }
 }
 
-bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout) {
+bool CCoinsViewCache::SpendCoin(int nHeightSpent, const COutPoint &outpoint, Coin* moveout) {
     CCoinsMap::iterator it = FetchCoin(outpoint);
     if (it == cacheCoins.end()) return false;
     cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
@@ -107,6 +116,7 @@ bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout) {
     } else {
         it->second.flags |= CCoinsCacheEntry::DIRTY;
         it->second.coin.Clear();
+        it->second.aCoin.nHeightSpent = nHeightSpent;
     }
     return true;
 }
@@ -159,6 +169,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
                 entry.coin = std::move(it->second.coin);
                 cachedCoinsUsage += entry.coin.DynamicMemoryUsage();
                 entry.flags = CCoinsCacheEntry::DIRTY;
+                entry.aCoin = it->second.aCoin;
                 // We can mark it FRESH in the parent if it was FRESH in the child
                 // Otherwise it might have just been flushed from the parent's cache
                 // and already exist in the grandparent
@@ -188,6 +199,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
                 itUs->second.coin = std::move(it->second.coin);
                 cachedCoinsUsage += itUs->second.coin.DynamicMemoryUsage();
                 itUs->second.flags |= CCoinsCacheEntry::DIRTY;
+                itUs->second.aCoin = it->second.aCoin;
                 // NOTE: It is possible the child has a FRESH flag here in
                 // the event the entry we found in the parent is pruned. But
                 // we must not copy that FRESH flag to the parent as that
@@ -198,6 +210,17 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     }
     hashBlock = hashBlockIn;
     return true;
+}
+
+CAmount CCoinsViewCache::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const {
+    CAmount nCacheAmountDiff = 0L;
+    for (CCoinsMap::iterator it = cacheCoins.begin(); it != cacheCoins.end(); it++) {
+        if (it->second.aCoin.nAccountId == nAccountId) {
+            nCacheAmountDiff += it->second.aCoin.nAmount;
+        }
+    }
+
+    return nCacheAmountDiff + base->GetAccountAmount(nAccountId, nHeight);
 }
 
 bool CCoinsViewCache::Flush() {
@@ -256,4 +279,74 @@ const Coin& AccessByTxid(const CCoinsViewCache& view, const uint256& txid)
         ++iter.n;
     }
     return coinEmpty;
+}
+
+namespace {
+
+class CAccountIdVisitor : public boost::static_visitor<bool>
+{
+private:
+    uint64_t *nAccountId;
+
+public:
+    explicit CAccountIdVisitor(uint64_t *nAccountIdIn) { nAccountId = nAccountIdIn; }
+
+    bool operator()(const CNoDestination&) const {
+        *nAccountId = 0L;
+        return false;
+    }
+
+    bool operator()(const CKeyID &keyID) const {
+        return ToId(keyID.begin(), keyID.end());
+    }
+
+    bool operator()(const CScriptID &scriptID) const {
+        return ToId(scriptID.begin(), scriptID.end());
+    }
+
+    bool operator()(const WitnessV0KeyHash &id) const {
+        return ToId(id.begin(), id.end());
+    }
+
+    bool operator()(const WitnessV0ScriptHash &id) const {
+        return ToId(id.begin(), id.end());
+    }
+
+    bool operator()(const WitnessUnknown& id) const {
+       *nAccountId = 0L;
+        return false;
+    }
+
+private:
+    template <typename T>
+    bool ToId(const T begin, const T end) const
+    {
+        if (end - begin >= 8) {
+            *nAccountId = ((uint64_t)begin[0]) |
+                          ((uint64_t)begin[1]) << 8 |
+                          ((uint64_t)begin[2]) << 16 |
+                          ((uint64_t)begin[3]) << 24 |
+                          ((uint64_t)begin[4]) << 32 |
+                          ((uint64_t)begin[5]) << 40 |
+                          ((uint64_t)begin[6]) << 48 |
+                          ((uint64_t)begin[7]) << 56;
+            return true;
+        } else {
+            *nAccountId = 0L;
+            return false;
+        }
+    }
+};
+
+}
+
+void AccountCoin::Update(const Coin& coinIn)
+{
+    CTxDestination dest;
+    if (ExtractDestination(coinIn.out.scriptPubKey, dest)) {
+        boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
+    }
+
+    nAmount = coinIn.out.nValue;
+    nHeight = static_cast<int>(coinIn.nHeight);
 }

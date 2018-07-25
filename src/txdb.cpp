@@ -7,14 +7,16 @@
 
 #include <chainparams.h>
 #include <hash.h>
+#include <init.h>
 #include <random.h>
-#include <pow.h>
 #include <uint256.h>
 #include <util.h>
 #include <ui_interface.h>
-#include <init.h>
+
+#include <map>
 
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <boost/thread.hpp>
 
@@ -35,7 +37,7 @@ namespace {
 struct CoinEntry {
     COutPoint* outpoint;
     char key;
-    explicit CoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN)  {}
+    explicit CoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -52,10 +54,122 @@ struct CoinEntry {
     }
 };
 
+struct AccountCoinEntry : public CoinEntry {
+    AccountCoin* aCoin;
+    AccountCoinEntry(const COutPoint* _outpoint, const AccountCoin* _aCoin) : CoinEntry(_outpoint), aCoin(const_cast<AccountCoin*>(_aCoin)) {}
+};
+
+class CAccountDBBatch : public CDBBatch, public CSqlDBBatch
+{
+public:
+    const static std::string DDL_SQL;
+    const static std::string BATCH_SQL;
+
+    CAccountDBBatch(const CDBWrapper &_levelDBParent, const CSqlDBWrapper &_sqlDBParent)
+        : CDBBatch(_levelDBParent), CSqlDBBatch(_sqlDBParent, BATCH_SQL) { }
+
+    void Clear()
+    {
+        CDBBatch::Clear();
+        CSqlDBBatch::Clear();
+    }
+
+    template <typename K, typename V>
+    void Write(const K& key, const V& value)
+    {
+        CDBBatch::Write(key, value);
+        sqldb_stmt_write(key, value);
+    }
+
+    template <typename K>
+    void Erase(const K& key)
+    {
+        CDBBatch::Erase(key);
+        sqldb_stmt_erase(key);
+    }
+
+    size_t SizeEstimate() const { return CDBBatch::SizeEstimate() + memusage::DynamicUsage(cacheAccounts); }
+
+protected:
+    virtual void Commit() override
+    {
+        CAmount total = 0L;
+        for (auto it = cacheAccounts.cbegin(); it != cacheAccounts.cend(); it++) {
+            LogPrintf("Commit: accountId=%" PRIu64 "\theight=%d\tamount=%0.8f\n",
+                it->first.nAccountId, it->first.nHeight, it->second/(1.0 * COIN));
+
+            total += it->second;
+        }
+        LogPrintf("Commit: total=%0.8f\n", total/(1.0 * COIN));
+        CSqlDBBatch::Commit();
+        cacheAccounts.clear();
+    }
+
+private:
+    // Deprecated
+    void sqldb_stmt_erase(const char&) { }
+    void sqldb_stmt_write(const char&, const uint256&) { }
+    void sqldb_stmt_write(const char&, const std::vector<uint256>&) { }
+
+    void sqldb_stmt_write(const AccountCoinEntry& key, const Coin&)
+    {
+        // Increase balance
+        if (key.aCoin->nAccountId == 0 || key.aCoin->nAmount == 0) {
+            return;
+        }
+
+        CAmount &nAmountDiff = cacheAccounts[AccountAmountRecord{key.aCoin->nAccountId, key.aCoin->nHeight}];
+        nAmountDiff += key.aCoin->nAmount;
+    }
+
+    void sqldb_stmt_erase(const AccountCoinEntry& key)
+    {
+        // Decrease balance
+        if (key.aCoin->nAccountId == 0 || key.aCoin->nAmount == 0) {
+            return;
+        }
+
+        CAmount &nAmountDiff = cacheAccounts[AccountAmountRecord{key.aCoin->nAccountId, key.aCoin->nHeight}];
+        nAmountDiff -= key.aCoin->nAmount;
+    }
+
+    struct AccountAmountRecord {
+        CAccountId nAccountId;
+        int nHeight;
+    };
+
+    class AccountAmountRecordCompare
+    {
+    public:
+        bool operator()(const AccountAmountRecord& a, const AccountAmountRecord& b) const
+        {
+            int cmp = a.nHeight - b.nHeight;
+            return cmp < 0 || (cmp == 0 && a.nAccountId < b.nAccountId);
+        }
+    };
+    typedef std::map<AccountAmountRecord, CAmount, AccountAmountRecordCompare> CAccountsMap;
+    CAccountsMap cacheAccounts;
+};
+
+const std::string CAccountDBBatch::DDL_SQL =
+  "CREATE TABLE IF NOT EXISTS `account` ("
+  "  `db_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+  "  `accountId` BIGINT(20) NOT NULL,"
+  "  `balance` BIGINT(20) NOT NULL,"
+  "  `height` INTEGER(11) NOT NULL,"
+  "  `latest` TINYINT(1) NOT NULL"
+  ");"
+  "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
+  "CREATE INDEX IF NOT EXISTS `account_accountId_latest_idx` ON `account` (`accountId`,`latest`);";
+const std::string CAccountDBBatch::BATCH_SQL = "INSERT INTO `account`(`accountId`,`balance`,`height`,`latest`) VALUES(?,?,?,?);";
+
 }
 
-CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true) 
+CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
+    db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
+    accountDB(GetDataDir() / "chainstate/account.db3")
 {
+    accountDB.Execute(CAccountDBBatch::DDL_SQL);
 }
 
 bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
@@ -82,7 +196,7 @@ std::vector<uint256> CCoinsViewDB::GetHeadBlocks() const {
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
-    CDBBatch batch(db);
+    CAccountDBBatch batch(db, accountDB);
     size_t count = 0;
     size_t changed = 0;
     size_t batch_size = (size_t)gArgs.GetArg("-dbbatchsize", nDefaultDbBatchSize);
@@ -108,7 +222,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
 
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) {
-            CoinEntry entry(&it->first);
+            AccountCoinEntry entry(&it->first, &it->second.aCoin);
             if (it->second.coin.IsSpent())
                 batch.Erase(entry);
             else
@@ -120,7 +234,8 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
         mapCoins.erase(itOld);
         if (batch.SizeEstimate() > batch_size) {
             LogPrint(BCLog::COINDB, "Writing partial batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
-            db.WriteBatch(batch);
+            bool ret = db.WriteBatch(batch) && accountDB.WriteBatch(batch);
+            assert(ret);
             batch.Clear();
             if (crash_simulate) {
                 static FastRandomContext rng;
@@ -137,7 +252,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
     batch.Write(DB_BEST_BLOCK, hashBlock);
 
     LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
-    bool ret = db.WriteBatch(batch);
+    bool ret = db.WriteBatch(batch) && accountDB.WriteBatch(batch);
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
     return ret;
 }
@@ -145,6 +260,11 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
 size_t CCoinsViewDB::EstimateSize() const
 {
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
+}
+
+CAmount CCoinsViewDB::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const
+{
+    return 0L;
 }
 
 CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
@@ -365,6 +485,8 @@ bool CCoinsViewDB::Upgrade() {
     if (!pcursor->Valid()) {
         return true;
     }
+    LogPrintf("Deprecated upgrade UTXO!\n");
+    assert(false);
 
     int64_t count = 0;
     LogPrintf("Upgrading utxo-set database...\n");

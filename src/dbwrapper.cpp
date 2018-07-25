@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <dbwrapper.h>
+#include <dbwrapper_sql.h>
 
 #include <random.h>
 
@@ -214,3 +215,14 @@ const std::vector<unsigned char>& GetObfuscateKey(const CDBWrapper &w)
 }
 
 } // namespace dbwrapper_private
+
+// Dependency CSqlDBWrapper
+CSqlDBBatch::CSqlDBBatch(const CSqlDBWrapper &parent, const std::string &sql) : commited(true), db(parent.db), stmt(NULL)
+{
+    if (SQLITE_OK != sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, 0)) {
+        throw CSqlException(db, "Prepare batch SQL error");
+    }
+
+    CSqlException::ExecuteAndThrow(db, "BEGIN TRANSACTION");
+    commited = false;
+}

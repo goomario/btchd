@@ -8,6 +8,7 @@
 
 #include <coins.h>
 #include <dbwrapper.h>
+#include <dbwrapper_sql.h>
 #include <chain.h>
 
 #include <map>
@@ -67,7 +68,9 @@ struct CDiskTxPos : public CDiskBlockPos
 class CCoinsViewDB final : public CCoinsView
 {
 protected:
-    CDBWrapper db;
+    CDBWrapper      db;
+    CSqlDBWrapper   accountDB;
+
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
 
@@ -81,6 +84,8 @@ public:
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();
     size_t EstimateSize() const override;
+
+    CAmount GetAccountAmount(const CAccountId &nAccountId, int nHeight) const override;
 };
 
 /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
