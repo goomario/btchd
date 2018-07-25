@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include <unordered_map>
+#include <map>
 
 /**
  * A UTXO entry.
@@ -81,27 +82,6 @@ public:
     }
 };
 
-typedef uint64_t CAccountId;
-
-class AccountCoin
-{
-public:
-    //! account Id from scriptOutKey
-    CAccountId nAccountId;
-
-    //! speed/recv coin
-    CAmount nAmount;
-
-    //! at which height this containing transaction was included in the active block chain
-    int nHeight;
-    int nHeightSpent;
-
-    //! empty construct
-    AccountCoin() : nAccountId(0L), nAmount(0L), nHeight(0), nHeightOut(0) { }
-
-    void Update(const Coin& coinIn);
-};
-
 class SaltedOutpointHasher
 {
 private:
@@ -136,13 +116,37 @@ struct CCoinsCacheEntry
          */
     };
 
-    AccountCoin aCoin; // The account for coin
-
     CCoinsCacheEntry() : flags(0) {}
-    explicit CCoinsCacheEntry(Coin&& coin_) : coin(std::move(coin_)), flags(0) { aCoin.Update(coin); }
+    explicit CCoinsCacheEntry(Coin&& coin_) : coin(std::move(coin_)), flags(0) {}
 };
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
+
+/** Account ID */
+typedef uint64_t CAccountId;
+
+/** <AcountID, Height> */
+struct CAccountDiffCoinsKey
+{
+    //! account Id from scriptOutKey
+    CAccountId nAccountId;
+
+    //! at which height this containing transaction was included in the active block chain
+    int nHeight;
+};
+CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKeyIn, int nHeightIn);
+
+class CAccountDiffCoinsKeyCompare
+{
+public:
+    bool operator()(const CAccountDiffCoinsKey& a, const CAccountDiffCoinsKey& b) const
+    {
+        int cmp = a.nHeight - b.nHeight;
+        return cmp < 0 || (cmp == 0 && a.nAccountId < b.nAccountId);
+    }
+};
+
+typedef std::map<CAccountDiffCoinsKey, CAmount, CAccountDiffCoinsKeyCompare> CAccountDiffCoinsMap;
 
 /** Cursor for iterating over CoinsView state */
 class CCoinsViewCursor
@@ -188,7 +192,7 @@ public:
 
     //! Do a bulk modification (multiple Coin changes + BestBlock change).
     //! The passed mapCoins can be modified.
-    virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
+    virtual bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock);
 
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursor *Cursor() const;
@@ -217,7 +221,7 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
     CAmount GetAccountAmount(const CAccountId &nAccountId, int nHeight) const override;
@@ -230,10 +234,11 @@ class CCoinsViewCache : public CCoinsViewBacked
 protected:
     /**
      * Make mutable so that we can "fill the cache" even from Get-methods
-     * declared as "const".  
+     * declared as "const".
      */
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
+    mutable CAccountDiffCoinsMap cacheAccountDiffCoins;
 
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage;
@@ -251,7 +256,7 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
@@ -280,14 +285,14 @@ public:
      * Add a coin. Set potential_overwrite to true if a non-pruned version may
      * already exist.
      */
-    void AddCoin(int nHeight, const COutPoint& outpoint, Coin&& coin, bool potential_overwrite);
+    void AddCoin(const COutPoint& outpoint, Coin&& coin, bool potential_overwrite);
 
     /**
      * Spend a coin. Pass moveto in order to get the deleted data.
      * If no unspent output exists for the passed outpoint, this call
      * has no effect.
      */
-    bool SpendCoin(int nHeightSpent, const COutPoint &outpoint, Coin* moveto = nullptr);
+    bool SpendCoin(int nHeight, const COutPoint &outpoint, Coin* moveto = nullptr);
 
     /**
      * Push the modifications applied to this cache to its base.

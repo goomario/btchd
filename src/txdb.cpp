@@ -6,14 +6,18 @@
 #include <txdb.h>
 
 #include <chainparams.h>
+#include <fs.h>
 #include <hash.h>
 #include <init.h>
+#include <memusage.h>
 #include <random.h>
 #include <uint256.h>
 #include <util.h>
 #include <ui_interface.h>
 
+#include <exception>
 #include <map>
+#include <unordered_map>
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -54,104 +58,98 @@ struct CoinEntry {
     }
 };
 
-struct AccountCoinEntry : public CoinEntry {
-    AccountCoin* aCoin;
-    AccountCoinEntry(const COutPoint* _outpoint, const AccountCoin* _aCoin) : CoinEntry(_outpoint), aCoin(const_cast<AccountCoin*>(_aCoin)) {}
-};
-
-class CAccountDBBatch : public CDBBatch, public CSqlDBBatch
+// Throw SQL exception
+class CSqlException : public std::exception
 {
 public:
-    const static std::string DDL_SQL;
-    const static std::string BATCH_SQL;
-
-    CAccountDBBatch(const CDBWrapper &_levelDBParent, const CSqlDBWrapper &_sqlDBParent)
-        : CDBBatch(_levelDBParent), CSqlDBBatch(_sqlDBParent, BATCH_SQL) { }
-
-    void Clear()
+    CSqlException(sqlite3 *db, const std::string &err) : std::exception()
     {
-        CDBBatch::Clear();
-        CSqlDBBatch::Clear();
+        detail += err;
+        detail += " (";
+        detail += sqlite3_errmsg(db);
+        detail += ")";
     }
 
-    template <typename K, typename V>
-    void Write(const K& key, const V& value)
+    const char* what() const noexcept
     {
-        CDBBatch::Write(key, value);
-        sqldb_stmt_write(key, value);
+        return detail.c_str();
     }
 
-    template <typename K>
-    void Erase(const K& key)
-    {
-        CDBBatch::Erase(key);
-        sqldb_stmt_erase(key);
+    
+
+private:
+    std::string detail;
+};
+
+sqlite3* CreateDatabase(const fs::path& path) {
+    sqlite3 *db;
+    int rc = sqlite3_open(path.c_str(), &db);
+    if (rc != SQLITE_OK) {
+        throw CSqlException(db, "ERROR opening SQLite DB");
     }
 
-    size_t SizeEstimate() const { return CDBBatch::SizeEstimate() + memusage::DynamicUsage(cacheAccounts); }
+    return db;
+}
 
-protected:
-    virtual void Commit() override
-    {
-        CAmount total = 0L;
-        for (auto it = cacheAccounts.cbegin(); it != cacheAccounts.cend(); it++) {
-            LogPrintf("Commit: accountId=%" PRIu64 "\theight=%d\tamount=%0.8f\n",
-                it->first.nAccountId, it->first.nHeight, it->second/(1.0 * COIN));
+sqlite3_stmt* CreateStatement(sqlite3 *db, const std::string &sql) {
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        throw CSqlException(db, "ERROR create SQLite statement");
+    }
 
-            total += it->second;
+    return stmt;
+}
+
+void TryExecuteSql(sqlite3 *db, const std::string &sql) {
+    char *errmsg;
+    sqlite3_exec(db, sql.c_str(), NULL, NULL, &errmsg);
+    if (errmsg != NULL) {
+        std::string err = errmsg;
+        sqlite3_free(errmsg);
+        throw CSqlException(db, err);
+    }
+}
+
+void CheckRC(int rc, sqlite3 *db, const char *func) {
+    if (rc != SQLITE_OK)
+        throw CSqlException(db, func);
+}
+
+//! Auto commit wrapper
+class AutoTransaction
+{
+public:
+    AutoTransaction(sqlite3 *dbIn) : db(dbIn), commited(false) {
+        TryExecuteSql(db, "BEGIN TRANSACTION");
+    }
+
+    ~AutoTransaction() {
+        if (!commited) {
+            TryExecuteSql(db, "ROLLBACK");
         }
-        LogPrintf("Commit: total=%0.8f\n", total/(1.0 * COIN));
-        CSqlDBBatch::Commit();
-        cacheAccounts.clear();
+    }
+
+    bool Commit() {
+        assert(!commited);
+        char *errmsg;
+        sqlite3_exec(db, "COMMIT", NULL, NULL, &errmsg);
+        if (errmsg != NULL) {
+            LogPrintf("CCoinsViewDB: Commit account transaction error: \"%s\"", errmsg);
+            sqlite3_free(errmsg);
+            return false;
+        }
+
+        commited = true;
+        return true;
     }
 
 private:
-    // Deprecated
-    void sqldb_stmt_erase(const char&) { }
-    void sqldb_stmt_write(const char&, const uint256&) { }
-    void sqldb_stmt_write(const char&, const std::vector<uint256>&) { }
-
-    void sqldb_stmt_write(const AccountCoinEntry& key, const Coin&)
-    {
-        // Increase balance
-        if (key.aCoin->nAccountId == 0 || key.aCoin->nAmount == 0) {
-            return;
-        }
-
-        CAmount &nAmountDiff = cacheAccounts[AccountAmountRecord{key.aCoin->nAccountId, key.aCoin->nHeight}];
-        nAmountDiff += key.aCoin->nAmount;
-    }
-
-    void sqldb_stmt_erase(const AccountCoinEntry& key)
-    {
-        // Decrease balance
-        if (key.aCoin->nAccountId == 0 || key.aCoin->nAmount == 0) {
-            return;
-        }
-
-        CAmount &nAmountDiff = cacheAccounts[AccountAmountRecord{key.aCoin->nAccountId, key.aCoin->nHeight}];
-        nAmountDiff -= key.aCoin->nAmount;
-    }
-
-    struct AccountAmountRecord {
-        CAccountId nAccountId;
-        int nHeight;
-    };
-
-    class AccountAmountRecordCompare
-    {
-    public:
-        bool operator()(const AccountAmountRecord& a, const AccountAmountRecord& b) const
-        {
-            int cmp = a.nHeight - b.nHeight;
-            return cmp < 0 || (cmp == 0 && a.nAccountId < b.nAccountId);
-        }
-    };
-    typedef std::map<AccountAmountRecord, CAmount, AccountAmountRecordCompare> CAccountsMap;
-    CAccountsMap cacheAccounts;
+    sqlite3 *db;
+    bool commited;
 };
 
-const std::string CAccountDBBatch::DDL_SQL =
+const std::string ACCOUNT_DDL_SQL =
   "CREATE TABLE IF NOT EXISTS `account` ("
   "  `db_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
   "  `accountId` BIGINT(20) NOT NULL,"
@@ -161,15 +159,20 @@ const std::string CAccountDBBatch::DDL_SQL =
   ");"
   "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
   "CREATE INDEX IF NOT EXISTS `account_accountId_latest_idx` ON `account` (`accountId`,`latest`);";
-const std::string CAccountDBBatch::BATCH_SQL = "INSERT INTO `account`(`accountId`,`balance`,`height`,`latest`) VALUES(?,?,?,?);";
+const std::string ACCOUNT_INSERT_SQL = "INSERT INTO `account`(`accountId`,`balance`,`height`,`latest`) VALUES(?,?,?,0);";
+const std::string ACCOUNT_SELECT_SQL = "SELECT `balance`,`height` FROM `account` WHERE `accountId`=? AND `height` <= ?;";
+const std::string ACCOUNT_UPDATE_SQL = "";
 
 }
 
+#define CRC(rc)     CheckRC(rc, accountDB.get(), __func__)
+
+
 CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
     db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
-    accountDB(GetDataDir() / "chainstate/account.db3")
+    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3"), sqlite3_close)
 {
-    accountDB.Execute(CAccountDBBatch::DDL_SQL);
+    TryExecuteSql(accountDB.get(), ACCOUNT_DDL_SQL);
 }
 
 bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
@@ -195,8 +198,8 @@ std::vector<uint256> CCoinsViewDB::GetHeadBlocks() const {
     return vhashHeadBlocks;
 }
 
-bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
-    CAccountDBBatch batch(db, accountDB);
+bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) {
+    CDBBatch batch(db);
     size_t count = 0;
     size_t changed = 0;
     size_t batch_size = (size_t)gArgs.GetArg("-dbbatchsize", nDefaultDbBatchSize);
@@ -222,7 +225,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
 
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) {
-            AccountCoinEntry entry(&it->first, &it->second.aCoin);
+            CoinEntry entry(&it->first);
             if (it->second.coin.IsSpent())
                 batch.Erase(entry);
             else
@@ -234,8 +237,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
         mapCoins.erase(itOld);
         if (batch.SizeEstimate() > batch_size) {
             LogPrint(BCLog::COINDB, "Writing partial batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
-            bool ret = db.WriteBatch(batch) && accountDB.WriteBatch(batch);
-            assert(ret);
+            db.WriteBatch(batch);
             batch.Clear();
             if (crash_simulate) {
                 static FastRandomContext rng;
@@ -251,9 +253,46 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
     batch.Erase(DB_HEAD_BLOCKS);
     batch.Write(DB_BEST_BLOCK, hashBlock);
 
-    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
-    bool ret = db.WriteBatch(batch) && accountDB.WriteBatch(batch);
+    // Update account table
+    size_t accountChanged = mapAccountDiffCoins.size();
+    size_t accountDiffCoinsMemorySize = memusage::DynamicUsage(mapAccountDiffCoins);
+    AutoTransaction autoTx(accountDB.get());
+    if (!mapAccountDiffCoins.empty()) {
+        std::unordered_map<CAccountId, CAmount> mapLastBalances;
+        std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> selectStmt(CreateStatement(accountDB.get(), ACCOUNT_SELECT_SQL), sqlite3_finalize);
+        std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> insertStmt(CreateStatement(accountDB.get(), ACCOUNT_INSERT_SQL), sqlite3_finalize);
+        for (CAccountDiffCoinsMap::iterator it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
+            LogPrintf("CAccountDiffCoinsMap: accountId=%" PRIu64 "\theight=%d\tamount=%0.8f\n",
+                it->first.nAccountId, it->first.nHeight, it->second/(1.0 * COIN));
+
+            CAmount &nAccountBalance = mapLastBalances[it->first.nAccountId];
+            if (nAccountBalance == 0) {
+                // Query old
+                sqlite3_bind_int64(selectStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
+                sqlite3_bind_int(selectStmt.get(), 2, it->first.nHeight);
+                if (sqlite3_step(selectStmt.get()) == SQLITE_ROW) {
+                    nAccountBalance = static_cast<CAmount>(sqlite3_column_int(selectStmt.get(), 0));
+                }
+                sqlite3_clear_bindings(selectStmt.get());
+                sqlite3_reset(selectStmt.get());
+            }
+            nAccountBalance += it->second;
+
+            // Insert new item
+            sqlite3_bind_int64(insertStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
+            sqlite3_bind_int64(insertStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
+            sqlite3_bind_int(insertStmt.get(), 3, it->first.nHeight);
+            CRC(sqlite3_step(insertStmt.get()));
+            sqlite3_clear_bindings(insertStmt.get());
+            sqlite3_reset(insertStmt.get());
+        }
+    }
+
+    // Commit changes
+    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", (batch.SizeEstimate() + accountDiffCoinsMemorySize) * (1.0 / 1048576.0));
+    bool ret = db.WriteBatch(batch) && autoTx.Commit();
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
+    LogPrint(BCLog::COINDB, "Committed %u changed account balance outputs to account database...\n", (unsigned int)accountChanged);
     return ret;
 }
 

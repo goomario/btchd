@@ -8,13 +8,15 @@
 
 #include <coins.h>
 #include <dbwrapper.h>
-#include <dbwrapper_sql.h>
 #include <chain.h>
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <sqlite3.h>
 
 class CBlockIndex;
 class CCoinsViewDBCursor;
@@ -69,7 +71,9 @@ class CCoinsViewDB final : public CCoinsView
 {
 protected:
     CDBWrapper      db;
-    CSqlDBWrapper   accountDB;
+
+    // Sqlite DB
+    std::unique_ptr<sqlite3, int(*)(sqlite3*)> accountDB;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
@@ -78,7 +82,7 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
