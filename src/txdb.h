@@ -66,14 +66,18 @@ struct CDiskTxPos : public CDiskBlockPos
     }
 };
 
+typedef std::unique_ptr<sqlite3, int(*)(sqlite3*)> SqlAutoReleaseDB;
+typedef std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> SqlAutoReleaseStmt;
+
 /** CCoinsView backed by the coin database (chainstate/) */
 class CCoinsViewDB final : public CCoinsView
 {
 protected:
     CDBWrapper      db;
 
-    // Sqlite DB
-    std::unique_ptr<sqlite3, int(*)(sqlite3*)> accountDB;
+    // SQL
+    mutable SqlAutoReleaseDB accountDB;
+    mutable SqlAutoReleaseStmt getAccountBalanceStmt;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
@@ -89,7 +93,7 @@ public:
     bool Upgrade();
     size_t EstimateSize() const override;
 
-    CAmount GetAccountAmount(const CAccountId &nAccountId, int nHeight) const override;
+    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
 };
 
 /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */

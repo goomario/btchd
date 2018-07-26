@@ -220,6 +220,9 @@ public:
     //! (memory only) Maximum nTime in the chain up to and including this block.
     unsigned int nTimeMax;
 
+    //! (memory only) Miner account ID.
+    CAccountId nMinerAccountId;
+
     void SetNull()
     {
         phashBlock = nullptr;
@@ -235,6 +238,7 @@ public:
         nStatus = 0;
         nSequenceId = 0;
         nTimeMax = 0;
+        nMinerAccountId  = 0;
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -306,6 +310,11 @@ public:
     int64_t GetBlockTimeMax() const
     {
         return (int64_t)nTimeMax;
+    }
+
+    CAccountId GetMinerAccountId() const 
+    {
+        return nMinerAccountId;
     }
 
     static constexpr int nMedianTimeSpan = 11;

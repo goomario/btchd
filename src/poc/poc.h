@@ -23,10 +23,10 @@ namespace poc {
 /** 2^64, 0x10000000000000000*/
 static const arith_uint256 TWO64 = arith_uint256(std::numeric_limits<uint64_t>::max()) + 1;
 
-/** Burst initial base target */
+/** Initial base target */
 static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
-/** Burst max target */
+/** Max target */
 static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
 uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);

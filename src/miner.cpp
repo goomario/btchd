@@ -156,25 +156,16 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockWeight = nBlockWeight;
 
     // Create coinbase transaction.
-    CAmount blockReward = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(nHeight, nFees, GetAccountId(scriptPubKeyIn), *pcoinsTip, chainparams.GetConsensus());
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
     coinbaseTx.vout.resize(2);
     coinbaseTx.vin[0].prevout.SetNull();
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    if (nHeight <= chainparams.GetConsensus().BtchdFundPreMingingHeight) {
-        // Fund pre-mining
-        coinbaseTx.vout[0].nValue = 0;
-    } else if (nHeight <= chainparams.GetConsensus().BtchdNoMortgageHeight) {
-        // No mortgage
-        coinbaseTx.vout[0].nValue = blockReward;
-    } else {
-        // Coming soon
-        coinbaseTx.vout[0].nValue = blockReward * (100 - chainparams.GetConsensus().BtchdFundRoyaltyPercentOnLowMortgage) / 100;
-    }
+    coinbaseTx.vout[0].nValue = blockReward.miner;
     coinbaseTx.vout[1].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BtchdFundAddress));
-    coinbaseTx.vout[1].nValue = blockReward - coinbaseTx.vout[0].nValue;
+    coinbaseTx.vout[1].nValue = blockReward.fund;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
     pblocktemplate->vTxFees[0] = -nFees;

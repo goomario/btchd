@@ -14,7 +14,7 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
-CAmount CCoinsView::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const { return 0L; }
+CAmount CCoinsView::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const { return 0L; }
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
 {
@@ -31,7 +31,7 @@ void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, mapAccountDiffCoins, hashBlock); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-CAmount CCoinsViewBacked::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const { return base->GetAccountAmount(nAccountId, nHeight); }
+CAmount CCoinsViewBacked::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const { return base->GetAccountBalance(nAccountId, nHeight); }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
@@ -217,7 +217,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapA
     return true;
 }
 
-CAmount CCoinsViewCache::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const {
+CAmount CCoinsViewCache::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const {
     CAmount nCacheAmountDiff = 0L;
     for (auto it = cacheAccountDiffCoins.cbegin(); it != cacheAccountDiffCoins.cend(); it++) {
         if (it->first.nAccountId == nAccountId && it->first.nHeight <= nHeight) {
@@ -225,7 +225,7 @@ CAmount CCoinsViewCache::GetAccountAmount(const CAccountId &nAccountId, int nHei
         }
     }
 
-    return nCacheAmountDiff + base->GetAccountAmount(nAccountId, nHeight);
+    return std::max(0L, nCacheAmountDiff + base->GetAccountBalance(nAccountId, nHeight));
 }
 
 bool CCoinsViewCache::Flush() {
@@ -348,14 +348,22 @@ private:
 
 }
 
-CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKeyIn, int nHeightIn) {
-    CTxDestination dest;
-    if (ExtractDestination(scriptPubKeyIn, dest)) {
-        CAccountId nAccountId;
-        boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
-
+CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn) {
+    CAccountId nAccountId = GetAccountId(scriptPubKey);
+    if (nAccountId != 0L) {
         return CAccountDiffCoinsKey{nAccountId, nHeightIn};
     } else {
         return CAccountDiffCoinsKey{0L, 0};
+    }
+}
+
+CAccountId GetAccountId(const CScript &scriptPubKey) {
+    CTxDestination dest;
+    if (ExtractDestination(scriptPubKey, dest)) {
+       CAccountId nAccountId;
+        boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
+        return nAccountId;
+    } else {
+        return 0L;
     }
 }

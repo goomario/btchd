@@ -278,7 +278,14 @@ bool IsInitialBlockDownload();
 bool GetTransaction(const uint256& hash, CTransactionRef& tx, const Consensus::Params& params, uint256& hashBlock, bool fAllowSlow = false, CBlockIndex* blockIndex = nullptr);
 /** Find the best known block, and make it the tip of the block chain */
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
-CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
+/* Get Block reward */
+typedef struct {
+    CAmount miner;
+    CAmount fund;
+} BlockReward;
+BlockReward&& GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams);
+/* Get miner mortgage */
+CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

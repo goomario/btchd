@@ -1132,18 +1132,63 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
-CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
+BlockReward&& GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams)
 {
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
-
-    // Force block reward to zero when right shift is undefined.
-    if (halvings >= 64)
-        return 0;
-
     CAmount nSubsidy = 25 * COIN;
-    // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
-    nSubsidy >>= halvings;
-    return nSubsidy;
+
+    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
+    if (halvings >= 64) {
+        // Force block reward to zero when right shift is undefined.
+        nSubsidy = 0L;
+    } else {
+        nSubsidy = 25 * COIN;
+        // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
+        nSubsidy >>= halvings;
+    }
+
+    // Calc miner reward and fund royalty
+    BlockReward reward;
+    if (nHeight <= consensusParams.BtchdFundPreMingingHeight) {
+        // Fund pre-mining
+        reward.miner = 0;
+        reward.fund = nSubsidy + nFees;
+    } else if (nHeight <= consensusParams.BtchdNoMortgageHeight) {
+        // No mortgage
+        reward.miner = nSubsidy + nFees;
+        reward.fund = 0;
+    } else {
+        // Normal mining
+        if (nSubsidy > 0) {
+            CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
+            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, consensusParams);
+            if (nMinerBalance >= nMinerMortgage) {
+                reward.fund = nFees + (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
+            } else {
+                reward.fund = nFees + (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
+            }
+        } else {
+            reward.fund = 0L;
+        }
+        reward.miner = nSubsidy + nFees - reward.fund;
+    }
+
+    assert(reward.miner + reward.fund == nSubsidy + nFees);
+    return std::move(reward);
+}
+
+CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consensus::Params& consensusParams)
+{
+    assert(nHeight <= chainActive.Height());
+    const static int HISTORY_COUNT = 1000;
+    int nIsThis = 0;
+    int nBeginHeight = std::max(nHeight - HISTORY_COUNT, consensusParams.BtchdFundPreMingingHeight + 1);
+    for (int index = nBeginHeight; index <= nHeight; index++) {
+        if (chainActive[index]->GetMinerAccountId() == nAccountId)
+            nIsThis++;
+    }
+
+    CBlockIndex *pblockIndex = chainActive[nHeight];
+    return consensusParams.BtchdMortgageAmountPerTB * ((std::max((int)(poc::MAX_BASE_TARGET / pblockIndex->nBaseTarget), 1) * nIsThis) / (nHeight - nBeginHeight));
 }
 
 bool IsInitialBlockDownload()
@@ -1922,38 +1967,23 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-    if (block.vtx[0]->GetValueOut() > blockReward)
-        return state.DoS(100,
-                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
-                               block.vtx[0]->GetValueOut(), blockReward),
-                               REJECT_INVALID, "bad-cb-amount");
-
     if (block.vtx[0]->vout.size() < 2)
         return state.DoS(100,
                          error("ConnectBlock(): coinbase require 2 out ([0] to miner, [1] to fund)"),
                          REJECT_INVALID, "bad-cb-miner_fund");
 
-    CAmount fundRoyalty = block.vtx[0]->vout[1].nValue;
-    CAmount minerReward = blockReward - fundRoyalty;
-    if (pindex->nHeight <= chainparams.GetConsensus().BtchdFundPreMingingHeight) {
-        // Fund pre-mining
-        if (fundRoyalty != blockReward)
-            return state.DoS(100,
+    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->nMinerAccountId, view, chainparams.GetConsensus());
+    if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.fund)
+        return state.DoS(100,
+                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
+                               block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.fund),
+                               REJECT_INVALID, "bad-cb-amount");
+
+    if (block.vtx[0]->vout[1].nValue < blockReward.fund)
+        return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
-                               fundRoyalty, blockReward),
-                               REJECT_INVALID, "bad-cb-amount-fund_pre_mining");
-    } else if (pindex->nHeight <= chainparams.GetConsensus().BtchdNoMortgageHeight) {
-        // No mortgage
-        if (minerReward != blockReward)
-            return state.DoS(100,
-                         error("ConnectBlock(): coinbase pays too less to miner (actual=%d vs limit=%d)",
-                               minerReward, blockReward),
-                               REJECT_INVALID, "bad-cb-amount-miner_no_mortgage");
-    } else {
-        // Coming soon
-        return error("ConnectBlock(): New version for mortgage coming soon, please check http://btchd.net");
-    }
+                               blockReward.fund, block.vtx[0]->vout[1].nValue),
+                               REJECT_INVALID, "bad-cb-amount-fund_less");
 
     if (!control.Wait())
         return state.DoS(100, error("%s: CheckQueue failed. height=%d hash=%s", __func__, pindex->nHeight, pindex->GetBlockHash().GetHex()), REJECT_INVALID, "block-validation-failed");
@@ -2811,6 +2841,7 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
     if (IsWitnessEnabled(pindexNew->pprev, consensusParams)) {
         pindexNew->nStatus |= BLOCK_OPT_WITNESS;
     }
+    pindexNew->nMinerAccountId = GetAccountId(block.vtx[0]->vout[0].scriptPubKey);
     pindexNew->RaiseValidity(BLOCK_VALID_TRANSACTIONS);
     setDirtyBlockIndex.insert(pindexNew);
 

@@ -62,11 +62,11 @@ struct CoinEntry {
 class CSqlException : public std::exception
 {
 public:
-    CSqlException(sqlite3 *db, const std::string &err) : std::exception()
+    CSqlException(SqlAutoReleaseDB &db, const std::string &err) : std::exception()
     {
         detail += err;
         detail += " (";
-        detail += sqlite3_errmsg(db);
+        detail += sqlite3_errmsg(db.get());
         detail += ")";
     }
 
@@ -75,35 +75,13 @@ public:
         return detail.c_str();
     }
 
-    
-
 private:
     std::string detail;
 };
 
-sqlite3* CreateDatabase(const fs::path& path) {
-    sqlite3 *db;
-    int rc = sqlite3_open(path.c_str(), &db);
-    if (rc != SQLITE_OK) {
-        throw CSqlException(db, "ERROR opening SQLite DB");
-    }
-
-    return db;
-}
-
-sqlite3_stmt* CreateStatement(sqlite3 *db, const std::string &sql) {
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, 0);
-    if (rc != SQLITE_OK) {
-        throw CSqlException(db, "ERROR create SQLite statement");
-    }
-
-    return stmt;
-}
-
-void TryExecuteSql(sqlite3 *db, const std::string &sql) {
+void TryExecuteSql(SqlAutoReleaseDB &db, const std::string &sql) {
     char *errmsg;
-    sqlite3_exec(db, sql.c_str(), NULL, NULL, &errmsg);
+    sqlite3_exec(db.get(), sql.c_str(), NULL, NULL, &errmsg);
     if (errmsg != NULL) {
         std::string err = errmsg;
         sqlite3_free(errmsg);
@@ -111,20 +89,42 @@ void TryExecuteSql(sqlite3 *db, const std::string &sql) {
     }
 }
 
-void CheckRC(int rc, sqlite3 *db, const char *func) {
-    if (rc != SQLITE_OK)
+SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql) {
+    sqlite3 *db = NULL;
+    int rc = sqlite3_open(path.c_str(), &db);
+    auto autoDB = SqlAutoReleaseDB(db, sqlite3_close);
+    if (rc != SQLITE_OK) {
+        throw CSqlException(autoDB, std::string("ERROR opening SQLite DB(") + path.c_str() + ")");
+    }
+
+    TryExecuteSql(autoDB, initSql);
+    return autoDB;
+}
+
+SqlAutoReleaseStmt CreateStatement(SqlAutoReleaseDB &db, const std::string &sql) {
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.get(), sql.c_str(), -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        throw CSqlException(db, "ERROR create SQLite statement");
+    }
+
+    return SqlAutoReleaseStmt(stmt, sqlite3_finalize);
+}
+
+void CheckRC(int requireRc, int rc, SqlAutoReleaseDB &db, const char *func) {
+    if (rc != requireRc)
         throw CSqlException(db, func);
 }
 
 //! Auto commit wrapper
-class AutoTransaction
+class SqlAutoTransaction
 {
 public:
-    AutoTransaction(sqlite3 *dbIn) : db(dbIn), commited(false) {
+    SqlAutoTransaction(SqlAutoReleaseDB &dbIn) : db(dbIn), commited(false) {
         TryExecuteSql(db, "BEGIN TRANSACTION");
     }
 
-    ~AutoTransaction() {
+    ~SqlAutoTransaction() {
         if (!commited) {
             TryExecuteSql(db, "ROLLBACK");
         }
@@ -132,20 +132,19 @@ public:
 
     bool Commit() {
         assert(!commited);
-        char *errmsg;
-        sqlite3_exec(db, "COMMIT", NULL, NULL, &errmsg);
-        if (errmsg != NULL) {
-            LogPrintf("CCoinsViewDB: Commit account transaction error: \"%s\"", errmsg);
-            sqlite3_free(errmsg);
-            return false;
+        try {
+            TryExecuteSql(db, "COMMIT");
+            commited = true;
+            return true;
+        } catch (CSqlException &e) {
+            LogPrintf("CCoinsViewDB: Commit account transaction error: \"%s\"", e.what());
         }
 
-        commited = true;
-        return true;
+        return false;
     }
 
 private:
-    sqlite3 *db;
+    SqlAutoReleaseDB &db;
     bool commited;
 };
 
@@ -159,21 +158,41 @@ const std::string ACCOUNT_DDL_SQL =
   ");"
   "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
   "CREATE INDEX IF NOT EXISTS `account_accountId_latest_idx` ON `account` (`accountId`,`latest`);";
-const std::string ACCOUNT_INSERT_SQL = "INSERT INTO `account`(`accountId`,`balance`,`height`,`latest`) VALUES(?,?,?,0);";
-const std::string ACCOUNT_SELECT_SQL = "SELECT `balance`,`height` FROM `account` WHERE `accountId`=? AND `height` <= ?;";
-const std::string ACCOUNT_UPDATE_SQL = "";
+const std::string ACCOUNT_INSERT_SQL =
+    "INSERT INTO `account`(`accountId`,`balance`,`height`,`latest`)"
+    " VALUES(?,?,?,0);";
+const std::string ACCOUNT_LAST_BALANCE_SQL =
+    "SELECT `balance` FROM `account`"
+    " WHERE `accountId` = ?"
+    " ORDER BY `height` DESC"
+    " LIMIT 1;";
+const std::string ACCOUNT_SET_LATEST_SQL =
+    "UPDATE `account`"
+    " SET `latest` = 1"
+    " WHERE `accountId` = ? AND `height` = ?;";
+const std::string ACCOUNT_INVALID_SQL =
+    "SELECT `accountId`,`height` FROM `account`"
+    " WHERE `height` >= ?"
+    " ORDER BY `height` DESC;";
+const std::string ACCOUNT_INVALID_CLEAR_SQL =
+    "DELETE FROM `account`"
+    " WHERE `height` >= ?;";
+const std::string ACCOUNT_GET_BALANCE_SQL =
+    "SELECT `balance` FROM `account`"
+    " WHERE `accountId` = ? AND `height` <= ?"
+    " ORDER BY `height` DESC"
+    " LIMIT 1;";
 
 }
 
-#define CRC(rc)     CheckRC(rc, accountDB.get(), __func__)
+#define CRC_DONE(rc)    CheckRC(SQLITE_DONE, rc, accountDB, __func__)
 
 
 CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
     db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
-    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3"), sqlite3_close)
-{
-    TryExecuteSql(accountDB.get(), ACCOUNT_DDL_SQL);
-}
+    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3", ACCOUNT_DDL_SQL)),
+    getAccountBalanceStmt(CreateStatement(accountDB, ACCOUNT_GET_BALANCE_SQL))
+{}
 
 bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return db.Read(CoinEntry(&outpoint), coin);
@@ -256,35 +275,76 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
     // Update account table
     size_t accountChanged = mapAccountDiffCoins.size();
     size_t accountDiffCoinsMemorySize = memusage::DynamicUsage(mapAccountDiffCoins);
-    AutoTransaction autoTx(accountDB.get());
+    SqlAutoTransaction autoTx(accountDB);
     if (!mapAccountDiffCoins.empty()) {
-        std::unordered_map<CAccountId, CAmount> mapLastBalances;
-        std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> selectStmt(CreateStatement(accountDB.get(), ACCOUNT_SELECT_SQL), sqlite3_finalize);
-        std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> insertStmt(CreateStatement(accountDB.get(), ACCOUNT_INSERT_SQL), sqlite3_finalize);
-        for (CAccountDiffCoinsMap::iterator it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-            LogPrintf("CAccountDiffCoinsMap: accountId=%" PRIu64 "\theight=%d\tamount=%0.8f\n",
-                it->first.nAccountId, it->first.nHeight, it->second/(1.0 * COIN));
+        std::unordered_map<CAccountId,int> mapLastAccountUpdated; // <CAccountId, Height>
 
-            CAmount &nAccountBalance = mapLastBalances[it->first.nAccountId];
-            if (nAccountBalance == 0) {
-                // Query old
-                sqlite3_bind_int64(selectStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
-                sqlite3_bind_int(selectStmt.get(), 2, it->first.nHeight);
-                if (sqlite3_step(selectStmt.get()) == SQLITE_ROW) {
-                    nAccountBalance = static_cast<CAmount>(sqlite3_column_int(selectStmt.get(), 0));
+        // Load invalid items
+        {
+            SqlAutoReleaseStmt stmt(CreateStatement(accountDB, ACCOUNT_INVALID_SQL));
+            sqlite3_bind_int(stmt.get(), 1, mapAccountDiffCoins.cbegin()->first.nHeight);
+            while (sqlite3_step(stmt.get()) == SQLITE_ROW) {
+                CAccountId nAccountId = static_cast<CAccountId>(sqlite3_column_int64(stmt.get(), 0));
+                if (!mapLastAccountUpdated.count(nAccountId)) {
+                    mapLastAccountUpdated[nAccountId] = sqlite3_column_int(stmt.get(), 1);
                 }
-                sqlite3_clear_bindings(selectStmt.get());
-                sqlite3_reset(selectStmt.get());
             }
-            nAccountBalance += it->second;
+        }
 
-            // Insert new item
-            sqlite3_bind_int64(insertStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
-            sqlite3_bind_int64(insertStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
-            sqlite3_bind_int(insertStmt.get(), 3, it->first.nHeight);
-            CRC(sqlite3_step(insertStmt.get()));
-            sqlite3_clear_bindings(insertStmt.get());
-            sqlite3_reset(insertStmt.get());
+        // Clear invalid items
+        {
+            SqlAutoReleaseStmt stmt(CreateStatement(accountDB, ACCOUNT_INVALID_CLEAR_SQL));
+            sqlite3_bind_int(stmt.get(), 1, mapAccountDiffCoins.cbegin()->first.nHeight);
+            CRC_DONE(sqlite3_step(stmt.get()));
+        }
+
+        // Insert items
+        {
+            SqlAutoReleaseStmt lastBalanceStmt(CreateStatement(accountDB, ACCOUNT_LAST_BALANCE_SQL));
+            SqlAutoReleaseStmt insertStmt(CreateStatement(accountDB, ACCOUNT_INSERT_SQL));
+            std::unordered_map<CAccountId,CAmount> mapCacheLastBalances; // CAccountId => Balance
+            for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
+                LogPrintf("CoinsDiff: accountId=%" PRIu64 "\theight=%d\tamount=%0.8f\n",
+                    it->first.nAccountId, it->first.nHeight, it->second/(1.0 * COIN));
+
+                if (it->second == 0L)
+                    continue;
+
+                CAmount &nAccountBalance = mapCacheLastBalances[it->first.nAccountId];
+                if (nAccountBalance == 0L) {
+                    // Query old
+                    sqlite3_bind_int64(lastBalanceStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
+                    if (sqlite3_step(lastBalanceStmt.get()) == SQLITE_ROW) {
+                        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(lastBalanceStmt.get(), 0));
+                    }
+                    sqlite3_reset(lastBalanceStmt.get());
+                    sqlite3_clear_bindings(lastBalanceStmt.get());
+                }
+                nAccountBalance += it->second;
+                assert(nAccountBalance >= 0);
+
+                // Insert new item
+                sqlite3_bind_int64(insertStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
+                sqlite3_bind_int64(insertStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
+                sqlite3_bind_int(insertStmt.get(), 3, it->first.nHeight);
+                CRC_DONE(sqlite3_step(insertStmt.get()));
+                sqlite3_reset(insertStmt.get());
+                sqlite3_clear_bindings(insertStmt.get());
+
+                mapLastAccountUpdated[it->first.nAccountId] = it->first.nHeight;
+            }
+        }
+
+        // Update latest
+        {
+            SqlAutoReleaseStmt setLatestStmt(CreateStatement(accountDB, ACCOUNT_SET_LATEST_SQL));
+            for (auto it = mapLastAccountUpdated.cbegin(); it != mapLastAccountUpdated.cend(); it++) {
+                sqlite3_bind_int64(setLatestStmt.get(), 1, static_cast<sqlite_int64>(it->first));
+                sqlite3_bind_int(setLatestStmt.get(), 2, it->second);
+                CRC_DONE(sqlite3_step(setLatestStmt.get()));
+                sqlite3_reset(setLatestStmt.get());
+                sqlite3_clear_bindings(setLatestStmt.get());
+            }
         }
     }
 
@@ -301,9 +361,19 @@ size_t CCoinsViewDB::EstimateSize() const
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
 }
 
-CAmount CCoinsViewDB::GetAccountAmount(const CAccountId &nAccountId, int nHeight) const
+CAmount CCoinsViewDB::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const
 {
-    return 0L;
+    CAmount nAccountBalance = 0L;
+
+    sqlite3_bind_int64(getAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
+    sqlite3_bind_int(getAccountBalanceStmt.get(), 2, nHeight);
+    if (sqlite3_step(getAccountBalanceStmt.get()) == SQLITE_ROW) {
+        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountBalanceStmt.get(), 0));
+    }
+    sqlite3_reset(getAccountBalanceStmt.get());
+    sqlite3_clear_bindings(getAccountBalanceStmt.get());
+
+    return nAccountBalance;
 }
 
 CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {

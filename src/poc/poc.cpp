@@ -420,7 +420,8 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
         LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
             prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (24 * 60 * 60 * 1.0f),
             DEADLINE_DEADTARGET / (24 * 60 * 60));
-        return false;
+        deadline = calcDeadline;
+        return true;
     }
 
     deadline = calcDeadline;

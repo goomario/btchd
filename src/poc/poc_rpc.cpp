@@ -53,10 +53,6 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
         throw std::runtime_error("Block chain tip is empty!");
     }
 
-    if (pindexLast->nHeight >= Params().GetConsensus().BtchdNoMortgageHeight) {
-        throw std::runtime_error("This version not support mortgage feature. Please check http://btchd.net.");
-    }
-
     UniValue result(UniValue::VOBJ);
     result.pushKV("height", pindexLast->nHeight + 1);
     result.pushKV("generationSignature", HexStr(poc::GetBlockGenerationSignature(pindexLast->GetBlockHeader())));
@@ -75,10 +71,6 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     const CBlockIndex *pindexLast = chainActive.Tip();
     if (pindexLast == nullptr) {
         throw std::runtime_error("Block chain tip is empty!");
-    }
-
-    if (pindexLast->nHeight >= Params().GetConsensus().BtchdNoMortgageHeight) {
-        throw std::runtime_error("This version not support mortgage feature. Please check http://btchd.net.");
     }
 
     uint64_t deadline = std::numeric_limits<uint64_t>::max();

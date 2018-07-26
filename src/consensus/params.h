@@ -57,6 +57,8 @@ struct Params {
     int BtchdFundRoyaltyPercentOnLowMortgage;
     /** BitcoinHD miner no mortgage height before */
     int BtchdNoMortgageHeight;
+    /** BitcoinHD miner mortgage amount per TB */
+    int BtchdMortgageAmountPerTB;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;

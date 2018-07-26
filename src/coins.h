@@ -122,9 +122,6 @@ struct CCoinsCacheEntry
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
 
-/** Account ID */
-typedef uint64_t CAccountId;
-
 /** <AcountID, Height> */
 struct CAccountDiffCoinsKey
 {
@@ -134,7 +131,7 @@ struct CAccountDiffCoinsKey
     //! at which height this containing transaction was included in the active block chain
     int nHeight;
 };
-CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKeyIn, int nHeightIn);
+CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn);
 
 class CAccountDiffCoinsKeyCompare
 {
@@ -204,7 +201,7 @@ public:
     virtual size_t EstimateSize() const { return 0; }
 
     //! Get amount
-    virtual CAmount GetAccountAmount(const CAccountId &nAccountId, int nHeight) const;
+    virtual CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const;
 };
 
 
@@ -224,7 +221,7 @@ public:
     bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    CAmount GetAccountAmount(const CAccountId &nAccountId, int nHeight) const override;
+    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
 };
 
 
@@ -260,7 +257,7 @@ public:
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CAmount GetAccountAmount(const CAccountId &nAccountId, int nHeight) const override;
+    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -343,5 +340,8 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool 
 // which is not found in the cache, it can cause up to MAX_OUTPUTS_PER_BLOCK
 // lookups to database, so it should be used with care.
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
+
+//! Utility function to get account id with given scriptPubKey.
+CAccountId GetAccountId(const CScript &scriptPubKey);
 
 #endif // BITCOIN_COINS_H
