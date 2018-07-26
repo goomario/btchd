@@ -1183,7 +1183,7 @@ CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consen
     int nIsThis = 0;
     int nBeginHeight = std::max(nHeight - HISTORY_COUNT, consensusParams.BtchdFundPreMingingHeight + 1);
     for (int index = nBeginHeight; index <= nHeight; index++) {
-        if (chainActive[index]->GetMinerAccountId() == nAccountId)
+        if (chainActive[index]->nMinerAccountId == nAccountId)
             nIsThis++;
     }
 
@@ -4091,6 +4091,7 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             pindexIter->nTx = 0;
             pindexIter->nChainTx = 0;
             pindexIter->nSequenceId = 0;
+            pindexIter->nMinerAccountId = 0;
             // Make sure it gets written.
             setDirtyBlockIndex.insert(pindexIter);
             // Update indexes

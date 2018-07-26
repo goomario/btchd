@@ -503,19 +503,20 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
             if (pcursor->GetValue(diskindex)) {
                 // Construct block index object
                 CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
-                pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
-                pindexNew->nHeight        = diskindex.nHeight;
-                pindexNew->nFile          = diskindex.nFile;
-                pindexNew->nDataPos       = diskindex.nDataPos;
-                pindexNew->nUndoPos       = diskindex.nUndoPos;
-                pindexNew->nVersion       = diskindex.nVersion;
-                pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
-                pindexNew->nTime          = diskindex.nTime;
-                pindexNew->nBaseTarget    = diskindex.nBaseTarget;
-                pindexNew->nNonce         = diskindex.nNonce;
-                pindexNew->nPlotterId     = diskindex.nPlotterId;
-                pindexNew->nStatus        = diskindex.nStatus;
-                pindexNew->nTx            = diskindex.nTx;
+                pindexNew->pprev           = insertBlockIndex(diskindex.hashPrev);
+                pindexNew->nHeight         = diskindex.nHeight;
+                pindexNew->nFile           = diskindex.nFile;
+                pindexNew->nDataPos        = diskindex.nDataPos;
+                pindexNew->nUndoPos        = diskindex.nUndoPos;
+                pindexNew->nVersion        = diskindex.nVersion;
+                pindexNew->hashMerkleRoot  = diskindex.hashMerkleRoot;
+                pindexNew->nTime           = diskindex.nTime;
+                pindexNew->nBaseTarget     = diskindex.nBaseTarget;
+                pindexNew->nNonce          = diskindex.nNonce;
+                pindexNew->nPlotterId      = diskindex.nPlotterId;
+                pindexNew->nStatus         = diskindex.nStatus;
+                pindexNew->nTx             = diskindex.nTx;
+                pindexNew->nMinerAccountId = diskindex.nMinerAccountId;
 
                 pcursor->Next();
             } else {

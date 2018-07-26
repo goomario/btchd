@@ -206,6 +206,9 @@ public:
     //! Verification status of this block. See enum BlockStatus
     uint32_t nStatus;
 
+    //! Miner account ID.
+    CAccountId nMinerAccountId;
+
     //! block header
     int32_t nVersion;
     uint256 hashMerkleRoot;
@@ -220,9 +223,6 @@ public:
     //! (memory only) Maximum nTime in the chain up to and including this block.
     unsigned int nTimeMax;
 
-    //! (memory only) Miner account ID.
-    CAccountId nMinerAccountId;
-
     void SetNull()
     {
         phashBlock = nullptr;
@@ -236,9 +236,9 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
+        nMinerAccountId = 0;
         nSequenceId = 0;
         nTimeMax = 0;
-        nMinerAccountId  = 0;
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -310,11 +310,6 @@ public:
     int64_t GetBlockTimeMax() const
     {
         return (int64_t)nTimeMax;
-    }
-
-    CAccountId GetMinerAccountId() const 
-    {
-        return nMinerAccountId;
     }
 
     static constexpr int nMedianTimeSpan = 11;
@@ -404,6 +399,7 @@ public:
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
+        READWRITE(VARINT(nMinerAccountId));
         if (nStatus & (BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO))
             READWRITE(VARINT(nFile));
         if (nStatus & BLOCK_HAVE_DATA)
