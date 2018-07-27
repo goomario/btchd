@@ -150,6 +150,7 @@ private:
 
 const std::string ACCOUNT_DDL_SQL =
   "CREATE TABLE IF NOT EXISTS `account` ("
+  "  `db_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
   "  `accountId` BIGINT(20) NOT NULL,"
   "  `balance` BIGINT(20) NOT NULL,"
   "  `height` INTEGER(11) NOT NULL"
