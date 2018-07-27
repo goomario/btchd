@@ -70,6 +70,11 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
         pblock->nNonce = 0;
         pblock->nPlotterId = 0;
         pblock->nTime = ++nTime;
+        {
+            // Update nBaseTarget beacuse nTime has changed
+            LOCK(cs_main);
+            pblock->nBaseTarget = GetNextWorkRequired(chainActive.Tip(), pblock, Params().GetConsensus());
+        }
 
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))

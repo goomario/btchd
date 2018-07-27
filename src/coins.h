@@ -143,7 +143,14 @@ public:
     }
 };
 
-typedef std::map<CAccountDiffCoinsKey, CAmount, CAccountDiffCoinsKeyCompare> CAccountDiffCoinsMap;
+/** Account different coins value record */
+struct CAccountDiffCoinsValue
+{
+    std::map<COutPoint, CAmount> vAudit;
+    CAmount nCoins;
+};
+
+typedef std::map<CAccountDiffCoinsKey, CAccountDiffCoinsValue, CAccountDiffCoinsKeyCompare> CAccountDiffCoinsMap;
 
 /** Cursor for iterating over CoinsView state */
 class CCoinsViewCursor
@@ -325,6 +332,7 @@ public:
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;
+    void EraseAccountCoin(const COutPoint &outpoint);
 };
 
 //! Utility function to add all of a transaction's outputs to a cache.

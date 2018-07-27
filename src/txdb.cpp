@@ -41,7 +41,7 @@ namespace {
 struct CoinEntry {
     COutPoint* outpoint;
     char key;
-    explicit CoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN) {}
+    explicit CoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN)  {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -150,30 +150,20 @@ private:
 
 const std::string ACCOUNT_DDL_SQL =
   "CREATE TABLE IF NOT EXISTS `account` ("
-  "  `db_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
   "  `accountId` BIGINT(20) NOT NULL,"
   "  `balance` BIGINT(20) NOT NULL,"
-  "  `height` INTEGER(11) NOT NULL,"
-  "  `latest` TINYINT(1) NOT NULL"
+  "  `height` INTEGER(11) NOT NULL"
   ");"
   "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
-  "CREATE INDEX IF NOT EXISTS `account_accountId_latest_idx` ON `account` (`accountId`,`latest`);";
+  "CREATE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);";
 const std::string ACCOUNT_INSERT_SQL =
-    "INSERT INTO `account`(`accountId`,`balance`,`height`,`latest`)"
-    " VALUES(?,?,?,0);";
+    "INSERT INTO `account`(`accountId`,`balance`,`height`)"
+    " VALUES(?,?,?);";
 const std::string ACCOUNT_LAST_BALANCE_SQL =
     "SELECT `balance` FROM `account`"
     " WHERE `accountId` = ?"
     " ORDER BY `height` DESC"
     " LIMIT 1;";
-const std::string ACCOUNT_SET_LATEST_SQL =
-    "UPDATE `account`"
-    " SET `latest` = 1"
-    " WHERE `accountId` = ? AND `height` = ?;";
-const std::string ACCOUNT_INVALID_SQL =
-    "SELECT `accountId`,`height` FROM `account`"
-    " WHERE `height` >= ?"
-    " ORDER BY `height` DESC;";
 const std::string ACCOUNT_INVALID_CLEAR_SQL =
     "DELETE FROM `account`"
     " WHERE `height` >= ?;";
@@ -277,20 +267,6 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
     size_t accountDiffCoinsMemorySize = memusage::DynamicUsage(mapAccountDiffCoins);
     SqlAutoTransaction autoTx(accountDB);
     if (!mapAccountDiffCoins.empty()) {
-        std::unordered_map<CAccountId,int> mapLastAccountUpdated; // <CAccountId, Height>
-
-        // Load invalid items
-        {
-            SqlAutoReleaseStmt stmt(CreateStatement(accountDB, ACCOUNT_INVALID_SQL));
-            sqlite3_bind_int(stmt.get(), 1, mapAccountDiffCoins.cbegin()->first.nHeight);
-            while (sqlite3_step(stmt.get()) == SQLITE_ROW) {
-                CAccountId nAccountId = static_cast<CAccountId>(sqlite3_column_int64(stmt.get(), 0));
-                if (!mapLastAccountUpdated.count(nAccountId)) {
-                    mapLastAccountUpdated[nAccountId] = sqlite3_column_int(stmt.get(), 1);
-                }
-            }
-        }
-
         // Clear invalid items
         {
             SqlAutoReleaseStmt stmt(CreateStatement(accountDB, ACCOUNT_INVALID_CLEAR_SQL));
@@ -304,14 +280,11 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
             SqlAutoReleaseStmt insertStmt(CreateStatement(accountDB, ACCOUNT_INSERT_SQL));
             std::unordered_map<CAccountId,CAmount> mapCacheLastBalances; // CAccountId => Balance
             for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-                LogPrintf("CoinsDiff: accountId=%" PRIu64 "\theight=%d\tamount=%0.8f\n",
-                    it->first.nAccountId, it->first.nHeight, it->second/(1.0 * COIN));
-
-                if (it->second == 0L)
+                if (it->second.nCoins == 0)
                     continue;
 
                 CAmount &nAccountBalance = mapCacheLastBalances[it->first.nAccountId];
-                if (nAccountBalance == 0L) {
+                if (nAccountBalance == 0) {
                     // Query old
                     sqlite3_bind_int64(lastBalanceStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
                     if (sqlite3_step(lastBalanceStmt.get()) == SQLITE_ROW) {
@@ -320,7 +293,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
                     sqlite3_reset(lastBalanceStmt.get());
                     sqlite3_clear_bindings(lastBalanceStmt.get());
                 }
-                nAccountBalance += it->second;
+                nAccountBalance += it->second.nCoins;
                 assert(nAccountBalance >= 0);
 
                 // Insert new item
@@ -330,20 +303,6 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
                 CRC_DONE(sqlite3_step(insertStmt.get()));
                 sqlite3_reset(insertStmt.get());
                 sqlite3_clear_bindings(insertStmt.get());
-
-                mapLastAccountUpdated[it->first.nAccountId] = it->first.nHeight;
-            }
-        }
-
-        // Update latest
-        {
-            SqlAutoReleaseStmt setLatestStmt(CreateStatement(accountDB, ACCOUNT_SET_LATEST_SQL));
-            for (auto it = mapLastAccountUpdated.cbegin(); it != mapLastAccountUpdated.cend(); it++) {
-                sqlite3_bind_int64(setLatestStmt.get(), 1, static_cast<sqlite_int64>(it->first));
-                sqlite3_bind_int(setLatestStmt.get(), 2, it->second);
-                CRC_DONE(sqlite3_step(setLatestStmt.get()));
-                sqlite3_reset(setLatestStmt.get());
-                sqlite3_clear_bindings(setLatestStmt.get());
             }
         }
     }
@@ -363,7 +322,7 @@ size_t CCoinsViewDB::EstimateSize() const
 
 CAmount CCoinsViewDB::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const
 {
-    CAmount nAccountBalance = 0L;
+    CAmount nAccountBalance = 0;
 
     sqlite3_bind_int64(getAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
     sqlite3_bind_int(getAccountBalanceStmt.get(), 2, nHeight);

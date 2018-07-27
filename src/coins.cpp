@@ -14,7 +14,7 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
-CAmount CCoinsView::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const { return 0L; }
+CAmount CCoinsView::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const { return 0; }
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
 {
@@ -58,6 +58,21 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
     return ret;
 }
 
+void CCoinsViewCache::EraseAccountCoin(const COutPoint &outpoint) {
+    for (auto itDiff = cacheAccountDiffCoins.begin(); itDiff != cacheAccountDiffCoins.end(); itDiff++) {
+        auto itAudit = itDiff->second.vAudit.find(outpoint);
+        if (itAudit != itDiff->second.vAudit.end()) {
+            itDiff->second.nCoins -= itAudit->second;
+            itDiff->second.vAudit.erase(itAudit);
+            if (itDiff->second.vAudit.empty()) {
+                assert(itDiff->second.nCoins == 0);
+                cacheAccountDiffCoins.erase(itDiff);
+            }
+            break;
+        }
+    }
+}
+
 bool CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     CCoinsMap::const_iterator it = FetchCoin(outpoint);
     if (it != cacheCoins.end()) {
@@ -87,8 +102,11 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 
-    // TODO overwrite need decrease previous value
-    cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, static_cast<int>(it->second.coin.nHeight))] += it->second.coin.out.nValue;
+    if (!inserted)
+        EraseAccountCoin(outpoint);
+    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, static_cast<int>(it->second.coin.nHeight))];
+    diffCoinsValue.vAudit[outpoint] += it->second.coin.out.nValue;
+    diffCoinsValue.nCoins += it->second.coin.out.nValue;
 }
 
 void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool check) {
@@ -107,7 +125,9 @@ bool CCoinsViewCache::SpendCoin(int nHeight, const COutPoint &outpoint, Coin* mo
     if (it == cacheCoins.end()) return false;
 
     // Spent coin
-    cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, nHeight)] -= it->second.coin.out.nValue;
+    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, nHeight)];
+    diffCoinsValue.vAudit[outpoint] -= it->second.coin.out.nValue;
+    diffCoinsValue.nCoins -= it->second.coin.out.nValue;
     
     cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
     if (moveout) {
@@ -209,8 +229,13 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapA
     }
 
     // Merge account coin changes
-    for (CAccountDiffCoinsMap::iterator it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-        cacheAccountDiffCoins[it->first] += it->second;
+    for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
+        CAccountDiffCoinsValue &diffIn = it->second;
+        CAccountDiffCoinsValue &diffOut = cacheAccountDiffCoins[it->first];
+        for (auto itAudit = diffIn.vAudit.begin(); itAudit != diffIn.vAudit.end(); itAudit = diffIn.vAudit.erase(itAudit)) {
+            diffOut.vAudit[itAudit->first] += itAudit->second;
+        }
+        diffOut.nCoins += diffIn.nCoins;
     }
 
     hashBlock = hashBlockIn;
@@ -218,14 +243,14 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapA
 }
 
 CAmount CCoinsViewCache::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const {
-    CAmount nCacheAmountDiff = 0L;
+    CAmount nCacheAmountDiff = 0;
     for (auto it = cacheAccountDiffCoins.cbegin(); it != cacheAccountDiffCoins.cend(); it++) {
         if (it->first.nAccountId == nAccountId && it->first.nHeight <= nHeight) {
-            nCacheAmountDiff += it->second;
+            nCacheAmountDiff += it->second.nCoins;
         }
     }
 
-    return std::max(0L, nCacheAmountDiff + base->GetAccountBalance(nAccountId, nHeight));
+    return std::max(nCacheAmountDiff + base->GetAccountBalance(nAccountId, nHeight), (CAmount) 0);
 }
 
 bool CCoinsViewCache::Flush() {
@@ -236,12 +261,13 @@ bool CCoinsViewCache::Flush() {
     return fOk;
 }
 
-void CCoinsViewCache::Uncache(const COutPoint& hash)
+void CCoinsViewCache::Uncache(const COutPoint& outpoint)
 {
-    CCoinsMap::iterator it = cacheCoins.find(hash);
+    CCoinsMap::iterator it = cacheCoins.find(outpoint);
     if (it != cacheCoins.end() && it->second.flags == 0) {
         cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
         cacheCoins.erase(it);
+        EraseAccountCoin(outpoint);
     }
 }
 
@@ -291,18 +317,18 @@ namespace {
 
 class CAccountIdVisitor : public boost::static_visitor<bool> {
 private:
-    uint64_t *nAccountId;
+    CAccountId *nAccountId;
 
 public:
-    explicit CAccountIdVisitor(uint64_t *nAccountIdIn) { nAccountId = nAccountIdIn; }
+    explicit CAccountIdVisitor(CAccountId *nAccountIdIn) { nAccountId = nAccountIdIn; }
 
     bool operator()(const CNoDestination&) const {
-        *nAccountId = 0L;
+        *nAccountId = 0;
         return false;
     }
 
     bool operator()(const CKeyID &keyID) const {
-        *nAccountId = 0L;
+        *nAccountId = 0;
         return false;
     }
 
@@ -311,17 +337,17 @@ public:
     }
 
     bool operator()(const WitnessV0KeyHash &id) const {
-        *nAccountId = 0L;
+        *nAccountId = 0;
         return false;
     }
 
     bool operator()(const WitnessV0ScriptHash &id) const {
-        *nAccountId = 0L;
+        *nAccountId = 0;
         return false;
     }
 
     bool operator()(const WitnessUnknown &id) const {
-       *nAccountId = 0L;
+       *nAccountId = 0;
         return false;
     }
 
@@ -340,7 +366,7 @@ private:
                           ((uint64_t)begin[7]) << 56;
             return true;
         } else {
-            *nAccountId = 0L;
+            *nAccountId = 0;
             return false;
         }
     }
@@ -350,10 +376,10 @@ private:
 
 CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn) {
     CAccountId nAccountId = GetAccountId(scriptPubKey);
-    if (nAccountId != 0L) {
+    if (nAccountId != 0) {
         return CAccountDiffCoinsKey{nAccountId, nHeightIn};
     } else {
-        return CAccountDiffCoinsKey{0L, 0};
+        return CAccountDiffCoinsKey{0, 0};
     }
 }
 
@@ -364,6 +390,6 @@ CAccountId GetAccountId(const CScript &scriptPubKey) {
         boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
         return nAccountId;
     } else {
-        return 0L;
+        return 0;
     }
 }

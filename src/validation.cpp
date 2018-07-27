@@ -1134,12 +1134,12 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
 BlockReward&& GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams)
 {
-    CAmount nSubsidy = 25 * COIN;
+    CAmount nSubsidy;
 
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     if (halvings >= 64) {
         // Force block reward to zero when right shift is undefined.
-        nSubsidy = 0L;
+        nSubsidy = 0;
     } else {
         nSubsidy = 25 * COIN;
         // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
@@ -1162,12 +1162,12 @@ BlockReward&& GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId
             CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
             CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, consensusParams);
             if (nMinerBalance >= nMinerMortgage) {
-                reward.fund = nFees + (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
+                reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
             } else {
-                reward.fund = nFees + (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
+                reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
             }
         } else {
-            reward.fund = 0L;
+            reward.fund = 0;
         }
         reward.miner = nSubsidy + nFees - reward.fund;
     }
@@ -1967,11 +1967,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    if (block.vtx[0]->vout.size() < 2)
-        return state.DoS(100,
-                         error("ConnectBlock(): coinbase require 2 out ([0] to miner, [1] to fund)"),
-                         REJECT_INVALID, "bad-cb-miner_fund");
-
     BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->nMinerAccountId, view, chainparams.GetConsensus());
     if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.fund)
         return state.DoS(100,
@@ -1979,11 +1974,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.fund),
                                REJECT_INVALID, "bad-cb-amount");
 
-    if (block.vtx[0]->vout[1].nValue < blockReward.fund)
+    if (blockReward.fund != 0 && (block.vtx[0]->vout.size() < 2 || block.vtx[0]->vout[1].nValue < blockReward.fund))
         return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
-                               blockReward.fund, block.vtx[0]->vout[1].nValue),
-                               REJECT_INVALID, "bad-cb-amount-fund_less");
+                               (block.vtx[0]->vout.size() < 2 ? 0 : block.vtx[0]->vout[1].nValue), blockReward.fund),
+                               REJECT_INVALID, "bad-cb-amount-fund");
 
     if (!control.Wait())
         return state.DoS(100, error("%s: CheckQueue failed. height=%d hash=%s", __func__, pindex->nHeight, pindex->GetBlockHash().GetHex()), REJECT_INVALID, "block-validation-failed");
