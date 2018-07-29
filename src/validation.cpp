@@ -1132,7 +1132,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
-BlockReward&& GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams)
+BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy;
 

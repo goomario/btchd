@@ -283,7 +283,7 @@ typedef struct {
     CAmount miner;
     CAmount fund;
 } BlockReward;
-BlockReward&& GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams);
+BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams);
 /* Get miner mortgage */
 CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consensus::Params& consensusParams);
 
