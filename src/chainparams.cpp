@@ -86,6 +86,7 @@ public:
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
         consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdMortgageAmountPerTB = 2 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.nPowTargetSpacing = 5 * 60;
@@ -196,6 +197,7 @@ public:
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
         consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 100;
+        consensus.BtchdMortgageAmountPerTB = 2 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.nPowTargetSpacing = 5 * 60;
@@ -290,6 +292,7 @@ public:
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
         consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 10;
+        consensus.BtchdMortgageAmountPerTB = 2 * COIN;
 
         consensus.nSubsidyHalvingInterval = 300;
         consensus.nPowTargetSpacing = 5 * 60;

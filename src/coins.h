@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include <unordered_map>
+#include <map>
 
 /**
  * A UTXO entry.
@@ -121,6 +122,36 @@ struct CCoinsCacheEntry
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
 
+/** <AcountID, Height> */
+struct CAccountDiffCoinsKey
+{
+    //! account Id from scriptOutKey
+    CAccountId nAccountId;
+
+    //! at which height this containing transaction was included in the active block chain
+    int nHeight;
+};
+CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn);
+
+class CAccountDiffCoinsKeyCompare
+{
+public:
+    bool operator()(const CAccountDiffCoinsKey& a, const CAccountDiffCoinsKey& b) const
+    {
+        int cmp = a.nHeight - b.nHeight;
+        return cmp < 0 || (cmp == 0 && a.nAccountId < b.nAccountId);
+    }
+};
+
+/** Account different coins value record */
+struct CAccountDiffCoinsValue
+{
+    std::map<COutPoint, CAmount> vAudit;
+    CAmount nCoins;
+};
+
+typedef std::map<CAccountDiffCoinsKey, CAccountDiffCoinsValue, CAccountDiffCoinsKeyCompare> CAccountDiffCoinsMap;
+
 /** Cursor for iterating over CoinsView state */
 class CCoinsViewCursor
 {
@@ -165,7 +196,7 @@ public:
 
     //! Do a bulk modification (multiple Coin changes + BestBlock change).
     //! The passed mapCoins can be modified.
-    virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
+    virtual bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock);
 
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursor *Cursor() const;
@@ -175,6 +206,9 @@ public:
 
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
+
+    //! Get amount
+    virtual CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const;
 };
 
 
@@ -191,9 +225,10 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
+    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
 };
 
 
@@ -203,10 +238,11 @@ class CCoinsViewCache : public CCoinsViewBacked
 protected:
     /**
      * Make mutable so that we can "fill the cache" even from Get-methods
-     * declared as "const".  
+     * declared as "const".
      */
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
+    mutable CAccountDiffCoinsMap cacheAccountDiffCoins;
 
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage;
@@ -224,10 +260,11 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
+    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -259,7 +296,7 @@ public:
      * If no unspent output exists for the passed outpoint, this call
      * has no effect.
      */
-    bool SpendCoin(const COutPoint &outpoint, Coin* moveto = nullptr);
+    bool SpendCoin(int nHeight, const COutPoint &outpoint, Coin* moveto = nullptr);
 
     /**
      * Push the modifications applied to this cache to its base.
@@ -295,6 +332,7 @@ public:
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;
+    void EraseAccountCoin(const COutPoint &outpoint);
 };
 
 //! Utility function to add all of a transaction's outputs to a cache.
@@ -310,5 +348,8 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool 
 // which is not found in the cache, it can cause up to MAX_OUTPUTS_PER_BLOCK
 // lookups to database, so it should be used with care.
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
+
+//! Utility function to get account id with given scriptPubKey.
+CAccountId GetAccountId(const CScript &scriptPubKey);
 
 #endif // BITCOIN_COINS_H

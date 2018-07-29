@@ -151,6 +151,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
     }
+    result.push_back(Pair("minerAccountId", (uint64_t)blockindex->nMinerAccountId));
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));

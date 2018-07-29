@@ -206,6 +206,9 @@ public:
     //! Verification status of this block. See enum BlockStatus
     uint32_t nStatus;
 
+    //! Miner account ID.
+    CAccountId nMinerAccountId;
+
     //! block header
     int32_t nVersion;
     uint256 hashMerkleRoot;
@@ -233,6 +236,7 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
+        nMinerAccountId = 0;
         nSequenceId = 0;
         nTimeMax = 0;
 
@@ -395,6 +399,7 @@ public:
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
+        READWRITE(VARINT(nMinerAccountId));
         if (nStatus & (BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO))
             READWRITE(VARINT(nFile));
         if (nStatus & BLOCK_HAVE_DATA)

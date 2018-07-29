@@ -12,6 +12,9 @@
 #include <serialize.h>
 #include <uint256.h>
 
+/** Account ID */
+typedef uint64_t CAccountId;
+
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */

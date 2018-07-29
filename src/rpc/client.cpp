@@ -26,7 +26,7 @@ public:
  */
 static const CRPCConvertParam vRPCConvertParams[] =
 {
-    // BTCHD rpc new add
+    // BitcoinHD rpc new add
     { "sendMoney", 2, "feeNQT" },
     { "sendMoney", 3, "amountNQT" },
     { "getGuaranteedBalance", 1, "numOfConfirm"},

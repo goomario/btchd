@@ -6,15 +6,21 @@
 #include <txdb.h>
 
 #include <chainparams.h>
+#include <fs.h>
 #include <hash.h>
+#include <init.h>
+#include <memusage.h>
 #include <random.h>
-#include <pow.h>
 #include <uint256.h>
 #include <util.h>
 #include <ui_interface.h>
-#include <init.h>
+
+#include <exception>
+#include <map>
+#include <unordered_map>
 
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <boost/thread.hpp>
 
@@ -52,11 +58,132 @@ struct CoinEntry {
     }
 };
 
+// Throw SQL exception
+class CSqlException : public std::exception
+{
+public:
+    CSqlException(SqlAutoReleaseDB &db, const std::string &err) : std::exception()
+    {
+        detail += err;
+        detail += " (";
+        detail += sqlite3_errmsg(db.get());
+        detail += ")";
+    }
+
+    const char* what() const noexcept
+    {
+        return detail.c_str();
+    }
+
+private:
+    std::string detail;
+};
+
+void TryExecuteSql(SqlAutoReleaseDB &db, const std::string &sql) {
+    char *errmsg;
+    sqlite3_exec(db.get(), sql.c_str(), NULL, NULL, &errmsg);
+    if (errmsg != NULL) {
+        std::string err = errmsg;
+        sqlite3_free(errmsg);
+        throw CSqlException(db, err);
+    }
 }
 
-CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true) 
-{
+SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql) {
+    sqlite3 *db = NULL;
+    int rc = sqlite3_open_v2(path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    auto autoDB = SqlAutoReleaseDB(db, sqlite3_close);
+    if (rc != SQLITE_OK) {
+        throw CSqlException(autoDB, std::string("ERROR opening SQLite DB(") + path.string() + ")");
+    }
+
+    TryExecuteSql(autoDB, initSql);
+    return autoDB;
 }
+
+SqlAutoReleaseStmt CreateStatement(SqlAutoReleaseDB &db, const std::string &sql) {
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.get(), sql.c_str(), -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        throw CSqlException(db, "ERROR create SQLite statement");
+    }
+
+    return SqlAutoReleaseStmt(stmt, sqlite3_finalize);
+}
+
+void CheckRC(int requireRc, int rc, SqlAutoReleaseDB &db, const char *func) {
+    if (rc != requireRc)
+        throw CSqlException(db, func);
+}
+
+//! Auto commit wrapper
+class SqlAutoTransaction
+{
+public:
+    SqlAutoTransaction(SqlAutoReleaseDB &dbIn) : db(dbIn), commited(false) {
+        TryExecuteSql(db, "BEGIN TRANSACTION");
+    }
+
+    ~SqlAutoTransaction() {
+        if (!commited) {
+            TryExecuteSql(db, "ROLLBACK");
+        }
+    }
+
+    bool Commit() {
+        assert(!commited);
+        try {
+            TryExecuteSql(db, "COMMIT");
+            commited = true;
+            return true;
+        } catch (CSqlException &e) {
+            LogPrintf("CCoinsViewDB: Commit account transaction error: \"%s\"", e.what());
+        }
+
+        return false;
+    }
+
+private:
+    SqlAutoReleaseDB &db;
+    bool commited;
+};
+
+const std::string ACCOUNT_DDL_SQL =
+  "CREATE TABLE IF NOT EXISTS `account` ("
+  "  `db_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+  "  `accountId` BIGINT(20) NOT NULL,"
+  "  `balance` BIGINT(20) NOT NULL,"
+  "  `height` INTEGER(11) NOT NULL"
+  ");"
+  "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
+  "CREATE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);";
+const std::string ACCOUNT_INSERT_SQL =
+    "INSERT INTO `account`(`accountId`,`balance`,`height`)"
+    " VALUES(?,?,?);";
+const std::string ACCOUNT_LAST_BALANCE_SQL =
+    "SELECT `balance` FROM `account`"
+    " WHERE `accountId` = ?"
+    " ORDER BY `height` DESC"
+    " LIMIT 1;";
+const std::string ACCOUNT_INVALID_CLEAR_SQL =
+    "DELETE FROM `account`"
+    " WHERE `height` >= ?;";
+const std::string ACCOUNT_GET_BALANCE_SQL =
+    "SELECT `balance` FROM `account`"
+    " WHERE `accountId` = ? AND `height` <= ?"
+    " ORDER BY `height` DESC"
+    " LIMIT 1;";
+
+}
+
+#define CRC_DONE(rc)    CheckRC(SQLITE_DONE, rc, accountDB, __func__)
+
+
+CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
+    db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
+    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3", ACCOUNT_DDL_SQL)),
+    getAccountBalanceStmt(CreateStatement(accountDB, ACCOUNT_GET_BALANCE_SQL))
+{}
 
 bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return db.Read(CoinEntry(&outpoint), coin);
@@ -81,7 +208,7 @@ std::vector<uint256> CCoinsViewDB::GetHeadBlocks() const {
     return vhashHeadBlocks;
 }
 
-bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
+bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) {
     CDBBatch batch(db);
     size_t count = 0;
     size_t changed = 0;
@@ -136,15 +263,82 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
     batch.Erase(DB_HEAD_BLOCKS);
     batch.Write(DB_BEST_BLOCK, hashBlock);
 
-    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
-    bool ret = db.WriteBatch(batch);
+    // Update account table
+    size_t accountChanged = mapAccountDiffCoins.size();
+    size_t accountDiffCoinsMemorySize = memusage::DynamicUsage(mapAccountDiffCoins);
+    SqlAutoTransaction autoTx(accountDB);
+    if (!mapAccountDiffCoins.empty()) {
+        // Clear invalid items
+        {
+            SqlAutoReleaseStmt stmt(CreateStatement(accountDB, ACCOUNT_INVALID_CLEAR_SQL));
+            sqlite3_bind_int(stmt.get(), 1, mapAccountDiffCoins.cbegin()->first.nHeight);
+            CRC_DONE(sqlite3_step(stmt.get()));
+        }
+
+        // Reset account table sequence
+        if (mapAccountDiffCoins.cbegin()->first.nHeight <= 1) {
+            TryExecuteSql(accountDB, "DELETE FROM `sqlite_sequence` WHERE `name` = 'account';");
+        }
+
+        // Insert items
+        {
+            SqlAutoReleaseStmt lastBalanceStmt(CreateStatement(accountDB, ACCOUNT_LAST_BALANCE_SQL));
+            SqlAutoReleaseStmt insertStmt(CreateStatement(accountDB, ACCOUNT_INSERT_SQL));
+            std::unordered_map<CAccountId,CAmount> mapCacheLastBalances; // CAccountId => Balance
+            for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
+                if (it->second.nCoins == 0)
+                    continue;
+
+                CAmount &nAccountBalance = mapCacheLastBalances[it->first.nAccountId];
+                if (nAccountBalance == 0) {
+                    // Query old
+                    sqlite3_bind_int64(lastBalanceStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
+                    if (sqlite3_step(lastBalanceStmt.get()) == SQLITE_ROW) {
+                        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(lastBalanceStmt.get(), 0));
+                    }
+                    sqlite3_reset(lastBalanceStmt.get());
+                    sqlite3_clear_bindings(lastBalanceStmt.get());
+                }
+                nAccountBalance += it->second.nCoins;
+                assert(nAccountBalance >= 0);
+
+                // Insert new item
+                sqlite3_bind_int64(insertStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
+                sqlite3_bind_int64(insertStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
+                sqlite3_bind_int(insertStmt.get(), 3, it->first.nHeight);
+                CRC_DONE(sqlite3_step(insertStmt.get()));
+                sqlite3_reset(insertStmt.get());
+                sqlite3_clear_bindings(insertStmt.get());
+            }
+        }
+    }
+
+    // Commit changes
+    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", (batch.SizeEstimate() + accountDiffCoinsMemorySize) * (1.0 / 1048576.0));
+    bool ret = db.WriteBatch(batch) && autoTx.Commit();
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
+    LogPrint(BCLog::COINDB, "Committed %u changed account balance outputs to account database...\n", (unsigned int)accountChanged);
     return ret;
 }
 
 size_t CCoinsViewDB::EstimateSize() const
 {
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
+}
+
+CAmount CCoinsViewDB::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const
+{
+    CAmount nAccountBalance = 0;
+
+    sqlite3_bind_int64(getAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
+    sqlite3_bind_int(getAccountBalanceStmt.get(), 2, nHeight);
+    if (sqlite3_step(getAccountBalanceStmt.get()) == SQLITE_ROW) {
+        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountBalanceStmt.get(), 0));
+    }
+    sqlite3_reset(getAccountBalanceStmt.get());
+    sqlite3_clear_bindings(getAccountBalanceStmt.get());
+
+    return nAccountBalance;
 }
 
 CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
@@ -274,19 +468,20 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
             if (pcursor->GetValue(diskindex)) {
                 // Construct block index object
                 CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
-                pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
-                pindexNew->nHeight        = diskindex.nHeight;
-                pindexNew->nFile          = diskindex.nFile;
-                pindexNew->nDataPos       = diskindex.nDataPos;
-                pindexNew->nUndoPos       = diskindex.nUndoPos;
-                pindexNew->nVersion       = diskindex.nVersion;
-                pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
-                pindexNew->nTime          = diskindex.nTime;
-                pindexNew->nBaseTarget    = diskindex.nBaseTarget;
-                pindexNew->nNonce         = diskindex.nNonce;
-                pindexNew->nPlotterId     = diskindex.nPlotterId;
-                pindexNew->nStatus        = diskindex.nStatus;
-                pindexNew->nTx            = diskindex.nTx;
+                pindexNew->pprev           = insertBlockIndex(diskindex.hashPrev);
+                pindexNew->nHeight         = diskindex.nHeight;
+                pindexNew->nFile           = diskindex.nFile;
+                pindexNew->nDataPos        = diskindex.nDataPos;
+                pindexNew->nUndoPos        = diskindex.nUndoPos;
+                pindexNew->nVersion        = diskindex.nVersion;
+                pindexNew->hashMerkleRoot  = diskindex.hashMerkleRoot;
+                pindexNew->nTime           = diskindex.nTime;
+                pindexNew->nBaseTarget     = diskindex.nBaseTarget;
+                pindexNew->nNonce          = diskindex.nNonce;
+                pindexNew->nPlotterId      = diskindex.nPlotterId;
+                pindexNew->nStatus         = diskindex.nStatus;
+                pindexNew->nTx             = diskindex.nTx;
+                pindexNew->nMinerAccountId = diskindex.nMinerAccountId;
 
                 pcursor->Next();
             } else {
@@ -365,6 +560,8 @@ bool CCoinsViewDB::Upgrade() {
     if (!pcursor->Valid()) {
         return true;
     }
+    LogPrintf("Deprecated upgrade UTXO!\n");
+    assert(false);
 
     int64_t count = 0;
     LogPrintf("Upgrading utxo-set database...\n");
