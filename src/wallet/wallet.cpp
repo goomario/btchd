@@ -51,8 +51,10 @@ const char * DEFAULT_WALLET_DAT = "wallet.dat";
  * See https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki,
  *  https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki,
  *  https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+ * 
+ * https://github.com/satoshilabs/slips/pull/328
  */ 
-const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80501949;
+const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x8050194a;
 
 /**
  * Fees smaller than this (in satoshi) are considered zero fee (for transaction creation)
