@@ -91,10 +91,10 @@ void TryExecuteSql(SqlAutoReleaseDB &db, const std::string &sql) {
 
 SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql) {
     sqlite3 *db = NULL;
-    int rc = sqlite3_open(path.c_str(), &db);
+    int rc = sqlite3_open_v2(path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
     auto autoDB = SqlAutoReleaseDB(db, sqlite3_close);
     if (rc != SQLITE_OK) {
-        throw CSqlException(autoDB, std::string("ERROR opening SQLite DB(") + path.c_str() + ")");
+        throw CSqlException(autoDB, std::string("ERROR opening SQLite DB(") + path.string() + ")");
     }
 
     TryExecuteSql(autoDB, initSql);
@@ -273,6 +273,11 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
             SqlAutoReleaseStmt stmt(CreateStatement(accountDB, ACCOUNT_INVALID_CLEAR_SQL));
             sqlite3_bind_int(stmt.get(), 1, mapAccountDiffCoins.cbegin()->first.nHeight);
             CRC_DONE(sqlite3_step(stmt.get()));
+        }
+
+        // Reset account table sequence
+        if (mapAccountDiffCoins.cbegin()->first.nHeight <= 1) {
+            TryExecuteSql(accountDB, "DELETE FROM `sqlite_sequence` WHERE `name` = 'account';");
         }
 
         // Insert items
