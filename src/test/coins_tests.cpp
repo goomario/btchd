@@ -52,7 +52,7 @@ public:
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
 
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock) override
+    bool BatchWrite(CCoinsMap& mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256& hashBlock) override
     {
         for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); ) {
             if (it->second.flags & CCoinsCacheEntry::DIRTY) {
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
             } else {
                 removed_an_entry = true;
                 coin.Clear();
-                stack.back()->SpendCoin(COutPoint(txid, 0));
+                stack.back()->SpendCoin(1, COutPoint(txid, 0));
             }
         }
 
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE(updatecoins_simulation_test)
             // Disconnect the tx from the current UTXO
             // See code in DisconnectBlock
             // remove outputs
-            stack.back()->SpendCoin(utxod->first);
+            stack.back()->SpendCoin(1, utxod->first);
             // restore inputs
             if (!tx.IsCoinBase()) {
                 const COutPoint &out = tx.vin[0].prevout;
@@ -587,8 +587,9 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags)
 void WriteCoinsViewEntry(CCoinsView& view, CAmount value, char flags)
 {
     CCoinsMap map;
+    CAccountDiffCoinsMap mapAccountDiffCoins;
     InsertCoinsMapEntry(map, value, flags);
-    view.BatchWrite(map, {});
+    view.BatchWrite(map, mapAccountDiffCoins, {});
 }
 
 class SingleEntryCacheTest
@@ -659,7 +660,7 @@ BOOST_AUTO_TEST_CASE(ccoins_access)
 void CheckSpendCoins(CAmount base_value, CAmount cache_value, CAmount expected_value, char cache_flags, char expected_flags)
 {
     SingleEntryCacheTest test(base_value, cache_value, cache_flags);
-    test.cache.SpendCoin(OUTPOINT);
+    test.cache.SpendCoin(1, OUTPOINT);
     test.cache.SelfTest();
 
     CAmount result_value;

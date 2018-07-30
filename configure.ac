@@ -2,8 +2,8 @@ dnl require autoconf 2.60 (AS_ECHO/AS_ECHO_N)
 AC_PREREQ([2.60])
 define(_CLIENT_VERSION_MAJOR, 1)
 define(_CLIENT_VERSION_MINOR, 0)
-define(_CLIENT_VERSION_REVISION, 0)
-define(_CLIENT_VERSION_BUILD, 2)
+define(_CLIENT_VERSION_REVISION, 1)
+define(_CLIENT_VERSION_BUILD, 1)
 define(_CLIENT_VERSION_IS_RELEASE, true)
 define(_COPYRIGHT_YEAR, 2018)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
@@ -216,17 +216,17 @@ AC_ARG_ENABLE([debug],
 
 # Enable miner
 AC_ARG_ENABLE([miner],
-  [AS_HELP_STRING([--disable-miner],
-  [disable miner (enabled by default)])],
+  [AS_HELP_STRING([--enable-miner],
+  [enable miner (disabled by default)])],
   [enable_miner=$enableval],
-  [enable_miner=yes])
+  [enable_miner=no])
 
 # Enable plotter
 AC_ARG_ENABLE([plotter],
-  [AS_HELP_STRING([--disable-plotter],
-  [disable plotter (enabled by default)])],
+  [AS_HELP_STRING([--enable-plotter],
+  [enable plotter (disabled by default)])],
   [enable_plotter=$enableval],
-  [enable_plotter=yes])
+  [enable_plotter=no])
 
 # Turn warnings into errors
 AC_ARG_ENABLE([werror],
