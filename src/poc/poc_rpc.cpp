@@ -24,30 +24,6 @@
 
 void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control);
 
-static CAmount GetTxReceivedAmount(CWallet* const pwallet, const CWalletTx& wtx, const std::string& addr, int nMinDepth, bool fLong, const isminefilter& filter)
-{
-    CAmount nFee;
-    std::string strSentAccount;
-    std::list<COutputEntry> listReceived;
-    std::list<COutputEntry> listSent;
-    CAmount totalAmount = 0;
-
-    wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount, filter);
-
-    // Received
-    if (listReceived.size() > 0)
-    {
-        for (const COutputEntry& r : listReceived)
-        {   
-            if (EncodeDestination(r.destination) == addr) {
-                totalAmount += r.amount;
-            }
-        }
-    }
-
-    return totalAmount;
-}
-
 namespace poc {
 namespace rpc {
 
@@ -535,6 +511,7 @@ static UniValue sendMoney(const JSONRPCRequest& request)
 
     UniValue res(UniValue::VOBJ);
     res.pushKV("transaction", wtx.GetHash().GetHex());
+    LogPrintf("sendMoney succ,destAddr %s, txid %s\n", recipaddr.c_str(), wtx.GetHash().GetHex().c_str());
     return res;
 }
 
@@ -581,6 +558,61 @@ static UniValue checkAddressValid(const JSONRPCRequest& request)
     return res;
 }
 
+static bool HaveAddress(const CScript& scriptPubKey, const std::string& destAddr)
+{
+    txnouttype type;
+    std::vector<CTxDestination> addresses;
+    int nRequired;
+
+    if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired)) {
+        return false;
+    }
+    for (const CTxDestination& addr : addresses) {
+        if (destAddr != EncodeDestination(addr))
+            return false;
+    }
+    return true;
+}
+
+static bool IsFromAddress(const COutPoint& out, const std::string& destAddr)
+{
+    Coin coin;
+    if (pcoinsTip->GetCoin(out, coin)) {
+        return HaveAddress(coin.out.scriptPubKey, destAddr);
+    }
+
+    CTransactionRef tx;
+    uint256 blockhash;
+    if (!GetTransaction(out.hash, tx, Params().GetConsensus(), blockhash, true)) {
+        throw std::runtime_error("Not find prev out tx");
+    }
+    if (!tx || tx->IsNull()) {
+        throw std::runtime_error("Prev transaction invalid");
+    }
+    if (tx->vout.size() <= out.n) {
+        throw std::runtime_error("Prev transaction out index error");
+    }
+
+    const CTxOut& txout = tx->vout[out.n];
+    return HaveAddress(txout.scriptPubKey, destAddr);
+}
+
+static CAmount GetAmountOfAddress(const CTxOut& out, const std::string& destAddr)
+{
+    txnouttype type;
+    std::vector<CTxDestination> addresses;
+    int nRequired;
+
+    if (!ExtractDestinations(out.scriptPubKey, type, addresses, nRequired)) {
+        return false;
+    }
+    for (const CTxDestination& addr : addresses) {
+        if (destAddr == EncodeDestination(addr))
+            return out.nValue;
+    }
+    return 0;
+}
+
 static UniValue getTransactionAmount(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
@@ -588,9 +620,9 @@ static UniValue getTransactionAmount(const JSONRPCRequest& request)
             "getTransactionAmount parameter help\n"
         );
     }
-    if (request.params.size() != 3) {
+    if (request.params.size() != 4) {
         throw std::runtime_error(
-            "getTransactionAmount parameter size != 3\n"
+            "getTransactionAmount parameter size != 4\n"
         );
     }
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -607,20 +639,22 @@ static UniValue getTransactionAmount(const JSONRPCRequest& request)
 
     uint256 hash;
     hash.SetHex(request.params[0].get_str());
-    std::string addr = request.params[1].get_str();
-    int minDepth = std::atoi(request.params[2].get_str().c_str());
+    std::string receivaddr = request.params[1].get_str();
+    std::string sendaddr = request.params[2].get_str();
+    int minDepth = std::atoi(request.params[3].get_str().c_str());
 
     isminefilter filter = ISMINE_SPENDABLE;
 
     UniValue entry(UniValue::VOBJ);
     auto it = pwallet->mapWallet.find(hash);
+    //必须是本地钱包里的交易
     if (it == pwallet->mapWallet.end()) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid or non-wallet transaction id");
+        entry.push_back(Pair("amount", "0"));
+        entry.push_back(Pair("code", 4));
+        return entry;
     }
-    const CWalletTx& wtx = it->second;
-    if (wtx.IsCoinBase())
-        return NullUniValue;
 
+    const CWalletTx& wtx = it->second;
     if (wtx.IsCoinBase()) {
         entry.push_back(Pair("amount", "0"));
         entry.push_back(Pair("code", 1));
@@ -635,13 +669,29 @@ static UniValue getTransactionAmount(const JSONRPCRequest& request)
         return entry;
     }
 
-    CAmount amount = GetTxReceivedAmount(pwallet, wtx, addr, minDepth, false, filter);
+    // Check the send addr, receiv addr and total amount
+    int code = 0;
+    CAmount totalAmount = 0;
+    CTransactionRef tx = wtx.tx;
+    do {
+        for (const CTxIn& in : tx->vin) {
+            if (!IsFromAddress(in.prevout, sendaddr)) {
+                code = 3; break;
+            }
+        }
+        if (code == 3) 
+            break;
+
+        for (const CTxOut& out : tx->vout) {
+            totalAmount += GetAmountOfAddress(out, receivaddr);
+        }
+    } while (0);
 
     std::stringstream ss;
-    ss << std::fixed << std::setprecision(8) << double(amount) / COIN;
+    ss << std::fixed << std::setprecision(8) << double(totalAmount) / COIN;
 
     entry.push_back(Pair("amount", ss.str()));
-    entry.push_back(Pair("code", 0));
+    entry.push_back(Pair("code", code));
 
     return entry;
 }
@@ -664,7 +714,7 @@ static const CRPCCommand commands[] =
     { "poc",              "sendMoney",                &poc::rpc::sendMoney,             { "recipient", "recipaddr", "feeNQT" , "amountNQT"} },
     { "poc",              "getGuaranteedBalance",     &poc::rpc::getGuaranteedBalance,  { "account", "numberOfConfirmations" } },
     { "poc",              "checkAddressValid",        &poc::rpc::checkAddressValid,     { "addr" } },
-    { "poc",              "getTransactionAmount",     &poc::rpc::getTransactionAmount,  { "txid", "addr", "depth" } },
+    { "poc",              "getTransactionAmount",     &poc::rpc::getTransactionAmount,  { "txid", "receivaddr", "sendaddr", "depth" } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)
