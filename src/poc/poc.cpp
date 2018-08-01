@@ -237,8 +237,8 @@ static const int HASH_CAP = 4096;
 
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
-    if (prevBlockIndex.nHeight + 1 <= params.BtchdFundPreMingingHeight) {
-        // Fund
+    if (prevBlockIndex.nHeight + 1 <= params.BtchdFundPreMingingHeight || params.fPowAllowMinDifficultyBlocks) {
+        // Fund Or regtest
         return 0;
     }
 

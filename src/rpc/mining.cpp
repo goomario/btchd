@@ -44,13 +44,11 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
 {
     int nHeightEnd = 0;
     int nHeight = 0;
-    uint32_t nTime = 0;
 
     {   // Don't keep cs_main locked
         LOCK(cs_main);
         nHeight = chainActive.Height();
         nHeightEnd = nHeight + nGenerate;
-        nTime = Params().GenesisBlock().nTime + nHeight;
     }
     while (nHeight < nHeightEnd) {
         ++nHeight;
@@ -69,10 +67,10 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
 
         pblock->nNonce = 0;
         pblock->nPlotterId = 0;
-        pblock->nTime = ++nTime;
         {
             // Update nBaseTarget beacuse nTime has changed
             LOCK(cs_main);
+            pblock->nTime = chainActive.Tip()->nTime + 1;
             pblock->nBaseTarget = GetNextWorkRequired(chainActive.Tip(), pblock, Params().GetConsensus());
         }
 

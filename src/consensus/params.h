@@ -80,6 +80,7 @@ struct Params {
     uint32_t nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
+    bool fPowAllowMinDifficultyBlocks;
     int64_t nPowTargetSpacing;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
