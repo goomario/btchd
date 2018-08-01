@@ -10,7 +10,7 @@
  */
 
 //! fork from bitcoin 70015
-static const int PROTOCOL_VERSION = 80015;
+static const int PROTOCOL_VERSION = 80016;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
@@ -40,7 +40,10 @@ static const int SHORT_IDS_BLOCKS_VERSION = 70014;
 //! not banning for invalid compact blocks starts with this version
 static const int INVALID_CB_NO_BAN_VERSION = 70015;
 
+//! test with this version
+static const int PRETEST_VERSION = 80015;
+
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = PROTOCOL_VERSION;
+static const int MIN_PEER_PROTO_VERSION = 80016;
 
 #endif // BITCOIN_VERSION_H
