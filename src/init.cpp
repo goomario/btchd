@@ -521,7 +521,7 @@ std::string HelpMessage(HelpMessageMode mode)
 std::string LicenseInfo()
 {
     const std::string URL_SOURCE_CODE = "<https://github.com/btchd/btchd>";
-    const std::string URL_WEBSITE = "<http://btchd.net>";
+    const std::string URL_WEBSITE = "<http://btchd.org>";
 
     return CopyrightHolders(_("Copyright (C) %s")) + "\n" +
            "\n" +
