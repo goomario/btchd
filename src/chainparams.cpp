@@ -289,8 +289,8 @@ public:
     CRegTestParams() {
         strNetworkID = "regtest";
 
-        consensus.BtchdFundAddress = "";
-        consensus.BtchdFundPreMingingHeight = 840; // 21M * 0.1% = 0.021M, 0.021M/25=840
+        consensus.BtchdFundAddress = "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy"; // pubkey 03eab29d59f6d14053c6e98f6d3d7e7db9cc17c619a513b9c00aa416fbdada73f1
+        consensus.BtchdFundPreMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
         consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 10;

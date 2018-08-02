@@ -44,7 +44,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
 {
     int nHeightEnd = 0;
     int nHeight = 0;
-
+    
     {   // Don't keep cs_main locked
         LOCK(cs_main);
         nHeight = chainActive.Height();
@@ -65,10 +65,8 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
         pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
         pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
-        pblock->nNonce = 0;
-        pblock->nPlotterId = 0;
-        {
-            // Update nBaseTarget beacuse nTime has changed
+        if (nHeight <= Params().GetConsensus().BtchdFundPreMingingHeight) {
+            // Update nBaseTarget because nTime has changed
             LOCK(cs_main);
             pblock->nTime = chainActive.Tip()->nTime + 1;
             pblock->nBaseTarget = GetNextWorkRequired(chainActive.Tip(), pblock, Params().GetConsensus());
