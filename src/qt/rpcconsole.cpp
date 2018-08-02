@@ -25,6 +25,7 @@
 #ifdef ENABLE_WALLET
 #include <db_cxx.h>
 #include <wallet/wallet.h>
+#include <sqlite3.h>
 #endif
 
 #include <QDesktopWidget>
@@ -480,10 +481,14 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     // set library version labels
 #ifdef ENABLE_WALLET
     ui->berkeleyDBVersion->setText(DbEnv::version(0, 0, 0));
+    ui->sqliteDBVersion->setText(sqlite3_libversion());
 #else
     ui->label_berkeleyDBVersion->hide();
     ui->berkeleyDBVersion->hide();
+    ui->label_sqliteDBVersion->hide();
+    ui->sqliteDBVersion->hide();
 #endif
+
     // Register RPC timer interface
     rpcTimerInterface = new QtRPCTimerInterface();
     // avoid accidentally overwriting an existing, non QTThread

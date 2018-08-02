@@ -1611,6 +1611,10 @@
         <translation>使用 BerkeleyDB 版本</translation>
     </message>
     <message>
+        <source>Using SQLite version</source>
+        <translation>使用 SQLite 版本</translation>
+    </message>
+    <message>
         <source>Datadir</source>
         <translation>資料目錄</translation>
     </message>

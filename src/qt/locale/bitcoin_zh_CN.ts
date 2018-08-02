@@ -841,7 +841,7 @@
     </message>
     <message>
         <source>About %1</source>
-        <translation>關於 %1</translation>
+        <translation>关于 %1</translation>
     </message>
     <message>
         <source>Command-line options</source>
@@ -1640,7 +1640,11 @@
     </message>
     <message>
         <source>Using BerkeleyDB version</source>
-        <translation>使用的 BerkeleyDB 版本</translation>
+        <translation>使用 BerkeleyDB 版本</translation>
+    </message>
+    <message>
+        <source>Using SQLite version</source>
+        <translation>使用 SQLite 版本</translation>
     </message>
     <message>
         <source>Datadir</source>
