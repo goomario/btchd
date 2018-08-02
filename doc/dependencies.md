@@ -29,3 +29,4 @@ These are the dependencies currently used by Bitcoin Core. You can find instruct
 | xkbcommon |  |  |  |  | [Yes](https://github.com/bitcoin/bitcoin/blob/master/depends/packages/qt.mk#L93) (Linux only) |
 | ZeroMQ | [4.2.2](https://github.com/zeromq/libzmq/releases) |  | No |  |  |
 | zlib | [1.2.11](http://zlib.net/) |  |  |  | No |
+| sqlite | [3.24.0](https://sqlite.org/) |  |  |  | No |

@@ -24,18 +24,18 @@ URL:		http://btchd.org/
 Source0:	http://btchd.org/bin/BTCHD-core-%{version}/BTCHD-%{version}.tar.gz
 Source1:	http://download.oracle.com/berkeley-db/db-%{bdbv}.NC.tar.gz
 
-Source10:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/debian/examples/btchd.conf
+Source10:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/debian/examples/btchd.conf
 
 #man pages
-Source20:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/doc/man/btchdd.1
-Source21:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/doc/man/btchd-cli.1
-Source22:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/doc/man/btchd-qt.1
+Source20:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/doc/man/btchdd.1
+Source21:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/doc/man/btchd-cli.1
+Source22:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/doc/man/btchd-qt.1
 
 #selinux
-Source30:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/rpm/btchd.te
+Source30:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/rpm/btchd.te
 # Source31 - what about btchd-tx and bench_bitcoin ???
-Source31:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/rpm/btchd.fc
-Source32:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/rpm/btchd.if
+Source31:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/rpm/btchd.fc
+Source32:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/rpm/btchd.if
 
 Source100:	https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg
 

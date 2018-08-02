@@ -36,6 +36,7 @@ These dependencies are required:
  libssl      | Crypto           | Random Number Generation, Elliptic Curve Cryptography
  libboost    | Utility          | Library for threading, data structures, etc
  libevent    | Networking       | OS independent asynchronous networking
+ libsqlite   | Embedded DB      | SQL database engine
 
 Optional dependencies:
 
@@ -65,7 +66,7 @@ Dependency Build Instructions: Ubuntu & Debian
 ----------------------------------------------
 Build requirements:
 
-    sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils python3
+    sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils python3 libsqlite3-dev
 
 Options when installing required Boost library files:
 
@@ -103,11 +104,6 @@ Optional (see --with-miniupnpc and --enable-upnp-default):
 ZMQ dependencies (provides ZMQ API 4.x):
 
     sudo apt-get install libzmq3-dev
-
-Sqlite3 dependencies:
-
-    sudo apt-get install libsqlite3-dev
-
 
 Dependencies for the GUI: Ubuntu & Debian
 -----------------------------------------
@@ -264,7 +260,7 @@ Setup and Build Example: Arch Linux
 This example lists the steps necessary to setup and build a command line only, non-wallet distribution of the latest changes on Arch Linux:
 
     pacman -S git base-devel boost libevent python
-    git clone https://github.com/bitcoinoreorg/btchd.git btchd-src
+    git clone https://github.com/btchd/btchd.git btchd-src
     cd btchd-src/
     ./autogen.sh
     ./configure --disable-wallet --without-gui --without-miniupnpc

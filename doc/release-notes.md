@@ -7,7 +7,7 @@ and performance improvements, as well as updated translations.
 
 Please report bugs using the issue tracker at GitHub:
 
-  <http://github.com/bitcoinoreorg/btchd/issues>
+  <http://github.com/btchd/btchd/issues>
 
 To receive security and update notifications, please subscribe to:
 
@@ -38,7 +38,7 @@ Example item
 
 Example item for a notable change.
 
-0.16.x change log
+1.0.x change log
 ------------------
 
 (to be filled in at release time)

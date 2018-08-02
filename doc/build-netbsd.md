@@ -25,7 +25,7 @@ python27
 
 Download the source code:
 ```
-git clone https://github.com/bitcoinoreorg/btchd.git
+git clone https://github.com/btchd/btchd.git
 ```
 
 See [dependencies.md](dependencies.md) for a complete overview.

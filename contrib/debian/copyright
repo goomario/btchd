@@ -2,7 +2,7 @@ Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: BTCHD
 Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
  irc://#btchd@freenode.net
-Source: https://github.com/bitcoinoreorg/btchd
+Source: https://github.com/btchd/btchd
 
 Files: *
 Copyright: 2017-2018, BTCHD Core Developers
@@ -48,6 +48,7 @@ Files: src/qt/res/icons/add.png
        src/qt/res/icons/transaction*.png
        src/qt/res/icons/tx_output.png
        src/qt/res/icons/warning.png
+       src/qt/res/icons/miner.png
 Copyright: Stephen Hutchings (and more)
            http://typicons.com
 License: Expat
