@@ -1280,7 +1280,9 @@ void BitcoinGUI::genMinerAccount()
     information += tr("Passphrase: %1").arg(QString::fromStdString(passphrase)) + "\n";
     information += tr("Account Id: %1").arg(QString::number(nAccountId));
 
-    QMessageBox::information(this, tr("Generate mining account"), information);
+    QMessageBox messageBox(QMessageBox::Information, tr("Generate mining account"), information, QMessageBox::Ok, this);
+    messageBox.setTextInteractionFlags(Qt::TextSelectableByMouse);
+    messageBox.exec();
 }
 
 #ifdef ENABLE_MINER
