@@ -38,7 +38,7 @@
   <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>net.btchd.BTCHD-Qt</string>
+  <string>org.btchd.BTCHD-Qt</string>
 
   <key>CFBundleURLTypes</key>
   <array>
@@ -46,7 +46,7 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleURLName</key>
-      <string>net.btchd.BTCHDPayment</string>
+      <string>org.btchd.BTCHDPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
         <string>btchd</string>
@@ -58,7 +58,7 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>net.btchd.paymentrequest</string>
+      <string>org.btchd.paymentrequest</string>
       <key>UTTypeDescription</key>
       <string>BTCHD payment request</string>
       <key>UTTypeConformsTo</key>
@@ -84,7 +84,7 @@
       <string>Editor</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>net.btchd.paymentrequest</string>
+        <string>org.btchd.paymentrequest</string>
       </array>
       <key>LSHandlerRank</key>
       <string>Owner</string>

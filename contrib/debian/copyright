@@ -7,7 +7,7 @@ Source: https://github.com/bitcoinoreorg/btchd
 Files: *
 Copyright: 2017-2018, BTCHD Core Developers
 License: Expat
-Comment: The BTCHD Core Developers encompasses the current developers listed on btchd.net,
+Comment: The BTCHD Core Developers encompasses the current developers listed on btchd.org,
          as well as the numerous contributors to the project.
 
 Files: debian/*
