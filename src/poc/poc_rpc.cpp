@@ -3,8 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <poc/poc.h>
+#include <base58.h>
 #include <chainparams.h>
-#include <consensus/params.h>
+#include <consensus/validation.h>
+#include <net.h>
+#include <poc/passphrase.h>
+#include <rpc/safemode.h>
 #include <rpc/server.h>
 #include <util.h>
 #include <utilstrencodings.h>
@@ -14,11 +18,8 @@
 #include <wallet/feebumper.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
-#include <rpc/safemode.h>
-#include <net.h>
 #include <utilmoneystr.h>
-#include <consensus/validation.h>
-#include <base58.h>
+
 #include <sstream>
 #include <iomanip>
 
@@ -26,6 +27,29 @@ void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount n
 
 namespace poc {
 namespace rpc {
+
+static UniValue getMinerAccount(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "getmineraccount\n"
+            "\nGet new miner account.\n"
+            "\nResult:\n"
+            "{\n"
+            "  [ passphrase ]              (string) Passphrase\n"
+            "  [ accountId ]               (string) Account ID\n"
+            "}\n"
+        );
+    }
+
+    std::string passphrase = poc::generatePassPhrase();
+    uint64_t nAccountId = poc::GetAccountIdByPassPhrase(passphrase);
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("passphrase", passphrase);
+    result.pushKV("accountId", std::to_string(nAccountId));
+    return result;
+}
 
 static UniValue getMiningInfo(const JSONRPCRequest& request)
 {
@@ -639,7 +663,7 @@ static UniValue getTransactionAmount(const JSONRPCRequest& request)
 
     UniValue entry(UniValue::VOBJ);
     auto it = pwallet->mapWallet.find(hash);
-    //±ØÐëÊÇ±¾µØÇ®°üÀïµÄ½»Ò×
+    //ï¿½ï¿½ï¿½ï¿½ï¿½Ç±ï¿½ï¿½ï¿½Ç®ï¿½ï¿½ï¿½ï¿½Ä½ï¿½ï¿½ï¿½
     if (it == pwallet->mapWallet.end()) {
         entry.push_back(Pair("amount", "0"));
         entry.push_back(Pair("code", 4));
@@ -693,6 +717,8 @@ static UniValue getTransactionAmount(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)                  argNames
   //  --------------------- ------------------------  -----------------------           ----------
+    { "poc",              "getmineraccount",          &poc::rpc::getMinerAccount,         { } },
+    { "poc",              "getMinerAccount",          &poc::rpc::getMinerAccount,         { } },
     { "poc",              "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
     { "poc",              "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId" } },
     { "poc",              "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase"} },

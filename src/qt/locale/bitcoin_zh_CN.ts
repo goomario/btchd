@@ -416,6 +416,14 @@
         <translation>工具(&amp;T)</translation>
     </message>
     <message>
+        <source>&amp;Generate mining account</source>
+        <translation>生成挖矿账户(&amp;G)</translation>
+    </message>
+    <message>
+        <source>Generate mining account</source>
+        <translation>生成挖矿账户</translation>
+    </message>
+    <message>
         <source>Open &amp;Miner</source>
         <translation>打开挖矿控制台(&amp;M)</translation>
     </message>
@@ -570,6 +578,18 @@
     <message>
         <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
         <translation>发生严重错误。客户端无法安全地继续运行，即将退出。</translation>
+    </message>
+    <message>
+        <source>Please save your mining account.</source>
+        <translation>请保存好你的挖矿账号。</translation>
+    </message>
+    <message>
+        <source>Passphrase: %1</source>
+        <translation>脑密码: %1</translation>
+    </message>
+    <message>
+        <source>Account Id: %1</source>
+        <translation>账户ID: %1</translation>
     </message>
 </context>
 <context>

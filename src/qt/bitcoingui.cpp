@@ -38,6 +38,8 @@
 
 #include <chainparams.h>
 #include <init.h>
+#include <poc/passphrase.h>
+#include <poc/poc.h>
 #include <ui_interface.h>
 #include <util.h>
 
@@ -124,6 +126,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     rpcConsole(0),
     helpMessageDialog(0),
     modalOverlay(0),
+    genMinerAccountAction(0),
 #ifdef ENABLE_MINER
     openMinerAction(0),
     minerConsole(0),
@@ -426,6 +429,10 @@ void BitcoinGUI::createActions()
     }
 #endif // ENABLE_WALLET
 
+    genMinerAccountAction = new QAction(platformStyle->TextColorIcon(":/icons/tx_mined"), tr("&Generate mining account"), this);
+    genMinerAccountAction->setStatusTip(tr("Generate mining account"));
+    connect(genMinerAccountAction, SIGNAL(triggered()), this, SLOT(genMinerAccount()));
+
 #ifdef ENABLE_MINER
     openMinerAction = new QAction(platformStyle->TextColorIcon(":/icons/tx_mined"), tr("Open &Miner"), this);
     openMinerAction->setStatusTip(tr("Open mining console"));
@@ -476,14 +483,14 @@ void BitcoinGUI::createMenuBar()
     }
     settings->addAction(optionsAction);
 
-#if defined(ENABLE_MINER) || defined(ENABLE_PLOTTER)
     QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
+    tools->addAction(genMinerAccountAction);
+
 #ifdef ENABLE_MINER
     tools->addAction(openMinerAction);
 #endif
 #ifdef ENABLE_PLOTTER
     tools->addAction(openPlotAction);
-#endif
 #endif
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
@@ -1261,6 +1268,19 @@ void BitcoinGUI::toggleNetworkActive()
     if (clientModel) {
         clientModel->setNetworkActive(!clientModel->getNetworkActive());
     }
+}
+
+void BitcoinGUI::genMinerAccount()
+{
+    std::string passphrase = poc::generatePassPhrase();
+    uint64_t nAccountId = poc::GetAccountIdByPassPhrase(passphrase);
+
+    QString information;
+    information += tr("Please save your mining account.") + "\n\n";
+    information += tr("Passphrase: %1").arg(QString::fromStdString(passphrase)) + "\n";
+    information += tr("Account Id: %1").arg(QString::number(nAccountId));
+
+    QMessageBox::information(this, tr("Generate mining account"), information);
 }
 
 #ifdef ENABLE_MINER
