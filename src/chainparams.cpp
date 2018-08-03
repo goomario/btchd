@@ -82,7 +82,7 @@ public:
         strNetworkID = "main";
 
         consensus.BtchdFundAddress = "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y";
-        consensus.BtchdFundPreMingingHeight = 84000; // 21M * 10% = 2.1M, 2.1M/25=84000
+        consensus.BtchdFundPreMingingHeight = 84000 + 1; // 21M * 10% = 2.1M, 2.1M/25=84000, + 1 to deprecated test data
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
         consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
@@ -172,13 +172,14 @@ public:
                 { 42000, uint256S("0xc310775fdc8c7db8937a8a8bfb484977656a65c1decfaa4a08a956936e6373d9") },
                 { 63000, uint256S("0x1d6bb1fa686040982fb236a1dcaf9bc046db602f0dbafae3c719b55fbd498b72") },
                 { 84000, uint256S("0x8d1846b9e447624d86bbf81d4f02dbe52f08efb692c1c3a15a231297fc05b214") },
+                { 84000, uint256S("0xa474cb4eeca85ada0f4600b1d6fe656bb09c88328e00c3fcccc0136f2c360e94") },
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 8d1846b9e447624d86bbf81d4f02dbe52f08efb692c1c3a15a231297fc05b214 (height 84000)
-            18325193796, // * UNIX timestamp of last known number of transactions
-            84001, // * total number of transactions between genesis and that timestamp
+            // Data as of block a474cb4eeca85ada0f4600b1d6fe656bb09c88328e00c3fcccc0136f2c360e94 (height 84000)
+            1531376790, // * UNIX timestamp of last known number of transactions
+            84002, // * total number of transactions between genesis and that timestamp
                    //   (the tx=... number in the SetBestChain debug.log lines)
             0      // * estimated number of transactions per second after that timestamp
         };
