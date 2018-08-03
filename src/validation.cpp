@@ -1884,10 +1884,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "    - Sanity checks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime1 - nTimeStart), nTimeCheck * MICRO, nTimeCheck * MILLI / nBlocksTotal);
 
     // Refuse test block data
-    if (pindex->nHeight == 84001 && pindex->GetBlockHash() == uint256S("0xad481dd2f3b8b988c5c0e42aa115c254c5721256ec1120f55b64103ea717adb5")) {
-        return error("ConnectBlock(): Refuse height %d(%s)",
-                    pindex->nHeight, pindex->GetBlockHash().ToString());
-
+    if (pindex->nHeight == 84001 && pindex->phashBlock != nullptr
+            && pindex->GetBlockHash() == uint256S("0xad481dd2f3b8b988c5c0e42aa115c254c5721256ec1120f55b64103ea717adb5")) {
+        return error("ConnectBlock(): Refuse test block %d(%s)", pindex->nHeight, pindex->GetBlockHash().ToString());
     }
 
     // Start enforcing BIP68 (sequence locks) and BIP112 (CHECKSEQUENCEVERIFY) using versionbits logic.
