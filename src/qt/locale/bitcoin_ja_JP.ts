@@ -1457,6 +1457,10 @@
         <translation>BerkeleyDBバージョンの使用</translation>
     </message>
     <message>
+        <source>Using SQLite version</source>
+        <translation>SQLiteバージョンの使用</translation>
+    </message>
+    <message>
         <source>Datadir</source>
         <translation>データディレクトリ</translation>
     </message>

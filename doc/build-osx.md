@@ -16,7 +16,7 @@ Then install [Homebrew](https://brew.sh).
 Dependencies
 ----------------------
 
-    brew install automake berkeley-db4 libtool boost miniupnpc openssl pkg-config protobuf python3 qt libevent
+    brew install automake berkeley-db4 libtool boost miniupnpc openssl pkg-config protobuf python3 qt libevent sqlite
 
 See [dependencies.md](dependencies.md) for a complete overview.
 
@@ -45,7 +45,7 @@ Build BTCHD Core
 
 1. Clone the BTCHD source code and cd into `btchd-src`
 
-        git clone https://github.com/bitcoinoreorg/btchd btchd-src
+        git clone https://github.com/btchd/btchd btchd-src
         cd btchd-src
 
 2.  Build btchd-core:

@@ -127,6 +127,8 @@ private:
     HelpMessageDialog *helpMessageDialog;
     ModalOverlay *modalOverlay;
 
+    QAction *genMinerAccountAction;
+
 #ifdef ENABLE_MINER
     QAction *openMinerAction;
     MinerConsole *minerConsole;
@@ -259,6 +261,8 @@ private Q_SLOTS:
     void toggleNetworkActive();
 
     void showModalOverlay();
+
+    void genMinerAccount();
 
 #ifdef ENABLE_MINER
     /** Show mining setting console */

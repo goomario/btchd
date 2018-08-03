@@ -1,10 +1,12 @@
 // Copyright (c) 2017-2018 The BTCHD Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#include "poc/passphrase.h"
+
+#include <poc/passphrase.h>
 
 #include <stdlib.h>
 #include <time.h>
+#include <utility>
 
 static const char *PassPhrase[] = {
     "like",
@@ -1648,7 +1650,7 @@ std::string generatePassPhrase()
         phrase.append(PassPhrase[rand() % sizeof(PassPhrase) / sizeof(PassPhrase[0])]);
     }
 
-    return phrase;
+    return std::move(phrase);
 }
 
 }

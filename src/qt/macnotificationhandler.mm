@@ -13,7 +13,7 @@
 - (NSString *)__bundleIdentifier
 {
     if (self == [NSBundle mainBundle]) {
-        return @"net.btchd.BTCHD-Qt";
+        return @"org.btchd.BTCHD-Qt";
     } else {
         return [self __bundleIdentifier];
     }

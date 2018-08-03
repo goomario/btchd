@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/usr/local/bin/btchdd -datadir=/btchd/data/ -externalip=$EXTERNALIP -maxtipage=$MAXTIPAGE
+/btchd/bin/btchdd -datadir=/btchd/data/ -externalip=$EXTERNALIP -maxtipage=$MAXTIPAGE

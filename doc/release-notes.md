@@ -1,17 +1,17 @@
 BTCHD Core version 1.0.x is now available from:
 
-  <http://btchd.net/bin/btchd-core-1.0.x/>
+  <http://btchd.org/bin/btchd-core-1.0.x/>
 
 This is a new major version release, including new features, various bugfixes
 and performance improvements, as well as updated translations.
 
 Please report bugs using the issue tracker at GitHub:
 
-  <http://github.com/bitcoinoreorg/btchd/issues>
+  <http://github.com/btchd/btchd/issues>
 
 To receive security and update notifications, please subscribe to:
 
-  <http://btchd.net/en/list/announcements/join/>
+  <http://btchd.org/en/list/announcements/join/>
 
 How to Upgrade
 ==============
@@ -38,7 +38,7 @@ Example item
 
 Example item for a notable change.
 
-0.16.x change log
+1.0.x change log
 ------------------
 
 (to be filled in at release time)

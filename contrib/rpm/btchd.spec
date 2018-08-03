@@ -20,22 +20,22 @@ Summary:	Peer to Peer Cryptographic Currency
 
 Group:		Applications/System
 License:	MIT
-URL:		http://btchd.net/
-Source0:	http://btchd.net/bin/BTCHD-core-%{version}/BTCHD-%{version}.tar.gz
+URL:		http://btchd.org/
+Source0:	http://btchd.org/bin/BTCHD-core-%{version}/BTCHD-%{version}.tar.gz
 Source1:	http://download.oracle.com/berkeley-db/db-%{bdbv}.NC.tar.gz
 
-Source10:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/debian/examples/btchd.conf
+Source10:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/debian/examples/btchd.conf
 
 #man pages
-Source20:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/doc/man/btchdd.1
-Source21:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/doc/man/btchd-cli.1
-Source22:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/doc/man/btchd-qt.1
+Source20:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/doc/man/btchdd.1
+Source21:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/doc/man/btchd-cli.1
+Source22:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/doc/man/btchd-qt.1
 
 #selinux
-Source30:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/rpm/btchd.te
+Source30:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/rpm/btchd.te
 # Source31 - what about btchd-tx and bench_bitcoin ???
-Source31:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/rpm/btchd.fc
-Source32:	https://raw.githubusercontent.com/bitcoinoreorg/btchd/v%{version}/contrib/rpm/btchd.if
+Source31:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/rpm/btchd.fc
+Source32:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/rpm/btchd.if
 
 Source100:	https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg
 
@@ -332,9 +332,9 @@ if [ `%{_sbindir}/sestatus |grep -c "disabled"` -eq 0 ]; then
 for selinuxvariant in %{selinux_variants}; do
 	%{_sbindir}/semodule -s ${selinuxvariant} -i %{_datadir}/selinux/${selinuxvariant}/btchd.pp &> /dev/null || :
 done
-%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 8832
+%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 8732
 %{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 8833
-%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18832
+%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18732
 %{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18833
 %{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18443
 %{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18444
@@ -353,9 +353,9 @@ fi
 # SELinux
 if [ $1 -eq 0 ]; then
 	if [ `%{_sbindir}/sestatus |grep -c "disabled"` -eq 0 ]; then
-	%{_sbindir}/semanage port -d -p tcp 8832
+	%{_sbindir}/semanage port -d -p tcp 8732
 	%{_sbindir}/semanage port -d -p tcp 8833
-	%{_sbindir}/semanage port -d -p tcp 18832
+	%{_sbindir}/semanage port -d -p tcp 18732
 	%{_sbindir}/semanage port -d -p tcp 18833
 	%{_sbindir}/semanage port -d -p tcp 18443
 	%{_sbindir}/semanage port -d -p tcp 18444

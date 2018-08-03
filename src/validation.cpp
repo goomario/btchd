@@ -1179,7 +1179,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
 CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consensus::Params& consensusParams)
 {
     assert(nHeight <= chainActive.Height());
-    const static int HISTORY_COUNT = 1000;
+    const static int HISTORY_COUNT = 7 * 24 * 60 * 60 / consensusParams.nPowTargetSpacing; // 7 days, 2016 blocks
     int nIsThis = 0;
     int nBeginHeight = std::max(nHeight - HISTORY_COUNT, consensusParams.BtchdFundPreMingingHeight + 1);
     for (int index = nBeginHeight; index <= nHeight; index++) {

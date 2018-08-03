@@ -416,6 +416,14 @@
         <translation>工具(&amp;T)</translation>
     </message>
     <message>
+        <source>&amp;Generate mining account</source>
+        <translation>生成挖矿账户(&amp;G)</translation>
+    </message>
+    <message>
+        <source>Generate mining account</source>
+        <translation>生成挖矿账户</translation>
+    </message>
+    <message>
         <source>Open &amp;Miner</source>
         <translation>打开挖矿控制台(&amp;M)</translation>
     </message>
@@ -570,6 +578,18 @@
     <message>
         <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
         <translation>发生严重错误。客户端无法安全地继续运行，即将退出。</translation>
+    </message>
+    <message>
+        <source>Please save your mining account.</source>
+        <translation>请保存好你的挖矿账号。</translation>
+    </message>
+    <message>
+        <source>Passphrase: %1</source>
+        <translation>脑密码: %1</translation>
+    </message>
+    <message>
+        <source>Account Id: %1</source>
+        <translation>账户ID: %1</translation>
     </message>
 </context>
 <context>
@@ -821,7 +841,7 @@
     </message>
     <message>
         <source>About %1</source>
-        <translation>關於 %1</translation>
+        <translation>关于 %1</translation>
     </message>
     <message>
         <source>Command-line options</source>
@@ -880,7 +900,7 @@
     </message>
     <message>
         <source>When you click OK, %1 will begin to download and process the full %4 block chain (%2GB) starting with the earliest transactions in %3 when %4 initially launched.</source>
-        <translation>当你点击确认后，%1 将会在 %4 启动时从  %3 中最早的交易开始，下载并处理完整的 %4 区块链 (%2GB)。</translation>
+        <translation>当你点击确认后，%1 将会在 %4 启动时从 %3 中最早的交易开始，下载并处理完整的 %4 区块链 (%2GB)。</translation>
     </message>
     <message>
         <source>This initial synchronisation is very demanding, and may expose hardware problems with your computer that had previously gone unnoticed. Each time you run %1, it will continue downloading where it left off.</source>
@@ -1620,7 +1640,11 @@
     </message>
     <message>
         <source>Using BerkeleyDB version</source>
-        <translation>使用的 BerkeleyDB 版本</translation>
+        <translation>使用 BerkeleyDB 版本</translation>
+    </message>
+    <message>
+        <source>Using SQLite version</source>
+        <translation>使用 SQLite 版本</translation>
     </message>
     <message>
         <source>Datadir</source>
