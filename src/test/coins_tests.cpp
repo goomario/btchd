@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
                     (coin.IsSpent() ? added_an_entry : updated_an_entry) = true;
                     coin = newcoin;
                 }
-                stack.back()->AddCoin(COutPoint(txid, 0), std::move(newcoin), !coin.IsSpent() || InsecureRand32() & 1);
+                stack.back()->AddCoin(newcoin.nHeight, COutPoint(txid, 0), std::move(newcoin), !coin.IsSpent() || InsecureRand32() & 1);
             } else {
                 removed_an_entry = true;
                 coin.Clear();
@@ -717,7 +717,7 @@ void CheckAddCoinBase(CAmount base_value, CAmount cache_value, CAmount modify_va
     try {
         CTxOut output;
         output.nValue = modify_value;
-        test.cache.AddCoin(OUTPOINT, Coin(std::move(output), 1, coinbase), coinbase);
+        test.cache.AddCoin(1, OUTPOINT, Coin(std::move(output), 1, coinbase), coinbase);
         test.cache.SelfTest();
         GetCoinsMapEntry(test.cache.map(), result_value, result_flags);
     } catch (std::logic_error& e) {

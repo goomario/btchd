@@ -1182,6 +1182,9 @@ CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consen
     const static int HISTORY_COUNT = 7 * 24 * 60 * 60 / consensusParams.nPowTargetSpacing; // 7 days, 2016 blocks
     int nIsThis = 0;
     int nBeginHeight = std::max(nHeight - HISTORY_COUNT, consensusParams.BtchdFundPreMingingHeight + 1);
+    if (nHeight <= nBeginHeight) {
+        return (CAmount) 0;
+    }
     for (int index = nBeginHeight; index <= nHeight; index++) {
         if (chainActive[index]->nMinerAccountId == nAccountId)
             nIsThis++;
@@ -1566,7 +1569,7 @@ bool AbortNode(CValidationState& state, const std::string& strMessage, const std
  * @param out The out point that corresponds to the tx input.
  * @return A DisconnectResult as an int
  */
-int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
+int ApplyTxInUndo(int nUndoHeight, Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
 {
     bool fClean = true;
 
@@ -1588,7 +1591,7 @@ int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
     // sure that the coin did not already exist in the cache. As we have queried for that above
     // using HaveCoin, we don't need to guess. When fClean is false, a coin already existed and
     // it is an overwrite.
-    view.AddCoin(out, std::move(undo), !fClean);
+    view.AddCoin(nUndoHeight, out, std::move(undo), !fClean);
 
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
@@ -1638,7 +1641,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
             }
             for (unsigned int j = tx.vin.size(); j-- > 0;) {
                 const COutPoint &out = tx.vin[j].prevout;
-                int res = ApplyTxInUndo(std::move(txundo.vprevout[j]), view, out);
+                int res = ApplyTxInUndo(pindex->nHeight, std::move(txundo.vprevout[j]), view, out);
                 if (res == DISCONNECT_FAILED) return DISCONNECT_FAILED;
                 fClean = fClean && res != DISCONNECT_UNCLEAN;
             }
