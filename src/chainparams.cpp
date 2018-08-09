@@ -89,7 +89,7 @@ public:
         consensus.BtchdMortgageAmountPerTB = 2 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
-        consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.fPocAllowMinDifficultyBlocks = false;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016;
@@ -202,7 +202,7 @@ public:
         consensus.BtchdMortgageAmountPerTB = 2 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
-        consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.fPocAllowMinDifficultyBlocks = false;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016;
@@ -298,7 +298,7 @@ public:
         consensus.BtchdMortgageAmountPerTB = 2 * COIN;
 
         consensus.nSubsidyHalvingInterval = 300;
-        consensus.fPowAllowMinDifficultyBlocks = true;
+        consensus.fPocAllowMinDifficultyBlocks = true;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144;

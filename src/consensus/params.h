@@ -79,8 +79,8 @@ struct Params {
     uint32_t nRuleChangeActivationThreshold;
     uint32_t nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
-    /** Proof of work parameters */
-    bool fPowAllowMinDifficultyBlocks;
+    /** Proof of Capacity parameters */
+    bool fPocAllowMinDifficultyBlocks;
     int64_t nPowTargetSpacing;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
