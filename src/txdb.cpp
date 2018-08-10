@@ -94,7 +94,11 @@ void TryExecuteSql(SqlAutoReleaseDB &db, const std::string &sql) {
 
 SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql) {
     sqlite3 *db = NULL;
-    int rc = sqlite3_open_v2(path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+#ifdef WIN32
+    int rc = sqlite3_open16(path.c_str(), &db);
+#else
+    int rc = sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+#endif
     auto autoDB = SqlAutoReleaseDB(db, sqlite3_close);
     if (rc != SQLITE_OK) {
         throw CSqlException(autoDB, std::string("ERROR opening SQLite DB(") + path.string() + ")");
