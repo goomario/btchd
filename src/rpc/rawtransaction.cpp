@@ -836,7 +836,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
                     newcoin.out.nValue = AmountFromValue(find_value(prevOut, "amount"));
                 }
                 newcoin.nHeight = 1;
-                view.AddCoin(out, std::move(newcoin), true);
+                view.AddCoin(newcoin.nHeight, out, std::move(newcoin), true);
             }
 
             // if redeemScript given and not using the local wallet (private keys

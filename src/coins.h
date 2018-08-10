@@ -289,7 +289,7 @@ public:
      * Add a coin. Set potential_overwrite to true if a non-pruned version may
      * already exist.
      */
-    void AddCoin(const COutPoint& outpoint, Coin&& coin, bool potential_overwrite);
+    void AddCoin(int nHeight, const COutPoint& outpoint, Coin&& coin, bool potential_overwrite);
 
     /**
      * Spend a coin. Pass moveto in order to get the deleted data.

@@ -616,7 +616,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
                     newcoin.out.nValue = AmountFromValue(prevOut["amount"]);
                 }
                 newcoin.nHeight = 1;
-                view.AddCoin(out, std::move(newcoin), true);
+                view.AddCoin(newcoin.nHeight, out, std::move(newcoin), true);
             }
 
             // if redeemScript given and private keys given,

@@ -77,7 +77,9 @@ protected:
 
     // SQL
     mutable SqlAutoReleaseDB accountDB;
-    mutable SqlAutoReleaseStmt getAccountBalanceStmt;
+    mutable SqlAutoReleaseStmt getAccountNearestStmt; // height <= ?
+    mutable SqlAutoReleaseStmt addAccountStmt;
+    mutable SqlAutoReleaseStmt updateAccountBalanceStmt;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);

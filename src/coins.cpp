@@ -59,17 +59,19 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
 }
 
 void CCoinsViewCache::EraseAccountCoin(const COutPoint &outpoint) {
-    for (auto itDiff = cacheAccountDiffCoins.begin(); itDiff != cacheAccountDiffCoins.end(); itDiff++) {
+    for (auto itDiff = cacheAccountDiffCoins.begin(); itDiff != cacheAccountDiffCoins.end();) {
         auto itAudit = itDiff->second.vAudit.find(outpoint);
         if (itAudit != itDiff->second.vAudit.end()) {
             itDiff->second.nCoins -= itAudit->second;
             itDiff->second.vAudit.erase(itAudit);
             if (itDiff->second.vAudit.empty()) {
+                // Delete pair<accountId,height> on diff balance is zero
                 assert(itDiff->second.nCoins == 0);
-                cacheAccountDiffCoins.erase(itDiff);
+                itDiff = cacheAccountDiffCoins.erase(itDiff);
+                continue;
             }
-            break;
         }
+        itDiff++;
     }
 }
 
@@ -82,7 +84,7 @@ bool CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return false;
 }
 
-void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possible_overwrite) {
+void CCoinsViewCache::AddCoin(int nHeight, const COutPoint &outpoint, Coin&& coin, bool possible_overwrite) {
     assert(!coin.IsSpent());
     if (coin.out.scriptPubKey.IsUnspendable()) return;
     CCoinsMap::iterator it;
@@ -102,9 +104,11 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 
-    if (!inserted)
+    if (!inserted) {
+        // Erase account coin record on replace
         EraseAccountCoin(outpoint);
-    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, static_cast<int>(it->second.coin.nHeight))];
+    }
+    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, nHeight)];
     diffCoinsValue.vAudit[outpoint] += it->second.coin.out.nValue;
     diffCoinsValue.nCoins += it->second.coin.out.nValue;
 }
@@ -116,7 +120,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
+        cache.AddCoin(nHeight, COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
     }
 }
 
@@ -386,7 +390,7 @@ CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nH
 CAccountId GetAccountId(const CScript &scriptPubKey) {
     CTxDestination dest;
     if (ExtractDestination(scriptPubKey, dest)) {
-       CAccountId nAccountId;
+        CAccountId nAccountId;
         boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
         return nAccountId;
     } else {
