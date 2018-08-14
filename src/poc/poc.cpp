@@ -268,7 +268,8 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
         .Write((const unsigned char*)gendata, PLOT_SIZE + 16)
         .Finalize((unsigned char*)base.begin());
 
-    uint8_t data[PLOT_SIZE];
+    std::unique_ptr<uint8_t> _data(new uint8_t[PLOT_SIZE]);
+    uint8_t *data = _data.get();
     for (int i = 0; i < PLOT_SIZE; i++) {
         data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
     }
