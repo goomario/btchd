@@ -102,11 +102,11 @@ void CheckDeadlineThread()
                     int64_t nTime = std::max(pindexTip->GetMedianTimePast()+1, GetAdjustedTime());
                     if (nTime > (int64_t)pindexTip->nTime + (int64_t)gNextBlockDeadline) {
                         // forge
-                        LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                        LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
                         pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockPlotterId);
                         if (!pblock) {
-                            LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                            LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
                         }
                    } else {
@@ -121,7 +121,7 @@ void CheckDeadlineThread()
 
         // ProcessNewBlock
         if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
+            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                 gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
         }
         
