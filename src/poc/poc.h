@@ -63,7 +63,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
 
 /** Try generate block (mine) */
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nAccountId, 
+    const uint64_t &nNonce, const uint64_t &nPlotterId,
     uint64_t &deadline,
     const Consensus::Params& params);
 

@@ -103,7 +103,7 @@ void BlockAssembler::resetBlock()
     nFees = 0;
 }
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t &nonceId, const uint64_t &plotterId, bool fMineWitnessTx)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -155,8 +155,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockTx = nBlockTx;
     nLastBlockWeight = nBlockWeight;
 
+    CAccountId nAccountId = GetAccountId(scriptPubKeyIn);
+
     // Create coinbase transaction.
-    BlockReward blockReward = GetBlockReward(nHeight, nFees, GetAccountId(scriptPubKeyIn), *pcoinsTip, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(nHeight, nFees, nAccountId, plotterId, *pcoinsTip, chainparams.GetConsensus());
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
     coinbaseTx.vin[0].prevout.SetNull();
@@ -180,8 +182,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
-    pblock->nNonce         = 0;
-    pblock->nPlotterId     = 0;
+    pblock->nNonce         = nonceId;
+    pblock->nPlotterId     = plotterId;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;

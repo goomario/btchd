@@ -40,7 +40,7 @@ uint256 shabal256(const uint256 &genSig, int64_t nMix64)
 }
 
 std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nAccountId)
+    const uint64_t &nNonce, const uint64_t &nPlotterId)
 {
     AssertLockHeld(cs_main);
     if (::vpwallets.empty()) {
@@ -60,7 +60,7 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
         return nullptr;
     }
 
-    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
+    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, nNonce, nPlotterId));
     if (!pblocktemplate.get()) 
         return nullptr;
 
@@ -68,14 +68,11 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
 
     unsigned int nHeight = prevBlockIndex.nHeight + 1; // Height first in coinbase required for block.version=2
     CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << nHeight<< CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nAccountId))) + COINBASE_FLAGS;
+    txCoinbase.vin[0].scriptSig = (CScript() << nHeight<< CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nPlotterId))) + COINBASE_FLAGS;
     assert(txCoinbase.vin[0].scriptSig.size() <= 100);
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
-
-    pblock->nNonce = nNonce;
-    pblock->nPlotterId = nAccountId;
 
     return std::make_shared<CBlock>(*pblock);
 }
@@ -83,7 +80,7 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
 // Check
 static int32_t      gNextBlockHeight = 0;
 static uint64_t     gNextBlockNonce = 0;
-static uint64_t     gNextBlockSeed = 0;
+static uint64_t     gNextBlockPlotterId = 0;
 static uint64_t     gNextBlockDeadline = 0;
 
 CThreadInterrupt interruptCheckDeadline;
@@ -105,12 +102,12 @@ void CheckDeadlineThread()
                     int64_t nTime = std::max(pindexTip->GetMedianTimePast()+1, GetAdjustedTime());
                     if (nTime > (int64_t)pindexTip->nTime + (int64_t)gNextBlockDeadline) {
                         // forge
-                        LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
-                        pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockSeed);
+                        LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                                gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
+                        pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockPlotterId);
                         if (!pblock) {
-                            LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
+                            LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                                gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
                         }
                    } else {
                        // wait
@@ -124,8 +121,8 @@ void CheckDeadlineThread()
 
         // ProcessNewBlock
         if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", seed=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
+            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
         }
         
         // clear
@@ -135,7 +132,7 @@ void CheckDeadlineThread()
                 LogPrint(BCLog::POC, "Clear check deadline data");
                 gNextBlockHeight = 0;
                 gNextBlockNonce = 0;
-                gNextBlockSeed = 0;
+                gNextBlockPlotterId = 0;
                 gNextBlockDeadline = 0;
             }
         }
@@ -404,36 +401,35 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
 }
 
 bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nAccountId,
+    const uint64_t &nNonce, const uint64_t &nPlotterId,
     uint64_t &deadline, 
     const Consensus::Params& params)
 {
-    LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 "\n",
-        prevBlockIndex.nHeight + 1, nNonce, nAccountId);
+    LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
+        prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
 
     CBlockHeader block;
-    block.nVersion = ComputeBlockVersion(&prevBlockIndex, params);
-    block.nNonce = nNonce;
-    block.nPlotterId = nAccountId;
+    block.nVersion   = ComputeBlockVersion(&prevBlockIndex, params);
+    block.nNonce     = nNonce;
+    block.nPlotterId = nPlotterId;
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
     if (calcDeadline > DEADLINE_DEADTARGET) {
-        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", account=%" PRIu64 ". Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
-            prevBlockIndex.nHeight + 1, nNonce, nAccountId, calcDeadline / (24 * 60 * 60 * 1.0f),
+        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ". Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
+            prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline / (24 * 60 * 60 * 1.0f),
             DEADLINE_DEADTARGET / (24 * 60 * 60));
         deadline = calcDeadline;
         return true;
     }
 
     deadline = calcDeadline;
-    if (gNextBlockHeight != prevBlockIndex.nHeight + 1 
-        || deadline < gNextBlockDeadline) {
-        gNextBlockHeight = prevBlockIndex.nHeight + 1;
-        gNextBlockNonce = nNonce;
-        gNextBlockSeed = nAccountId;
-        gNextBlockDeadline = deadline;
+    if (gNextBlockHeight != prevBlockIndex.nHeight + 1 || deadline < gNextBlockDeadline) {
+        gNextBlockHeight    = prevBlockIndex.nHeight + 1;
+        gNextBlockNonce     = nNonce;
+        gNextBlockPlotterId = nPlotterId;
+        gNextBlockDeadline  = deadline;
 
-        uiInterface.NotifyBcoDeadlineChanged(gNextBlockHeight, gNextBlockNonce, gNextBlockSeed, gNextBlockDeadline);
+        uiInterface.NotifyBcoDeadlineChanged(gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
     }
     return true;
 }
