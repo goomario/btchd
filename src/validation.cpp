@@ -1132,7 +1132,8 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const CCoinsView &view, const Consensus::Params& consensusParams)
+BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const uint64_t &nPlotterId,
+                           const CCoinsView &view, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy;
 
@@ -1160,7 +1161,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
         // Normal mining
         if (nSubsidy > 0) {
             CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
-            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, consensusParams);
+            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams);
             if (nMinerBalance >= nMinerMortgage) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
             } else {
@@ -1176,22 +1177,41 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     return std::move(reward);
 }
 
-CAmount GetMinerMortgage(const CAccountId &nAccountId, int nHeight, const Consensus::Params& consensusParams)
+CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams)
 {
     assert(nHeight <= chainActive.Height());
-    const static int HISTORY_COUNT = 7 * 24 * 60 * 60 / consensusParams.nPowTargetSpacing; // 7 days, 2016 blocks
-    int nIsThis = 0;
-    int nBeginHeight = std::max(nHeight - HISTORY_COUNT, consensusParams.BtchdFundPreMingingHeight + 1);
-    if (nHeight <= nBeginHeight) {
+    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
+    if (nHeight < nBeginHeight) {
         return (CAmount) 0;
     }
-    for (int index = nBeginHeight; index <= nHeight; index++) {
-        if (chainActive[index]->nMinerAccountId == nAccountId)
-            nIsThis++;
+
+    int nAccountForgeCount = 0;
+    uint64_t nAvgBaseTarget = 0; // Average BaseTarget
+    for (int index = nHeight; index >= nBeginHeight; index--) {
+        CBlockIndex *pblockIndex = chainActive[index];
+
+        // Check plotterId and address relation
+        if (pblockIndex->nPlotterId == nPlotterId && pblockIndex->nMinerAccountId != nMinerAccountId) {
+            // This plotter changed mining wallet
+            return MAX_MONEY;
+        }
+
+        // Sum of forge count
+        if (pblockIndex->nMinerAccountId == nMinerAccountId) {
+            nAccountForgeCount++;
+        }
+
+        nAvgBaseTarget += pblockIndex->nBaseTarget;
+    }
+    nAvgBaseTarget /= (nHeight - nBeginHeight + 1);
+
+    if (nAccountForgeCount == 0) {
+        return (CAmount) 0;
     }
 
-    CBlockIndex *pblockIndex = chainActive[nHeight];
-    return consensusParams.BtchdMortgageAmountPerTB * ((std::max((int)(poc::MAX_BASE_TARGET / pblockIndex->nBaseTarget), 1) * nIsThis) / (nHeight - nBeginHeight));
+    int64_t nNetDiffTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+    int64_t nMinerCapacityTB = std::max((nNetDiffTB * nAccountForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+    return consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTB;
 }
 
 bool IsInitialBlockDownload()
@@ -1970,7 +1990,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->nMinerAccountId, view, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->nMinerAccountId, pindex->nPlotterId, view, chainparams.GetConsensus());
     if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.fund)
         return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
@@ -3456,6 +3476,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     CBlockIndex indexDummy(block);
     indexDummy.pprev = pindexPrev;
     indexDummy.nHeight = pindexPrev->nHeight + 1;
+    indexDummy.nMinerAccountId = GetAccountId(block.vtx[0]->vout[0].scriptPubKey);
 
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
