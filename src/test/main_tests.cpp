@@ -14,7 +14,11 @@
 
 static CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
-    BlockReward nBlockReward = GetBlockReward(nHeight, 0, 0, CCoinsView(), consensusParams);
+    CAmount nFees = 0;
+    CAccountId nAccountId = 0;
+    uint64_t nPlotterId = 0;
+    CCoinsView view;
+    BlockReward nBlockReward = GetBlockReward(nHeight, nFees, nAccountId, nPlotterId, view, consensusParams);
     return nBlockReward.miner + nBlockReward.fund;
 }
 
