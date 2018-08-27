@@ -103,18 +103,18 @@ void CheckDeadlineThread()
                     if (nTime > (int64_t)pindexTip->nTime + (int64_t)gNextBlockDeadline) {
                         // forge
                         LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
+                            gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
                         pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockPlotterId);
                         if (!pblock) {
                             LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
                         }
-                   } else {
-                       // wait
-                       LogPrint(BCLog::POC, "Wait deadline: dst=%" PRIu64 ", tip=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                nTime, (int64_t)pindexTip->nTime, gNextBlockDeadline);
-                       continue;
-                   }
+                    } else {
+                        // wait
+                        LogPrint(BCLog::POC, "Wait deadline: dst=%" PRIu64 ", tip=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                            nTime, (int64_t)pindexTip->nTime, gNextBlockDeadline);
+                        continue;
+                    }
                 }
             }
         }
@@ -455,8 +455,8 @@ int64_t GetForgeEscape()
 bool StartPOC()
 {
     LogPrintf("Starting POC\n");
-    threadCheckDeadline = std::thread(CheckDeadlineThread);
     interruptCheckDeadline.reset();
+    threadCheckDeadline = std::thread(CheckDeadlineThread);
     return true;
 }
 
