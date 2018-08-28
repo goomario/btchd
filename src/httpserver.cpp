@@ -239,9 +239,7 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
     }
 
     // CSRF: Forbidden request from browser
-    std::pair<bool, std::string> originHeader = hreq->GetHeader("origin");
-    std::pair<bool, std::string> refererHeader = hreq->GetHeader("referer");
-    if (originHeader.first || refererHeader.first) {
+    if (hreq->GetHeader("user-agent").first) {
         hreq->WriteReply(HTTP_FORBIDDEN);
         return;
     }
