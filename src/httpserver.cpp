@@ -238,6 +238,12 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
         return;
     }
 
+    // CSRF: Forbidden request from browser
+    if (hreq->GetHeader("user-agent").first) {
+        hreq->WriteReply(HTTP_FORBIDDEN);
+        return;
+    }
+
     // Find registered handler for prefix
     std::string strURI = hreq->GetURI();
     std::string path;
