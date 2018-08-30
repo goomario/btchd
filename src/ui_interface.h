@@ -110,7 +110,7 @@ public:
     boost::signals2::signal<void (void)> BannedListChanged;
 
     /** Post new deadline. */
-    boost::signals2::signal<void (int32_t nHeight, uint64_t nNonce, uint64_t nSeed, uint64_t nNewDeadline)> NotifyBcoDeadlineChanged;
+    boost::signals2::signal<void (int32_t nHeight, uint64_t nNonce, uint64_t nSeed, uint64_t nNewDeadline)> NotifyBestDeadlineChanged;
 };
 
 /** Show warning message **/

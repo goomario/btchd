@@ -134,8 +134,7 @@ CBlock
 TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
     const CChainParams& chainparams = Params();
-    const uint64_t nNonce = 0, nPlotterId = 0;
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, nNonce, nPlotterId);
+    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey);
     CBlock& block = pblocktemplate->block;
 
     // Replace mempool-selected txns with just coinbase plus passed-in txns:
@@ -149,7 +148,7 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
         IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
     }
 
-    while (!CheckProofOfWork(&block, chainparams.GetConsensus(), -1)) ++block.nNonce;
+    while (!CheckProofOfCapacity(&block, chainparams.GetConsensus(), -1)) ++block.nNonce;
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     ProcessNewBlock(chainparams, shared_pblock, true, nullptr);
