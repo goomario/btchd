@@ -31,6 +31,8 @@
 #include <queue>
 #include <utility>
 
+#include <inttypes.h>
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // BitcoinMiner
@@ -50,8 +52,10 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     int64_t nOldTime = pblock->nTime;
     int64_t nNewTime = std::max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
 
-    if (nOldTime < nNewTime)
+    if (nOldTime < nNewTime) {
         pblock->nTime = nNewTime;
+        pblock->nBaseTarget = GetNextWorkRequired(pindexPrev, pblock, consensusParams);
+    }
 
     return nNewTime - nOldTime;
 }
@@ -103,7 +107,8 @@ void BlockAssembler::resetBlock()
     nFees = 0;
 }
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t &nonceId, const uint64_t &plotterId, bool fMineWitnessTx)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx,
+    uint64_t nonce, uint64_t plotterId, uint64_t deadline)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -121,7 +126,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vTxSigOpsCost.push_back(-1); // updated at end
 
     LOCK2(cs_main, mempool.cs);
-    CBlockIndex* pindexPrev = chainActive.Tip();
+    CBlockIndex *pindexPrev = chainActive.Tip();
     assert(pindexPrev != nullptr);
     nHeight = pindexPrev->nHeight + 1;
 
@@ -131,7 +136,15 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     if (chainparams.MineBlocksOnDemand())
         pblock->nVersion = gArgs.GetArg("-blockversion", pblock->nVersion);
 
-    pblock->nTime = GetAdjustedTime();
+    //
+    // The following code will make miners motivated to earlier post block. Maybe make it less difficult.
+    // pblock->nTime = GetAdjustedTime();
+    //
+    // The difficult will largest.
+    // pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
+    //
+    pblock->nTime = static_cast<uint32_t>(std::max((int64_t)(pindexPrev->GetBlockTime() + deadline + 1), GetAdjustedTime()));
+
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
@@ -180,10 +193,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
-    UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
-    pblock->nNonce         = nonceId;
+    pblock->nNonce         = nonce;
     pblock->nPlotterId     = plotterId;
+    pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    Update(pblock, chainparams.GetConsensus(), pindexPrev);
+
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;

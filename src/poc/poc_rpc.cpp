@@ -14,19 +14,11 @@
 #include <utilstrencodings.h>
 #include <univalue.h>
 #include <validation.h>
-#include <wallet/coincontrol.h>
-#include <wallet/feebumper.h>
-#include <wallet/wallet.h>
-#include <wallet/walletutil.h>
-#include <utilmoneystr.h>
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
-void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control);
-
-namespace poc {
-namespace rpc {
+namespace poc { namespace rpc {
 
 static UniValue getMinerAccount(const JSONRPCRequest& request)
 {
@@ -80,59 +72,66 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     result.pushKV("height", pindexLast->nHeight + 1);
     result.pushKV("generationSignature", HexStr(poc::GetBlockGenerationSignature(pindexLast->GetBlockHeader())));
     result.pushKV("baseTarget", std::to_string(pindexLast->nBaseTarget));
+    result.pushKV("targetDeadline", poc::MAX_TARGET_DEADLINE);
 
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight)
 {
     if (IsInitialBlockDownload()) {
         throw std::runtime_error("Is initial block downloading!");
     }
 
     LOCK(cs_main);
-    const CBlockIndex *pindexLast = chainActive.Tip();
-    if (pindexLast == nullptr) {
-        throw std::runtime_error("Block chain tip is empty!");
+    const CBlockIndex *pBlockIndex = chainActive[nTargetHeight < 1 ? chainActive.Height() : (nTargetHeight - 1)];
+    if (pBlockIndex == nullptr) {
+        throw std::runtime_error("Invalid block!");
     }
 
-    uint64_t deadline = std::numeric_limits<uint64_t>::max();
-    if (!poc::TryGenerateBlock(*pindexLast, nNonce, nAccountId, deadline, Params().GetConsensus())) {
-        result.pushKV("result", "Generate failed");
-        return;
-    }
+    uint64_t bestDeadline = 0;
+    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, Params().GetConsensus());
 
     result.pushKV("result", "success");
     result.pushKV("deadline", deadline);
+    result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
+    result.pushKV("block", pBlockIndex->nHeight + 1);
 }
 
 static UniValue submitNonceToPool(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonce \"nonce\" \"accountId\"\n"
+            "submitNonce \"nonce\" \"accountId\" \"height\"\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
-            "2. \"accountId\"       (string, optional) The digit string of the brust account ID\n"
+            "2. \"accountId\"       (string, required) The digit string of the brust account ID\n"
+            "3. \"height\"          (integer, optional) Target height for mining\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
             "  [ deadline ]                (integer, optional) Current block generation signature\n"
+            "  [ height ]                  (integer, optional) Target block height\n"
             "}\n"
         );
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2) {
+    if (request.params.size() != 2 && request.params.size() != 3) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
 
-    SubmitNonce(result, 
-        static_cast<uint64_t>(std::stoull(request.params[0].get_str())), 
-        static_cast<uint64_t>(std::stoull(request.params[1].get_str())));
+    uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+    uint64_t nAccountId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
 
+    int nTargetHeight = 0;
+    if (request.params.size() >= 3) {
+        nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight);
     return result;
 }
 
@@ -145,24 +144,31 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"passPhrase\"      (string, optional) The string of the burst account passPhrase\n"
+            "3. \"height\"          (integer, optional) Target height for mining\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
             "  [ deadline ]                (integer, optional) Current block generation signature\n"
+            "  [ height ]                  (integer, optional) Target block height\n"
             "}\n"
         );
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2) {
+    if (request.params.size() != 2 && request.params.size() != 3) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
 
-    SubmitNonce(result,
-        static_cast<uint64_t>(std::stoull(request.params[0].get_str())),
-        poc::GetAccountIdByPassPhrase(request.params[1].get_str()));
+    uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+    uint64_t nAccountId = poc::GetAccountIdByPassPhrase(request.params[1].get_str());
 
+    int nTargetHeight = 0;
+    if (request.params.size() >= 3) {
+        nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight);
     return result;
 }
 
@@ -319,13 +325,6 @@ static UniValue getLastBlock()
     return result;
 }
 
-static UniValue getBlockByTimeStamp(int64_t timestamp)
-{
-    UniValue result(UniValue::VOBJ);
-    //TODO
-    return result;
-}
-
 static UniValue getBlock(const JSONRPCRequest& request)
 {
     if (request.params.size() != 3) {
@@ -342,7 +341,6 @@ static UniValue getBlock(const JSONRPCRequest& request)
 
     if (!strBlockId.empty()) return getBlockById(static_cast<uint64_t>(std::stoull(strBlockId)));
     if (!strHeight.empty()) return getBlockByHeight(static_cast<int>(std::stol(strHeight)));
-    //if (!strTimestamp.empty()) return getBlockByTimeStamp(static_cast<int64_t>(std::stoll(strTimestamp)));
     return getLastBlock();
 }
 
@@ -407,332 +405,22 @@ static UniValue getTime(const JSONRPCRequest& request)
     return result;
 }
 
-static bool IsOwnKey(CWallet * const pwallet, const CScript& scriptPubKey)
-{
-    CTxDestination addr;
-    if (!ExtractDestination(scriptPubKey, addr))
-        return false;
-    if (!IsValidDestination(addr)) {
-        return false;
-    }
-    auto keyid = GetKeyForDestination(*pwallet, addr);
-    if (keyid.IsNull()) {
-        return false;
-    }
-    CKey vchSecret;
-    if (!pwallet->GetKey(keyid, vchSecret)) {
-        return false;
-    }
-    return true;
-}
-
-static bool IsOwnBlockOfHeight(CWallet * const pwallet, int height)
-{
-    CBlockIndex *pBlockIndex = chainActive[height];
-    if (pBlockIndex == nullptr) return false;
-
-    CBlock block;
-    if (!ReadBlockFromDisk(block, pBlockIndex, Params().GetConsensus())) 
-        return false;
-
-    for (const auto& tx : block.vtx)
-    {
-        if (tx->IsCoinBase())
-            return IsOwnKey(pwallet, tx->vout[0].scriptPubKey);
-    }
-    return false;
-}
-
-static UniValue getRewardRecipient(const JSONRPCRequest& request)
-{
-    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2) {
-        result.pushKV("result", "Missing parameters");
-        return result;
-    }
-    LOCK2(cs_main, pwallet->cs_wallet);
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    std::string strHeight = request.params[1].get_str();
-    bool bOwn = IsOwnBlockOfHeight(pwallet, static_cast<int>(std::stol(strHeight.c_str())));
-    uint64_t pubkey = 0;
-    if( bOwn) 
-        pubkey = poc::GetAccountIdByPassPhrase(request.params[0].get_str());
-
-    result.pushKV("rewardRecipient", std::to_string(pubkey));
-
-    return result;
-}
-
-static UniValue sendMoney(const JSONRPCRequest& request)
-{
-    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        LogPrintf("Get wallet fail\n");
-        return NullUniValue;
-    }
-
-    if (request.fHelp) {
-        throw std::runtime_error(
-            "sendMoney parameter help\n"
-        );
-    }
-
-    if (request.params.size() != 4) {
-        throw std::runtime_error(
-            "sendMoney parameter size error\n"
-        );
-    }
-    // "recipient", "recipaddr", "feeNQT" , "amountNQT"
-    std::string recipaddr = request.params[1].get_str();
-
-    CAmount feeNQT = AmountFromValue(request.params[2]);
-
-    CAmount amountNQT = AmountFromValue(request.params[3]);
-
-    ObserveSafeMode();
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    LOCK2(cs_main, pwallet->cs_wallet);
-
-    CTxDestination dest = DecodeDestination(recipaddr);
-    if (!IsValidDestination(dest)) {
-        LogPrintf("%s invalid\n", recipaddr.c_str());
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
-    }
-
-    CAmount nAmount = amountNQT;
-    if (nAmount <= 0) {
-        LogPrintf("Amount %ld invalid\n", nAmount);
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
-    }
-
-    CWalletTx wtx;
-    CCoinControl coin_control;
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    // Substract fee from receiver
-    bool fSubtractFeeFromAmount = true; 
-    ::SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
-
-    UniValue res(UniValue::VOBJ);
-    res.pushKV("transaction", wtx.GetHash().GetHex());
-    LogPrintf("sendMoney succ,destAddr %s, txid %s\n", recipaddr.c_str(), wtx.GetHash().GetHex().c_str());
-    return res;
-}
-
-static UniValue getGuaranteedBalance(const JSONRPCRequest& request)
-{
-    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-    if (request.fHelp || request.params.size() != 2)
-        throw std::runtime_error("getGuaranteedBalance param error!");
-
-    ObserveSafeMode();
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    LOCK2(cs_main, pwallet->cs_wallet);
-
-    UniValue result(UniValue::VOBJ);
-    result.pushKV("guaranteedBalanceNQT", std::to_string(pwallet->GetBalance()));
-    return result;
-}
-
-static UniValue checkAddressValid(const JSONRPCRequest& request)
-{
-    if (request.fHelp) {
-        throw std::runtime_error(
-            "checkAddressValid parameter help\n"
-        );
-    }
-    if (request.params.size() != 1) {
-        throw std::runtime_error(
-            "checkAddressValid parameter size != 1\n"
-        );
-    }
-
-    std::string addr = request.params[0].get_str();
-    CTxDestination dest = DecodeDestination(addr);
-
-    UniValue res(UniValue::VOBJ);
-    res.pushKV("valid", IsValidDestination(dest) );
-    return res;
-}
-
-static bool HaveAddress(const CScript& scriptPubKey, const std::string& destAddr)
-{
-    txnouttype type;
-    std::vector<CTxDestination> addresses;
-    int nRequired;
-
-    if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired)) {
-        return false;
-    }
-    for (const CTxDestination& addr : addresses) {
-        if (destAddr != EncodeDestination(addr))
-            return false;
-    }
-    return true;
-}
-
-static bool IsFromAddress(const COutPoint& out, const std::string& destAddr)
-{
-    Coin coin;
-    if (pcoinsTip->GetCoin(out, coin)) {
-        return HaveAddress(coin.out.scriptPubKey, destAddr);
-    }
-
-    CTransactionRef tx;
-    uint256 blockhash;
-    if (!GetTransaction(out.hash, tx, Params().GetConsensus(), blockhash, true)) {
-        throw std::runtime_error("Not find prev out tx");
-    }
-    if (!tx || tx->IsNull()) {
-        throw std::runtime_error("Prev transaction invalid");
-    }
-    if (tx->vout.size() <= out.n) {
-        throw std::runtime_error("Prev transaction out index error");
-    }
-
-    const CTxOut& txout = tx->vout[out.n];
-    return HaveAddress(txout.scriptPubKey, destAddr);
-}
-
-static CAmount GetAmountOfAddress(const CTxOut& out, const std::string& destAddr)
-{
-    txnouttype type;
-    std::vector<CTxDestination> addresses;
-    int nRequired;
-
-    if (!ExtractDestinations(out.scriptPubKey, type, addresses, nRequired)) {
-        return false;
-    }
-    for (const CTxDestination& addr : addresses) {
-        if (destAddr == EncodeDestination(addr))
-            return out.nValue;
-    }
-    return 0;
-}
-
-static UniValue getTransactionAmount(const JSONRPCRequest& request)
-{
-    if (request.fHelp) {
-        throw std::runtime_error(
-            "getTransactionAmount parameter help\n"
-        );
-    }
-    if (request.params.size() != 4) {
-        throw std::runtime_error(
-            "getTransactionAmount parameter size != 4\n"
-        );
-    }
-    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-    ObserveSafeMode();
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    LOCK2(cs_main, pwallet->cs_wallet);
-
-    uint256 hash;
-    hash.SetHex(request.params[0].get_str());
-    std::string receivaddr = request.params[1].get_str();
-    std::string sendaddr = request.params[2].get_str();
-    int minDepth = std::atoi(request.params[3].get_str().c_str());
-
-    isminefilter filter = ISMINE_SPENDABLE;
-
-    UniValue entry(UniValue::VOBJ);
-    auto it = pwallet->mapWallet.find(hash);
-    //�����Ǳ���Ǯ����Ľ���
-    if (it == pwallet->mapWallet.end()) {
-        entry.push_back(Pair("amount", "0"));
-        entry.push_back(Pair("code", 4));
-        return entry;
-    }
-
-    const CWalletTx& wtx = it->second;
-    if (wtx.IsCoinBase()) {
-        entry.push_back(Pair("amount", "0"));
-        entry.push_back(Pair("code", 1));
-        return entry;
-    }
-
-    int txDepth = wtx.GetDepthInMainChain();
-    if (txDepth < minDepth) {
-        entry.push_back(Pair("amount", "0"));
-        entry.push_back(Pair("code", 2));
-        entry.push_back(Pair("depth", txDepth));
-        return entry;
-    }
-
-    // Check the send addr, receiv addr and total amount
-    int code = 0;
-    CAmount totalAmount = 0;
-    CTransactionRef tx = wtx.tx;
-    do {
-        for (const CTxIn& in : tx->vin) {
-            if (!IsFromAddress(in.prevout, sendaddr)) {
-                code = 3; break;
-            }
-        }
-        if (code == 3) 
-            break;
-
-        for (const CTxOut& out : tx->vout) {
-            totalAmount += GetAmountOfAddress(out, receivaddr);
-        }
-    } while (0);
-
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(8) << double(totalAmount) / COIN;
-
-    entry.push_back(Pair("amount", ss.str()));
-    entry.push_back(Pair("code", code));
-
-    return entry;
-}
-}// namespace rpc
-}// namespace poc
+}}
 
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)                  argNames
   //  --------------------- ------------------------  -----------------------           ----------
-    { "poc",              "getmineraccount",          &poc::rpc::getMinerAccount,         { } },
-    { "poc",              "getMinerAccount",          &poc::rpc::getMinerAccount,         { } },
-    { "poc",              "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "poc",              "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId" } },
-    { "poc",              "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase"} },
+    { "poc",              "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
+    { "poc",              "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
+    { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
+    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height" } },
+    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height"} },
     { "poc",              "getConstants",             &poc::rpc::getConstants,          { } },
     { "poc",              "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
     { "poc",              "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },
     { "poc",              "getAccountId",             &poc::rpc::getAccountId,          { "passPhrase" } },
     { "poc",              "getAccount",               &poc::rpc::getAccount,            { "account" } },
     { "poc",              "getTime",                  &poc::rpc::getTime,               { } },
-    { "poc",              "getRewardRecipient",       &poc::rpc::getRewardRecipient,    { "account", "height" } },
-    { "poc",              "sendMoney",                &poc::rpc::sendMoney,             { "recipient", "recipaddr", "feeNQT" , "amountNQT"} },
-    { "poc",              "getGuaranteedBalance",     &poc::rpc::getGuaranteedBalance,  { "account", "numberOfConfirmations" } },
-    { "poc",              "checkAddressValid",        &poc::rpc::checkAddressValid,     { "addr" } },
-    { "poc",              "getTransactionAmount",     &poc::rpc::getTransactionAmount,  { "txid", "receivaddr", "sendaddr", "depth" } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)
