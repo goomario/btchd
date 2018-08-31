@@ -318,7 +318,8 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
                 if (it->second.nCoins == 0)
                     continue;
 
-                LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8.8f\n", it->first.nAccountId, it->first.nHeight, it->second.nCoins / 100000000.0f);
+                LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+d.%08d\n", it->first.nAccountId, it->first.nHeight,
+                    (int)(it->second.nCoins / COIN), abs((int)(it->second.nCoins % COIN)));
 
                 // Query near balance
                 CAmount nAccountBalance;
