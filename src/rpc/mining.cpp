@@ -948,12 +948,12 @@ UniValue getmortgage(const JSONRPCRequest& request)
     CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight, nPlotterId, Params().GetConsensus());
 
     UniValue result(UniValue::VOBJ);
+    result.pushKV("amount", ValueFromAmount(nMortgageAmount));
     result.pushKV("accountId", std::to_string(static_cast<uint64_t>(nAccountId)));
     result.pushKV("plotterId", std::to_string(nPlotterId));
-    result.pushKV("mortgageAmount", ValueFromAmount(nMortgageAmount));
-    result.pushKV("mortgageBegin", Params().GetConsensus().BtchdNoMortgageHeight + 1);
+    result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
     if (nMortgageAmount == MAX_MONEY) {
-        result.pushKV("message", "Multi mining! Low award!");
+        result.pushKV("message", "Multi mining! Low reward!");
     }
     return result;
 }
