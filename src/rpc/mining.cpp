@@ -463,10 +463,6 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     CBlock* pblock = &pblocktemplate->block; // pointer for convenience
     const Consensus::Params& consensusParams = Params().GetConsensus();
 
-    // Update nTime
-    UpdateTime(pblock, consensusParams, pindexPrev);
-    pblock->nNonce = 0;
-
     // NOTE: If at some point we support pre-segwit miners post-segwit-activation, this needs to take segwit support into consideration
     const bool fPreSegWit = (THRESHOLD_ACTIVE != VersionBitsState(pindexPrev, consensusParams, Consensus::DEPLOYMENT_SEGWIT, versionbitscache));
 
@@ -700,6 +696,60 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
+UniValue getmortgage(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
+        throw std::runtime_error(
+            "getmortgage address plotterId height\n"
+            "Get mortage amount of address.\n"
+            "\nArguments:\n"
+            "1. address         (string, required) The BTCHD address.\n"
+            "2. plotterId       (string, optional) Plotter ID\n"
+            "3. height          (integer, optional) Mortgage height\n"
+            "\nResult:\n"
+            "The mortage amount of address\n"
+            "\n"
+            "\nExample:\n"
+            + HelpExampleCli("getmortgage", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
+            );
+
+    LOCK(cs_main);
+
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    }
+    CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
+    if (nAccountId == 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    }
+
+    uint64_t nPlotterId = 0;
+    if (request.params.size() >= 2) {
+        nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
+    }
+
+    int nHeight = chainActive.Height();
+    if (request.params.size() >= 3) {
+        nHeight = request.params[2].get_int();
+        if (nHeight < 0 || nHeight > chainActive.Height()) {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
+        }
+    }
+
+    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight, nPlotterId, Params().GetConsensus());
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("amount", ValueFromAmount(nMortgageAmount));
+    result.pushKV("accountId", std::to_string(static_cast<uint64_t>(nAccountId)));
+    result.pushKV("plotterId", std::to_string(nPlotterId));
+    result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
+    if (nMortgageAmount == MAX_MONEY) {
+        result.pushKV("message", "Multi mining! Low reward!");
+    }
+    return result;
+}
+
 UniValue estimatefee(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -904,60 +954,6 @@ UniValue estimaterawfee(const JSONRPCRequest& request)
     return result;
 }
 
-UniValue getmortgage(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
-        throw std::runtime_error(
-            "getmortgage address\n"
-            "Get mortage amount of address.\n"
-            "\nArguments:\n"
-            "1. address         (string, required) The BTCHD address.\n"
-            "2. plotterId       (string, optional) Plotter ID\n"
-            "3. height          (integer, optional) Mortgage height\n"
-            "\nResult:\n"
-            "The mortage amount of address\n"
-            "\n"
-            "\nExample:\n"
-            + HelpExampleCli("getmortgage", Params().GetConsensus().BtchdFundAddress)
-            );
-
-    LOCK(cs_main);
-
-    CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    }
-    CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
-    if (nAccountId == 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    }
-
-    uint64_t nPlotterId = 0;
-    if (request.params.size() >= 2) {
-        nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
-    }
-
-    int nHeight = chainActive.Height();
-    if (request.params.size() >= 3) {
-        nHeight = request.params[2].get_int();
-        if (nHeight < 0 || nHeight > chainActive.Height()) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
-        }
-    }
-
-    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight, nPlotterId, Params().GetConsensus());
-
-    UniValue result(UniValue::VOBJ);
-    result.pushKV("amount", ValueFromAmount(nMortgageAmount));
-    result.pushKV("accountId", std::to_string(static_cast<uint64_t>(nAccountId)));
-    result.pushKV("plotterId", std::to_string(nPlotterId));
-    result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
-    if (nMortgageAmount == MAX_MONEY) {
-        result.pushKV("message", "Multi mining! Low reward!");
-    }
-    return result;
-}
-
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -965,6 +961,7 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
+    { "mining",             "getmortgage",            &getmortgage,            {"address", "plotterId", "height"} },
 
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
@@ -973,8 +970,6 @@ static const CRPCCommand commands[] =
     { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
 
     { "hidden",             "estimaterawfee",         &estimaterawfee,         {"conf_target", "threshold"} },
-
-    { "util",               "getmortgage",            &getmortgage,            {"address", "plotterId", "height"} },
 };
 
 void RegisterMiningRPCCommands(CRPCTable &t)

@@ -133,7 +133,7 @@ void CheckDeadlineThread()
                             continue;
                         }
                     } else if (pindexTip->nHeight == it->first) {
-                        // Process earlier new block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork). Try snatch block
+                        // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork). Try snatch block
                         assert(pindexTip->pprev != nullptr);
                         if (it->second.bestBlockDeadline == poc::INVALID_DEADLINE || it->second.bestBlockTime != pindexTip->GetBlockTime()) {
                             it->second.bestBlockDeadline = poc::CalculateDeadline(*(pindexTip->pprev), pindexTip->GetBlockHeader(), Params().GetConsensus());
