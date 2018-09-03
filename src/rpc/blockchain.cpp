@@ -927,56 +927,6 @@ UniValue pruneblockchain(const JSONRPCRequest& request)
     return uint64_t(height);
 }
 
-UniValue exportblocks(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() != 2)
-        throw std::runtime_error(
-            "exportblocks height exportdir\n"
-            "\nExport blocks data.\n"
-            "\nArguments:\n"
-            "1. \"height\"           (numeric, required) The destination height\n"
-            "2. \"exportdir\"        (string, required) Export file save directory\n"
-            "\nResult:\n"
-            "n    (numeric) Number of block files.\n");
-
-    int nDestinationHeight = request.params[0].get_int();
-    fs::path exportdir = request.params[1].get_str();
-
-    if (chainActive.Height() < nDestinationHeight) {
-        throw JSONRPCError(RPC_MISC_ERROR, "Cannot export blocks because block height below in destination height.");
-    } else {
-        LOCK(cs_main);
-
-        fs::path blkdir = exportdir / "blocks";
-        fs::create_directories(blkdir);
-
-        int nBlockFile = 0;
-        std::unique_ptr<CAutoFile> pfileout;
-        for (int nHeight = 0; nHeight <= nDestinationHeight; nHeight++) {
-            CBlockIndex *pblockindex = chainActive[nHeight];
-            std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
-            ReadBlockFromDisk(*pblock, pblockindex, Params().GetConsensus());
-
-            unsigned int nBlockSize = ::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION);
-            if (pfileout == nullptr || ftell(pfileout->Get()) + nBlockSize + 8 >= MAX_BLOCKFILE_SIZE) {
-                pfileout.reset(new CAutoFile(fsbridge::fopen(blkdir / strprintf("blk%05u.dat", nBlockFile), "wb"), SER_DISK, CLIENT_VERSION));
-                LogPrintf("Export to blk%05u.dat, begin=%d, progress=%0.2f%%\n", nBlockFile, nHeight, 1.0f * nHeight / nDestinationHeight);
-
-                nBlockFile++;
-            }
-
-            // Write index header
-            (*pfileout) << FLATDATA(Params().MessageStart()) << nBlockSize;
-
-            // Write block
-            (*pfileout) << *pblock;
-        }
-        pfileout.reset(nullptr);
-
-        return nBlockFile;
-    }
-}
-
 UniValue gettxoutsetinfo(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0)
@@ -1686,7 +1636,6 @@ static const CRPCCommand commands[] =
     { "blockchain",         "gettxout",               &gettxout,               {"txid","n","include_mempool"} },
     { "blockchain",         "gettxoutsetinfo",        &gettxoutsetinfo,        {} },
     { "blockchain",         "pruneblockchain",        &pruneblockchain,        {"height"} },
-    { "blockchain",         "exportblocks",           &exportblocks,           {"height","exportdir"} },
     { "blockchain",         "savemempool",            &savemempool,            {} },
     { "blockchain",         "verifychain",            &verifychain,            {"checklevel","nblocks"} },
 
