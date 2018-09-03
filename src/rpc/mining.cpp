@@ -752,9 +752,9 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
         UniValue objMultiMiningPlotter(UniValue::VOBJ);
         for (auto itPlotter = bindPlotterId.cbegin(); itPlotter != bindPlotterId.cend(); itPlotter++) {
             std::set<CAccountId> existMinerAccount;
-            UniValue arrAddress(UniValue::VARR);
+            UniValue objAddress(UniValue::VOBJ);
             std::vector<int> vPlotterHeight = GetPlotterOwnerHeights(nHeight - 1, *itPlotter, Params().GetConsensus());
-            for (auto itHeight = vPlotterHeight.rbegin(); itHeight != vPlotterHeight.rend(); itHeight++) {
+            for (auto itHeight = vPlotterHeight.cbegin(); itHeight != vPlotterHeight.cend(); itHeight++) {
                 CBlockIndex *pblockIndex = chainActive[*itHeight];
                 if (pblockIndex != nullptr && existMinerAccount.find(pblockIndex->nMinerAccountId) == existMinerAccount.end()) {
                     existMinerAccount.insert(pblockIndex->nMinerAccountId);
@@ -763,13 +763,17 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
                     if (pblockIndex->nTx > 0 && ReadBlockFromDisk(block, pblockIndex, Params().GetConsensus())) {
                         CTxDestination dest;
                         if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
-                            arrAddress.push_back(EncodeDestination(dest));
+                            UniValue item(UniValue::VOBJ);
+                            item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
+                            item.pushKV("blockheight", pblockIndex->nHeight);
+                            item.pushKV("minerId", std::to_string(pblockIndex->nMinerAccountId));
+                            objAddress.pushKV(EncodeDestination(dest), item);
                         }
                     }
                 }
             }
-            if (arrAddress.size() >= 2) {
-                objMultiMiningPlotter.pushKV(std::to_string(*itPlotter), arrAddress);
+            if (objAddress.size() >= 2) {
+                objMultiMiningPlotter.pushKV(std::to_string(*itPlotter), objAddress);
             }
         }
         result.pushKV("multiMining", objMultiMiningPlotter);
