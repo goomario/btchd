@@ -110,7 +110,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "verifychain", 0, "checklevel" },
     { "verifychain", 1, "nblocks" },
     { "pruneblockchain", 0, "height" },
-    { "exportblocks", 0, "height" },
     { "keypoolrefill", 0, "newsize" },
     { "getrawmempool", 0, "verbose" },
     { "estimatefee", 0, "nblocks" },
@@ -128,7 +127,9 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "logging", 0, "include" },
     { "logging", 1, "exclude" },
     { "disconnectnode", 1, "nodeid" },
-    { "getmortgage", 2, "height" },
+    { "getmortgage", 1, "height" },
+    { "getmortgageofaddress", 2, "height" },
+    { "getplottermininginfo", 1, "height" },
     // Echo with conversion (For testing only)
     { "echojson", 0, "arg0" },
     { "echojson", 1, "arg1" },

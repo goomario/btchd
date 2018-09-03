@@ -1218,6 +1218,38 @@ CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const u
     return consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTB;
 }
 
+std::vector<int> GetPlotterOwnerHeights(int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams)
+{
+    assert(nHeight <= chainActive.Height());
+    std::vector<int> vHeight;
+
+    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
+    for (int index = nHeight; index >= nBeginHeight; index--) {
+        CBlockIndex *pblockIndex = chainActive[index];
+        if (pblockIndex->nPlotterId == nPlotterId) {
+            vHeight.push_back(pblockIndex->nHeight);
+        }
+    }
+
+    return std::move(vHeight);
+}
+
+std::vector<int> GetMinerOwnerHeights(int nHeight, const CAccountId &nMinerAccountId, const Consensus::Params& consensusParams)
+{
+    assert(nHeight <= chainActive.Height());
+    std::vector<int> vHeight;
+
+    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
+    for (int index = nHeight; index >= nBeginHeight; index--) {
+        CBlockIndex *pblockIndex = chainActive[index];
+        if (pblockIndex->nMinerAccountId == nMinerAccountId) {
+            vHeight.push_back(pblockIndex->nHeight);
+        }
+    }
+
+    return std::move(vHeight);
+}
+
 bool IsInitialBlockDownload()
 {
     // Once this function has returned false, it must remain false.

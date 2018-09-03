@@ -696,11 +696,100 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
-UniValue getmortgage(const JSONRPCRequest& request)
+UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeight)
+{
+    CTxDestination dest = DecodeDestination(address);
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    }
+    CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
+    if (nAccountId == 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BTCHD wallet (P2SH address)");
+    }
+
+    if (nHeight < 1 || nHeight > chainActive.Height() + 1) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
+    }
+
+    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight - 1, nPlotterId, Params().GetConsensus());
+    CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, nHeight - 1);
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("mortgage", ValueFromAmount(nMortgageAmount == MAX_MONEY ? 0 : nMortgageAmount));
+    result.pushKV("balance", ValueFromAmount(nBalance));
+    result.pushKV("height", nHeight);
+    result.pushKV("address", address);
+    result.pushKV("accountId", std::to_string(static_cast<uint64_t>(nAccountId)));
+    if (nPlotterId != 0) {
+        result.pushKV("plotterId", std::to_string(nPlotterId));
+    }
+    if (nHeight < Params().GetConsensus().BtchdNoMortgageHeight + 1) {
+        result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
+    }
+    if (nMortgageAmount != 0 && nMortgageAmount != MAX_MONEY) {
+        result.pushKV("capacity", std::to_string(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB) +" TB");
+    }
+
+    // Relation plotterId and address
+    {
+        std::set<uint64_t> bindPlotterId;
+        std::vector<int> vHeight = GetMinerOwnerHeights(nHeight - 1, nAccountId, Params().GetConsensus());
+        for (auto it = vHeight.rbegin(); it != vHeight.rend(); it++) {
+            CBlockIndex *pblockIndex = chainActive[*it];
+            if (pblockIndex != nullptr) {
+                bindPlotterId.insert(pblockIndex->nPlotterId);
+            }
+        }
+
+        // Bind
+        UniValue arrBindPlotter(UniValue::VARR);
+        for (auto itPlotter = bindPlotterId.cbegin(); itPlotter != bindPlotterId.cend(); itPlotter++) {
+            arrBindPlotter.push_back(*itPlotter);
+        }
+        result.pushKV("bindPlotter", arrBindPlotter);
+
+        // Multi
+        UniValue objMultiMiningPlotter(UniValue::VOBJ);
+        for (auto itPlotter = bindPlotterId.cbegin(); itPlotter != bindPlotterId.cend(); itPlotter++) {
+            std::set<CAccountId> existMinerAccount;
+            UniValue arrAddress(UniValue::VARR);
+            std::vector<int> vPlotterHeight = GetPlotterOwnerHeights(nHeight - 1, *itPlotter, Params().GetConsensus());
+            for (auto itHeight = vPlotterHeight.rbegin(); itHeight != vPlotterHeight.rend(); itHeight++) {
+                CBlockIndex *pblockIndex = chainActive[*itHeight];
+                if (pblockIndex != nullptr && existMinerAccount.find(pblockIndex->nMinerAccountId) == existMinerAccount.end()) {
+                    existMinerAccount.insert(pblockIndex->nMinerAccountId);
+
+                    CBlock block;
+                    if (pblockIndex->nTx > 0 && ReadBlockFromDisk(block, pblockIndex, Params().GetConsensus())) {
+                        CTxDestination dest;
+                        if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
+                            arrAddress.push_back(EncodeDestination(dest));
+                        }
+                    }
+                }
+            }
+            if (arrAddress.size() >= 2) {
+                objMultiMiningPlotter.pushKV(std::to_string(*itPlotter), arrAddress);
+            }
+        }
+        result.pushKV("multiMining", objMultiMiningPlotter);
+    }
+
+    if (nMortgageAmount == MAX_MONEY) {
+        assert(nAccountId != 0);
+        result.pushKV("message", "Multi mining! Low reward!");
+    } else if (nBalance < nMortgageAmount) {
+        result.pushKV("message", "Low mortgage!");
+    }
+
+    return result;
+}
+
+UniValue getmortgageofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
-            "getmortgage address plotterId height\n"
+            "getmortgageofaddress address plotterId height\n"
             "Get mortage amount of address.\n"
             "\nArguments:\n"
             "1. address         (string, required) The BTCHD address.\n"
@@ -710,43 +799,85 @@ UniValue getmortgage(const JSONRPCRequest& request)
             "The mortage amount of address\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getmortgage", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
+            + HelpExampleCli("getmortgageofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
+            + HelpExampleRpc("getmortgageofaddress", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", \"0\", 90000")
             );
 
     LOCK(cs_main);
-
-    CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    }
-    CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
-    if (nAccountId == 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    }
 
     uint64_t nPlotterId = 0;
     if (request.params.size() >= 2) {
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
     }
 
-    int nHeight = chainActive.Height();
+    int nHeight = chainActive.Height() + 1;
     if (request.params.size() >= 3) {
         nHeight = request.params[2].get_int();
-        if (nHeight < 0 || nHeight > chainActive.Height()) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
-        }
     }
 
-    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight, nPlotterId, Params().GetConsensus());
+    return GetMortgage(request.params[0].get_str(), nPlotterId, nHeight);
+}
+
+UniValue getplottermininginfo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
+        throw std::runtime_error(
+            "getplottermininginfo plotterId height\n"
+            "Get mining information of plotter ID.\n"
+            "\nArguments:\n"
+            "1. plotterId       (string, required) Plotter ID\n"
+            "2. height          (integer, optional) Mortgage height\n"
+            "\nResult:\n"
+            "The mining information of plotter ID\n"
+            "\n"
+            "\nExample:\n"
+            + HelpExampleCli("getplottermininginfo", "\"1234567890\" 90000")
+            + HelpExampleRpc("getplottermininginfo", "\"1234567890\", 90000")
+            );
+
+    LOCK(cs_main);
+
+    uint64_t nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+
+    int nHeight = chainActive.Height() + 1;
+    if (request.params.size() >= 2) {
+        nHeight = request.params[1].get_int();
+    }
+
+    // Address => <block,plotter>
+    std::set<CAccountId> exist;
+    std::map<std::string, UniValue> mapAddresses;
+    std::vector<int> vHeight = GetPlotterOwnerHeights(nHeight - 1, nPlotterId, Params().GetConsensus());
+    for (auto it = vHeight.cbegin(); it != vHeight.cend(); it++) {
+        CBlockIndex *pblockIndex = chainActive[*it];
+        if (pblockIndex == nullptr || exist.find(pblockIndex->nMinerAccountId) != exist.end()) {
+            continue;
+        }
+        exist.insert(pblockIndex->nMinerAccountId);
+
+        // Get coinbase output address
+        std::string address;
+        CBlock block;
+        if (pblockIndex->nTx > 0 && ReadBlockFromDisk(block, pblockIndex, Params().GetConsensus())) {
+            CTxDestination dest;
+            if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
+                address = EncodeDestination(dest);
+            }
+        }
+
+        UniValue item(UniValue::VOBJ);
+        item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
+        item.pushKV("blockheight", pblockIndex->nHeight);
+        item.pushKV("minerId", std::to_string(pblockIndex->nMinerAccountId));
+
+        mapAddresses[address] = item;
+    }
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("amount", ValueFromAmount(nMortgageAmount));
-    result.pushKV("accountId", std::to_string(static_cast<uint64_t>(nAccountId)));
-    result.pushKV("plotterId", std::to_string(nPlotterId));
-    result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
-    if (nMortgageAmount == MAX_MONEY) {
-        result.pushKV("message", "Multi mining! Low reward!");
+    for (auto it = mapAddresses.cbegin(); it != mapAddresses.end(); it++) {
+        result.pushKV(it->first, it->second);
     }
+
     return result;
 }
 
@@ -961,7 +1092,8 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "getmortgage",            &getmortgage,            {"address", "plotterId", "height"} },
+    { "mining",             "getmortgageofaddress",   &getmortgageofaddress,   {"address", "plotterId", "height"} },
+    { "mining",             "getplottermininginfo",   &getplottermininginfo,   {"plotterId", "height"} },
 
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
