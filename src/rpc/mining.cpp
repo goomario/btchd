@@ -847,6 +847,9 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     if (request.params.size() >= 2) {
         nHeight = request.params[1].get_int();
     }
+    if (nHeight < 1 || nHeight > chainActive.Height() + 1) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
+    }
 
     // Address => <block,plotter>
     std::set<CAccountId> exist;
