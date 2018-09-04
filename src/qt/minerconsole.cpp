@@ -40,7 +40,7 @@ const char creepMinerRelativePath[] = "tools/creepMiner";
 }
 
 // update deadline
-static void notifyBcoDeadlineChanged(MinerConsole *minerConsole, int32_t nHeight, uint64_t nNonce, uint64_t nSeed, uint64_t nNewDeadline)
+static void notifyDeadlineChanged(MinerConsole *minerConsole, int32_t nHeight, uint64_t nNonce, uint64_t nSeed, uint64_t nNewDeadline)
 {
     QMetaObject::invokeMethod(minerConsole, "deadlineChanged", Qt::QueuedConnection,
                               Q_ARG(int32_t, nHeight),
@@ -86,7 +86,7 @@ MinerConsole::MinerConsole(const PlatformStyle *_platformStyle, QWidget *parent)
     connect(minerProcess.get(), SIGNAL(readyReadStandardError()), this, SLOT(onMiningReadyReadStandardError()));
 
     // deadline change
-    uiInterface.NotifyBcoDeadlineChanged.connect(boost::bind(notifyBcoDeadlineChanged, this, _1, _2, _3, _4));
+    uiInterface.NotifyBestDeadlineChanged.connect(boost::bind(notifyDeadlineChanged, this, _1, _2, _3, _4));
     checkForgeTimer = new QTimer(this);
     checkForgeTimer->setInterval(1000);
     connect(checkForgeTimer, SIGNAL(timeout()), this, SLOT(onCheckDeadlineTimeout()));
@@ -110,7 +110,7 @@ MinerConsole::~MinerConsole()
         checkForgeTimer->stop();
     }
     delete checkForgeTimer;
-    uiInterface.NotifyBcoDeadlineChanged.disconnect(boost::bind(notifyBcoDeadlineChanged, this, _1, _2, _3, _4));
+    uiInterface.NotifyBestDeadlineChanged.disconnect(boost::bind(notifyDeadlineChanged, this, _1, _2, _3, _4));
 
     delete ui;
 }

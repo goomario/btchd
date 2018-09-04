@@ -225,17 +225,24 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
     if (nonce != parameters.cend()) {
         const auto accountId = parameters.find("accountId");
         const auto secretPhrase = parameters.find("secretPhrase");
+        const auto height = parameters.find("height");
         if (accountId != parameters.cend()) {
             // Pool
             jreq.strMethod = "submitNonceToPool";
             jreq.params.pushKV("nonce", nonce->second);
             jreq.params.pushKV("accountId", accountId->second);
+            if (height != parameters.cend()) {
+                jreq.params.pushKV("height", height->second);
+            }
         }
         else if (secretPhrase != parameters.cend()) {
             // Solo
             jreq.strMethod = "submitNonceAsSolo";
             jreq.params.pushKV("nonce", nonce->second);
             jreq.params.pushKV("secretPhrase", secretPhrase->second);
+            if (height != parameters.cend()) {
+                jreq.params.pushKV("height", height->second);
+            }
         }
         else {
             BurstJSONErrorReply(req, 1, "Incorrect request");

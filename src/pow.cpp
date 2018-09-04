@@ -20,7 +20,7 @@ uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *
     return ::poc::CalculateBaseTarget(*pindexLast, *pblock, params);
 }
 
-bool CheckProofOfWork(const CBlockHeader* pblock, const Consensus::Params& params, bool bCheckPoCDeadline)
+bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params& params, bool bCheckPoCDeadline)
 {
     if (pblock->hashPrevBlock.IsNull()) {
         // Genesis

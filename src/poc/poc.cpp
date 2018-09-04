@@ -7,6 +7,7 @@
 #include <compat/endian.h>
 #include <consensus/merkle.h>
 #include <consensus/params.h>
+#include <consensus/validation.h>
 #include <crypto/curve25519.h>
 #include <crypto/shabal256.h>
 #include <crypto/sha256.h>
@@ -21,12 +22,14 @@
 #include <threadinterrupt.h>
 
 #include <inttypes.h>
+
+#include <limits>
 #include <string>
+#include <unordered_map>
 
 namespace {
 
-// Seconds: Dead target for deadline
-const static int64_t DEADLINE_DEADTARGET = 365 * 24 * 60 * 60;
+
 
 // shabal256
 uint256 shabal256(const uint256 &genSig, int64_t nMix64)
@@ -39,8 +42,7 @@ uint256 shabal256(const uint256 &genSig, int64_t nMix64)
     return result;
 }
 
-std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nPlotterId)
+std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline)
 {
     AssertLockHeld(cs_main);
     if (::vpwallets.empty()) {
@@ -60,7 +62,7 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
         return nullptr;
     }
 
-    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, nNonce, nPlotterId));
+    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true, nNonce, nPlotterId, nDeadline));
     if (!pblocktemplate.get()) 
         return nullptr;
 
@@ -68,7 +70,7 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
 
     unsigned int nHeight = prevBlockIndex.nHeight + 1; // Height first in coinbase required for block.version=2
     CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << nHeight<< CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nPlotterId))) + COINBASE_FLAGS;
+    txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nPlotterId))) + COINBASE_FLAGS;
     assert(txCoinbase.vin[0].scriptSig.size() <= 100);
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
@@ -77,63 +79,123 @@ std::shared_ptr<CBlock> CreateBlock(const CBlockIndex &prevBlockIndex,
     return std::make_shared<CBlock>(*pblock);
 }
 
-// Check
-static int32_t      gNextBlockHeight = 0;
-static uint64_t     gNextBlockNonce = 0;
-static uint64_t     gNextBlockPlotterId = 0;
-static uint64_t     gNextBlockDeadline = 0;
+// Generator
+struct GeneratorState {
+    uint64_t nonce;
+    uint64_t plotterId;
+    uint64_t deadline;
+    uint64_t bestBlockDeadline; // Current best block deadline
+    int64_t bestBlockTime; // Current best block time
+
+    GeneratorState() : deadline(poc::INVALID_DEADLINE), bestBlockDeadline(poc::INVALID_DEADLINE), bestBlockTime(0) { }
+};
+typedef std::unordered_map<int, GeneratorState> Generators; // height -> GeneratorState
+Generators mapGenerators;
 
 CThreadInterrupt interruptCheckDeadline;
 std::thread threadCheckDeadline;
 void CheckDeadlineThread()
 {
     RenameThread("bitcoin-checkdeadline");
-    LogPrintf("Entering check deadline loop\n");
     while (!interruptCheckDeadline) {
-        if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(1000)))
+        if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(500)))
             return;
         
         std::shared_ptr<CBlock> pblock;
+        uint64_t deadline = 0;
+        int height = 0;
+        CBlockIndex *pindexTip = nullptr, *pindexPrev = nullptr;
         {
             LOCK(cs_main);
-            if (gNextBlockHeight != 0) {
-                const CBlockIndex *pindexTip = chainActive.Tip();
-                if (pindexTip->nHeight + 1 == gNextBlockHeight) {
-                    int64_t nTime = std::max(pindexTip->GetMedianTimePast()+1, GetAdjustedTime());
-                    if (nTime > (int64_t)pindexTip->nTime + (int64_t)gNextBlockDeadline) {
-                        // forge
-                        LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                            gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
-                        pblock = CreateBlock(*pindexTip, gNextBlockNonce, gNextBlockPlotterId);
-                        if (!pblock) {
-                            LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
+            if (!mapGenerators.empty()) {
+                pindexTip = chainActive.Tip();
+                int64_t nCurrentTime = std::max(pindexTip->GetMedianTimePast() + 1, GetAdjustedTime());
+                auto it = mapGenerators.begin();
+                while (it != mapGenerators.end() && !pblock) {
+                    if (pindexTip->nHeight + 1 == it->first) {
+                        // Current height
+                        if (nCurrentTime > (int64_t)pindexTip->nTime + (int64_t)it->second.deadline || it->second.deadline == 50) {
+                            // forge
+                            LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                                it->first, it->second.nonce, it->second.plotterId, it->second.deadline);
+                            pblock = CreateBlock(*pindexTip, it->second.nonce, it->second.plotterId, it->second.deadline);
+                            if (!pblock) {
+                                LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                                    it->first, it->second.nonce, it->second.plotterId, it->second.deadline);
+                            } else {
+                                height = it->first;
+                                deadline = it->second.deadline;
+                                pindexPrev = pindexTip;
+                            }
+                        } else {
+                            // Continue wait forge time
+                            ++it;
+                            continue;
                         }
-                    } else {
-                        // wait
-                        LogPrint(BCLog::POC, "Wait deadline: dst=%" PRIu64 ", tip=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                            nTime, (int64_t)pindexTip->nTime, gNextBlockDeadline);
-                        continue;
+                    } else if (pindexTip->nHeight == it->first) {
+                        // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork). Try snatch block
+                        assert(pindexTip->pprev != nullptr);
+                        if (it->second.bestBlockDeadline == poc::INVALID_DEADLINE || it->second.bestBlockTime != pindexTip->GetBlockTime()) {
+                            it->second.bestBlockDeadline = poc::CalculateDeadline(*(pindexTip->pprev), pindexTip->GetBlockHeader(), Params().GetConsensus());
+                            it->second.bestBlockTime = pindexTip->GetBlockTime();
+                        }
+                        if (it->second.deadline < it->second.bestBlockDeadline) {
+                            // My deadline is best.
+                            if (nCurrentTime > (int64_t)pindexTip->pprev->nTime + (int64_t)it->second.deadline) {
+                                // Go forge
+                                LogPrint(BCLog::POC, "Generate block(Snatch): height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", preDeadline=%" PRIu64 "\n",
+                                    it->first, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.bestBlockDeadline);
+                                // Invalidate tip block
+                                CValidationState state;
+                                if (!InvalidateBlock(state, Params(), pindexTip)) {
+                                    LogPrint(BCLog::POC, "Generate block(Snatch): invalidate current tip block error, %s\n", state.GetRejectReason());
+                                    LogPrint(BCLog::POC, "Generate block(Snatch): current tip, %s\n", pindexTip->ToString());
+                                } else {
+                                    pblock = CreateBlock(*(pindexTip->pprev), it->second.nonce, it->second.plotterId, it->second.deadline);
+                                    if (!pblock) {
+                                        LogPrintf("Generate block fail(Snatch): height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", preDeadline=%" PRIu64 "\n",
+                                            it->first, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.bestBlockDeadline);
+                                    } else {
+                                        // Snatch block
+                                        height = it->first;
+                                        deadline = it->second.deadline;
+                                        pindexPrev = pindexTip->pprev;
+                                    }
+                                }
+                            } else {
+                                // Continue wait forge time
+                                ++it;
+                                continue;
+                            }
+                        } else {
+                            // Not better they, give up!
+                            LogPrintf("Generate block(Snatch) give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline (mine=%" PRIu64 ") >= (tip=%" PRIu64 ")\n",
+                                it->first, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.bestBlockDeadline);
+                        }
                     }
+
+                    it = mapGenerators.erase(it);
                 }
             }
         }
 
-        // ProcessNewBlock
-        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
-        }
-        
-        // clear
-        {
-            LOCK(cs_main);
-            if (gNextBlockHeight != 0) {
-                LogPrint(BCLog::POC, "Clear check deadline data");
-                gNextBlockHeight = 0;
-                gNextBlockNonce = 0;
-                gNextBlockPlotterId = 0;
-                gNextBlockDeadline = 0;
+        // Forge or Rollback
+        if (pindexPrev != nullptr && pindexTip != nullptr) {
+            // ProcessNewBlock
+            if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+                LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                    height, pblock->nNonce, pblock->nPlotterId, deadline);
+            }
+
+            // Revalidate block
+            if (pindexPrev != pindexTip) {
+                {
+                    LOCK(cs_main);
+                    ResetBlockFailureFlags(pindexTip);
+                }
+                
+                CValidationState state;
+                ActivateBestChain(state, Params());
             }
         }
     }
@@ -397,15 +459,12 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
 
     // Check deadline
     uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
-    return deadline <= DEADLINE_DEADTARGET && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
+    return deadline <= MAX_TARGET_DEADLINE && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
 }
 
-bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nPlotterId,
-    uint64_t &deadline, 
-    const Consensus::Params& params)
+uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const Consensus::Params& params)
 {
-    LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
+    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
         prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
 
     CBlockHeader block;
@@ -414,39 +473,46 @@ bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
     block.nPlotterId = nPlotterId;
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
-    if (calcDeadline > DEADLINE_DEADTARGET) {
-        LogPrint(BCLog::POC, "Try generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ". Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
-            prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline / (24 * 60 * 60 * 1.0f),
-            DEADLINE_DEADTARGET / (24 * 60 * 60));
-        deadline = calcDeadline;
-        return true;
+    if (calcDeadline > MAX_TARGET_DEADLINE) {
+        LogPrint(BCLog::POC, "Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
+            calcDeadline / (24 * 60 * 60 * 1.0f), MAX_TARGET_DEADLINE / (24 * 60 * 60));
+
+        auto it = mapGenerators.find(prevBlockIndex.nHeight + 1);
+        if (it != mapGenerators.end()) {
+            bestDeadline = it->second.deadline;
+        } else {
+            bestDeadline = 0;
+        }
+    } else {
+        GeneratorState &generator = mapGenerators[prevBlockIndex.nHeight + 1];
+        if (generator.deadline == INVALID_DEADLINE || calcDeadline < generator.deadline) {
+            generator.nonce     = nNonce;
+            generator.plotterId = nPlotterId;
+            generator.deadline  = calcDeadline;
+
+            uiInterface.NotifyBestDeadlineChanged(prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
+        }
+
+        bestDeadline = generator.deadline;
     }
 
-    deadline = calcDeadline;
-    if (gNextBlockHeight != prevBlockIndex.nHeight + 1 || deadline < gNextBlockDeadline) {
-        gNextBlockHeight    = prevBlockIndex.nHeight + 1;
-        gNextBlockNonce     = nNonce;
-        gNextBlockPlotterId = nPlotterId;
-        gNextBlockDeadline  = deadline;
-
-        uiInterface.NotifyBcoDeadlineChanged(gNextBlockHeight, gNextBlockNonce, gNextBlockPlotterId, gNextBlockDeadline);
-    }
-    return true;
+    return calcDeadline;
 }
 
 int64_t GetForgeEscape()
 {
-    if (gNextBlockDeadline == 0) {
+    LOCK(cs_main);
+    auto it = mapGenerators.cbegin();
+    if (it == mapGenerators.cend()) {
         return -1;
     } else {
-        LOCK(cs_main);
         const CBlockIndex *pindexTip = chainActive.Tip();
-        int64_t nTime = std::max(pindexTip->GetMedianTimePast()+1, GetAdjustedTime());
-        int64_t escape = (int64_t)pindexTip->nTime + (int64_t)gNextBlockDeadline - nTime;
-        if (escape < 0) {
-            escape = 0;
+        int64_t nTime = std::max(pindexTip->GetMedianTimePast() + 1, GetAdjustedTime());
+        int64_t nEscapeTime = (int64_t)pindexTip->nTime + (int64_t)it->second.deadline - nTime;
+        if (nEscapeTime < 0) {
+            nEscapeTime = 0;
         }
-        return escape;
+        return nEscapeTime;
     }
 }
 
@@ -454,7 +520,7 @@ int64_t GetForgeEscape()
 
 bool StartPOC()
 {
-    LogPrintf("Starting POC\n");
+    LogPrintf("Starting PoC module\n");
     interruptCheckDeadline.reset();
     threadCheckDeadline = std::thread(CheckDeadlineThread);
     return true;
@@ -462,14 +528,14 @@ bool StartPOC()
 
 void InterruptPOC()
 {
-    LogPrintf("Interrupting POC\n");
-    // Interrupt e.g. running longpolls
+    LogPrintf("Interrupting PoC module\n");
     interruptCheckDeadline();
 }
 
 void StopPOC()
 {
-    LogPrintf("Stopping POC\n");
     if (threadCheckDeadline.joinable())
         threadCheckDeadline.join();
+
+    LogPrintf("Stopped PoC module\n");
 }

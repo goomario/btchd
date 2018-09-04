@@ -3420,6 +3420,61 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
     return response;
 }
 
+UniValue getmortgage(const JSONRPCRequest& request)
+{
+    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 2)
+        throw std::runtime_error(
+            "getmortgage plotterId height\n"
+            "Get mortage amount of wallet.\n"
+            "\nArguments:\n"
+            "1. plotterId       (string, optional) Plotter ID\n"
+            "2. height          (integer, optional) Mortgage height\n"
+            "\nResult:\n"
+            "The mortage amount of wallet\n"
+            "\n"
+            "\nExample:\n"
+            + HelpExampleCli("getmortgage", "\"0\" 90000")
+            + HelpExampleRpc("getmortgage", "\"0\", 90000")
+            );
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    OutputType output_type = g_address_type;
+
+    if (!pwallet->IsLocked()) {
+        pwallet->TopUpKeyPool();
+    }
+
+    // Generate a new key that is added to wallet
+    CPubKey newKey;
+    if (!pwallet->GetKeyFromPool(newKey)) {
+        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+    }
+    pwallet->LearnRelatedScripts(newKey, output_type);
+    CTxDestination dest = GetDestinationForKey(newKey, output_type);
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    }
+
+    uint64_t nPlotterId = 0;
+    if (request.params.size() >= 1) {
+        nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+    }
+
+    int nHeight = chainActive.Height() + 1;
+    if (request.params.size() >= 2) {
+        nHeight = request.params[1].get_int();
+    }
+
+    return GetMortgage(EncodeDestination(dest), nPlotterId, nHeight);
+}
+
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue importprivkey(const JSONRPCRequest& request);
@@ -3487,6 +3542,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
+    { "generating",         "getmortgage",              &getmortgage,              {"plotterId", "height"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)

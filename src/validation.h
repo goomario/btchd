@@ -287,6 +287,8 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
                            const CCoinsView &view, const Consensus::Params& consensusParams);
 /* Get miner mortgage */
 CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams);
+std::vector<int> GetPlotterOwnerHeights(int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams);
+std::vector<int> GetMinerOwnerHeights(int nHeight, const CAccountId &nMinerAccountId, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);
@@ -408,10 +410,10 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 /** Functions for validating blocks and updating the block tree */
 
 /** Context-independent validity checks */
-bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
+bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOC = true, bool fCheckMerkleRoot = true);
 
 /** Check a block is completely valid from start to finish (only works on top of our current best block, with cs_main held) */
-bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
+bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOC = true, bool fCheckMerkleRoot = true);
 
 /** Check whether witness commitments are required for block. */
 bool IsWitnessEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params);

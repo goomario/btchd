@@ -29,6 +29,12 @@ static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
 /** Max target */
 static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
+// Max target deadline
+static const int64_t MAX_TARGET_DEADLINE = 365 * 24 * 60 * 60;
+
+// Invalid deadline
+static const uint64_t INVALID_DEADLINE = std::numeric_limits<uint64_t>::max();
+
 uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);
 uint64_t parseAccountId(const std::string& account);
 
@@ -61,11 +67,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 /** Verify generation singnature */
 bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, bool bForceCheckDeadline, const Consensus::Params& params);
 
-/** Try generate block (mine) */
-bool TryGenerateBlock(const CBlockIndex &prevBlockIndex,
-    const uint64_t &nNonce, const uint64_t &nPlotterId,
-    uint64_t &deadline,
-    const Consensus::Params& params);
+/** Add new nonce */
+uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const Consensus::Params& params);
 
 /** Get forge escape second time */
 int64_t GetForgeEscape();

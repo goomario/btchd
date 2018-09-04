@@ -67,6 +67,10 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
+            // Second sort by create block time (prevent earliest publish block), ...
+            if (pa->nTime < pb->nTime) return false;
+            if (pa->nTime > pb->nTime) return true;
+
             // ... then by earliest time received, ...
             if (pa->nSequenceId < pb->nSequenceId) return false;
             if (pa->nSequenceId > pb->nSequenceId) return true;
@@ -1109,7 +1113,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     }
 
     // Check the header
-    if (!CheckProofOfWork(&block, consensusParams, false))
+    if (!CheckProofOfCapacity(&block, consensusParams, false))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -1212,6 +1216,38 @@ CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const u
     int64_t nNetDiffTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     int64_t nMinerCapacityTB = std::max((nNetDiffTB * nAccountForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
     return consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTB;
+}
+
+std::vector<int> GetPlotterOwnerHeights(int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams)
+{
+    assert(nHeight <= chainActive.Height());
+    std::vector<int> vHeight;
+
+    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
+    for (int index = nHeight; index >= nBeginHeight; index--) {
+        CBlockIndex *pblockIndex = chainActive[index];
+        if (pblockIndex->nPlotterId == nPlotterId) {
+            vHeight.push_back(pblockIndex->nHeight);
+        }
+    }
+
+    return std::move(vHeight);
+}
+
+std::vector<int> GetMinerOwnerHeights(int nHeight, const CAccountId &nMinerAccountId, const Consensus::Params& consensusParams)
+{
+    assert(nHeight <= chainActive.Height());
+    std::vector<int> vHeight;
+
+    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
+    for (int index = nHeight; index >= nBeginHeight; index--) {
+        CBlockIndex *pblockIndex = chainActive[index];
+        if (pblockIndex->nMinerAccountId == nMinerAccountId) {
+            vHeight.push_back(pblockIndex->nHeight);
+        }
+    }
+
+    return std::move(vHeight);
 }
 
 bool IsInitialBlockDownload()
@@ -2985,25 +3021,25 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
-static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
+static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOC = true)
 {
-    // Check proof of work matches claimed amount
-    if (fCheckPOW && !CheckProofOfWork(&block, consensusParams, true))
-        return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
+    // Check proof of capacity matches claimed amount
+    if (fCheckPOC && !CheckProofOfCapacity(&block, consensusParams, true))
+        return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
 
     return true;
 }
 
-bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
+bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOC, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
 
     if (block.fChecked)
         return true;
 
-    // Check that the header is valid (particularly PoW).  This is mostly
+    // Check that the header is valid (particularly PoC).  This is mostly
     // redundant with the call in AcceptBlockHeader.
-    if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
+    if (!CheckBlockHeader(block, state, consensusParams, fCheckPOC))
         return false;
 
     // Check the merkle root.
@@ -3052,7 +3088,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (nSigOps * WITNESS_SCALE_FACTOR > MAX_BLOCK_SIGOPS_COST)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
-    if (fCheckPOW && fCheckMerkleRoot)
+    if (fCheckPOC && fCheckMerkleRoot)
         block.fChecked = true;
 
     return true;
@@ -3150,7 +3186,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     }
 
     // Check timestamp against prev
-    if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
+    if (block.GetBlockTime() <= pindexPrev->GetBlockTime())
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
 
     // Check timestamp
@@ -3468,7 +3504,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     return true;
 }
 
-bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW, bool fCheckMerkleRoot)
+bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOC, bool fCheckMerkleRoot)
 {
     AssertLockHeld(cs_main);
     assert(pindexPrev && pindexPrev == chainActive.Tip());
@@ -3481,7 +3517,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
         return error("%s: Consensus::ContextualCheckBlockHeader: %s", __func__, FormatStateMessage(state));
-    if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot))
+    if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOC, fCheckMerkleRoot))
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev))
         return error("%s: Consensus::ContextualCheckBlock: %s", __func__, FormatStateMessage(state));
@@ -3717,12 +3753,12 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
         return false;
 
     // Check mapBlockIndex valid
-    // Poc CheckProofOfWork depends previous block
+    // Poc CheckProofOfCapacity depends previous block
     for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
         CBlockIndex *pindex = it->second;
         CBlockHeader blockHeader = pindex->GetBlockHeader();
-        if (!CheckProofOfWork(&blockHeader, consensus_params, false))
-            return error("%s: CheckProofOfWork failed: %s", __func__, pindex->ToString());
+        if (!CheckProofOfCapacity(&blockHeader, consensus_params, false))
+            return error("%s: CheckProofOfCapacity failed: %s", __func__, pindex->ToString());
     }
 
     boost::this_thread::interruption_point();
