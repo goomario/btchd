@@ -49,6 +49,8 @@ struct BIP9Deployment {
 struct Params {
     /** BitcoinHD Fund address */
     std::string BtchdFundAddress;
+    /** BitcoinHD Fund account ID */
+    uint64_t BtchdFundAccountId;
     /** BitcoinHD fund pre-mining height */
     int BtchdFundPreMingingHeight;
     /** BitcoinHD fund royalty percent */

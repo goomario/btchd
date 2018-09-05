@@ -2033,11 +2033,18 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.fund),
                                REJECT_INVALID, "bad-cb-amount");
 
-    if (blockReward.fund != 0 && (block.vtx[0]->vout.size() < 2 || block.vtx[0]->vout[1].nValue < blockReward.fund))
-        return state.DoS(100,
+    if (blockReward.fund != 0) {
+        if (block.vtx[0]->vout.size() < 2 || block.vtx[0]->vout[1].nValue < blockReward.fund)
+            return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
                                (block.vtx[0]->vout.size() < 2 ? 0 : block.vtx[0]->vout[1].nValue), blockReward.fund),
                                REJECT_INVALID, "bad-cb-amount-fund");
+
+        if (GetAccountId(block.vtx[0]->vout[1].scriptPubKey) != chainparams.GetConsensus().BtchdFundAccountId)
+            return state.DoS(100,
+                         error("ConnectBlock(): coinbase pays nothing to fund"),
+                               REJECT_INVALID, "bad-cb-amount-fund-nothing");
+    }
 
     if (!control.Wait())
         return state.DoS(100, error("%s: CheckQueue failed. height=%d hash=%s", __func__, pindex->nHeight, pindex->GetBlockHash().GetHex()), REJECT_INVALID, "block-validation-failed");
