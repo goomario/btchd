@@ -140,6 +140,9 @@ public:
     CAmount getWatchImmatureBalance() const;
     EncryptionStatus getEncryptionStatus() const;
 
+    // Get master address
+    QString getMasterAddress() const;
+
     // Check address for validity
     bool validateAddress(const QString &address);
 
