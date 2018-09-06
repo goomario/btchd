@@ -463,9 +463,8 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
         move(QApplication::desktop()->availableGeometry().center() - frameGeometry().center());
     }
 
-    ui->bindPlotterIdContainer->setStyleSheet("background: transparent;");
-
     ui->openDebugLogfileButton->setToolTip(ui->openDebugLogfileButton->toolTip().arg(tr(PACKAGE_NAME)));
+    ui->bindPlotterIdContainer->setStyleSheet("background:transparent;");
 
     if (platformStyle->getImagesOnButtons()) {
         ui->openDebugLogfileButton->setIcon(platformStyle->SingleColorIcon(":/icons/export"));
@@ -867,22 +866,14 @@ void RPCConsole::setMempoolSize(long numberOfTxs, size_t dynUsage)
 
 void RPCConsole::walletChanged(WalletModel *walletModel)
 {
-    if (walletModel == nullptr) {
-        ui->masterAddress->setText("N/A");
-        ui->masterAddressBalance->setText("N/A");
-        ui->estimateCapacity->setText("N/A");
-        ui->miningRequireMortgage->setText("N/A");
-        ui->bindPlotterId->setText("N/A");
-    } else {
-        ui->masterAddress->setText(walletModel->getMasterAddress());
-        updateMortgage();
-    }
+    ui->masterAddress->setText(walletModel != nullptr ? walletModel->getMasterAddress() : "");
+    updateMortgage();
 }
 
 void RPCConsole::updateMortgage()
 {
     const QString masterAddress = ui->masterAddress->text();
-    if (!masterAddress.isEmpty()) {
+    if (!masterAddress.isEmpty() && !IsInitialBlockDownload()) {
         LOCK(cs_main);
 
         // Get account id of address
@@ -909,19 +900,26 @@ void RPCConsole::updateMortgage()
         QString strBindPlotters;
         {
             std::set<uint64_t> existPlotterId;
-            std::vector<int> vHeight = GetMinerOwnerHeights(chainActive.Height(), nAccountId, Params().GetConsensus());
-            for (auto it = vHeight.cbegin(); it != vHeight.cend(); it++) {
-                CBlockIndex *pblockIndex = chainActive[*it];
-                if (pblockIndex != nullptr && existPlotterId.find(pblockIndex->nPlotterId) == existPlotterId.end()) {
-                    if (!strBindPlotters.isEmpty()) {
-                        strBindPlotters += ",";
-                    }
-                    strBindPlotters += QString::number(pblockIndex->nPlotterId);
-                    existPlotterId.insert(pblockIndex->nPlotterId);
+            const int nEndHeight = chainActive.Height();
+            const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
+                                              Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+            for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                CBlockIndex *pblockIndex = chainActive[index];
+                if (pblockIndex == nullptr || pblockIndex->nMinerAccountId != nAccountId || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
+                    continue;
+                if (!strBindPlotters.isEmpty()) {
+                    strBindPlotters += ",";
                 }
+                strBindPlotters += QString::number(pblockIndex->nPlotterId);
+                existPlotterId.insert(pblockIndex->nPlotterId);
             }
         }
         ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
+    } else {
+        ui->masterAddressBalance->setText("N/A");
+        ui->estimateCapacity->setText("N/A");
+        ui->bindPlotterId->setText("N/A");
+        ui->miningRequireMortgage->setText("N/A");
     }
 }
 

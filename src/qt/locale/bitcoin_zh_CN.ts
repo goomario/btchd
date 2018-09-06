@@ -1707,7 +1707,7 @@
         <translation>估算的算力</translation>
     </message>
     <message>
-        <source>Mining require mortgage</source>
+        <source>Mortgage</source>
         <translation>挖矿需要的抵押额</translation>
     </message>
     <message>
