@@ -903,7 +903,7 @@ void RPCConsole::updateMortgage()
         CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
         ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BTCHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
-        ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QPlainTextEdit { color: red; }" : "");
+        ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QLabel { color: red; }" : "");
 
         // Master bind plotter ID
         QString strBindPlotters;
