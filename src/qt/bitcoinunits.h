@@ -96,6 +96,8 @@ public:
     static bool parse(int unit, const QString &value, CAmount *val_out);
     //! Gets title for amount column including current display unit if optionsModel reference available */
     static QString getAmountColumnTitle(int unit);
+    //! Format as string
+    static QString formatCapacity(uint64_t capacityGB);
     ///@}
 
     //! @name AbstractListModel implementation

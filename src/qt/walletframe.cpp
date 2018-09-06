@@ -5,6 +5,7 @@
 #include <qt/walletframe.h>
 
 #include <qt/bitcoingui.h>
+#include <qt/clientmodel.h>
 #include <qt/walletview.h>
 
 #include <cassert>
@@ -37,6 +38,9 @@ WalletFrame::~WalletFrame()
 void WalletFrame::setClientModel(ClientModel *_clientModel)
 {
     this->clientModel = _clientModel;
+
+    if (clientModel != nullptr)
+        clientModel->walletChanged(currentWalletView() != nullptr ? currentWalletView()->getWalletModel() : nullptr);
 }
 
 bool WalletFrame::addWallet(const QString& name, WalletModel *walletModel)
@@ -72,6 +76,10 @@ bool WalletFrame::setCurrentWallet(const QString& name)
     walletStack->setCurrentWidget(walletView);
     assert(walletView);
     walletView->updateEncryptionStatus();
+    
+    if (clientModel != nullptr)
+        clientModel->walletChanged(walletView->getWalletModel());
+
     return true;
 }
 

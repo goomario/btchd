@@ -82,6 +82,7 @@ public:
         strNetworkID = "main";
 
         consensus.BtchdFundAddress = "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y";
+        consensus.BtchdFundAccountId = 6561168432508777874ULL; // Generate from BtchdFundAddress
         consensus.BtchdFundPreMingingHeight = 84000 + 1; // 21M * 10% = 2.1M, 2.1M/25=84000, + 1 to deprecated test data
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
@@ -202,6 +203,7 @@ public:
         strNetworkID = "test";
 
         consensus.BtchdFundAddress = "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw";
+        consensus.BtchdFundAccountId = 14746131718064984941ULL; // Generate from BtchdFundAddress
         consensus.BtchdFundPreMingingHeight = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
@@ -301,6 +303,7 @@ public:
         strNetworkID = "regtest";
 
         consensus.BtchdFundAddress = "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy"; // pubkey 03eab29d59f6d14053c6e98f6d3d7e7db9cc17c619a513b9c00aa416fbdada73f1
+        consensus.BtchdFundAccountId = 13626495251625398235ULL; // Generate from BtchdFundAddress
         consensus.BtchdFundPreMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
         consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%

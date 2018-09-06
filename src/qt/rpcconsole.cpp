@@ -10,13 +10,16 @@
 #include <qt/forms/ui_debugwindow.h>
 
 #include <qt/bantablemodel.h>
+#include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/platformstyle.h>
+#include <qt/walletmodel.h>
 #include <chainparams.h>
 #include <netbase.h>
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <util.h>
+#include <validation.h>
 
 #include <openssl/crypto.h>
 
@@ -461,6 +464,7 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     }
 
     ui->openDebugLogfileButton->setToolTip(ui->openDebugLogfileButton->toolTip().arg(tr(PACKAGE_NAME)));
+    ui->bindPlotterIdContainer->setStyleSheet("background:transparent;");
 
     if (platformStyle->getImagesOnButtons()) {
         ui->openDebugLogfileButton->setIcon(platformStyle->SingleColorIcon(":/icons/export"));
@@ -576,6 +580,8 @@ void RPCConsole::setClientModel(ClientModel *model)
         connect(model, SIGNAL(bytesChanged(quint64,quint64)), this, SLOT(updateTrafficStats(quint64, quint64)));
 
         connect(model, SIGNAL(mempoolSizeChanged(long,size_t)), this, SLOT(setMempoolSize(long,size_t)));
+
+        connect(model, SIGNAL(walletChanged(WalletModel*)), this, SLOT(walletChanged(WalletModel*)));
 
         // set up peer table
         ui->peerWidget->setModel(model->getPeerTableModel());
@@ -843,6 +849,8 @@ void RPCConsole::setNumBlocks(int count, const QDateTime& blockDate, double nVer
     if (!headers) {
         ui->numberOfBlocks->setText(QString::number(count));
         ui->lastBlockTime->setText(blockDate.toString());
+
+        updateMortgage();
     }
 }
 
@@ -854,6 +862,65 @@ void RPCConsole::setMempoolSize(long numberOfTxs, size_t dynUsage)
         ui->mempoolSize->setText(QString::number(dynUsage/1000.0, 'f', 2) + " KB");
     else
         ui->mempoolSize->setText(QString::number(dynUsage/1000000.0, 'f', 2) + " MB");
+}
+
+void RPCConsole::walletChanged(WalletModel *walletModel)
+{
+    ui->masterAddress->setText(walletModel != nullptr ? walletModel->getMasterAddress() : "");
+    updateMortgage();
+}
+
+void RPCConsole::updateMortgage()
+{
+    const QString masterAddress = ui->masterAddress->text();
+    if (!masterAddress.isEmpty() && !IsInitialBlockDownload()) {
+        LOCK(cs_main);
+
+        // Get account id of address
+        CTxDestination dest = DecodeDestination(masterAddress.toStdString());
+        if (!IsValidDestination(dest)) {
+            return;
+        }
+        CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
+        if (nAccountId == 0) {
+            return;
+        }
+
+        // Master address total balance
+        CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
+        ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BTCHD, nBalance, false, BitcoinUnits::separatorAlways));
+
+        // Master address capacity and mortgage
+        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
+        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
+        ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BTCHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
+        ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QLabel { color: red; }" : "");
+
+        // Master bind plotter ID
+        QString strBindPlotters;
+        {
+            std::set<uint64_t> existPlotterId;
+            const int nEndHeight = chainActive.Height();
+            const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
+                                              Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+            for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                CBlockIndex *pblockIndex = chainActive[index];
+                if (pblockIndex == nullptr || pblockIndex->nMinerAccountId != nAccountId || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
+                    continue;
+                if (!strBindPlotters.isEmpty()) {
+                    strBindPlotters += ",";
+                }
+                strBindPlotters += QString::number(pblockIndex->nPlotterId);
+                existPlotterId.insert(pblockIndex->nPlotterId);
+            }
+        }
+        ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
+    } else {
+        ui->masterAddressBalance->setText("N/A");
+        ui->estimateCapacity->setText("N/A");
+        ui->bindPlotterId->setText("N/A");
+        ui->miningRequireMortgage->setText("N/A");
+    }
 }
 
 void RPCConsole::on_lineEdit_returnPressed()

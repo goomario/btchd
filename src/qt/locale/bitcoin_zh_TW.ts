@@ -1655,6 +1655,30 @@
         <translation>記憶體使用量</translation>
     </message>
     <message>
+        <source>Current Wallet</source>
+        <translation>當前錢包</translation>
+    </message>
+    <message>
+        <source>Master address</source>
+        <translation>主要地址</translation>
+    </message>
+    <message>
+        <source>Master address balance</source>
+        <translation>主要地址餘額</translation>
+    </message>
+    <message>
+        <source>Bind plotter ID</source>
+        <translation>綁定到錢包的算力</translation>
+    </message>
+    <message>
+        <source>Estimate capacity</source>
+        <translation>估算的算力</translation>
+    </message>
+    <message>
+        <source>Mortgage</source>
+        <translation>挖礦需要的抵押額</translation>
+    </message>
+    <message>
         <source>&amp;Reset</source>
         <translation>重置(&amp;R)</translation>
     </message>

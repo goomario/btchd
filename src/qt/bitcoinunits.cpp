@@ -180,6 +180,17 @@ bool BitcoinUnits::parse(int unit, const QString &value, CAmount *val_out)
     return ok;
 }
 
+QString BitcoinUnits::formatCapacity(uint64_t capacityGB)
+{
+    if (capacityGB > 1024 * 1024) {
+        return QString::number(capacityGB/(1024.0 * 1024), 'f', 2) + " PB";
+    } else if (capacityGB > 1024) {
+        return QString::number(capacityGB/1024.0, 'f', 2) + " TB";
+    } else {
+        return QString::number(capacityGB * 1.0, 'f', 2) + " GB";
+    }
+}
+
 QString BitcoinUnits::getAmountColumnTitle(int unit)
 {
     QString amountTitle = QObject::tr("Amount");

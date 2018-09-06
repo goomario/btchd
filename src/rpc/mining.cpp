@@ -766,7 +766,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
                             UniValue item(UniValue::VOBJ);
                             item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
                             item.pushKV("blockheight", pblockIndex->nHeight);
-                            item.pushKV("minerId", std::to_string(pblockIndex->nMinerAccountId));
+                            item.pushKV("accountId", std::to_string(pblockIndex->nMinerAccountId));
                             objAddress.pushKV(EncodeDestination(dest), item);
                         }
                     }
@@ -875,7 +875,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         UniValue item(UniValue::VOBJ);
         item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
         item.pushKV("blockheight", pblockIndex->nHeight);
-        item.pushKV("minerId", std::to_string(pblockIndex->nMinerAccountId));
+        item.pushKV("accountId", std::to_string(pblockIndex->nMinerAccountId));
 
         mapAddresses[address] = item;
     }

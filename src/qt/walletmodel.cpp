@@ -408,6 +408,23 @@ WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
     }
 }
 
+QString WalletModel::getMasterAddress() const
+{
+    LOCK(wallet->cs_wallet);
+    if (!wallet->IsLocked()) {
+        wallet->TopUpKeyPool();
+    }
+
+    // Generate a new key that is added to wallet
+    CPubKey newKey;
+    if (!wallet->GetKeyFromPool(newKey)) {
+        return QString();
+    }
+    wallet->LearnRelatedScripts(newKey, getDefaultAddressType());
+    CTxDestination dest = GetDestinationForKey(newKey, getDefaultAddressType());
+    return QString::fromStdString(EncodeDestination(dest));
+}
+
 bool WalletModel::setWalletEncrypted(bool encrypted, const SecureString &passphrase)
 {
     if(encrypted)
