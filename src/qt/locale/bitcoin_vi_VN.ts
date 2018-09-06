@@ -315,8 +315,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Đánh chỉ số (indexing) lại các khối (blocks) trên ổ đĩa ...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Gửi coins đến tài khoản BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Gửi coins đến tài khoản BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -339,8 +339,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>&amp;Tin nhắn xác thực</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -367,12 +367,12 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Mã hoá các khoá bí mật trong Ví của bạn.</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Dùng địa chỉ BTCHD của bạn ký các tin nhắn để xác minh những nội dung tin nhắn đó là của bạn.</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Dùng địa chỉ BitcoinHD của bạn ký các tin nhắn để xác minh những nội dung tin nhắn đó là của bạn.</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Kiểm tra các tin nhắn để chắc chắn rằng chúng được ký bằng các địa chỉ BTCHD xác định.</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Kiểm tra các tin nhắn để chắc chắn rằng chúng được ký bằng các địa chỉ BitcoinHD xác định.</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -411,8 +411,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>7Tùy chọn dòng lệnh</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BTCHD network</source>
-        <translation><numerusform>%n liên kết hoạt động với mạng lưới BTCHD</numerusform></translation>
+        <source>%n active connection(s) to BitcoinHD network</source>
+        <translation><numerusform>%n liên kết hoạt động với mạng lưới BitcoinHD</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -455,8 +455,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Đã cập nhật</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
-        <translation>Hiển thị tin nhắn trợ giúp %1 để có được danh sách với các tùy chọn dòng lệnh BTCHD.</translation>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
+        <translation>Hiển thị tin nhắn trợ giúp %1 để có được danh sách với các tùy chọn dòng lệnh BitcoinHD.</translation>
     </message>
     <message>
         <source>Connecting to peers...</source>
@@ -636,8 +636,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Sử dụng vị trí dữ liệu mặc định</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -689,8 +689,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Ví</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Kết nối đến máy chủ BTCHD thông qua SOCKS5 proxy.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Kết nối đến máy chủ BitcoinHD thông qua SOCKS5 proxy.</translation>
     </message>
     <message>
         <source>Proxy &amp;IP:</source>
@@ -1207,8 +1207,8 @@ Ví của bạn chưa được mã hóa.</translation>
         <translation>Lựa chọn:</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>(default: %u)</source>

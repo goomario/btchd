@@ -1,10 +1,10 @@
 
-## <summary>policy for BTCHD</summary>
+## <summary>policy for BitcoinHD</summary>
 
 
 ########################################
 ## <summary>
-##	Transition to BTCHD.
+##	Transition to BitcoinHD.
 ## </summary>
 ## <param name="domain">
 ## <summary>
@@ -24,7 +24,7 @@ interface(`bitcoin_domtrans',`
 
 ########################################
 ## <summary>
-##	Execute BTCHD server in the BTCHD domain.
+##	Execute BitcoinHD server in the BitcoinHD domain.
 ## </summary>
 ## <param name="domain">
 ##	<summary>
@@ -43,7 +43,7 @@ interface(`bitcoin_initrc_domtrans',`
 
 ########################################
 ## <summary>
-##	Search BTCHD lib directories.
+##	Search BitcoinHD lib directories.
 ## </summary>
 ## <param name="domain">
 ##	<summary>
@@ -62,7 +62,7 @@ interface(`bitcoin_search_lib',`
 
 ########################################
 ## <summary>
-##	Read BTCHD lib files.
+##	Read BitcoinHD lib files.
 ## </summary>
 ## <param name="domain">
 ##	<summary>
@@ -81,7 +81,7 @@ interface(`bitcoin_read_lib_files',`
 
 ########################################
 ## <summary>
-##	Manage BTCHD lib files.
+##	Manage BitcoinHD lib files.
 ## </summary>
 ## <param name="domain">
 ##	<summary>
@@ -100,7 +100,7 @@ interface(`bitcoin_manage_lib_files',`
 
 ########################################
 ## <summary>
-##	Manage BTCHD lib directories.
+##	Manage BitcoinHD lib directories.
 ## </summary>
 ## <param name="domain">
 ##	<summary>
@@ -121,7 +121,7 @@ interface(`bitcoin_manage_lib_dirs',`
 ########################################
 ## <summary>
 ##	All of the rules required to administrate
-##	a BTCHD environment
+##	a BitcoinHD environment
 ## </summary>
 ## <param name="domain">
 ##	<summary>

@@ -1,12 +1,12 @@
 UNIX BUILD NOTES
 ====================
-Some notes on how to build BTCHD Core in Unix.
+Some notes on how to build BitcoinHD Core in Unix.
 
 (for OpenBSD specific instructions, see [build-openbsd.md](build-openbsd.md))
 
 Note
 ---------------------
-Always use absolute paths to configure and compile BTCHD and the dependencies,
+Always use absolute paths to configure and compile BitcoinHD and the dependencies,
 for example, when specifying the path of the dependency:
 
 	../dist/configure --enable-cxx --disable-shared --with-pic --prefix=$BDB_PREFIX
@@ -56,7 +56,7 @@ Memory Requirements
 --------------------
 
 C++ compilers are memory-hungry. It is recommended to have at least 1.5 GB of
-memory available when compiling BTCHD Core. On systems with less, gcc can be
+memory available when compiling BitcoinHD Core. On systems with less, gcc can be
 tuned to conserve memory with additional CXXFLAGS:
 
 
@@ -95,7 +95,7 @@ BerkeleyDB 5.1 or later, which break binary wallet compatibility with the distri
 are based on BerkeleyDB 4.8. If you do not care about wallet compatibility,
 pass `--with-incompatible-bdb` to configure.
 
-See the section "Disable-wallet mode" to build BTCHD Core without wallet.
+See the section "Disable-wallet mode" to build BitcoinHD Core without wallet.
 
 Optional (see --with-miniupnpc and --enable-upnp-default):
 
@@ -189,7 +189,7 @@ If you need to build Boost yourself:
 
 Security
 --------
-To help make your BTCHD installation more secure by making certain attacks impossible to
+To help make your BitcoinHD installation more secure by making certain attacks impossible to
 exploit even if a vulnerability is found, binaries are hardened by default.
 This can be disabled with:
 
@@ -238,7 +238,7 @@ Hardening enables the following features:
 
 Disable-wallet mode
 --------------------
-When the intention is to run only a P2P node without a wallet, BTCHD may be compiled in
+When the intention is to run only a P2P node without a wallet, BitcoinHD may be compiled in
 disable-wallet mode with:
 
     ./configure --disable-wallet
@@ -270,7 +270,7 @@ Note:
 Enabling wallet support requires either compiling against a Berkeley DB newer than 4.8 (package `db`) using `--with-incompatible-bdb`,
 or building and depending on a local version of Berkeley DB 4.8. The readily available Arch Linux packages are currently built using
 `--with-incompatible-bdb` according to the [PKGBUILD](https://projects.archlinux.org/svntogit/community.git/tree/bitcoin/trunk/PKGBUILD).
-As mentioned above, when maintaining portability of the wallet between the standard BTCHD Core distributions and independently built
+As mentioned above, when maintaining portability of the wallet between the standard BitcoinHD Core distributions and independently built
 node software is desired, Berkeley DB 4.8 must be used.
 
 

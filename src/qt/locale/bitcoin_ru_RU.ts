@@ -62,11 +62,11 @@
         <translation>Адреса получения</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation>Это ваши биткойн адреса для отправки платежа. Всегда проверяйте сумму и адрес получателя перед отправкой платежа.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
         <translation>Это ваши биткойн адреса для получения платежей. Настоятельно рекомендуем использовать новые адреса для получения каждой транзакции.</translation>
     </message>
     <message>
@@ -306,7 +306,7 @@
         <translation>Реиндексация блоков на диске...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
+        <source>Send coins to a BitcoinHD address</source>
         <translation>Послать средства на биткойн адрес</translation>
     </message>
     <message>
@@ -322,8 +322,8 @@
         <translation>&amp;Проверить сообщение...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -481,8 +481,8 @@
         <translation>Добро пожаловать в %1.</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>Error</source>
@@ -542,8 +542,8 @@
         <translation>Пробросить порт через &amp;UPnP</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Подключится к сети BTCHD через SOCKS5 прокси.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Подключится к сети BitcoinHD через SOCKS5 прокси.</translation>
     </message>
     <message>
         <source>Proxy &amp;IP:</source>
@@ -630,7 +630,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
         <translation>Введите биткоин-адрес (напр. %1)</translation>
     </message>
     <message>
@@ -924,8 +924,8 @@
 <context>
     <name>bitcoin-core</name>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>Whitelisted peers cannot be DoS banned and their transactions are always relayed, even if they are already in the mempool, useful e.g. for a gateway</source>

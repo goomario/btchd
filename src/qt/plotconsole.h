@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Bitcoin Ore developers
+// Copyright (c) 2017-2018 The BitcoinHD Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,7 +23,7 @@ QT_BEGIN_NAMESPACE
 class QStringList;
 QT_END_NAMESPACE
 
-/** Local BTCHD plot console. */
+/** Local BitcoinHD plot console. */
 class PlotConsole : public QWidget
 {
     Q_OBJECT

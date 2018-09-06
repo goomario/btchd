@@ -56,9 +56,9 @@ public:
      */
     enum Unit
     {
-        BTCHD,
-        mBTCHD,
-        uBTCHD
+        BHD,
+        mBHD,
+        uBHD
     };
 
     enum SeparatorStyle

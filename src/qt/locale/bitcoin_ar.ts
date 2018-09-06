@@ -62,11 +62,11 @@
         <translation>عناوين الاستقبال</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation>هذه هي عناوين Bitcion التابعة لك من أجل إرسال الدفعات. تحقق دائما من المبلغ و عنوان المرسل المستقبل قبل إرسال العملات</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
         <translation>هذه هي عناوين Bitcion التابعة لك من أجل إستقبال الدفعات. ينصح استخدام عنوان جديد من أجل كل صفقة</translation>
     </message>
     <message>
@@ -334,7 +334,7 @@
         <translation>إعادة الفهرسة الكتل على القرص ...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
+        <source>Send coins to a BitcoinHD address</source>
         <translation>ارسل عملات الى عنوان بيتكوين</translation>
     </message>
     <message>
@@ -358,7 +358,7 @@
         <translation>&amp;التحقق من الرسالة...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
+        <source>BitcoinHD</source>
         <translation>بتكوين</translation>
     </message>
     <message>
@@ -386,12 +386,12 @@
         <translation>تشفير المفتاح الخاص بمحفظتك</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>وقَع الرسائل بواسطة ال: BTCHD الخاص بك لإثبات امتلاكك لهم</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>وقَع الرسائل بواسطة ال: BitcoinHD الخاص بك لإثبات امتلاكك لهم</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>تحقق من الرسائل للتأكد من أنَها وُقعت برسائل BTCHD محدَدة</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>تحقق من الرسائل للتأكد من أنَها وُقعت برسائل BitcoinHD محدَدة</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -423,7 +423,7 @@
     </message>
     <message>
         <source>Open a btchd: URI or payment request</source>
-        <translation>فتح URI : BTCHD أو طلب دفع</translation>
+        <translation>فتح URI : BitcoinHD أو طلب دفع</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -466,7 +466,7 @@
         <translation>محدث</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
         <translation>بين اشارة المساعدة %1 للحصول على قائمة من خيارات اوامر البت كوين المحتملة </translation>
     </message>
     <message>
@@ -530,7 +530,7 @@
         <translation>المحفظة &lt;b&gt;مشفرة&lt;/b&gt; و &lt;b&gt;مقفلة&lt;/b&gt; حاليا</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
         <translation>خطأ فادح حدث . لا يمكن اتمام بيتكوين بامان سيتم الخروج</translation>
     </message>
 </context>
@@ -696,7 +696,7 @@
         <translation>تعديل عنوان الارسال</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
         <translation>العنوان المدخل "%1" ليس عنوان بيت كوين صحيح.</translation>
     </message>
     <message>
@@ -809,7 +809,7 @@
         <translation>استخدام دليل بيانات مخصص:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
+        <source>BitcoinHD</source>
         <translation>بتكوين</translation>
     </message>
     <message>
@@ -1510,7 +1510,7 @@
         <translation>هذا دفع اعتيادي</translation>
     </message>
     <message>
-        <source>The BTCHD address to send the payment to</source>
+        <source>The BitcoinHD address to send the payment to</source>
         <translation>عنوان البت كوين المرسل اليه الدفع</translation>
     </message>
     <message>
@@ -1587,7 +1587,7 @@
         <translation>التوقيع</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
         <translation>وقع الرسالة لتثبت انك تمتلك عنوان البت كوين هذا</translation>
     </message>
     <message>
@@ -2040,7 +2040,7 @@
         <translation>حدد مجلد المعلومات</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
+        <source>BitcoinHD Core</source>
         <translation>جوهر بيتكوين</translation>
     </message>
     <message>

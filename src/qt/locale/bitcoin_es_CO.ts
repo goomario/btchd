@@ -63,12 +63,12 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Recibiendo dirección</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Estas son sus direcciones de BTCHD para enviar pagos. Siempre verifique el monto y la dirección de recepción antes de enviar monedas.</translation>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Estas son sus direcciones de BitcoinHD para enviar pagos. Siempre verifique el monto y la dirección de recepción antes de enviar monedas.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Estas son sus direcciones de BTCHD para recibir pagos. Se recomienda utilizar una nueva dirección de recepción para cada transacción.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Estas son sus direcciones de BitcoinHD para recibir pagos. Se recomienda utilizar una nueva dirección de recepción para cada transacción.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -319,8 +319,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Reindexando bloques en el disco ...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Enviando monedas a una dirección de BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Enviando monedas a una dirección de BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -343,8 +343,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>&amp;Verificar Mensaje...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -371,12 +371,12 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Encripta las claves privadas que pertenecen a tu billetera</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Firme mensajes con sus direcciones de BTCHD para demostrar que los posee</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Firme mensajes con sus direcciones de BitcoinHD para demostrar que los posee</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Verifique los mensajes para asegurarse de que fueron firmados con las direcciones de BTCHD especificadas</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Verifique los mensajes para asegurarse de que fueron firmados con las direcciones de BitcoinHD especificadas</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -475,8 +475,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>La billetera está &lt;b&gt; encriptada &lt;/ b&gt; y actualmente está &lt;b&gt; bloqueada &lt;/ b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Se produjo un error fatal. BTCHD ya no puede continuar de manera segura y no continuará</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Se produjo un error fatal. BitcoinHD ya no puede continuar de manera segura y no continuará</translation>
     </message>
 </context>
 <context>
@@ -738,8 +738,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Use un directorio de datos personalizado:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -757,8 +757,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Formar</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
-        <translation>Es posible que las transacciones recientes aún no estén visibles y, por lo tanto, el saldo de su billetera podría ser incorrecto. Esta información será correcta una vez que su billetera haya terminado de sincronizarse con la red BTCHD, como se detalla a continuación.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
+        <translation>Es posible que las transacciones recientes aún no estén visibles y, por lo tanto, el saldo de su billetera podría ser incorrecto. Esta información será correcta una vez que su billetera haya terminado de sincronizarse con la red BitcoinHD, como se detalla a continuación.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
@@ -911,8 +911,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>&amp; Gastar cambio no confirmado</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Abra automáticamente el puerto cliente de BTCHD en el enrutador. Esto solo funciona cuando su enrutador admite UPnP y está habilitado.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Abra automáticamente el puerto cliente de BitcoinHD en el enrutador. Esto solo funciona cuando su enrutador admite UPnP y está habilitado.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -927,8 +927,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Permitir conexiones entrantes</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Conéctese a la red de BTCHD a través de un proxy SOCKS5.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Conéctese a la red de BitcoinHD a través de un proxy SOCKS5.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -963,8 +963,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Conéctese a la red de BTCHD a través de un proxy SOCKS5 separado para los servicios Tor ocultos.</translation>
+        <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>Conéctese a la red de BitcoinHD a través de un proxy SOCKS5 separado para los servicios Tor ocultos.</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1066,8 +1066,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Configurar</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>La información mostrada puede estar desactualizada. Su billetera se sincroniza automáticamente con la red de BTCHD después de establecer una conexión, pero este proceso aún no se ha completado.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>La información mostrada puede estar desactualizada. Su billetera se sincroniza automáticamente con la red de BitcoinHD después de establecer una conexión, pero este proceso aún no se ha completado.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1145,8 +1145,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Manejo de URI</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
-        <translation>¡URI no puede ser analizado! Esto puede deberse a una dirección de BTCHD no válida o a parámetros de URI mal formados.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
+        <translation>¡URI no puede ser analizado! Esto puede deberse a una dirección de BitcoinHD no válida o a parámetros de URI mal formados.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1599,8 +1599,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
         <translation>Mensaje:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
-        <translation>Un mensaje opcional para adjuntar a la solicitud de pago, que se mostrará cuando se abra la solicitud. Nota: El mensaje no se enviará con el pago a través de la red de BTCHD.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
+        <translation>Un mensaje opcional para adjuntar a la solicitud de pago, que se mostrará cuando se abra la solicitud. Nota: El mensaje no se enviará con el pago a través de la red de BitcoinHD.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -1907,8 +1907,8 @@ Exportar los datos en la pestaña actual a un archivo</translation>
 <context>
     <name>bitcoin-core</name>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>Information</source>
