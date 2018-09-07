@@ -371,7 +371,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
 
     // Commit changes
     LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", (batch.SizeEstimate() + accountDiffCoinsMemorySize) * (1.0 / 1048576.0));
-    bool ret = db.WriteBatch(batch) && autoTx.Commit();
+    bool ret = autoTx.Commit() && db.WriteBatch(batch);
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
     LogPrint(BCLog::COINDB, "Committed %u changed account balance outputs to account database...\n", (unsigned int)accountChanged);
     if (ret) {
