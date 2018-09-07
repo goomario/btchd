@@ -6,7 +6,9 @@
 #ifndef BITCOIN_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_PARAMS_H
 
+#include <amount.h>
 #include <uint256.h>
+
 #include <limits>
 #include <map>
 #include <string>
@@ -60,7 +62,7 @@ struct Params {
     /** BitcoinHD miner no mortgage height before */
     int BtchdNoMortgageHeight;
     /** BitcoinHD miner mortgage amount per TB */
-    int BtchdMortgageAmountPerTB;
+    CAmount BtchdMortgageAmountPerTB;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;

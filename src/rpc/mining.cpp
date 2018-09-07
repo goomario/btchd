@@ -726,12 +726,12 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     if (nHeight < Params().GetConsensus().BtchdNoMortgageHeight + 1) {
         result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
     }
-    if (nMortgageAmount != 0 && nMortgageAmount != MAX_MONEY) {
+    if (nMortgageAmount != 0) {
         result.pushKV("capacity", std::to_string(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB) +" TB");
     }
 
     // Relation plotterId and address
-    {
+    if (nPlotterId == 0) {
         std::set<uint64_t> bindPlotterId;
         std::vector<int> vHeight = GetMinerOwnerHeights(nHeight - 1, nAccountId, Params().GetConsensus());
         for (auto it = vHeight.rbegin(); it != vHeight.rend(); it++) {
@@ -779,10 +779,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
         result.pushKV("multiMining", objMultiMiningPlotter);
     }
 
-    if (nMortgageAmount == MAX_MONEY) {
-        assert(nAccountId != 0);
-        result.pushKV("message", "Multi mining! Low reward!");
-    } else if (nBalance < nMortgageAmount) {
+    if (nMortgageAmount > nBalance) {
         result.pushKV("message", "Low mortgage!");
     }
 
