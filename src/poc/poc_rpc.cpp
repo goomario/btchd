@@ -410,17 +410,17 @@ static UniValue getTime(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)                  argNames
   //  --------------------- ------------------------  -----------------------           ----------
-    { "poc",              "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
-    { "poc",              "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
+    { "hidden",           "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
+    { "hidden",           "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
     { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height" } },
     { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height"} },
-    { "poc",              "getConstants",             &poc::rpc::getConstants,          { } },
-    { "poc",              "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
-    { "poc",              "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },
-    { "poc",              "getAccountId",             &poc::rpc::getAccountId,          { "passPhrase" } },
-    { "poc",              "getAccount",               &poc::rpc::getAccount,            { "account" } },
-    { "poc",              "getTime",                  &poc::rpc::getTime,               { } },
+    { "hidden",           "getConstants",             &poc::rpc::getConstants,          { } },
+    { "hidden",           "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
+    { "hidden",           "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },
+    { "hidden",           "getAccountId",             &poc::rpc::getAccountId,          { "passPhrase" } },
+    { "hidden",           "getAccount",               &poc::rpc::getAccount,            { "account" } },
+    { "hidden",           "getTime",                  &poc::rpc::getTime,               { } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)
