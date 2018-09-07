@@ -13,7 +13,7 @@
 %endif
 %endif
 
-Name:		BTCHD
+Name:		BitcoinHD
 Version:	1.0.0
 Release:	2%{?dist}
 Summary:	Peer to Peer Cryptographic Currency
@@ -21,7 +21,7 @@ Summary:	Peer to Peer Cryptographic Currency
 Group:		Applications/System
 License:	MIT
 URL:		http://btchd.org/
-Source0:	http://btchd.org/bin/BTCHD-core-%{version}/BTCHD-%{version}.tar.gz
+Source0:	http://btchd.org/bin/BitcoinHD-core-%{version}/BitcoinHD-%{version}.tar.gz
 Source1:	http://download.oracle.com/berkeley-db/db-%{bdbv}.NC.tar.gz
 
 Source10:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/debian/examples/btchd.conf
@@ -54,7 +54,7 @@ Patch0:		bitcoin-0.12.0-libressl.patch
 
 
 %description
-BTCHD is a digital cryptographic currency that uses peer-to-peer technology to
+BitcoinHD is a digital cryptographic currency that uses peer-to-peer technology to
 operate with no central authority or banks; managing transactions and the
 issuing of bitcoins is carried out collectively by the network.
 
@@ -79,17 +79,17 @@ BuildRequires:	%{_bindir}/inkscape
 BuildRequires:	%{_bindir}/convert
 
 %description core
-BTCHD is a digital cryptographic currency that uses peer-to-peer technology to
+BitcoinHD is a digital cryptographic currency that uses peer-to-peer technology to
 operate with no central authority or banks; managing transactions and the
 issuing of bitcoins is carried out collectively by the network.
 
 This package contains the Qt based graphical client and node. If you are looking
-to run a BTCHD wallet, this is probably the package you want.
+to run a BitcoinHD wallet, this is probably the package you want.
 %endif
 
 
 %package libs
-Summary:	BTCHD shared libraries
+Summary:	BitcoinHD shared libraries
 Group:		System Environment/Libraries
 
 %description libs
@@ -100,7 +100,7 @@ functionality.
 Unless you know need this package, you probably do not.
 
 %package devel
-Summary:	Development files for BTCHD
+Summary:	Development files for BitcoinHD
 Group:		Development/Libraries
 Requires:	%{name}-libs = %{version}-%{release}
 
@@ -112,7 +112,7 @@ that wants to link against that library, then you need this package installed.
 Most people do not need this package installed.
 
 %package server
-Summary:	The BTCHD daemon
+Summary:	The BitcoinHD daemon
 Group:		System Environment/Daemons
 Requires:	btchd-utils = %{version}-%{release}
 Requires:	selinux-policy policycoreutils-python
@@ -124,24 +124,24 @@ BuildRequires:	checkpolicy
 BuildRequires:	%{_datadir}/selinux/devel/Makefile
 
 %description server
-This package provides a stand-alone BTCHD-core daemon. For most users, this
+This package provides a stand-alone BitcoinHD-core daemon. For most users, this
 package is only needed if they need a full-node without the graphical client.
 
 Some third party wallet software will want this package to provide the actual
-BTCHD-core node they use to connect to the network.
+BitcoinHD-core node they use to connect to the network.
 
-If you use the graphical BTCHD-core client then you almost certainly do not
+If you use the graphical BitcoinHD-core client then you almost certainly do not
 need this package.
 
 %package utils
-Summary:	BTCHD utilities
+Summary:	BitcoinHD utilities
 Group:		Applications/System
 
 %description utils
 This package provides several command line utilities for interacting with a
-BTCHD-core daemon.
+BitcoinHD-core daemon.
 
-The btchd-cli utility allows you to communicate and control a BTCHD daemon
+The btchd-cli utility allows you to communicate and control a BitcoinHD daemon
 over RPC, the btchd-tx utility allows you to create a custom transaction, and
 the bench_bitcoin utility can be used to perform some benchmarks.
 
@@ -193,7 +193,7 @@ touch -a -m -t 201504280000 %{buildroot}%{_tmpfilesdir}/btchd.conf
 
 mkdir -p %{buildroot}%{_sysconfdir}/sysconfig
 cat <<EOF > %{buildroot}%{_sysconfdir}/sysconfig/btchd
-# Provide options to the BTCHD daemon here, for example
+# Provide options to the BitcoinHD daemon here, for example
 # OPTIONS="-testnet -disable-wallet"
 
 OPTIONS=""
@@ -209,7 +209,7 @@ touch -a -m -t 201504280000 %{buildroot}%{_sysconfdir}/sysconfig/btchd
 mkdir -p %{buildroot}%{_unitdir}
 cat <<EOF > %{buildroot}%{_unitdir}/btchd.service
 [Unit]
-Description=BTCHD daemon
+Description=BitcoinHD daemon
 After=syslog.target network.target
 
 [Service]
@@ -265,10 +265,10 @@ mkdir -p %{buildroot}%{_datadir}/applications
 cat <<EOF > %{buildroot}%{_datadir}/applications/btchd-core.desktop
 [Desktop Entry]
 Encoding=UTF-8
-Name=BTCHD
-Comment=BTCHD P2P Cryptocurrency
-Comment[fr]=BTCHD, monnaie virtuelle cryptographique pair à pair
-Comment[tr]=BTCHD, eşten eşe kriptografik sanal para birimi
+Name=BitcoinHD
+Comment=BitcoinHD P2P Cryptocurrency
+Comment[fr]=BitcoinHD, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=BitcoinHD, eşten eşe kriptografik sanal para birimi
 Exec=btchd-qt %u
 Terminal=false
 Type=Application
@@ -322,7 +322,7 @@ test/functional/test_runner.py --extended
 getent group btchd >/dev/null || groupadd -r btchd
 getent passwd btchd >/dev/null ||
 	useradd -r -g btchd -d /var/lib/btchd -s /sbin/nologin \
-	-c "BTCHD wallet server" btchd
+	-c "BitcoinHD wallet server" btchd
 exit 0
 
 %post server

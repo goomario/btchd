@@ -8,7 +8,7 @@
 # /etc/btchd/btchd.conf
 
 [Unit]
-Description=BTCHD daemon
+Description=BitcoinHD daemon
 After=network.target
 
 [Service]

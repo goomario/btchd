@@ -238,7 +238,7 @@ bool ClientModel::isReleaseVersion() const
 
 QString ClientModel::formatClientStartupTime() const
 {
-    return QDateTime::fromTime_t(GetStartupTime()).toString();
+    return QDateTime::fromTime_t(GetStartupTime()).toString(Qt::SystemLocaleLongDate);
 }
 
 QString ClientModel::dataDir() const

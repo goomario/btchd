@@ -62,12 +62,12 @@
         <translation>Alamat-alamat penerima</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Ini adalah alamat- alamat BTCHD Anda untuk mengirimkan pembayaran. Selalu periksa jumlah dan alamat penerima sebelum mengirimkan koin.</translation>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Ini adalah alamat- alamat BitcoinHD Anda untuk mengirimkan pembayaran. Selalu periksa jumlah dan alamat penerima sebelum mengirimkan koin.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ini adalah alamat- alamat BTCHD Anda untuk menerima pembayaran. Dianjurkan untuk menggunakan alamat penerima yang baru setiap melakukan transaksi.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Ini adalah alamat- alamat BitcoinHD Anda untuk menerima pembayaran. Dianjurkan untuk menggunakan alamat penerima yang baru setiap melakukan transaksi.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -169,7 +169,7 @@
     </message>
     <message>
         <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINS&lt;/b&gt;!</source>
-        <translation>Peringatan: Jika Anda enkripsi dompet Anda dan lupa kata sandi anda, Anda akan &lt;b&gt;KEHILANGAN SEMUA BTCHD ANDA&lt;/b&gt;!</translation>
+        <translation>Peringatan: Jika Anda enkripsi dompet Anda dan lupa kata sandi anda, Anda akan &lt;b&gt;KEHILANGAN SEMUA BitcoinHD ANDA&lt;/b&gt;!</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>
@@ -338,8 +338,8 @@
         <translation>Mengindex ulang blok di dalam disk...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Kirim koin ke alamat BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Kirim koin ke alamat BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -362,8 +362,8 @@
         <translation>&amp;Verifikasi pesan...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -390,12 +390,12 @@
         <translation>Enkripsi private key yang dimiliki dompet Anda</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Tanda tangani sebuah pesan menggunakan alamat BTCHD Anda untuk membuktikan bahwa Anda adalah pemilik alamat tersebut</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Tanda tangani sebuah pesan menggunakan alamat BitcoinHD Anda untuk membuktikan bahwa Anda adalah pemilik alamat tersebut</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Verifikasi pesan untuk memastikan bahwa pesan tersebut ditanda tangani oleh suatu alamat BTCHD tertentu</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Verifikasi pesan untuk memastikan bahwa pesan tersebut ditanda tangani oleh suatu alamat BitcoinHD tertentu</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -434,8 +434,8 @@
         <translation>&amp;pilihan Command-line</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BTCHD network</source>
-        <translation><numerusform>%n koneksi aktif ke jaringan BTCHD</numerusform></translation>
+        <source>%n active connection(s) to BitcoinHD network</source>
+        <translation><numerusform>%n koneksi aktif ke jaringan BitcoinHD</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -478,8 +478,8 @@
         <translation>Terbaru</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
-        <translation>Tampilkan %1 pesan bantuan untuk mendapatkan daftar opsi baris perintah BTCHD yang memungkinkan</translation>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
+        <translation>Tampilkan %1 pesan bantuan untuk mendapatkan daftar opsi baris perintah BitcoinHD yang memungkinkan</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -548,8 +548,8 @@
         <translation>Dompet saat ini &lt;b&gt;terenkripsi&lt;/b&gt; dan &lt;b&gt;terkunci&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Terjadi Kesalahan Fatal. BTCHD Tidak Dapat Melanjutkan Dengan Aman Dan Akan Keluar</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Terjadi Kesalahan Fatal. BitcoinHD Tidak Dapat Melanjutkan Dengan Aman Dan Akan Keluar</translation>
     </message>
 </context>
 <context>
@@ -730,8 +730,8 @@
         <translation>Ubah alamat pengirim</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
-        <translation>Alamat yang dimasukkan "%1" bukanlah alamat BTCHD yang valid.</translation>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
+        <translation>Alamat yang dimasukkan "%1" bukanlah alamat BitcoinHD yang valid.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -847,8 +847,8 @@
         <translation>Gunakan direktori pilihan Anda:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Error: Specified data directory "%1" cannot be created.</source>
@@ -972,16 +972,16 @@
         <translation>&amp;Perubahan saldo untuk transaksi yang belum dikonfirmasi</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Otomatis membuka port client BTCHD di router. Hanya berjalan apabila router anda mendukung UPnP dan di-enable.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Otomatis membuka port client BitcoinHD di router. Hanya berjalan apabila router anda mendukung UPnP dan di-enable.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
         <translation>Petakan port dengan &amp;UPnP</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Hubungkan ke jaringan BTCHD melalui SOCKS5 proxy.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Hubungkan ke jaringan BitcoinHD melalui SOCKS5 proxy.</translation>
     </message>
     <message>
         <source>Proxy &amp;IP:</source>
@@ -1091,8 +1091,8 @@
         <translation>Formulir</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>Informasi terlampir mungkin sudah kedaluwarsa. Dompet Anda secara otomatis mensinkronisasi dengan jaringan BTCHD ketika sebuah hubungan terbentuk, namun proses ini belum selesai.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Informasi terlampir mungkin sudah kedaluwarsa. Dompet Anda secara otomatis mensinkronisasi dengan jaringan BitcoinHD ketika sebuah hubungan terbentuk, namun proses ini belum selesai.</translation>
     </message>
     <message>
         <source>Available:</source>
@@ -1152,8 +1152,8 @@
         <translation>Nilai</translation>
     </message>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
-        <translation>Masukkan alamat BTCHD (contoh %1)</translation>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
+        <translation>Masukkan alamat BitcoinHD (contoh %1)</translation>
     </message>
     <message>
         <source>%1 h</source>
@@ -1667,8 +1667,8 @@
         <translation>Salin tanda tangan terpilih ke sistem klipboard</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
-        <translation>Tandai pesan untuk menyetujui kamu pemiliki alamat BTCHD ini</translation>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
+        <translation>Tandai pesan untuk menyetujui kamu pemiliki alamat BitcoinHD ini</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -1808,8 +1808,8 @@
         <translation>Berjalan dibelakang sebagai daemin dan menerima perintah</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)</source>

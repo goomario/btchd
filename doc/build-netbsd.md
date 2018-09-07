@@ -30,7 +30,7 @@ git clone https://github.com/btchd/btchd.git
 
 See [dependencies.md](dependencies.md) for a complete overview.
 
-### Building BTCHD Core
+### Building BitcoinHD Core
 
 **Important**: Use `gmake` (the non-GNU `make` will exit with an error).
 

@@ -142,8 +142,8 @@
         <translation>Reindexando bloques en disco...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Enviar monedas a una dirección BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Enviar monedas a una dirección BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -166,8 +166,8 @@
         <translation>&amp;Verificar mensaje...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -194,12 +194,12 @@
         <translation>Cifrar las claves privadas de su monedero</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Firmar mensajes con sus direcciones BTCHD para demostrar la propiedad</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Firmar mensajes con sus direcciones BitcoinHD para demostrar la propiedad</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Verificar mensajes comprobando que están firmados con direcciones BTCHD concretas</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Verificar mensajes comprobando que están firmados con direcciones BitcoinHD concretas</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -219,7 +219,7 @@
     </message>
     <message>
         <source>Request payments (generates QR codes and btchd: URIs)</source>
-        <translation>Solicitar pagos (genera codigo QR y URL's de BTCHD)</translation>
+        <translation>Solicitar pagos (genera codigo QR y URL's de BitcoinHD)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -421,8 +421,8 @@
         <translation>Utilice un directorio de datos personalizado:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -498,8 +498,8 @@
         <translation>Experto</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Abrir automáticamente el puerto del cliente BTCHD en el router. Esta opción solo funciona si el router admite UPnP y está activado.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Abrir automáticamente el puerto del cliente BitcoinHD en el router. Esta opción solo funciona si el router admite UPnP y está activado.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -597,8 +597,8 @@
         <translation>Desde</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>La información mostrada puede estar desactualizada. Su monedero se sincroniza automáticamente con la red BTCHD después de que se haya establecido una conexión, pero este proceso aún no se ha completado.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>La información mostrada puede estar desactualizada. Su monedero se sincroniza automáticamente con la red BitcoinHD después de que se haya establecido una conexión, pero este proceso aún no se ha completado.</translation>
     </message>
     <message>
         <source>Your current spendable balance</source>
@@ -1011,8 +1011,8 @@
         <translation>Copiar la firma actual al portapapeles del sistema</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
-        <translation>Firmar el mensaje para demostrar que se posee esta dirección BTCHD</translation>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
+        <translation>Firmar el mensaje para demostrar que se posee esta dirección BitcoinHD</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -1031,8 +1031,8 @@
         <translation>&amp;Verificar mensaje</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
-        <translation>Verificar el mensaje para comprobar que fue firmado con la dirección BTCHD indicada</translation>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
+        <translation>Verificar el mensaje para comprobar que fue firmado con la dirección BitcoinHD indicada</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -1115,8 +1115,8 @@
 </translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>Núcleo de BTCHD</translation>
+        <source>BitcoinHD Core</source>
+        <translation>Núcleo de BitcoinHD</translation>
     </message>
     <message>
         <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>

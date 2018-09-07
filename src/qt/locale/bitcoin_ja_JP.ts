@@ -62,11 +62,11 @@
         <translation>アドレス受信</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation>支払送信するためのビットコインアドレスです。コインを送付する前に、いつも残高と受信アドレスの確認をしてください。</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
         <translation>支払の受信をするためのビットコインアドレスです。それぞれの処理に新規に受信アドレスを使用することを推奨します。</translation>
     </message>
     <message>
@@ -338,7 +338,7 @@
         <translation>ディスクのブロックの再インデックス中...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
+        <source>Send coins to a BitcoinHD address</source>
         <translation>ビットコインアドレスにコインを送信</translation>
     </message>
     <message>
@@ -362,7 +362,7 @@
         <translation>&amp;メッセージの確認...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
+        <source>BitcoinHD</source>
         <translation>ビットコイン</translation>
     </message>
     <message>
@@ -390,11 +390,11 @@
         <translation>財布に属するプライベートキーの暗号化</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
         <translation>所有者であることを証明するためにビットコインアドレスのメッセージにサイン</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
         <translation>署名された特定のビットコインアドレスを確認するために、メッセージを確認</translation>
     </message>
     <message>
@@ -470,7 +470,7 @@
         <translation>更新日</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
         <translation>ビットコインのコマンドラインオプションとして可能なリストの取得の%1ヘルプメッセージを表示</translation>
     </message>
     <message>
@@ -540,7 +540,7 @@
         <translation>財布は &lt;b&gt;暗号化され&lt;/b&gt; そして現在 &lt;b&gt;ロックされています&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
         <translation>致命的なエラーが発生しました。ビットコインは安全に終了することができません。</translation>
     </message>
 </context>
@@ -734,7 +734,7 @@
         <translation>送信アドレスの編集</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
         <translation>入寮されたアドレス "%1" は正当なビットコインアドレスではありません。</translation>
     </message>
     <message>
@@ -866,7 +866,7 @@
         <translation>フォーム</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
         <translation>最近のトランザクションが表示できない可能性があります。従って、ウォレットの残高が正しくない可能性があります。この情報はビットコインネットワークに接続し、同期処理を完了させると正しくなります。詳細は以下になります。</translation>
     </message>
     <message>
@@ -1028,7 +1028,7 @@
         <translation>&amp;認証されていない変更の支払い</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
         <translation>自動絵的にルータのビットコインのクライアントポートが開きます。この機能はルータがUPnPをサポートし、有効であるときに動作します。</translation>
     </message>
     <message>
@@ -1036,7 +1036,7 @@
         <translation>&amp;UPnPを使用してポート配置します。</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
         <translation>SOCKS5プロキシを使用してビットコインネットワークへ接続</translation>
     </message>
     <message>
@@ -1072,7 +1072,7 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
         <translation>Tor秘匿ネットワークのための区切られたSOCKS5を経由して、ビットコインネットワークに接続</translation>
     </message>
     <message>
@@ -1171,7 +1171,7 @@
         <translation>フォーム</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
         <translation>表示されている情報は、期限切れの可能性があります。ウォレットは自動的にビットコインネットワークへの接続が確立した後に同期化されます。しかし、処理はまだ、完了していません。</translation>
     </message>
     <message>
@@ -1262,7 +1262,7 @@
         <translation>無効な支払アドレス %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
+        <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
         <translation>URLはパースできませんでした! 原因はビットコインアドレスが無効であるか、URIパラメータの形式が間違っている可能性があります。</translation>
     </message>
     <message>
@@ -1356,7 +1356,7 @@
         <translation>残高</translation>
     </message>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
         <translation>ビットコインアドレスの入力 (例 %1)</translation>
     </message>
     <message>
@@ -1748,7 +1748,7 @@
         <translation>&amp;再度存在している受信アドレスを死闘する(非推奨)</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
         <translation>支払要求に添付されたオプションメッセージは、要求を開いたときに表示されます。メモ: メッセージは、ビットコインネットワーク上で支払と一緒に送信されません。</translation>
     </message>
     <message>
@@ -1977,7 +1977,7 @@
         <translation>隠す</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BitcoinHD transactions than the network can process.</source>
         <translation>最小の料金のみ支払いは、ブロック内の処理容量よりも小さい場合に限り、問題ありません。しかし、ネットワークの処理できる量よりも、ビットコイン処理のほうが需要があり、最終的にその確認処理が実行されないことに注意する必要があります。</translation>
     </message>
     <message>
@@ -2125,7 +2125,7 @@
         <translation>%1の必須料金のみ支払う</translation>
     </message>
     <message>
-        <source>Warning: Invalid BTCHD address</source>
+        <source>Warning: Invalid BitcoinHD address</source>
         <translation>注意: 無効なビットコインアドレス</translation>
     </message>
     <message>
@@ -2168,7 +2168,7 @@
         <translation>これは通常の支払です。</translation>
     </message>
     <message>
-        <source>The BTCHD address to send the payment to</source>
+        <source>The BitcoinHD address to send the payment to</source>
         <translation>支払に送信するビットコインアドレス</translation>
     </message>
     <message>
@@ -2212,7 +2212,7 @@
         <translation>使用されたアドレス一覧のために、このアドレスのラベルを入力します。</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
         <translation>参考資料に保存された処理のビットコインURIは、メッセージに添付されます。メモ: このメッセージはビットコイン上で送信されません。</translation>
     </message>
     <message>
@@ -2261,7 +2261,7 @@
         <translation>送信されたビットコインを受信できることを証明するために、アドレスのメッセージや同意事項に署名できます。フィッシング攻撃が署名を利用する可能性があるので、署名が曖昧やランダムでないことに注意してください。詳細な明細のみに署名されます。</translation>
     </message>
     <message>
-        <source>The BTCHD address to sign the message with</source>
+        <source>The BitcoinHD address to sign the message with</source>
         <translation>メッセージ署名するためのビットコインアドレス</translation>
     </message>
     <message>
@@ -2293,7 +2293,7 @@
         <translation>システムのクリップボードへ現在の署名をコピー</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
         <translation>ビットコインアドレスを証明するために、メッセージに署名</translation>
     </message>
     <message>
@@ -2317,11 +2317,11 @@
         <translation>以下のメッセージを確認して、受信者のアドレス、メッセージ（タブやすスペースなどを正確にこぴーしてください）、署名を入力してください。中間の攻撃者からのアタックを避けるために、署名されていないメッセージを読まないように注意してください。署名はアドレスと受信を証明することはできますが、送信者の処理を証明できないことに注意してください。</translation>
     </message>
     <message>
-        <source>The BTCHD address the message was signed with</source>
+        <source>The BitcoinHD address the message was signed with</source>
         <translation>メッセージのビットコインアドレスはサインされています</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
         <translation>特定のビットコインアドレスと署名されているメッセージであることを確認してください。</translation>
     </message>
     <message>

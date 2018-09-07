@@ -848,7 +848,7 @@ void RPCConsole::setNumBlocks(int count, const QDateTime& blockDate, double nVer
 {
     if (!headers) {
         ui->numberOfBlocks->setText(QString::number(count));
-        ui->lastBlockTime->setText(blockDate.toString());
+        ui->lastBlockTime->setText(blockDate.toString(Qt::SystemLocaleLongDate));
 
         updateMortgage();
     }
@@ -888,12 +888,12 @@ void RPCConsole::updateMortgage()
 
         // Master address total balance
         CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
-        ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BTCHD, nBalance, false, BitcoinUnits::separatorAlways));
+        ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
 
         // Master address capacity and mortgage
         CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
-        ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BTCHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
+        ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QLabel { color: red; }" : "");
 
         // Master bind plotter ID

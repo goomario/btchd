@@ -40,10 +40,10 @@ from the root of the repository.
 
 **Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
 
-Build BTCHD Core
+Build BitcoinHD Core
 ------------------------
 
-1. Clone the BTCHD source code and cd into `btchd-src`
+1. Clone the BitcoinHD source code and cd into `btchd-src`
 
         git clone https://github.com/btchd/btchd btchd-src
         cd btchd-src
@@ -69,7 +69,7 @@ Build BTCHD Core
 Running
 -------
 
-BTCHD Core is now available at `./src/btchdd`
+BitcoinHD Core is now available at `./src/btchdd`
 
 Before running, it's recommended you create an RPC configuration file.
 
@@ -92,7 +92,7 @@ Other commands:
 
 Using Qt Creator as IDE
 ------------------------
-You can use Qt Creator as an IDE, for BTCHD development.
+You can use Qt Creator as an IDE, for BitcoinHD development.
 Download and install the community edition of [Qt Creator](https://www.qt.io/download/).
 Uncheck everything except Qt Creator during the installation process.
 

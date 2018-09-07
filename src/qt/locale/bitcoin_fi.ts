@@ -62,12 +62,12 @@
         <translation>Vastaanotto-osoitteet</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Nämä ovat BTCHD-osoitteesi maksujen lähettämistä varten. Tarkista aina määrä ja vastaanotto-osoite ennen kolikoiden lähettämistä.</translation>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Nämä ovat BitcoinHD-osoitteesi maksujen lähettämistä varten. Tarkista aina määrä ja vastaanotto-osoite ennen kolikoiden lähettämistä.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Tässä ovat BTCHD vastaanotto-osoitteesi. On suositeltavaa käyttää uutta vastaanotto-osoitetta jokaista lähetystä varten.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Tässä ovat BitcoinHD vastaanotto-osoitteesi. On suositeltavaa käyttää uutta vastaanotto-osoitetta jokaista lähetystä varten.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -342,8 +342,8 @@
         <translation>Ladataan lohkoindeksiä...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Lähetä kolikoita BTCHD-osoitteeseen</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Lähetä kolikoita BitcoinHD-osoitteeseen</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -366,8 +366,8 @@
         <translation>Varmista &amp;viesti...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -387,19 +387,19 @@
     </message>
     <message>
         <source>Show or hide the main Window</source>
-        <translation>Näytä tai piilota BTCHD-ikkuna</translation>
+        <translation>Näytä tai piilota BitcoinHD-ikkuna</translation>
     </message>
     <message>
         <source>Encrypt the private keys that belong to your wallet</source>
         <translation>Suojaa yksityiset avaimet, jotka kuuluvat lompakkoosi</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Allekirjoita viestisi omalla BTCHD -osoitteellasi todistaaksesi, että omistat ne</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Allekirjoita viestisi omalla BitcoinHD -osoitteellasi todistaaksesi, että omistat ne</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Varmista, että viestisi on allekirjoitettu määritetyllä BTCHD -osoitteella</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Varmista, että viestisi on allekirjoitettu määritetyllä BitcoinHD -osoitteella</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -474,7 +474,7 @@
         <translation>Rahansiirtohistoria on ajan tasalla</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
         <translation>Näytä %1 ohjeet saadaksesi listan mahdollisista Bitcoinin komentorivivalinnoista</translation>
     </message>
     <message>
@@ -544,8 +544,8 @@
         <translation>Lompakko on &lt;b&gt;salattu&lt;/b&gt; ja tällä hetkellä &lt;b&gt;lukittuna&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Peruuttamaton virhe on tapahtunut. BTCHD ei voi enää jatkaa turvallisesti ja sammutetaan.</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Peruuttamaton virhe on tapahtunut. BitcoinHD ei voi enää jatkaa turvallisesti ja sammutetaan.</translation>
     </message>
 </context>
 <context>
@@ -738,8 +738,8 @@
         <translation>Muokkaa lähettävää osoitetta</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
-        <translation>Antamasi osoite "%1" ei ole kelvollinen BTCHD-osoite.</translation>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
+        <translation>Antamasi osoite "%1" ei ole kelvollinen BitcoinHD-osoite.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -867,8 +867,8 @@
         <translation>Määritä oma kansio:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -879,7 +879,7 @@
         <translation>Noin %1 GB tietoa varastoidaan tähän hakemistoon.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the BTCHD block chain.</source>
+        <source>%1 will download and store a copy of the BitcoinHD block chain.</source>
         <translation>%1 lataa ja tallentaa kopion Bitcoinin lohkoketjusta.</translation>
     </message>
     <message>
@@ -902,8 +902,8 @@
         <translation>Lomake</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
-        <translation>Viimeiset tapahtumat eivät välttämättä vielä näy, joten lompakkosi saldo voi olla virheellinen. Tieto korjautuu, kunhan lompakkosi synkronointi BTCHD-verkon kanssa on päättynyt. Tiedot näkyvät alla.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
+        <translation>Viimeiset tapahtumat eivät välttämättä vielä näy, joten lompakkosi saldo voi olla virheellinen. Tieto korjautuu, kunhan lompakkosi synkronointi BitcoinHD-verkon kanssa on päättynyt. Tiedot näkyvät alla.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
@@ -1064,16 +1064,16 @@
         <translation>&amp;Käytä varmistamattomia vaihtorahoja</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Avaa BTCHD-asiakasohjelman portti reitittimellä automaattisesti. Tämä toimii vain, jos reitittimesi tukee UPnP:tä ja se on käytössä.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Avaa BitcoinHD-asiakasohjelman portti reitittimellä automaattisesti. Tämä toimii vain, jos reitittimesi tukee UPnP:tä ja se on käytössä.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
         <translation>Portin uudelleenohjaus &amp;UPnP:llä</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Yhdistä BTCHD-verkkoon SOCKS5-välityspalvelimen kautta.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Yhdistä BitcoinHD-verkkoon SOCKS5-välityspalvelimen kautta.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1108,8 +1108,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Yhdistä BTCHD-verkkoon erillisen SOCKS5-välityspalvelimen kautta piilotettuja Tor-palveluja varten.</translation>
+        <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>Yhdistä BitcoinHD-verkkoon erillisen SOCKS5-välityspalvelimen kautta piilotettuja Tor-palveluja varten.</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1141,11 +1141,11 @@
     </message>
     <message>
         <source>&amp;Unit to show amounts in:</source>
-        <translation>Yksikkö jona BTCHD-määrät näytetään</translation>
+        <translation>Yksikkö jona BitcoinHD-määrät näytetään</translation>
     </message>
     <message>
         <source>Choose the default subdivision unit to show in the interface and when sending coins.</source>
-        <translation>Valitse mitä yksikköä käytetään ensisijaisesti BTCHD-määrien näyttämiseen.</translation>
+        <translation>Valitse mitä yksikköä käytetään ensisijaisesti BitcoinHD-määrien näyttämiseen.</translation>
     </message>
     <message>
         <source>Whether to show coin control features or not.</source>
@@ -1211,8 +1211,8 @@
         <translation>Lomake</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>Näytetyt tiedot eivät välttämättä ole ajantasalla. Lompakkosi synkronoituu BTCHD-verkon kanssa automaattisesti yhteyden muodostamisen jälkeen, mutta synkronointi on vielä meneillään.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Näytetyt tiedot eivät välttämättä ole ajantasalla. Lompakkosi synkronoituu BitcoinHD-verkon kanssa automaattisesti yhteyden muodostamisen jälkeen, mutta synkronointi on vielä meneillään.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1302,8 +1302,8 @@
         <translation>Virheellinen maksuosoite %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
-        <translation>URIa ei voitu jäsentää! Tämä voi johtua virheellisestä BTCHD-osoitteesta tai väärin muotoilluista URI parametreista.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
+        <translation>URIa ei voitu jäsentää! Tämä voi johtua virheellisestä BitcoinHD-osoitteesta tai väärin muotoilluista URI parametreista.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1400,8 +1400,8 @@
         <translation>Määrä</translation>
     </message>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
-        <translation>Syötä BTCHD-osoite (esim. %1)</translation>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
+        <translation>Syötä BitcoinHD-osoite (esim. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1792,8 +1792,8 @@
         <translation>&amp;Viesti:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
-        <translation>Valinnainen viesti liitetään maksupyyntöön ja näytetään avattaessa. Viestiä ei lähetetä BTCHD-verkkoon.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
+        <translation>Valinnainen viesti liitetään maksupyyntöön ja näytetään avattaessa. Viestiä ei lähetetä BitcoinHD-verkkoon.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2181,8 +2181,8 @@
         <translation>Maksa vain vaadittu kulu %1 </translation>
     </message>
     <message>
-        <source>Warning: Invalid BTCHD address</source>
-        <translation>Varoitus: Virheellinen BTCHD-osoite </translation>
+        <source>Warning: Invalid BitcoinHD address</source>
+        <translation>Varoitus: Virheellinen BitcoinHD-osoite </translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2224,8 +2224,8 @@
         <translation>Tämä on normaali maksu.</translation>
     </message>
     <message>
-        <source>The BTCHD address to send the payment to</source>
-        <translation>BTCHD-osoite johon maksu lähetetään</translation>
+        <source>The BitcoinHD address to send the payment to</source>
+        <translation>BitcoinHD-osoite johon maksu lähetetään</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2268,8 +2268,8 @@
         <translation>Aseta nimi tälle osoitteelle lisätäksesi sen käytettyjen osoitteiden listalle.</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
-        <translation>Viesti joka liitettiin btchd: URI:iin tallennetaan rahansiirtoon viitteeksi. Tätä viestiä ei lähetetä BTCHD-verkkoon.</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <translation>Viesti joka liitettiin btchd: URI:iin tallennetaan rahansiirtoon viitteeksi. Tätä viestiä ei lähetetä BitcoinHD-verkkoon.</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2317,8 +2317,8 @@
         <translation>Voit allekirjoittaa viestit / sopimukset omalla osoitteellasi todistaaksesi että voit vastaanottaa siihen lähetetyt bitcoinit. Varo allekirjoittamasta mitään epämääräistä, sillä phishing-hyökkääjät voivat huijata sinua luovuttamaan henkilöllisyytesi allekirjoituksella. Allekirjoita ainoastaan täysin yksityiskohtainen selvitys siitä, mihin olet sitoutumassa.</translation>
     </message>
     <message>
-        <source>The BTCHD address to sign the message with</source>
-        <translation>BTCHD-osoite jolla viesti allekirjoitetaan</translation>
+        <source>The BitcoinHD address to sign the message with</source>
+        <translation>BitcoinHD-osoite jolla viesti allekirjoitetaan</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2349,8 +2349,8 @@
         <translation>Kopioi tämänhetkinen allekirjoitus leikepöydälle</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
-        <translation>Allekirjoita viesti todistaaksesi, että omistat tämän BTCHD-osoitteen</translation>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
+        <translation>Allekirjoita viesti todistaaksesi, että omistat tämän BitcoinHD-osoitteen</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2373,12 +2373,12 @@
         <translation>Syötä vastaanottajan osoite, viesti ja allekirjoitus (varmista että kopioit rivinvaihdot, välilyönnit, sarkaimet yms. täsmälleen) alle vahvistaaksesi viestin. Varo lukemasta allekirjoitukseen enempää kuin mitä viestissä itsessään on välttääksesi man-in-the-middle -hyökkäyksiltä. Huomaa, että tämä todentaa ainoastaan allekirjoittavan vastaanottajan osoitteen, tämä ei voi todentaa minkään tapahtuman lähettäjää!</translation>
     </message>
     <message>
-        <source>The BTCHD address the message was signed with</source>
-        <translation>BTCHD-osoite jolla viesti on allekirjoitettu</translation>
+        <source>The BitcoinHD address the message was signed with</source>
+        <translation>BitcoinHD-osoite jolla viesti on allekirjoitettu</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
-        <translation>Tarkista viestin allekirjoitus varmistaaksesi, että se allekirjoitettiin tietyllä BTCHD-osoitteella</translation>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
+        <translation>Tarkista viestin allekirjoitus varmistaaksesi, että se allekirjoitettiin tietyllä BitcoinHD-osoitteella</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3034,8 +3034,8 @@
         <translation>HTTP-palvelinta ei voitu käynnistää. Katso debug-lokista lisätietoja.</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD-ydin</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD-ydin</translation>
     </message>
     <message>
         <source>The %s developers</source>

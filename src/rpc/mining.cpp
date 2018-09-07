@@ -96,7 +96,7 @@ UniValue generatetoaddress(const JSONRPCRequest& request)
             "\nMine blocks immediately to a specified address (before the RPC call returns)\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
-            "2. address      (string, required) The address to send the newly generated BTCHD to.\n"
+            "2. address      (string, required) The address to send the newly generated BitcoinHD to.\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
@@ -158,7 +158,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
 }
 
 
-// NOTE: Unlike wallet RPC (which use BTCHD values), mining RPCs follow GBT (BIP 22) in using satoshi amounts
+// NOTE: Unlike wallet RPC (which use BitcoinHD values), mining RPCs follow GBT (BIP 22) in using satoshi amounts
 UniValue prioritisetransaction(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 3)
@@ -372,10 +372,10 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
     if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "BTCHD is not connected!");
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "BitcoinHD is not connected!");
 
     if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BTCHD is downloading blocks...");
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BitcoinHD is downloading blocks...");
 
     static unsigned int nTransactionsUpdatedLast;
 
@@ -704,7 +704,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     }
     CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
     if (nAccountId == 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BTCHD wallet (P2SH address)");
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
     if (nHeight < 1 || nHeight > chainActive.Height() + 1) {
@@ -796,7 +796,7 @@ UniValue getmortgageofaddress(const JSONRPCRequest& request)
             "getmortgageofaddress address plotterId height\n"
             "Get mortage amount of address.\n"
             "\nArguments:\n"
-            "1. address         (string, required) The BTCHD address.\n"
+            "1. address         (string, required) The BitcoinHD address.\n"
             "2. plotterId       (string, optional) Plotter ID\n"
             "3. height          (integer, optional) Mortgage height\n"
             "\nResult:\n"

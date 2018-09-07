@@ -62,12 +62,12 @@
         <translation>Prijímajúce adresy</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Toto sú Vaše BTCHD adresy pre posielanie platieb. Vždy skontrolujte sumu a prijímaciu adresu pred poslaním mincí.</translation>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Toto sú Vaše BitcoinHD adresy pre posielanie platieb. Vždy skontrolujte sumu a prijímaciu adresu pred poslaním mincí.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Toto sú vaše BTCHD adresy pre prijímanie platieb. Odporúča sa použiť vždy novú prijímaciu adresu pre každú transakciu.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Toto sú vaše BitcoinHD adresy pre prijímanie platieb. Odporúča sa použiť vždy novú prijímaciu adresu pre každú transakciu.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -342,7 +342,7 @@
         <translation>Preindexúvam bloky na disku...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
+        <source>Send coins to a BitcoinHD address</source>
         <translation>Poslať bitcoins na adresu</translation>
     </message>
     <message>
@@ -366,8 +366,8 @@
         <translation>O&amp;veriť správu...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -394,12 +394,12 @@
         <translation>Zašifruj súkromné kľúče ktoré patria do vašej peňaženky</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Podpísať správu s vašou adresou BTCHD aby ste preukázali že ju vlastníte</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Podpísať správu s vašou adresou BitcoinHD aby ste preukázali že ju vlastníte</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Overiť či správa bola podpísaná uvedenou BTCHD adresou</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Overiť či správa bola podpísaná uvedenou BitcoinHD adresou</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -431,15 +431,15 @@
     </message>
     <message>
         <source>Open a btchd: URI or payment request</source>
-        <translation>Otvoriť BTCHD URI alebo výzvu k platbe</translation>
+        <translation>Otvoriť BitcoinHD URI alebo výzvu k platbe</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
         <translation>&amp;Možnosti príkazového riadku</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BTCHD network</source>
-        <translation><numerusform>%n aktívne pripojenie do siete BTCHD</numerusform><numerusform>%n aktívne pripojenia do siete BTCHD</numerusform><numerusform>%n aktívnych pripojení do siete BTCHD</numerusform></translation>
+        <source>%n active connection(s) to BitcoinHD network</source>
+        <translation><numerusform>%n aktívne pripojenie do siete BitcoinHD</numerusform><numerusform>%n aktívne pripojenia do siete BitcoinHD</numerusform><numerusform>%n aktívnych pripojení do siete BitcoinHD</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -482,7 +482,7 @@
         <translation>Aktualizovaný</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
         <translation>Ukáž %1 zoznam možných nastavení Bitcoinu pomocou príkazového riadku</translation>
     </message>
     <message>
@@ -552,8 +552,8 @@
         <translation>Peňaženka je &lt;b&gt;zašifrovaná&lt;/b&gt; a momentálne &lt;b&gt;zamknutá&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Vyskytla sa kritická chyba. BTCHD nemôže ďalej bezpečne pokračovať a ukončí sa.</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Vyskytla sa kritická chyba. BitcoinHD nemôže ďalej bezpečne pokračovať a ukončí sa.</translation>
     </message>
 </context>
 <context>
@@ -746,8 +746,8 @@
         <translation>Upraviť odosielaciu adresu</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
-        <translation>Vložená adresa "%1" nieje platnou adresou BTCHD.</translation>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
+        <translation>Vložená adresa "%1" nieje platnou adresou BitcoinHD.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -875,8 +875,8 @@
         <translation>Použiť vlastný dátový adresár:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -887,7 +887,7 @@
         <translation>Približne %1 GB dát bude uložených v tejto zložke.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the BTCHD block chain.</source>
+        <source>%1 will download and store a copy of the BitcoinHD block chain.</source>
         <translation>%1 bude sťahovať kopiu reťazca blokov.</translation>
     </message>
     <message>
@@ -918,8 +918,8 @@
         <translation>Forma</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
-        <translation>Nedávne transakcie nemusia byť ešte viditeľné preto môže byť zostatok vo vašej peňaženke nesprávny. Táto informácia bude správna keď sa dokončí synchronizovanie peňaženky so sieťou BTCHD, ako je rozpísané nižšie.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
+        <translation>Nedávne transakcie nemusia byť ešte viditeľné preto môže byť zostatok vo vašej peňaženke nesprávny. Táto informácia bude správna keď sa dokončí synchronizovanie peňaženky so sieťou BitcoinHD, ako je rozpísané nižšie.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
@@ -1092,8 +1092,8 @@
         <translation>&amp;Minúť nepotvrdený výdavok</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Automaticky otvorit port pre BTCHD na routeri. Toto funguje len ak router podporuje UPnP a je táto podpora aktivovaná.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Automaticky otvorit port pre BitcoinHD na routeri. Toto funguje len ak router podporuje UPnP a je táto podpora aktivovaná.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1108,8 +1108,8 @@
         <translation>Povoliť prichá&amp;dzajúce spojenia</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Pripojiť do siete BTCHD cez proxy server SOCKS5.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Pripojiť do siete BitcoinHD cez proxy server SOCKS5.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1144,7 +1144,7 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
         <translation>Pripojiť k Bitcoinovej sieti cez separované SOCKS5 proxy pre skrytú službu Tor.</translation>
     </message>
     <message>
@@ -1181,7 +1181,7 @@
     </message>
     <message>
         <source>Choose the default subdivision unit to show in the interface and when sending coins.</source>
-        <translation>Zvoľte ako deliť BTCHD pri zobrazovaní pri platbách a užívateľskom rozhraní.</translation>
+        <translation>Zvoľte ako deliť BitcoinHD pri zobrazovaní pri platbách a užívateľskom rozhraní.</translation>
     </message>
     <message>
         <source>Whether to show coin control features or not.</source>
@@ -1251,8 +1251,8 @@
         <translation>Forma</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>Zobrazené informácie môžu byť neaktuálne. Vaša peňaženka sa automaticky synchronizuje so sieťou BTCHD po nadviazaní spojenia, ale tento proces ešte nie je ukončený.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Zobrazené informácie môžu byť neaktuálne. Vaša peňaženka sa automaticky synchronizuje so sieťou BitcoinHD po nadviazaní spojenia, ale tento proces ešte nie je ukončený.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1342,8 +1342,8 @@
         <translation>Neplatná adresa platby %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
-        <translation>URI sa nedá analyzovať! To môže byť spôsobené neplatnou BTCHD adresou alebo zle nastavenými vlastnosťami URI.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
+        <translation>URI sa nedá analyzovať! To môže byť spôsobené neplatnou BitcoinHD adresou alebo zle nastavenými vlastnosťami URI.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1444,8 +1444,8 @@
         <translation>Suma</translation>
     </message>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
-        <translation>Zadajte BTCHD adresu (napr. %1)</translation>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
+        <translation>Zadajte BitcoinHD adresu (napr. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1869,8 +1869,8 @@
         <translation>&amp;Správa:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
-        <translation>Pridať voliteľnú správu k výzve na zaplatenie, ktorá sa zobrazí keď bude výzva otvorená. Poznámka: Správa nebude poslaná s platbou cez sieť BTCHD.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
+        <translation>Pridať voliteľnú správu k výzve na zaplatenie, ktorá sa zobrazí keď bude výzva otvorená. Poznámka: Správa nebude poslaná s platbou cez sieť BitcoinHD.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2114,7 +2114,7 @@
         <translation>Skryť</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</source>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BitcoinHD transactions than the network can process.</source>
         <translation>Zaplatenie len minimálneho poplatku je v poriadku, pokiaľ existuje menej transakcií ako miesta v blokoch. Uvedomte si však, že ak bude vyšší dopyt po transakciách ako dokáže sieť spracovať, môže byť vaša transakcia odsúvaná a nepotvrdená donekonečna.</translation>
     </message>
     <message>
@@ -2286,8 +2286,8 @@
         <translation><numerusform>Odhadovaný začiatok potvrdzovania po %n bloku.</numerusform><numerusform>Odhadovaný začiatok potvrdzovania po %n blokoch.</numerusform><numerusform>Odhadovaný začiatok potvrdzovania po %n blokoch.</numerusform></translation>
     </message>
     <message>
-        <source>Warning: Invalid BTCHD address</source>
-        <translation>Varovanie: Neplatná BTCHD adresa</translation>
+        <source>Warning: Invalid BitcoinHD address</source>
+        <translation>Varovanie: Neplatná BitcoinHD adresa</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2329,7 +2329,7 @@
         <translation>Toto je normálna platba.</translation>
     </message>
     <message>
-        <source>The BTCHD address to send the payment to</source>
+        <source>The BitcoinHD address to send the payment to</source>
         <translation>Zvoľte adresu kam poslať platbu</translation>
     </message>
     <message>
@@ -2377,8 +2377,8 @@
         <translation>Vložte popis pre túto adresu aby sa uložila do zoznamu použitých adries</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
-        <translation>Správa ktorá bola pripojená k btchd: URI a ktorá bude uložená s transakcou pre Vaše potreby. Poznámka: Táto správa nebude poslaná cez sieť BTCHD.</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <translation>Správa ktorá bola pripojená k btchd: URI a ktorá bude uložená s transakcou pre Vaše potreby. Poznámka: Táto správa nebude poslaná cez sieť BitcoinHD.</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2426,8 +2426,8 @@
         <translation>Môžete podpísať správy svojou adresou a dokázať, že viete prijímať mince zaslané na túto adresu. Buďte však opatrní a podpíšte len podrobné prehlásenia, s ktorými plne súhlasíte, nakoľko útoky typu "phishing" Vás môžu lákať k podpísaniu nejasných alebo príliš všeobecných tvrdení čím prevezmú vašu identitu.</translation>
     </message>
     <message>
-        <source>The BTCHD address to sign the message with</source>
-        <translation>BTCHD adresa pre podpísanie správy s</translation>
+        <source>The BitcoinHD address to sign the message with</source>
+        <translation>BitcoinHD adresa pre podpísanie správy s</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2458,7 +2458,7 @@
         <translation>Kopírovať tento podpis do systémovej schránky</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
         <translation>Podpíšte správu aby ste dokázali že vlastníte túto adresu</translation>
     </message>
     <message>
@@ -2482,12 +2482,12 @@
         <translation>Vložte adresu príjemcu, správu (uistite sa, že presne kopírujete ukončenia riadkov, medzery, odrážky, atď.) a podpis pre potvrdenie správy. Buďte opatrní a nedomýšľajte si viac než je uvedené v samotnej podpísanej správe a môžete sa tak vyhnúť podvodu MITM útokom. Toto len potvrdzuje, že podpisujúca strana môže prijímať na tejto adrese, nepotvrdzuje to vlastníctvo žiadnej transakcie!</translation>
     </message>
     <message>
-        <source>The BTCHD address the message was signed with</source>
-        <translation>Adresa BTCHD, ktorou bola podpísaná správa</translation>
+        <source>The BitcoinHD address the message was signed with</source>
+        <translation>Adresa BitcoinHD, ktorou bola podpísaná správa</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
-        <translation>Overím správy sa uistiť že bola podpísaná označenou BTCHD adresou</translation>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
+        <translation>Overím správy sa uistiť že bola podpísaná označenou BitcoinHD adresou</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3179,8 +3179,8 @@
         <translation>Nepodarilo sa spustiť HTTP server. Pre viac detailov zobrazte debug log.</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>The %s developers</source>

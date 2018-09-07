@@ -166,8 +166,8 @@
         <translation>Změnit heslo k šifrování peněženky</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -297,8 +297,8 @@
 <context>
     <name>Intro</name>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     </context>
 <context>

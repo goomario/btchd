@@ -62,12 +62,12 @@
         <translation>Derbyn cyfeiriadau</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Rhain ydi eich cyfeiriadau BTCHD ar gyfer gyrru taliadau. Gwnewch yn sicr o'r swm a'r cyfeiriad derbyn cyn gyrru arian.</translation>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Rhain ydi eich cyfeiriadau BitcoinHD ar gyfer gyrru taliadau. Gwnewch yn sicr o'r swm a'r cyfeiriad derbyn cyn gyrru arian.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Dyma eich cyfeiriadau BTCHD ar gyfer derbyn taliadau. Argymhellwn ddefnyddio cyfeiriad derbyn newydd ar gyfer bob trafodyn.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Dyma eich cyfeiriadau BitcoinHD ar gyfer derbyn taliadau. Argymhellwn ddefnyddio cyfeiriad derbyn newydd ar gyfer bob trafodyn.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -334,8 +334,8 @@
         <translation>Ailfynegi y blociau ar ddisg...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Anfon arian i gyfeiriad BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Anfon arian i gyfeiriad BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -354,8 +354,8 @@
         <translation>&amp;Gwirio neges...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -382,12 +382,12 @@
         <translation>Amgryptio'r allweddi preifat sy'n perthyn i'ch waled</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Arwyddo negeseuon gyda eich cyfeiriadau BTCHD i brofi mae chi sy'n berchen arnynt</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Arwyddo negeseuon gyda eich cyfeiriadau BitcoinHD i brofi mae chi sy'n berchen arnynt</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Gwirio negeseuon i sicrhau eu bod wedi eu harwyddo gyda cyfeiriadau BTCHD penodol</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Gwirio negeseuon i sicrhau eu bod wedi eu harwyddo gyda cyfeiriadau BitcoinHD penodol</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -524,8 +524,8 @@
         <translation>Mae'r waled &lt;b&gt;wedi'i amgryptio&lt;/b&gt; ac &lt;b&gt;ar glo&lt;/b&gt; ar hyn o bryd</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Mae gwall angheuol wedi digwydd. Ni all BTCHD barhau'n ddiogel ac mae'n cau lawr.</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Mae gwall angheuol wedi digwydd. Ni all BitcoinHD barhau'n ddiogel ac mae'n cau lawr.</translation>
     </message>
 </context>
 <context>
@@ -635,8 +635,8 @@
         <translation>Croeso</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -1042,8 +1042,8 @@
         <translation>Opsiynau:</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>Craidd BTCHD</translation>
+        <source>BitcoinHD Core</source>
+        <translation>Craidd BitcoinHD</translation>
     </message>
     <message>
         <source>Information</source>

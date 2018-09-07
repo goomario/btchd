@@ -114,8 +114,8 @@
         <translation>Recreans indicem frustorum in disco...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Mitte nummos ad inscriptionem BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Mitte nummos ad inscriptionem BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -138,8 +138,8 @@
         <translation>&amp;Verifica nuntium...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -166,12 +166,12 @@
         <translation>Cifra claves privatas quae cassidili tui sunt</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Signa nuntios cum tuis inscriptionibus BTCHD ut demonstres te eas possidere</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Signa nuntios cum tuis inscriptionibus BitcoinHD ut demonstres te eas possidere</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Verifica nuntios ut certus sis eos signatos esse cum specificatis inscriptionibus BTCHD</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Verifica nuntios ut certus sis eos signatos esse cum specificatis inscriptionibus BitcoinHD</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -301,8 +301,8 @@
 <context>
     <name>Intro</name>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Error</source>
@@ -350,8 +350,8 @@
         <translation>Cassidile</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Aperi per se portam clientis BTCHD in itineratore.  Hoc tantum effectivum est si itineratrum tuum supportat UPnP et id activum est.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Aperi per se portam clientis BitcoinHD in itineratore.  Hoc tantum effectivum est si itineratrum tuum supportat UPnP et id activum est.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -433,8 +433,8 @@
         <translation>Schema</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>Monstrata informatio fortasse non recentissima est.  Tuum cassidile per se synchronizat cum rete BTCHD postquam conexio constabilita est, sed hoc actio nondum perfecta est.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Monstrata informatio fortasse non recentissima est.  Tuum cassidile per se synchronizat cum rete BitcoinHD postquam conexio constabilita est, sed hoc actio nondum perfecta est.</translation>
     </message>
     <message>
         <source>Immature:</source>
@@ -675,8 +675,8 @@
         <translation>Copia signationem in latibulum systematis</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
-        <translation>Signa nuntium ut demonstres hanc inscriptionem BTCHD a te possessa esse</translation>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
+        <translation>Signa nuntium ut demonstres hanc inscriptionem BitcoinHD a te possessa esse</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -695,8 +695,8 @@
         <translation>&amp;Verifica Nuntium</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
-        <translation>Verifica nuntium ut cures signatum esse cum specifica inscriptione BTCHD</translation>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
+        <translation>Verifica nuntium ut cures signatum esse cum specifica inscriptione BitcoinHD</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -772,8 +772,8 @@
         <translation>Operare infere sicut daemon et mandata accipe</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Nucleus</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Nucleus</translation>
     </message>
     <message>
         <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>

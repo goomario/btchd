@@ -62,12 +62,12 @@
         <translation>Alım adresleri</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Bunlar ödemeleri göndermek için kullanacağınız BTCHD adreslerinizdir. BTCHD yollamadan önce tutarı ve alıcının alım adresini her zaman kontrol ediniz.</translation>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Bunlar ödemeleri göndermek için kullanacağınız BitcoinHD adreslerinizdir. BitcoinHD yollamadan önce tutarı ve alıcının alım adresini her zaman kontrol ediniz.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Bunlar ödemeleri almak için kullanacağınız BTCHD adreslerinizdir. Her işlem için yeni bir alım adresi kullanmanız tavsiye edilir.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Bunlar ödemeleri almak için kullanacağınız BitcoinHD adreslerinizdir. Her işlem için yeni bir alım adresi kullanmanız tavsiye edilir.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -342,7 +342,7 @@
         <translation>Diskteki bloklar yeniden indeksleniyor...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
+        <source>Send coins to a BitcoinHD address</source>
         <translation>Bir bitcoin adresine bitcoin gönder</translation>
     </message>
     <message>
@@ -366,8 +366,8 @@
         <translation>İletiyi &amp;kontrol et...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -394,12 +394,12 @@
         <translation>Cüzdanınıza ait özel anahtarları şifreleyin</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>İletileri adreslerin size ait olduğunu ispatlamak için BTCHD adresleri ile imzala</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>İletileri adreslerin size ait olduğunu ispatlamak için BitcoinHD adresleri ile imzala</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Belirtilen BTCHD adresleri ile imzalandıklarından emin olmak için iletileri kontrol et</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Belirtilen BitcoinHD adresleri ile imzalandıklarından emin olmak için iletileri kontrol et</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -438,8 +438,8 @@
         <translation>&amp;Komut satırı seçenekleri</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BTCHD network</source>
-        <translation><numerusform>BTCHD şebekesine %n faal bağlantı</numerusform><numerusform>BTCHD ağına %n etkin bağlantı var</numerusform></translation>
+        <source>%n active connection(s) to BitcoinHD network</source>
+        <translation><numerusform>BitcoinHD şebekesine %n faal bağlantı</numerusform><numerusform>BitcoinHD ağına %n etkin bağlantı var</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -482,8 +482,8 @@
         <translation>Güncel</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
-        <translation>Olası BTCHD komut satırı seçeneklerinin listesini görmek için %1 yardım mesajını göster</translation>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
+        <translation>Olası BitcoinHD komut satırı seçeneklerinin listesini görmek için %1 yardım mesajını göster</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -552,15 +552,15 @@
         <translation>Cüzdan &lt;b&gt;şifrelenmiştir&lt;/b&gt; ve şu anda &lt;b&gt;kilitlidir&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Ölümcül bir hata oluştu. BTCHD yazılımı artık güvenli bir şekilde çalışmaya devam edemediği için kapatılacaktır.</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Ölümcül bir hata oluştu. BitcoinHD yazılımı artık güvenli bir şekilde çalışmaya devam edemediği için kapatılacaktır.</translation>
     </message>
 </context>
 <context>
     <name>CoinControlDialog</name>
     <message>
         <source>Coin Selection</source>
-        <translation>BTCHD Seçimi</translation>
+        <translation>BitcoinHD Seçimi</translation>
     </message>
     <message>
         <source>Quantity:</source>
@@ -746,8 +746,8 @@
         <translation>Gönderi adresini düzenle</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
-        <translation>Girilen "%1" adresi geçerli bir BTCHD adresi değildir.</translation>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
+        <translation>Girilen "%1" adresi geçerli bir BitcoinHD adresi değildir.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -867,8 +867,8 @@
         <translation>Özel bir veri klasörü kullan:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Approximately %1 GB of data will be stored in this directory.</source>
@@ -1076,8 +1076,8 @@
         <translation>Doğrulanmamış para üstünü &amp;harca</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Yönlendiricide BTCHD istemci portlarını otomatik olarak açar. Bu, sadece yönlendiricinizin UPnP desteği bulunuyorsa ve etkinse çalışabilir.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Yönlendiricide BitcoinHD istemci portlarını otomatik olarak açar. Bu, sadece yönlendiricinizin UPnP desteği bulunuyorsa ve etkinse çalışabilir.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1092,8 +1092,8 @@
         <translation>Gelen bağlantılara izin ver</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>BTCHD ağına bir SOCKS5 vekil sunucusu aracılığıyla bağlan.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>BitcoinHD ağına bir SOCKS5 vekil sunucusu aracılığıyla bağlan.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1128,8 +1128,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>BTCHD ağına gizli Tor servisleri için ayrı bir SOCKS5 vekil sunucusu aracılığıyla bağlan.</translation>
+        <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>BitcoinHD ağına gizli Tor servisleri için ayrı bir SOCKS5 vekil sunucusu aracılığıyla bağlan.</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1165,7 +1165,7 @@
     </message>
     <message>
         <source>Choose the default subdivision unit to show in the interface and when sending coins.</source>
-        <translation>BTCHD gönderildiğinde arayüzde gösterilecek varsayılan alt birimi seçiniz.</translation>
+        <translation>BitcoinHD gönderildiğinde arayüzde gösterilecek varsayılan alt birimi seçiniz.</translation>
     </message>
     <message>
         <source>Whether to show coin control features or not.</source>
@@ -1235,8 +1235,8 @@
         <translation>Form</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>Görüntülenen bilgiler güncel olmayabilir. Bağlantı kurulduğunda cüzdanınız otomatik olarak BTCHD ağı ile senkronize olur ancak bu işlem henüz tamamlanmamıştır.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Görüntülenen bilgiler güncel olmayabilir. Bağlantı kurulduğunda cüzdanınız otomatik olarak BitcoinHD ağı ile senkronize olur ancak bu işlem henüz tamamlanmamıştır.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1311,7 +1311,7 @@
     </message>
     <message>
         <source>Cannot start btchd: click-to-pay handler</source>
-        <translation>BTCHD başlatılamadı: tıkla-ve-öde yöneticisi</translation>
+        <translation>BitcoinHD başlatılamadı: tıkla-ve-öde yöneticisi</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1326,8 +1326,8 @@
         <translation>%1 ödeme adresi geçersizdir</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
-        <translation>URI ayrıştırılamıyor! Bunun nedeni geçersiz bir BTCHD adresi veya hatalı biçimlendirilmiş URI değişkenleri olabilir.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
+        <translation>URI ayrıştırılamıyor! Bunun nedeni geçersiz bir BitcoinHD adresi veya hatalı biçimlendirilmiş URI değişkenleri olabilir.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1428,8 +1428,8 @@
         <translation>Tutar</translation>
     </message>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
-        <translation>Bir BTCHD adresi giriniz (mesela %1)</translation>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
+        <translation>Bir BitcoinHD adresi giriniz (mesela %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1798,7 +1798,7 @@
     </message>
     <message>
         <source>WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramifications of a command.</source>
-        <translation>UYARI: BTCHD dolandırıcılarının çok fazla etkin olduğu zamanlarda, dolandırıcılar bazı kullanıcılara buraya komutlar yazmalarını söylerek onların cüzdanlarındaki bitcoinleri çalmışlardır. Bir komutun sonuçlarını tam olarak anlamadan bu konsolu kullanmayın.</translation>
+        <translation>UYARI: BitcoinHD dolandırıcılarının çok fazla etkin olduğu zamanlarda, dolandırıcılar bazı kullanıcılara buraya komutlar yazmalarını söylerek onların cüzdanlarındaki bitcoinleri çalmışlardır. Bir komutun sonuçlarını tam olarak anlamadan bu konsolu kullanmayın.</translation>
     </message>
     <message>
         <source>Network activity disabled</source>
@@ -1852,8 +1852,8 @@
         <translation>&amp;İleti:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
-        <translation>Talep açıldığında gösterilecek, isteğinize dayalı, ödeme talebi ile ilişkilendirilecek bir ileti. Not: Bu ileti ödeme ile birlikte BTCHD ağı üzerinden gönderilmeyecektir.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
+        <translation>Talep açıldığında gösterilecek, isteğinize dayalı, ödeme talebi ile ilişkilendirilecek bir ileti. Not: Bu ileti ödeme ile birlikte BitcoinHD ağı üzerinden gönderilmeyecektir.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2010,7 +2010,7 @@
     <name>SendCoinsDialog</name>
     <message>
         <source>Send Coins</source>
-        <translation>BTCHD yolla</translation>
+        <translation>BitcoinHD yolla</translation>
     </message>
     <message>
         <source>Coin Control Features</source>
@@ -2198,7 +2198,7 @@
     </message>
     <message>
         <source>Confirm send coins</source>
-        <translation>BTCHD gönderimini onaylayın</translation>
+        <translation>BitcoinHD gönderimini onaylayın</translation>
     </message>
     <message>
         <source>The recipient address is not valid. Please recheck.</source>
@@ -2241,8 +2241,8 @@
         <translation>Sadece asgari ücret olan %1 tutarını öde</translation>
     </message>
     <message>
-        <source>Warning: Invalid BTCHD address</source>
-        <translation>Uyarı: geçersiz BTCHD adresi</translation>
+        <source>Warning: Invalid BitcoinHD address</source>
+        <translation>Uyarı: geçersiz BitcoinHD adresi</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2284,8 +2284,8 @@
         <translation>Bu, normal bir ödemedir.</translation>
     </message>
     <message>
-        <source>The BTCHD address to send the payment to</source>
-        <translation>Ödemenin yollanacağı BTCHD adresi</translation>
+        <source>The BitcoinHD address to send the payment to</source>
+        <translation>Ödemenin yollanacağı BitcoinHD adresi</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2332,8 +2332,8 @@
         <translation>Kullanılmış adres listesine eklemek için bu adrese bir etiket girin</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
-        <translation>Referans için btchd: URI'siyle iliştirilmiş işlemle birlikte depolanacak bir ileti. Not: Bu mesaj BTCHD ağı üzerinden gönderilmeyecektir.</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <translation>Referans için btchd: URI'siyle iliştirilmiş işlemle birlikte depolanacak bir ileti. Not: Bu mesaj BitcoinHD ağı üzerinden gönderilmeyecektir.</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2381,8 +2381,8 @@
         <translation>Adreslerinize yollanan bitcoinleri alabileceğiniz ispatlamak için adreslerinizle iletiler/anlaşmalar imzalayabilirsiniz. Oltalama saldırılarının kimliğinizi imzanızla elde etmeyi deneyebilecekleri için belirsiz ya da rastgele hiçbir şey imzalamamaya dikkat ediniz. Sadece ayrıntılı açıklaması olan ve tümüne katıldığınız ifadeleri imzalayınız.</translation>
     </message>
     <message>
-        <source>The BTCHD address to sign the message with</source>
-        <translation>İletinin imzalanmasında kullanılacak BTCHD adresi</translation>
+        <source>The BitcoinHD address to sign the message with</source>
+        <translation>İletinin imzalanmasında kullanılacak BitcoinHD adresi</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2413,8 +2413,8 @@
         <translation>Güncel imzayı sistem panosuna kopyala</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
-        <translation>Bu BTCHD adresinin sizin olduğunu ispatlamak için iletiyi imzalayın</translation>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
+        <translation>Bu BitcoinHD adresinin sizin olduğunu ispatlamak için iletiyi imzalayın</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2437,12 +2437,12 @@
         <translation>Alıcının adresini, iletiyi (satır sonları, boşluklar, sekmeler vs. karakterleri tam olarak kopyaladığınızdan emin olunuz) ve imzayı aşağıya giriniz. Bir ortadaki adam saldırısı tarafından kandırılmaya engel olmak için imzadan, imzalı iletinin içeriğini aşan bir anlam çıkarmamaya dikkat ediniz. Bunun sadece imzalayan tarafın adres ile alım yapabildiğini ispatladığını ve herhangi bir işlemin gönderi tarafını kanıtlayamayacağını unutmayınız!</translation>
     </message>
     <message>
-        <source>The BTCHD address the message was signed with</source>
-        <translation>İletinin imzalanmasında kullanılan BTCHD adresi</translation>
+        <source>The BitcoinHD address the message was signed with</source>
+        <translation>İletinin imzalanmasında kullanılan BitcoinHD adresi</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
-        <translation>Belirtilen BTCHD adresi ile imzalandığını doğrulamak için iletiyi kontrol et</translation>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
+        <translation>Belirtilen BitcoinHD adresi ile imzalandığını doğrulamak için iletiyi kontrol et</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3126,8 +3126,8 @@
         <translation>HTTP sunucusu başlatılamadı. Ayrıntılar için debug.log dosyasına bakınız.</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Çekirdeği</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Çekirdeği</translation>
     </message>
     <message>
         <source>The %s developers</source>

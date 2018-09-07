@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The BTCHD Core developers
+// Copyright (c) 2017-2018 The BitcoinHD Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -184,7 +184,7 @@ static UniValue getConstants(const JSONRPCRequest& request)
         blockId = poc::GetBlockId(*pBlockIndex);
         accountId = pBlockIndex->GetBlockHeader().nPlotterId;
     } else {
-        LogPrintf("Not find BTCHD fork height block:%ld\n", height);
+        LogPrintf("Not find BitcoinHD fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);
         accountId = genesis.nPlotterId;

@@ -50,9 +50,9 @@ Var StartMenuGroup
 # Installer attributes
 OutFile @abs_top_srcdir@/@PACKAGE_TARNAME@-v${VERSION}.@CLIENT_VERSION_BUILD@-win@WINDOWS_BITS@-setup.exe
 !if "@WINDOWS_BITS@" == "64"
-InstallDir $PROGRAMFILES64\BTCHD
+InstallDir $PROGRAMFILES64\BitcoinHD
 !else
-InstallDir $PROGRAMFILES\BTCHD
+InstallDir $PROGRAMFILES\BitcoinHD
 !endif
 CRCCheck on
 XPStyle on
@@ -65,7 +65,7 @@ VIAddVersionKey CompanyName "${COMPANY}"
 VIAddVersionKey CompanyWebsite "${URL}"
 VIAddVersionKey FileVersion "${VERSION}"
 VIAddVersionKey FileDescription "@PACKAGE_NAME@ setup for Windows @WINDOWS_BITS@-bit"
-VIAddVersionKey LegalCopyright "© BTCHD 2018"
+VIAddVersionKey LegalCopyright "© BitcoinHD 2018"
 InstallDirRegKey HKCU "${REGKEY}" Path
 ShowUninstDetails show
 
@@ -83,7 +83,7 @@ Section -Main SEC0000
     File /r @abs_top_srcdir@/doc\*.*
     SetOutPath $INSTDIR
     WriteRegStr HKCU "${REGKEY}\Components" Main 1
-    # BTCHD tools
+    # BitcoinHD tools
     SetOutPath $INSTDIR\tools
     File /r @abs_top_srcdir@/release/tools_win@WINDOWS_BITS@/
 SectionEnd
@@ -142,7 +142,7 @@ Section -un.post UNSEC0001
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, @WINDOWS_BITS@-bit).lnk"
-    Delete /REBOOTOK "$SMSTARTUP\BTCHD.lnk"
+    Delete /REBOOTOK "$SMSTARTUP\BitcoinHD.lnk"
     Delete /REBOOTOK $INSTDIR\uninstall.exe
     Delete /REBOOTOK $INSTDIR\debug.log
     Delete /REBOOTOK $INSTDIR\db.log

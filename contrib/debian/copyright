@@ -1,13 +1,13 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: BTCHD
+Upstream-Name: BitcoinHD
 Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
  irc://#btchd@freenode.net
 Source: https://github.com/btchd/btchd
 
 Files: *
-Copyright: 2017-2018, BTCHD Core Developers
+Copyright: 2017-2018, BitcoinHD Core Developers
 License: Expat
-Comment: The BTCHD Core Developers encompasses the current developers listed on btchd.org,
+Comment: The BitcoinHD Core Developers encompasses the current developers listed on btchd.org,
          as well as the numerous contributors to the project.
 
 Files: debian/*

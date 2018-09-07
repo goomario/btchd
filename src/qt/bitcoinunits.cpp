@@ -17,9 +17,9 @@ BitcoinUnits::BitcoinUnits(QObject *parent):
 QList<BitcoinUnits::Unit> BitcoinUnits::availableUnits()
 {
     QList<BitcoinUnits::Unit> unitlist;
-    unitlist.append(BTCHD);
-    unitlist.append(mBTCHD);
-    unitlist.append(uBTCHD);
+    unitlist.append(BHD);
+    unitlist.append(mBHD);
+    unitlist.append(uBHD);
     return unitlist;
 }
 
@@ -27,9 +27,9 @@ bool BitcoinUnits::valid(int unit)
 {
     switch(unit)
     {
-    case BTCHD:
-    case mBTCHD:
-    case uBTCHD:
+    case BHD:
+    case mBHD:
+    case uBHD:
         return true;
     default:
         return false;
@@ -40,9 +40,9 @@ QString BitcoinUnits::longName(int unit)
 {
     switch(unit)
     {
-    case BTCHD: return QString("BTCHD");
-    case mBTCHD: return QString("mBTCHD");
-    case uBTCHD: return QString::fromUtf8("µBTCHD (bits)");
+    case BHD: return QString("BHD");
+    case mBHD: return QString("mBHD");
+    case uBHD: return QString::fromUtf8("µBHD (bits)");
     default: return QString("???");
     }
 }
@@ -51,7 +51,7 @@ QString BitcoinUnits::shortName(int unit)
 {
     switch(unit)
     {
-    case uBTCHD: return QString::fromUtf8("bits");
+    case uBHD: return QString::fromUtf8("bits");
     default:   return longName(unit);
     }
 }
@@ -60,9 +60,9 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case BTCHD: return QString("BTCHDs");
-    case mBTCHD: return QString("Milli-BTCHDs (1 / 1" THIN_SP_UTF8 "000)");
-    case uBTCHD: return QString("Micro-BTCHDs (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case BHD: return QString("BHDs");
+    case mBHD: return QString("Milli-BHDs (1 / 1" THIN_SP_UTF8 "000)");
+    case uBHD: return QString("Micro-BHDs (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     default: return QString("???");
     }
 }
@@ -71,9 +71,9 @@ qint64 BitcoinUnits::factor(int unit)
 {
     switch(unit)
     {
-    case BTCHD:  return 100000000;
-    case mBTCHD: return 100000;
-    case uBTCHD: return 100;
+    case BHD:  return 100000000;
+    case mBHD: return 100000;
+    case uBHD: return 100;
     default:   return 100000000;
     }
 }
@@ -82,9 +82,9 @@ int BitcoinUnits::decimals(int unit)
 {
     switch(unit)
     {
-    case BTCHD: return 8;
-    case mBTCHD: return 5;
-    case uBTCHD: return 2;
+    case BHD: return 8;
+    case mBHD: return 5;
+    case uBHD: return 2;
     default: return 0;
     }
 }

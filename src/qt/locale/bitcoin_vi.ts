@@ -62,12 +62,12 @@
         <translation>Địa chỉ đang nhận</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation>Đây là những địa chỉ đang thực hiện thanh toán. Luôn kiểm tra số lượng và địa chỉ nhận trước khi gửi coins.</translation>
     </message>
     <message>
-        <source>These are your BTCHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Đây là địa chỉ BTCHD của bạn để nhận thanh toán. Khuyến cáo nên sử dụng địa chỉ mới cho mỗi giao dịch.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>Đây là địa chỉ BitcoinHD của bạn để nhận thanh toán. Khuyến cáo nên sử dụng địa chỉ mới cho mỗi giao dịch.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -165,7 +165,7 @@
     </message>
     <message>
         <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINS&lt;/b&gt;!</source>
-        <translation>Cảnh báo: Nếu bạn mã hóa ví và mất cụm mật khẩu, bạn sẽ &lt;b&gt;MẤT TẤT CẢ BTCHD&lt;/b&gt;!</translation>
+        <translation>Cảnh báo: Nếu bạn mã hóa ví và mất cụm mật khẩu, bạn sẽ &lt;b&gt;MẤT TẤT CẢ BitcoinHD&lt;/b&gt;!</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>
@@ -334,8 +334,8 @@
         <translation>Khôi phục các khối trên ổ đĩa...</translation>
     </message>
     <message>
-        <source>Send coins to a BTCHD address</source>
-        <translation>Gửi coin đến một địa chỉ BTCHD</translation>
+        <source>Send coins to a BitcoinHD address</source>
+        <translation>Gửi coin đến một địa chỉ BitcoinHD</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -358,8 +358,8 @@
         <translation>&amp;Lời nhắn xác nhận...</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -386,12 +386,12 @@
         <translation>Mã hóa private key thuộc về ví của bạn</translation>
     </message>
     <message>
-        <source>Sign messages with your BTCHD addresses to prove you own them</source>
-        <translation>Đăng ký lời nhắn với địa chỉ BTCHD của bạn để chứng minh quyền sở hữu chúng</translation>
+        <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
+        <translation>Đăng ký lời nhắn với địa chỉ BitcoinHD của bạn để chứng minh quyền sở hữu chúng</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified BTCHD addresses</source>
-        <translation>Xác minh lời nhắn để chắc chắn đã được đăng ký với địa chỉ BTCHD xác định</translation>
+        <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
+        <translation>Xác minh lời nhắn để chắc chắn đã được đăng ký với địa chỉ BitcoinHD xác định</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -430,8 +430,8 @@
         <translation>&amp;Tùy chỉnh Command-line </translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to BTCHD network</source>
-        <translation><numerusform>%n kết nối đến BTCHD network</numerusform></translation>
+        <source>%n active connection(s) to BitcoinHD network</source>
+        <translation><numerusform>%n kết nối đến BitcoinHD network</numerusform></translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -474,8 +474,8 @@
         <translation>Đã cập nhật</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible BTCHD command-line options</source>
-        <translation>Hiển thị %1 tin nhắn hỗ trợ để nhận được danh sách BTCHD command-line khả dụng</translation>
+        <source>Show the %1 help message to get a list with possible BitcoinHD command-line options</source>
+        <translation>Hiển thị %1 tin nhắn hỗ trợ để nhận được danh sách BitcoinHD command-line khả dụng</translation>
     </message>
     <message>
         <source>%1 client</source>
@@ -544,8 +544,8 @@
         <translation>Ví thì &lt;b&gt;encrypted&lt;/b&gt; và hiện tại &lt;b&gt;locked&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>A fatal error occurred. BTCHD can no longer continue safely and will quit.</source>
-        <translation>Một lỗi nghiêm trọng vừa xảy ra. BTCHD có thể không còn tiếp tục an toàn và sẽ bị bỏ.</translation>
+        <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
+        <translation>Một lỗi nghiêm trọng vừa xảy ra. BitcoinHD có thể không còn tiếp tục an toàn và sẽ bị bỏ.</translation>
     </message>
 </context>
 <context>
@@ -738,8 +738,8 @@
         <translation>Edit address đang gửi</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid BTCHD address.</source>
-        <translation>Address đã nhập "%1" không valid BTCHD address.</translation>
+        <source>The entered address "%1" is not a valid BitcoinHD address.</source>
+        <translation>Address đã nhập "%1" không valid BitcoinHD address.</translation>
     </message>
     <message>
         <source>The entered address "%1" is already in the address book.</source>
@@ -867,8 +867,8 @@
         <translation>Sử dụng custom danh mục data:</translation>
     </message>
     <message>
-        <source>BTCHD</source>
-        <translation>BTCHD</translation>
+        <source>BitcoinHD</source>
+        <translation>BitcoinHD</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -879,8 +879,8 @@
         <translation>Gần đúng %1 GB of data sẽ được lưu giữ trong danh mục này.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the BTCHD block chain.</source>
-        <translation>%1 sẽ download và lưu trữ một bản copy của BTCHD block chain.</translation>
+        <source>%1 will download and store a copy of the BitcoinHD block chain.</source>
+        <translation>%1 sẽ download và lưu trữ một bản copy của BitcoinHD block chain.</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -910,8 +910,8 @@
         <translation>Form</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BTCHD network, as detailed below.</source>
-        <translation>Giao dịch gần đây có thể chưa được hiển thị, và vì vậy số dư wallet của bạn có thể không dúng. Thông tin này sẽ được làm đúng khi wallet hoàn thành đồng bộ với BTCHD network, như chi tiết bên dưới.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
+        <translation>Giao dịch gần đây có thể chưa được hiển thị, và vì vậy số dư wallet của bạn có thể không dúng. Thông tin này sẽ được làm đúng khi wallet hoàn thành đồng bộ với BitcoinHD network, như chi tiết bên dưới.</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
@@ -1072,16 +1072,16 @@
         <translation>&amp;Spend unconfirmed change</translation>
     </message>
     <message>
-        <source>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Automatically open the BTCHD client port on the router. This only works when your router supports UPnP and it is enabled.</translation>
+        <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
         <translation>Map port using &amp;UPnP</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a SOCKS5 proxy.</source>
-        <translation>Kết nối đến BTCHD network qua một SOCKS5 proxy.</translation>
+        <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
+        <translation>Kết nối đến BitcoinHD network qua một SOCKS5 proxy.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1116,8 +1116,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the BTCHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Kết nối đến BTCHD network qua một nhánh rời SOCKS5 proxy của Tor hidden services.</translation>
+        <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>Kết nối đến BitcoinHD network qua một nhánh rời SOCKS5 proxy của Tor hidden services.</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1219,8 +1219,8 @@
         <translation>Form</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BTCHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>Thông tin được hiển thị có thể đã lỗi thời. Cái wallet tự động đồng bộ với BTCHD network sau một connection được thiết lập, nhưng quá trình này vẫn chưa completed yet.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
+        <translation>Thông tin được hiển thị có thể đã lỗi thời. Cái wallet tự động đồng bộ với BitcoinHD network sau một connection được thiết lập, nhưng quá trình này vẫn chưa completed yet.</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1310,8 +1310,8 @@
         <translation>Invalid payment address %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid BTCHD address or malformed URI parameters.</source>
-        <translation>URI không thể phân tích cú pháp! Đây có thể gây nên bởi invalid BTCHD address hoặc URI không đúng định dạng tham số.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
+        <translation>URI không thể phân tích cú pháp! Đây có thể gây nên bởi invalid BitcoinHD address hoặc URI không đúng định dạng tham số.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1412,8 +1412,8 @@
         <translation>Số lượng</translation>
     </message>
     <message>
-        <source>Enter a BTCHD address (e.g. %1)</source>
-        <translation>Nhập một BTCHD address (e.g. %1)</translation>
+        <source>Enter a BitcoinHD address (e.g. %1)</source>
+        <translation>Nhập một BitcoinHD address (e.g. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1828,8 +1828,8 @@
         <translation>&amp;Message:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BTCHD network.</source>
-        <translation>Một optional lời nhắn để đính kèm đến payment request, cái mà sẽ được hiển thị khi mà request đang mở. Lưu ý: Tin nhắn này sẽ không được gửi với payment over the BTCHD network.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
+        <translation>Một optional lời nhắn để đính kèm đến payment request, cái mà sẽ được hiển thị khi mà request đang mở. Lưu ý: Tin nhắn này sẽ không được gửi với payment over the BitcoinHD network.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2065,8 +2065,8 @@
         <translation>Ẩn</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BTCHD transactions than the network can process.</source>
-        <translation>Chi trả chỉ số nhỏ nhất fee thì ổn cho tới khi có ít transaction volume hơn khoảng trống trong blocks. Nhưng nhận ra rằng điều này kết thúc trong việc chẳng bao giờ xác nhận transaction trừ khi có nhiều nhu cầu cho giao dịch BTCHD hơn so với mạng có thể xử lý.</translation>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for BitcoinHD transactions than the network can process.</source>
+        <translation>Chi trả chỉ số nhỏ nhất fee thì ổn cho tới khi có ít transaction volume hơn khoảng trống trong blocks. Nhưng nhận ra rằng điều này kết thúc trong việc chẳng bao giờ xác nhận transaction trừ khi có nhiều nhu cầu cho giao dịch BitcoinHD hơn so với mạng có thể xử lý.</translation>
     </message>
     <message>
         <source>(read the tooltip)</source>
@@ -2221,8 +2221,8 @@
         <translation><numerusform>Dự kiến bắt đầu xác nhận trong vòng %n blocks.</numerusform></translation>
     </message>
     <message>
-        <source>Warning: Invalid BTCHD address</source>
-        <translation>Warning: Invalid BTCHD address</translation>
+        <source>Warning: Invalid BitcoinHD address</source>
+        <translation>Warning: Invalid BitcoinHD address</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2264,8 +2264,8 @@
         <translation>Đây là một thông thường payment.</translation>
     </message>
     <message>
-        <source>The BTCHD address to send the payment to</source>
-        <translation>The BTCHD address để gửi the payment đến</translation>
+        <source>The BitcoinHD address to send the payment to</source>
+        <translation>The BitcoinHD address để gửi the payment đến</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2308,8 +2308,8 @@
         <translation>Nhập một label cho cái address này để thêm vào danh sách địa chỉ đã sử dụng</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BTCHD network.</source>
-        <translation>Một tin nhắn được đính kèm với số btchd: URI mà sẽ được lưu giữ với transaction dành cho tài liệu tham khảo. Lưu ý: Tin nhắn này sẽ không được gửi thông qua BTCHD network.</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <translation>Một tin nhắn được đính kèm với số btchd: URI mà sẽ được lưu giữ với transaction dành cho tài liệu tham khảo. Lưu ý: Tin nhắn này sẽ không được gửi thông qua BitcoinHD network.</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2357,8 +2357,8 @@
         <translation>Bạn có thể ký/đồng ý với địa chỉ chứng minh bạn có thể receive bitcoins đã gửi đến chúng. Cẩn thận không ký bất cứ không rõ hay random, như các cuộc tấn công lừa đảo có thể cố lừa bạn ký tên vào danh tính của bạn.. Chỉ ký các bản tuyên bố hoàn chỉnh mà bạn đồng ý.</translation>
     </message>
     <message>
-        <source>The BTCHD address to sign the message with</source>
-        <translation>The BTCHD address để ký với tin nhắn</translation>
+        <source>The BitcoinHD address to sign the message with</source>
+        <translation>The BitcoinHD address để ký với tin nhắn</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2389,8 +2389,8 @@
         <translation>Copy hiện tại signature tới system clipboard</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this BTCHD address</source>
-        <translation>Ký tin nhắn để chứng minh bạn sở hữu BTCHD address này</translation>
+        <source>Sign the message to prove you own this BitcoinHD address</source>
+        <translation>Ký tin nhắn để chứng minh bạn sở hữu BitcoinHD address này</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2413,12 +2413,12 @@
         <translation>Nhập vào address người nhận, tin nhắn (chắc rằng bạn copy line breaks, khoảng trống, tabs, etc. chính xác) và signature bên dưới verify tin nhắn. Cẩn thận không đọc nhiều hơn từ signature so với cái được ký trong bản thân tin nhắn, để tránh bị lừa bới man-in-the-middle tấn công. Lưu ý rằng điều này chỉ chứng nhận nhóm những người nhân với address, nó không thể chứng minh bên gửi có bất kỳ transaction!</translation>
     </message>
     <message>
-        <source>The BTCHD address the message was signed with</source>
-        <translation>The BTCHD address tin nhắn đã ký với</translation>
+        <source>The BitcoinHD address the message was signed with</source>
+        <translation>The BitcoinHD address tin nhắn đã ký với</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified BTCHD address</source>
-        <translation>Verify tin nhắn để chắc rằng nó đã được ký với xác định BTCHD address</translation>
+        <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
+        <translation>Verify tin nhắn để chắc rằng nó đã được ký với xác định BitcoinHD address</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3106,8 +3106,8 @@
         <translation>Unable to start HTTP server. See debug log for details.</translation>
     </message>
     <message>
-        <source>BTCHD Core</source>
-        <translation>BTCHD Core</translation>
+        <source>BitcoinHD Core</source>
+        <translation>BitcoinHD Core</translation>
     </message>
     <message>
         <source>The %s developers</source>

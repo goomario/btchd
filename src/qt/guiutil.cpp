@@ -109,7 +109,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
 #if QT_VERSION >= 0x040700
     // We don't want translators to use own addresses in translations
     // and this is the only place, where this address is supplied.
-    widget->setPlaceholderText(QObject::tr("Enter a BTCHD address (e.g. %1)").arg(
+    widget->setPlaceholderText(QObject::tr("Enter a BitcoinHD address (e.g. %1)").arg(
         QString::fromStdString(Params().GetConsensus().BtchdFundAddress)));
 #endif
     widget->setValidator(new BitcoinAddressEntryValidator(parent));
@@ -168,7 +168,7 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
         {
             if(!i->second.isEmpty())
             {
-                if(!BitcoinUnits::parse(BitcoinUnits::BTCHD, i->second, &rv.amount))
+                if(!BitcoinUnits::parse(BitcoinUnits::BHD, i->second, &rv.amount))
                 {
                     return false;
                 }
@@ -208,7 +208,7 @@ QString formatBitcoinURI(const SendCoinsRecipient &info)
 
     if (info.amount)
     {
-        ret += QString("?amount=%1").arg(BitcoinUnits::format(BitcoinUnits::BTCHD, info.amount, false, BitcoinUnits::separatorNever));
+        ret += QString("?amount=%1").arg(BitcoinUnits::format(BitcoinUnits::BHD, info.amount, false, BitcoinUnits::separatorNever));
         paramCount++;
     }
 

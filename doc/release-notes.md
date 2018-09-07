@@ -1,4 +1,4 @@
-BTCHD Core version 1.0.x is now available from:
+BitcoinHD Core version 1.0.x is now available from:
 
   <http://btchd.org/bin/btchd-core-1.0.x/>
 
@@ -24,10 +24,10 @@ or `btchdd`/`btchd-qt` (on Linux).
 Compatibility
 ==============
 
-BTCHD Core is extensively tested on multiple operating systems using
+BitcoinHD Core is extensively tested on multiple operating systems using
 the Linux kernel, macOS 10.8+, and Windows Vista and later. Windows XP is not supported.
 
-BTCHD Core should also work on most other Unix-like systems but is not
+BitcoinHD Core should also work on most other Unix-like systems but is not
 frequently tested on them.
 
 Notable changes
