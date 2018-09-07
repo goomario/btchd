@@ -1177,8 +1177,9 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
                 fundOld = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
             } else {
                 fundOld = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
-                if (fundOld > reward.fund)
+                if (fundOld > reward.fund) {
                     reward.swap = true;
+                }
             }
         }
         reward.miner = nSubsidy + nFees - reward.fund;
@@ -1815,7 +1816,7 @@ VersionBitsCache versionbitscache;
 int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
-    int32_t nVersion = VERSIONBITS_TOP_BITS;
+    int32_t nVersion = VERSIONBITS_TOP_BITS | VERSIONBITS_BHDV2_BITS;
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         ThresholdState state = VersionBitsState(pindexPrev, params, (Consensus::DeploymentPos)i, versionbitscache);
@@ -2061,20 +2062,25 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                REJECT_INVALID, "bad-cb-amount");
 
     if (blockReward.fund != 0) {
-        if (block.vtx[0]->vout.size() < 2)
+        // Old wallet verify [1] for fund
+        unsigned int fundOutIndex = ((pindex->nVersion&VERSIONBITS_BHDV2_BITS) != 0 && blockReward.swap) ? 0 : 1;
+
+        // Check output size
+        if (fundOutIndex == 1 && block.vtx[0]->vout.size() < 2)
             return state.DoS(100,
                              error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
                                    0, blockReward.fund),
                                    REJECT_INVALID, "bad-cb-amount-fund-nothing");
 
-        // Old wallet verify [1] for fund
-        unsigned int fundOutIndex = blockReward.swap ? 0 : 1;
+        // Check output address
         CAccountId nFundAccountId = GetAccountId(block.vtx[0]->vout[fundOutIndex].scriptPubKey);
         if (nFundAccountId != chainparams.GetConsensus().BtchdFundAccountId)
             return state.DoS(100,
                              error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
                                    0, blockReward.fund),
                                    REJECT_INVALID, "bad-cb-amount-fund-nothing");
+
+        // Check output amount
         if (block.vtx[0]->vout[fundOutIndex].nValue < blockReward.fund)
             return state.DoS(100,
                              error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
