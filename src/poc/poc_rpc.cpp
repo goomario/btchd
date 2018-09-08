@@ -77,7 +77,7 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight, const std::string &address)
 {
     if (IsInitialBlockDownload()) {
         throw std::runtime_error("Is initial block downloading!");
@@ -90,7 +90,7 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     }
 
     uint64_t bestDeadline = 0;
-    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, Params().GetConsensus());
+    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, address, Params().GetConsensus());
 
     result.pushKV("result", "success");
     result.pushKV("deadline", deadline);
@@ -108,6 +108,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"accountId\"       (string, required) The digit string of the brust account ID\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
+            "4. \"address\"         (string, optional) Target address for mining\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -118,7 +119,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2 && request.params.size() != 3) {
+    if (request.params.size() < 2 || request.params.size() > 4) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
@@ -131,7 +132,12 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
         nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight);
+    std::string address;
+    if (request.params.size() >= 4) {
+        address = request.params[3].get_str();
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address);
     return result;
 }
 
@@ -145,6 +151,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"passPhrase\"      (string, optional) The string of the burst account passPhrase\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
+            "4. \"address\"         (string, optional) Target address for mining\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -155,7 +162,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2 && request.params.size() != 3) {
+    if (request.params.size() < 2 || request.params.size() > 4) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
@@ -168,7 +175,12 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
         nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight);
+    std::string address;
+    if (request.params.size() >= 4) {
+        address = request.params[3].get_str();
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address);
     return result;
 }
 
@@ -413,8 +425,8 @@ static const CRPCCommand commands[] =
     { "hidden",           "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height" } },
-    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height"} },
+    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height", "address" } },
+    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height", "address" } },
     { "hidden",           "getConstants",             &poc::rpc::getConstants,          { } },
     { "hidden",           "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
     { "hidden",           "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },

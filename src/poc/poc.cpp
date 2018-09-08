@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <poc/poc.h>
+#include <base58.h>
 #include <chainparams.h>
 #include <compat/endian.h>
 #include <consensus/merkle.h>
@@ -29,8 +30,6 @@
 
 namespace {
 
-
-
 // shabal256
 uint256 shabal256(const uint256 &genSig, int64_t nMix64)
 {
@@ -42,27 +41,40 @@ uint256 shabal256(const uint256 &genSig, int64_t nMix64)
     return result;
 }
 
-std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline)
+std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline, const std::string &address)
 {
     AssertLockHeld(cs_main);
     if (::vpwallets.empty()) {
         return nullptr;
     }
 
-    CWallet * const pwallet = ::vpwallets[0];
+    CScript scriptPubKey;
+    if (address.empty()) {
+        // From wallet
+        CWallet * const pwallet = ::vpwallets[0];
+        LOCK(pwallet->cs_wallet);
 
-    std::shared_ptr<CReserveScript> coinbaseScript;
-    pwallet->GetScriptForMining(coinbaseScript);
-
-    if (!coinbaseScript) {
+        std::shared_ptr<CReserveScript> coinbaseScript;
+        pwallet->GetScriptForMining(coinbaseScript);
+        if (!coinbaseScript) {
+            LogPrintf("Cannot load script from wallet\n");
+            return nullptr;
+        }
+        scriptPubKey = coinbaseScript->reserveScript;
+    } else {
+        // From address
+        CTxDestination dest = DecodeDestination(address);
+        if (!IsValidDestination(dest)) {
+            LogPrintf("Invalidate BitcoinHD address: %s\n", address);
+            return nullptr;
+        }
+        scriptPubKey = GetScriptForDestination(dest);
+    }
+    if (scriptPubKey.empty()) {
         return nullptr;
     }
 
-    if (coinbaseScript->reserveScript.empty()) {
-        return nullptr;
-    }
-
-    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true, nNonce, nPlotterId, nDeadline));
+    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(scriptPubKey, true, nNonce, nPlotterId, nDeadline));
     if (!pblocktemplate.get()) 
         return nullptr;
 
@@ -86,6 +98,7 @@ struct GeneratorState {
     uint64_t deadline;
     uint64_t bestBlockDeadline; // Current best block deadline
     int64_t bestBlockTime; // Current best block time
+    std::string address; // Generate to
 
     GeneratorState() : deadline(poc::INVALID_DEADLINE), bestBlockDeadline(poc::INVALID_DEADLINE), bestBlockTime(0) { }
 };
@@ -118,7 +131,7 @@ void CheckDeadlineThread()
                             // forge
                             LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 it->first, it->second.nonce, it->second.plotterId, it->second.deadline);
-                            pblock = CreateBlock(*pindexTip, it->second.nonce, it->second.plotterId, it->second.deadline);
+                            pblock = CreateBlock(*pindexTip, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
                             if (!pblock) {
                                 LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                     it->first, it->second.nonce, it->second.plotterId, it->second.deadline);
@@ -151,7 +164,7 @@ void CheckDeadlineThread()
                                     LogPrint(BCLog::POC, "Generate block(Snatch): invalidate current tip block error, %s\n", state.GetRejectReason());
                                     LogPrint(BCLog::POC, "Generate block(Snatch): current tip, %s\n", pindexTip->ToString());
                                 } else {
-                                    pblock = CreateBlock(*(pindexTip->pprev), it->second.nonce, it->second.plotterId, it->second.deadline);
+                                    pblock = CreateBlock(*(pindexTip->pprev), it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
                                     if (!pblock) {
                                         LogPrintf("Generate block fail(Snatch): height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", preDeadline=%" PRIu64 "\n",
                                             it->first, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.bestBlockDeadline);
@@ -462,7 +475,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
     return deadline <= MAX_TARGET_DEADLINE && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
 }
 
-uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const Consensus::Params& params)
+uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const std::string &address, const Consensus::Params& params)
 {
     LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
         prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
@@ -489,6 +502,7 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
             generator.nonce     = nNonce;
             generator.plotterId = nPlotterId;
             generator.deadline  = calcDeadline;
+            generator.address   = address;
 
             uiInterface.NotifyBestDeadlineChanged(prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
         }
