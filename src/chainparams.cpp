@@ -81,11 +81,17 @@ public:
     CMainParams() {
         strNetworkID = "main";
 
-        consensus.BtchdFundAddress = "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y";
+        consensus.BtchdFundAddress = "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE";
         consensus.BtchdFundAddressPool = {
-            "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y",
+            "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y", //!< 0x20000000, Deprecated!. Last use on v1.1.0.1-30849da
+            "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000006
+            "39Vb1GNSurGoHcQ4aTKrTYC1oNmPppGea3",
+            "3Maw3PdwSvtXgBKJ9QPGwRSQW8AgQrGK3W",
+            "3Hy3V3sPVpuQaG6ttihfQNh4vcDXumLQq9",
+            "3MxgS9jRcGLihAtb9goAyD1QC8AfRNFE1F",
+            "3A4uNFxQf6Jo8b6QpBVnNcjDRqDchgpGbR",
         };
-        assert (consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
+        assert(consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
 
         consensus.BtchdFundPreMingingHeight = 84000 + 1; // 21M * 10% = 2.1M, 2.1M/25=84000, + 1 to deprecated test data
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
@@ -208,10 +214,8 @@ public:
         strNetworkID = "test";
 
         consensus.BtchdFundAddress = "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw";
-        consensus.BtchdFundAddressPool = {
-            "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw",
-        };
-        assert (consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
+        consensus.BtchdFundAddressPool = { "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw" };
+        assert(consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
 
         consensus.BtchdFundPreMingingHeight = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
@@ -312,10 +316,8 @@ public:
         strNetworkID = "regtest";
 
         consensus.BtchdFundAddress = "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy"; // pubkey 03eab29d59f6d14053c6e98f6d3d7e7db9cc17c619a513b9c00aa416fbdada73f1
-        consensus.BtchdFundAddressPool = {
-            "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy",
-        };
-        assert (consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
+        consensus.BtchdFundAddressPool = { "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy" };
+        assert(consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
 
         consensus.BtchdFundPreMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
