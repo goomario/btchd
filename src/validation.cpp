@@ -2075,8 +2075,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
 
             // Check output address
-            CAccountId nFundAccountId = GetAccountIdByScriptPubKey(block.vtx[0]->vout[fundIndex].scriptPubKey);
-            if (nFundAccountId != chainparams.GetConsensus().BtchdFundAccountId)
+            std::string address;
+            {
+                CTxDestination dest;
+                if (ExtractDestination(block.vtx[0]->vout[fundIndex].scriptPubKey, dest)) {
+                    address = EncodeDestination(dest);
+                }
+            }
+            if (chainparams.GetConsensus().BtchdFundAddressPool.find(address) == chainparams.GetConsensus().BtchdFundAddressPool.end())
                 return state.DoS(100,
                                     error("ConnectBlock(): coinbase not pays to fund account (limit=%d)",
                                         blockReward.miner1),
@@ -2107,7 +2113,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
         }
 
-        // All output for miner must be one miner account
+        // All output for miner must be unique miner account
         for (unsigned int i = 1; i < block.vtx.size(); i++) {
             if (i != fundIndex && block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
                 return state.DoS(100,
@@ -2126,8 +2132,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
 
             // Check output address
-            CAccountId nFundAccountId = GetAccountIdByScriptPubKey(block.vtx[0]->vout[1].scriptPubKey);
-            if (nFundAccountId != chainparams.GetConsensus().BtchdFundAccountId)
+            std::string address;
+            {
+                CTxDestination dest;
+                if (ExtractDestination(block.vtx[0]->vout[1].scriptPubKey, dest)) {
+                    address = EncodeDestination(dest);
+                }
+            }
+            if (chainparams.GetConsensus().BtchdFundAddressPool.find(address) == chainparams.GetConsensus().BtchdFundAddressPool.end())
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase not pays to fund account (limit=%d)",
                                        blockReward.miner1),
@@ -2140,7 +2152,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        block.vtx[0]->vout[1].nValue, blockReward.miner1),
                                        REJECT_INVALID, "bad-cb-amount");
 
-            // All output for miner must be one miner account
+            // All output for miner must be unique miner account
             for (unsigned int i = 2; i < block.vtx.size(); i++) {
                 if (block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
                     return state.DoS(100,
