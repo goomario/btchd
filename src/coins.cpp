@@ -379,7 +379,7 @@ private:
 }
 
 CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn) {
-    CAccountId nAccountId = GetAccountId(scriptPubKey);
+    CAccountId nAccountId = GetAccountIdByScriptPubKey(scriptPubKey);
     if (nAccountId != 0) {
         return CAccountDiffCoinsKey{nAccountId, nHeightIn};
     } else {
@@ -387,13 +387,17 @@ CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nH
     }
 }
 
-CAccountId GetAccountId(const CScript &scriptPubKey) {
+CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey) {
     CTxDestination dest;
     if (ExtractDestination(scriptPubKey, dest)) {
-        CAccountId nAccountId;
-        boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
-        return nAccountId;
+        return GetAccountIdByTxDestination(dest);
     } else {
         return 0;
     }
+}
+
+CAccountId GetAccountIdByTxDestination(const CTxDestination &dest) {
+    CAccountId nAccountId;
+    boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
+    return nAccountId;
 }

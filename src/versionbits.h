@@ -17,8 +17,12 @@ static const int32_t VERSIONBITS_TOP_MASK = 0xE0000000UL;
 /** Total bits available for versionbits */
 static const int32_t VERSIONBITS_NUM_BITS = 29;
 
-/** BitcoinHD v2 for versionbits */
-static const int32_t VERSIONBITS_BHDV2_BITS = (1 << 1);
+/** Reserved bits */
+static const int32_t VERSIONBITS_CSV_BITS       = (1UL << 0);
+static const int32_t VERSIONBITS_SEGWIT_BITS    = (1UL << 1);
+
+/** BitcoinHD for versionbits */
+static const int32_t VERSIONBITS_BHDV2_BITS     = (1UL << 2);
 
 enum ThresholdState {
     THRESHOLD_DEFINED,

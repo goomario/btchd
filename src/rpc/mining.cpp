@@ -702,7 +702,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
-    CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
+    CAccountId nAccountId = GetAccountIdByTxDestination(dest);
     if (nAccountId == 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }

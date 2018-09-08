@@ -881,7 +881,7 @@ void RPCConsole::updateMortgage()
         if (!IsValidDestination(dest)) {
             return;
         }
-        CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
+        CAccountId nAccountId = GetAccountIdByTxDestination(dest);
         if (nAccountId == 0) {
             return;
         }

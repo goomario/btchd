@@ -155,7 +155,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockTx = nBlockTx;
     nLastBlockWeight = nBlockWeight;
 
-    CAccountId nAccountId = GetAccountId(scriptPubKeyIn);
+    CAccountId nAccountId = GetAccountIdByScriptPubKey(scriptPubKeyIn);
 
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;
@@ -164,21 +164,30 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     // Reward
     BlockReward blockReward = GetBlockReward(nHeight, nFees, nAccountId, plotterId, *pcoinsTip, chainparams.GetConsensus());
-    int minerOutIndex = 0, fundOutIndex = 1;
-    if (blockReward.swap) {
-        // Old wallet can verify
-        minerOutIndex = 1;
-        fundOutIndex = 0;
-    }
-    if (blockReward.fund > 0 || minerOutIndex != 0) {
+    unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
+    if (blockReward.miner1 != 0) {
+        // Let old wallet can verify
+        if (blockReward.fund != 0) {
+            fundOutIndex = 2;
+            coinbaseTx.vout.resize(3);
+        } else {
+            coinbaseTx.vout.resize(2);
+        }
+        // Old consensus will check [1] amount
+        coinbaseTx.vout[1].scriptPubKey = scriptPubKeyIn;
+        coinbaseTx.vout[1].nValue = blockReward.miner1;
+    } else if (blockReward.fund != 0) {
+        fundOutIndex = 1;
         coinbaseTx.vout.resize(2);
-        coinbaseTx.vout[fundOutIndex].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BtchdFundAddress));
-        coinbaseTx.vout[fundOutIndex].nValue = blockReward.fund;
     } else {
         coinbaseTx.vout.resize(1);
     }
-    coinbaseTx.vout[minerOutIndex].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[minerOutIndex].nValue = blockReward.miner;
+    coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
+    coinbaseTx.vout[0].nValue = blockReward.miner0;
+    if (fundOutIndex < coinbaseTx.vout.size()) {
+        coinbaseTx.vout[fundOutIndex].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BtchdFundAddress));
+        coinbaseTx.vout[fundOutIndex].nValue = blockReward.fund;
+    }
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
     pblocktemplate->vTxFees[0] = -nFees;
