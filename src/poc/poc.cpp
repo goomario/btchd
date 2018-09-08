@@ -182,7 +182,7 @@ void CheckDeadlineThread()
                             }
                         } else {
                             // Not better they, give up!
-                            LogPrintf("Generate block(Snatch) give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline (mine=%" PRIu64 ") >= (tip=%" PRIu64 ")\n",
+                            LogPrint(BCLog::POC, "Generate block(Snatch) give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline (mine=%" PRIu64 ") >= (tip=%" PRIu64 ")\n",
                                 it->first, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.bestBlockDeadline);
                         }
                     }
