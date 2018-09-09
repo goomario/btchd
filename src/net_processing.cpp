@@ -1604,9 +1604,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (nTimeOffset > DEFAULT_MAX_TIME_ADJUSTMENT || nTimeOffset < -DEFAULT_MAX_TIME_ADJUSTMENT)
         {
             // disconnect from peers time deviation is greater than DEFAULT_MAX_TIME_ADJUSTMENT seconds
-            LogPrint(BCLog::NET, "peer=%d time deviation is greater than %d(%d) seconds; disconnecting\n", pfrom->GetId(), DEFAULT_MAX_TIME_ADJUSTMENT, nTimeOffset);
+            LogPrint(BCLog::NET, "peer=%d time deviation is greater than %d (%+d) seconds; disconnecting\n", pfrom->GetId(), DEFAULT_MAX_TIME_ADJUSTMENT, nTimeOffset);
             connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
-                                strprintf("Time deviation must be less than %d(%d) seconds", DEFAULT_MAX_TIME_ADJUSTMENT, nTimeOffset)));
+                                strprintf("Time deviation must be less than %d (%+d) seconds", DEFAULT_MAX_TIME_ADJUSTMENT, nTimeOffset)));
             pfrom->fDisconnect = true;
             return false;
         }
