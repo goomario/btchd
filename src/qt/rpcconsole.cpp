@@ -892,7 +892,7 @@ void RPCConsole::updateMortgage()
 
         // Master address capacity and mortgage
         CAmount nMortgageAmountMultiMiningAdditional;
-        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus(), nullptr, &nMortgageAmountMultiMiningAdditional);
+        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus(), &nMortgageAmountMultiMiningAdditional);
         if (nMortgageAmountMultiMiningAdditional > 0) {
             // Multi mining additional mortgage
             ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024) +

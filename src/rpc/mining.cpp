@@ -712,7 +712,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     }
 
     CAmount nMortgageAmountMultiMiningAdditional;
-    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight - 1, nPlotterId, Params().GetConsensus(), &nMortgageAmountMultiMiningAdditional, nullptr);
+    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight - 1, nPlotterId, Params().GetConsensus(), &nMortgageAmountMultiMiningAdditional);
     CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, nHeight - 1);
 
     UniValue result(UniValue::VOBJ);
