@@ -1049,13 +1049,13 @@ void BitcoinGUI::showEvent(QShowEvent *event)
 void BitcoinGUI::incomingTransaction(const QString& date, int unit, const CAmount& amount, const QString& type, const QString& address, const QString& label)
 {
     // On new transaction, make an info balloon
-    QString msg = tr("Date: %1\n").arg(date) +
-                  tr("Amount: %1\n").arg(BitcoinUnits::formatWithUnit(unit, amount, true)) +
-                  tr("Type: %1\n").arg(type);
+    QString msg = tr("Date: %1").arg(date) + "\n" +
+                  tr("Amount: %1").arg(BitcoinUnits::formatWithUnit(unit, amount, true)) + "\n" +
+                  tr("Type: %1").arg(type) + "\n";
     if (!label.isEmpty())
-        msg += tr("Label: %1\n").arg(label);
+        msg += tr("Label: %1").arg(label) + "\n";
     else if (!address.isEmpty())
-        msg += tr("Address: %1\n").arg(address);
+        msg += tr("Address: %1").arg(address) + "\n";
     message((amount)<0 ? tr("Sent transaction") : tr("Incoming transaction"),
              msg, CClientUIInterface::MSG_INFORMATION);
 }
