@@ -891,9 +891,20 @@ void RPCConsole::updateMortgage()
         ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
 
         // Master address capacity and mortgage
-        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
-        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
-        ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
+        CAmount nMortgageAmountMultiMiningAdditional;
+        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus(), nullptr, &nMortgageAmountMultiMiningAdditional);
+        if (nMortgageAmountMultiMiningAdditional > 0) {
+            // Multi mining additional mortgage
+            ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024) +
+                " (" + BitcoinUnits::formatCapacity((nMortgageAmount - nMortgageAmountMultiMiningAdditional) / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024) +
+                " + " + BitcoinUnits::formatCapacity(nMortgageAmountMultiMiningAdditional / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024) + ")");
+            ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmount, false, BitcoinUnits::separatorAlways) +
+                " (" + BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, (nMortgageAmount - nMortgageAmountMultiMiningAdditional), false, BitcoinUnits::separatorAlways) +
+                " + " + BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmountMultiMiningAdditional, false, BitcoinUnits::separatorAlways) + ")");
+        } else {
+            ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
+            ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
+        }
         ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QLabel { color: red; }" : "");
 
         // Master bind plotter ID

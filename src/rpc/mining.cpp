@@ -711,11 +711,15 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
     }
 
-    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight - 1, nPlotterId, Params().GetConsensus());
+    CAmount nMortgageAmountMultiMiningAdditional;
+    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight - 1, nPlotterId, Params().GetConsensus(), &nMortgageAmountMultiMiningAdditional, nullptr);
     CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, nHeight - 1);
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("mortgage", ValueFromAmount(nMortgageAmount == MAX_MONEY ? 0 : nMortgageAmount));
+    result.pushKV("mortgage", ValueFromAmount(nMortgageAmount));
+    if (nMortgageAmountMultiMiningAdditional != 0) {
+        result.pushKV("mortgageOfMultiMiningAdditional", ValueFromAmount(nMortgageAmountMultiMiningAdditional));
+    }
     result.pushKV("balance", ValueFromAmount(nBalance));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
@@ -848,9 +852,9 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
     }
 
+    UniValue result(UniValue::VOBJ);
     // Address => <block,plotter>
     std::set<CAccountId> exist;
-    std::map<std::string, UniValue> mapAddresses;
     std::vector<int> vHeight = GetPlotterOwnerHeights(nHeight - 1, nPlotterId, Params().GetConsensus());
     for (auto it = vHeight.cbegin(); it != vHeight.cend(); it++) {
         CBlockIndex *pblockIndex = chainActive[*it];
@@ -873,13 +877,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
         item.pushKV("blockheight", pblockIndex->nHeight);
         item.pushKV("accountId", std::to_string(pblockIndex->nMinerAccountId));
-
-        mapAddresses[address] = item;
-    }
-
-    UniValue result(UniValue::VOBJ);
-    for (auto it = mapAddresses.cbegin(); it != mapAddresses.end(); it++) {
-        result.pushKV(it->first, it->second);
+        result.pushKV(address, item);
     }
 
     return result;

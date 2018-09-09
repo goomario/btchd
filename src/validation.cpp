@@ -1169,7 +1169,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
             // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
             // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
             CAmount nMinerMortgageOldConsensus;
-            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams, &nMinerMortgageOldConsensus);
+            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams, nullptr, &nMinerMortgageOldConsensus);
             CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
             if (nMinerBalance >= nMinerMortgage) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
@@ -1188,28 +1188,43 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     return std::move(reward);
 }
 
-CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerMortgageOldConsensus)
+CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams,
+                         CAmount *pMinerMortgageMultiMiningAdditionalByPlotterId, CAmount *pMinerMortgageOldConsensus)
 {
     assert(nHeight <= chainActive.Height());
     int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
     if (nHeight < nBeginHeight) {
-        if (pMinerMortgageOldConsensus) *pMinerMortgageOldConsensus = 0;
+        if (pMinerMortgageMultiMiningAdditionalByPlotterId != nullptr) *pMinerMortgageMultiMiningAdditionalByPlotterId = 0;
+        if (pMinerMortgageOldConsensus != nullptr) *pMinerMortgageOldConsensus = 0;
         return 0;
     }
 
-    int nTotalForgeCount = 0, nTotalForgeCountOldConsensus = 0;
+    uint64_t nLastPlotterId = nPlotterId;
+    if (pMinerMortgageMultiMiningAdditionalByPlotterId != nullptr && nPlotterId == 0) {
+        // Get last plotter ID
+        for (int index = nHeight; index >= nBeginHeight; index--) {
+            CBlockIndex *pblockIndex = chainActive[index];
+            if (pblockIndex->nMinerAccountId == nMinerAccountId) {
+                nLastPlotterId = pblockIndex->nPlotterId;
+                break;
+            }
+        }
+    }
+
+    int nTotalForgeCount = 0, nTotalForgeCountOldConsensus = 0, nAdditionalForgeCount = 0;
     uint64_t nAvgBaseTarget = 0; // Average BaseTarget
     for (int index = nHeight; index >= nBeginHeight; index--) {
         CBlockIndex *pblockIndex = chainActive[index];
 
         // 1. Multi plotter ID generate to same wallet (like pool)
         // 2. Same plotter ID generate to multi wallets (for decrease mortgage)
-        if (pblockIndex->nMinerAccountId == nMinerAccountId || pblockIndex->nPlotterId == nPlotterId) {
+        if (pblockIndex->nMinerAccountId == nMinerAccountId || pblockIndex->nPlotterId == nLastPlotterId) {
             nTotalForgeCount++;
 
             if (pblockIndex->nMinerAccountId != nMinerAccountId) {
                 // Old consensus: multi mining. Plotter ID bind to multi miner (also multi wallet)
                 nTotalForgeCountOldConsensus = -1;
+                nAdditionalForgeCount++;
             } else if (nTotalForgeCountOldConsensus != -1) {
                 nTotalForgeCountOldConsensus++;
             }
@@ -1220,25 +1235,38 @@ CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const u
     nAvgBaseTarget /= (nHeight - nBeginHeight + 1);
 
     assert(nTotalForgeCount >= nTotalForgeCountOldConsensus);
+    assert(nTotalForgeCount >= nAdditionalForgeCount);
     if (nTotalForgeCount == 0) {
-        if (pMinerMortgageOldConsensus) *pMinerMortgageOldConsensus = 0;
+        if (pMinerMortgageMultiMiningAdditionalByPlotterId != nullptr) *pMinerMortgageMultiMiningAdditionalByPlotterId = 0;
+        if (pMinerMortgageOldConsensus != nullptr) *pMinerMortgageOldConsensus = 0;
         return 0;
     }
 
-    int64_t nNetDiffTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+    // Net capacity
+    int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+
+    // Multi mining additional mortgage
+    if (pMinerMortgageMultiMiningAdditionalByPlotterId != nullptr) {
+        if (nAdditionalForgeCount == 0) {
+            *pMinerMortgageMultiMiningAdditionalByPlotterId = 0;
+        } else {
+            int64_t nPlotterCapacityTBAdditoinal = std::max((nNetCapacityTB * nAdditionalForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+            *pMinerMortgageMultiMiningAdditionalByPlotterId = consensusParams.BtchdMortgageAmountPerTB * nPlotterCapacityTBAdditoinal;
+        }
+    }
 
     // Old consensus mortgage
-    if (pMinerMortgageOldConsensus) {
+    if (pMinerMortgageOldConsensus != nullptr) {
         if (nTotalForgeCountOldConsensus == -1) {
             *pMinerMortgageOldConsensus = MAX_MONEY;
         } else {
-            int64_t nMinerCapacityTBOldConsensus = std::max((nNetDiffTB * nTotalForgeCountOldConsensus) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+            int64_t nMinerCapacityTBOldConsensus = std::max((nNetCapacityTB * nTotalForgeCountOldConsensus) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
             *pMinerMortgageOldConsensus = consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTBOldConsensus;
         }
     }
 
     // New consensus mortgage
-    int64_t nMinerCapacityTB = std::max((nNetDiffTB * nTotalForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+    int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
     return consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTB;
 }
 

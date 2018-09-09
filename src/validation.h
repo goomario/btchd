@@ -287,7 +287,8 @@ typedef struct {
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const uint64_t &nPlotterId,
                            const CCoinsView &view, const Consensus::Params& consensusParams);
 /** Get miner mortgage */
-CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams, CAmount *pMinerMortgageOldConsensus = nullptr);
+CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams,
+                          CAmount *pMinerMortgageMultiMiningAdditionalByPlotterId = nullptr, CAmount *pMinerMortgageOldConsensus = nullptr);
 /** Get miner mining information */
 std::vector<int> GetPlotterOwnerHeights(int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams);
 std::vector<int> GetMinerOwnerHeights(int nHeight, const CAccountId &nMinerAccountId, const Consensus::Params& consensusParams);
