@@ -356,12 +356,12 @@ static UniValue getBlock(const JSONRPCRequest& request)
     return getLastBlock();
 }
 
-static UniValue getAccountId(const JSONRPCRequest& request)
+static UniValue getPlotterId(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "getAccountId \"passPhrase\"\n"
-            "\nGet account digital id from passphrase.\n"
+            "getPlotterId \"passPhrase\"\n"
+            "\nGet potter id from passphrase.\n"
             "\nArguments:\n"
             "1. \"passPhrase\"      (string, required) The string of the burst account passPhrase\n"
             "\nResult:\n"
@@ -378,45 +378,6 @@ static UniValue getAccountId(const JSONRPCRequest& request)
     return nAccountId;
 }
 
-static UniValue getAccount(const JSONRPCRequest& request)
-{
-    if (request.fHelp) {
-        throw std::runtime_error(
-            "getAccount \"passPhrase\"\n"
-            "\nGet account digital id from passphrase.\n"
-            "\nArguments:\n"
-            "1. \"passPhrase\"      (string, required) The string of the burst account passPhrase\n"
-            "\nResult:\n"
-            "Id\n"
-        );
-    }
-
-    UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 1) {
-        result.pushKV("result", "Missing parameters");
-        return result;
-    }
-    uint64_t nAccountId = poc::parseAccountId(request.params[0].get_str());
-
-    //TODO not use account as design meeting
-    result.pushKV("unconfirmedBalanceNQT", "");
-    result.pushKV("guaranteedBalanceNQT" , "");
-    result.pushKV("accountRS", "BURST-");
-    result.pushKV("forgedBalanceNQT", "");
-    result.pushKV("balanceNQT", "");
-    result.pushKV("publicKey", "");
-    result.pushKV("effectiveBalanceBURST", "");
-    result.pushKV("account" , std::to_string(nAccountId));
-    return result;
-}
-
-static UniValue getTime(const JSONRPCRequest& request)
-{
-    UniValue result(UniValue::VOBJ);
-    result.pushKV("time", GetAdjustedTime());
-    return result;
-}
-
 }}
 
 static const CRPCCommand commands[] =
@@ -430,9 +391,7 @@ static const CRPCCommand commands[] =
     { "hidden",           "getConstants",             &poc::rpc::getConstants,          { } },
     { "hidden",           "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
     { "hidden",           "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },
-    { "hidden",           "getAccountId",             &poc::rpc::getAccountId,          { "passPhrase" } },
-    { "hidden",           "getAccount",               &poc::rpc::getAccount,            { "account" } },
-    { "hidden",           "getTime",                  &poc::rpc::getTime,               { } },
+    { "hidden",           "getPlotterId",             &poc::rpc::getPlotterId,          { "passPhrase" } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)
