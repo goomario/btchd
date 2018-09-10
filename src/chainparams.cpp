@@ -84,7 +84,7 @@ public:
         consensus.BtchdFundAddress = "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE";
         consensus.BtchdFundAddressPool = {
             "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y", //!< 0x20000000, Deprecated!. Last use on v1.1.0.1-30849da
-            "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000006
+            "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000004
             "39Vb1GNSurGoHcQ4aTKrTYC1oNmPppGea3",
             "3Maw3PdwSvtXgBKJ9QPGwRSQW8AgQrGK3W",
             "3Hy3V3sPVpuQaG6ttihfQNh4vcDXumLQq9",
