@@ -1185,7 +1185,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     }
 
     assert(reward.miner0 + reward.miner1 + reward.fund == nSubsidy + nFees);
-    return std::move(reward);
+    return reward;
 }
 
 CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerMortgageOldConsensus)
