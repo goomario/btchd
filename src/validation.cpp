@@ -2089,9 +2089,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
         }
 
-        // All output for miner must be unique miner account
-        for (unsigned int i = 1; i < block.vtx[0].vout.size(); i++) {
-            if (i != fundIndex && block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
+        // All output for miner must be unique miner account, otherwise can steal mortgage of other miner
+        for (unsigned int i = 1; i < block.vtx[0]->vout.size(); i++) {
+            if (i != fundIndex && block.vtx[0]->vout[i].nValue > 0 && GetAccountIdByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->nMinerAccountId) {
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase cannot pays to multi miners"),
                                        REJECT_INVALID, "bad-cb-multiminer");
@@ -2128,9 +2128,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        block.vtx[0]->vout[1].nValue, blockReward.miner1),
                                        REJECT_INVALID, "bad-cb-amount");
 
-            // All output for miner must be unique miner account
-            for (unsigned int i = 2; i < block.vtx[0].vout.size(); i++) {
-                if (block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
+            // All output for miner must be unique miner account, otherwise can steal mortgage of other miner
+            for (unsigned int i = 2; i < block.vtx[0]->vout.size(); i++) {
+                if (block.vtx[0]->vout[i].nValue > 0 && GetAccountIdByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->nMinerAccountId) {
                     return state.DoS(100,
                                      error("ConnectBlock(): coinbase cannot pays to multi miners"),
                                            REJECT_INVALID, "bad-cb-multiminer");
