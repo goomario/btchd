@@ -89,6 +89,40 @@ Section -Main SEC0000
 SectionEnd
 
 Section -post SEC0001
+    # Old version
+    ReadRegStr $0 HKCU "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)" Path
+    !if $0 != ""
+        # Start menu
+        Delete "$SMPROGRAMS\BTCHD Chain\Uninstall BTCHD Chain (@WINDOWS_BITS@-bit).lnk"
+        Delete "$SMPROGRAMS\BTCHD Chain\BTCHD Chain (@WINDOWS_BITS@-bit).lnk"
+        Delete "$SMPROGRAMS\BTCHD Chain\BTCHD Chain (mining, @WINDOWS_BITS@-bit).lnk"
+        Delete "$SMPROGRAMS\BTCHD Chain\BTCHD Chain (testnet, @WINDOWS_BITS@-bit).lnk"
+        RmDir "$SMPROGRAMS\BTCHD Chain"
+        Delete "$SMSTARTUP\BTCHD.lnk"
+        # Install dir
+        Delete $0\btchd-qt.exe
+        Delete $0\COPYING.txt
+        Delete $0\readme.txt
+        RMDir /r $0\daemon
+        RMDir /r $0\doc
+        RMDir /r $0\tools
+        Delete $0\uninstall.exe
+        Delete $0\debug.log
+        Delete $0\db.log
+        RmDir $0
+        # Reg
+        DeleteRegValue HKCU "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)\Components" Main
+        DeleteRegKey HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BTCHD Chain (@WINDOWS_BITS@-bit)"
+        DeleteRegValue HKCU "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)" StartMenuGroup
+        DeleteRegValue HKCU "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)" Path
+        DeleteRegKey /IfEmpty HKCU "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)\Components"
+        DeleteRegKey /IfEmpty HKCU "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)"
+        DeleteRegKey HKCR "BTCHD"
+        # Reg LocalMachine
+        DeleteRegValue HKLM "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)" StartMenuGroup
+        DeleteRegKey /IfEmpty HKLM "SOFTWARE\BTCHD Chain (@WINDOWS_BITS@-bit)"
+    !endif
+    # Current version
     WriteRegStr HKCU "${REGKEY}" Path $INSTDIR
     SetOutPath $INSTDIR
     WriteUninstaller $INSTDIR\uninstall.exe
@@ -141,6 +175,7 @@ Section -un.post UNSEC0001
     DeleteRegKey HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk"
+    Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (mining, @WINDOWS_BITS@-bit).lnk"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, @WINDOWS_BITS@-bit).lnk"
     Delete /REBOOTOK "$SMSTARTUP\BitcoinHD.lnk"
     Delete /REBOOTOK $INSTDIR\uninstall.exe
@@ -151,6 +186,8 @@ Section -un.post UNSEC0001
     DeleteRegKey /IfEmpty HKCU "${REGKEY}\Components"
     DeleteRegKey /IfEmpty HKCU "${REGKEY}"
     DeleteRegKey HKCR "@PACKAGE_TARNAME@"
+    DeleteRegValue HKLM "${REGKEY}" StartMenuGroup
+    DeleteRegKey /IfEmpty HKLM "${REGKEY}"
     RmDir /REBOOTOK $SMPROGRAMS\$StartMenuGroup
     RmDir /REBOOTOK $INSTDIR
     Push $R0

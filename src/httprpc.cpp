@@ -226,6 +226,7 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
         const auto accountId = parameters.find("accountId");
         const auto secretPhrase = parameters.find("secretPhrase");
         const auto height = parameters.find("height");
+        const auto address = parameters.find("address");
         if (accountId != parameters.cend()) {
             // Pool
             jreq.strMethod = "submitNonceToPool";
@@ -233,6 +234,9 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
             jreq.params.pushKV("accountId", accountId->second);
             if (height != parameters.cend()) {
                 jreq.params.pushKV("height", height->second);
+            }
+            if (address != parameters.cend()) {
+                jreq.params.pushKV("address", address->second);
             }
         }
         else if (secretPhrase != parameters.cend()) {
@@ -242,6 +246,9 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
             jreq.params.pushKV("secretPhrase", secretPhrase->second);
             if (height != parameters.cend()) {
                 jreq.params.pushKV("height", height->second);
+            }
+            if (address != parameters.cend()) {
+                jreq.params.pushKV("address", address->second);
             }
         }
         else {

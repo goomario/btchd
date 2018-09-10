@@ -77,7 +77,7 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight, const std::string &address)
 {
     if (IsInitialBlockDownload()) {
         throw std::runtime_error("Is initial block downloading!");
@@ -90,7 +90,7 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     }
 
     uint64_t bestDeadline = 0;
-    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, Params().GetConsensus());
+    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, address, Params().GetConsensus());
 
     result.pushKV("result", "success");
     result.pushKV("deadline", deadline);
@@ -108,6 +108,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"accountId\"       (string, required) The digit string of the brust account ID\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
+            "4. \"address\"         (string, optional) Target address for mining\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -118,7 +119,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2 && request.params.size() != 3) {
+    if (request.params.size() < 2 || request.params.size() > 4) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
@@ -131,7 +132,12 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
         nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight);
+    std::string address;
+    if (request.params.size() >= 4) {
+        address = request.params[3].get_str();
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address);
     return result;
 }
 
@@ -145,6 +151,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"passPhrase\"      (string, optional) The string of the burst account passPhrase\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
+            "4. \"address\"         (string, optional) Target address for mining\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -155,7 +162,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 2 && request.params.size() != 3) {
+    if (request.params.size() < 2 || request.params.size() > 4) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
@@ -168,7 +175,12 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
         nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight);
+    std::string address;
+    if (request.params.size() >= 4) {
+        address = request.params[3].get_str();
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address);
     return result;
 }
 
@@ -344,12 +356,12 @@ static UniValue getBlock(const JSONRPCRequest& request)
     return getLastBlock();
 }
 
-static UniValue getAccountId(const JSONRPCRequest& request)
+static UniValue getPlotterId(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "getAccountId \"passPhrase\"\n"
-            "\nGet account digital id from passphrase.\n"
+            "getPlotterId \"passPhrase\"\n"
+            "\nGet potter id from passphrase.\n"
             "\nArguments:\n"
             "1. \"passPhrase\"      (string, required) The string of the burst account passPhrase\n"
             "\nResult:\n"
@@ -366,61 +378,20 @@ static UniValue getAccountId(const JSONRPCRequest& request)
     return nAccountId;
 }
 
-static UniValue getAccount(const JSONRPCRequest& request)
-{
-    if (request.fHelp) {
-        throw std::runtime_error(
-            "getAccount \"passPhrase\"\n"
-            "\nGet account digital id from passphrase.\n"
-            "\nArguments:\n"
-            "1. \"passPhrase\"      (string, required) The string of the burst account passPhrase\n"
-            "\nResult:\n"
-            "Id\n"
-        );
-    }
-
-    UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 1) {
-        result.pushKV("result", "Missing parameters");
-        return result;
-    }
-    uint64_t nAccountId = poc::parseAccountId(request.params[0].get_str());
-
-    //TODO not use account as design meeting
-    result.pushKV("unconfirmedBalanceNQT", "");
-    result.pushKV("guaranteedBalanceNQT" , "");
-    result.pushKV("accountRS", "BURST-");
-    result.pushKV("forgedBalanceNQT", "");
-    result.pushKV("balanceNQT", "");
-    result.pushKV("publicKey", "");
-    result.pushKV("effectiveBalanceBURST", "");
-    result.pushKV("account" , std::to_string(nAccountId));
-    return result;
-}
-
-static UniValue getTime(const JSONRPCRequest& request)
-{
-    UniValue result(UniValue::VOBJ);
-    result.pushKV("time", GetAdjustedTime());
-    return result;
-}
-
 }}
 
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)                  argNames
   //  --------------------- ------------------------  -----------------------           ----------
-    { "poc",              "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
-    { "poc",              "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
+    { "hidden",           "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
+    { "hidden",           "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height" } },
-    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height"} },
-    { "poc",              "getConstants",             &poc::rpc::getConstants,          { } },
-    { "poc",              "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
-    { "poc",              "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },
-    { "poc",              "getAccountId",             &poc::rpc::getAccountId,          { "passPhrase" } },
-    { "poc",              "getAccount",               &poc::rpc::getAccount,            { "account" } },
-    { "poc",              "getTime",                  &poc::rpc::getTime,               { } },
+    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height", "address" } },
+    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height", "address" } },
+    { "hidden",           "getConstants",             &poc::rpc::getConstants,          { } },
+    { "hidden",           "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
+    { "hidden",           "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },
+    { "hidden",           "getPlotterId",             &poc::rpc::getPlotterId,          { "passPhrase" } },
 };
 
 void RegisterBurstRPCCommands(CRPCTable &t)

@@ -1152,102 +1152,95 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     }
 
     // Calc miner reward and fund royalty
-    BlockReward reward;
+    BlockReward reward = { 0, 0, 0 };
     if (nHeight <= consensusParams.BtchdFundPreMingingHeight) {
         // Fund pre-mining
-        reward.miner = 0;
         reward.fund = nSubsidy + nFees;
     } else if (nHeight <= consensusParams.BtchdNoMortgageHeight) {
         // No mortgage
-        reward.miner = nSubsidy + nFees;
-        reward.fund = 0;
+        reward.miner0 = nSubsidy + nFees;
     } else {
         // Normal mining
         if (nSubsidy > 0) {
+            // Y is 95% reward, N is 30% reward.
+            // -------- Old ------------ => ------------ New ------------
+            // Y[95%->miner, 5%->fund]   =>    Y[95%->miner, 5%->fund] pass
+            // Y[95%->miner, 5%->fund]   =>    N[30%->miner, 70%->fund] pass (impossible case)
+            // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
+            // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
+            CAmount nMinerMortgageOldConsensus;
+            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams, &nMinerMortgageOldConsensus);
             CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
-            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams);
             if (nMinerBalance >= nMinerMortgage) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
+                if (nMinerBalance < nMinerMortgageOldConsensus) {
+                    // Old consensus
+                    reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
+                }
             } else {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
             }
-        } else {
-            reward.fund = 0;
         }
-        reward.miner = nSubsidy + nFees - reward.fund;
+        reward.miner0 = nSubsidy + nFees - reward.fund - reward.miner1;
     }
 
-    assert(reward.miner + reward.fund == nSubsidy + nFees);
+    assert(reward.miner0 + reward.miner1 + reward.fund == nSubsidy + nFees);
     return std::move(reward);
 }
 
-CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams)
+CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerMortgageOldConsensus)
 {
     assert(nHeight <= chainActive.Height());
     int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
     if (nHeight < nBeginHeight) {
-        return (CAmount) 0;
+        if (pMinerMortgageOldConsensus != nullptr) *pMinerMortgageOldConsensus = 0;
+        return 0;
     }
 
-    int nAccountForgeCount = 0;
+    int nTotalForgeCount = 0, nTotalForgeCountOldConsensus = 0;
     uint64_t nAvgBaseTarget = 0; // Average BaseTarget
     for (int index = nHeight; index >= nBeginHeight; index--) {
         CBlockIndex *pblockIndex = chainActive[index];
 
-        // Check plotterId and address relation
-        if (pblockIndex->nPlotterId == nPlotterId && pblockIndex->nMinerAccountId != nMinerAccountId) {
-            // This plotter changed mining wallet
-            return MAX_MONEY;
-        }
+        // 1. Multi plotter ID generate to same wallet (like pool)
+        // 2. Same plotter ID generate to multi wallets (for decrease mortgage)
+        if (pblockIndex->nMinerAccountId == nMinerAccountId || pblockIndex->nPlotterId == nPlotterId) {
+            nTotalForgeCount++;
 
-        // Sum of forge count
-        if (pblockIndex->nMinerAccountId == nMinerAccountId) {
-            nAccountForgeCount++;
+            if (pblockIndex->nMinerAccountId != nMinerAccountId) {
+                // Old consensus: multi mining. Plotter ID bind to multi miner (also multi wallet)
+                nTotalForgeCountOldConsensus = -1;
+            } else if (nTotalForgeCountOldConsensus != -1) {
+                nTotalForgeCountOldConsensus++;
+            }
         }
 
         nAvgBaseTarget += pblockIndex->nBaseTarget;
     }
     nAvgBaseTarget /= (nHeight - nBeginHeight + 1);
 
-    if (nAccountForgeCount == 0) {
-        return (CAmount) 0;
+    assert(nTotalForgeCount >= nTotalForgeCountOldConsensus);
+    if (nTotalForgeCount == 0) {
+        if (pMinerMortgageOldConsensus != nullptr) *pMinerMortgageOldConsensus = 0;
+        return 0;
     }
 
-    int64_t nNetDiffTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
-    int64_t nMinerCapacityTB = std::max((nNetDiffTB * nAccountForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+    // Net capacity
+    int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+
+    // Old consensus mortgage
+    if (pMinerMortgageOldConsensus != nullptr) {
+        if (nTotalForgeCountOldConsensus == -1) {
+            *pMinerMortgageOldConsensus = MAX_MONEY;
+        } else {
+            int64_t nMinerCapacityTBOldConsensus = std::max((nNetCapacityTB * nTotalForgeCountOldConsensus) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+            *pMinerMortgageOldConsensus = consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTBOldConsensus;
+        }
+    }
+
+    // New consensus mortgage
+    int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
     return consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTB;
-}
-
-std::vector<int> GetPlotterOwnerHeights(int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams)
-{
-    assert(nHeight <= chainActive.Height());
-    std::vector<int> vHeight;
-
-    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
-    for (int index = nHeight; index >= nBeginHeight; index--) {
-        CBlockIndex *pblockIndex = chainActive[index];
-        if (pblockIndex->nPlotterId == nPlotterId) {
-            vHeight.push_back(pblockIndex->nHeight);
-        }
-    }
-
-    return std::move(vHeight);
-}
-
-std::vector<int> GetMinerOwnerHeights(int nHeight, const CAccountId &nMinerAccountId, const Consensus::Params& consensusParams)
-{
-    assert(nHeight <= chainActive.Height());
-    std::vector<int> vHeight;
-
-    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
-    for (int index = nHeight; index >= nBeginHeight; index--) {
-        CBlockIndex *pblockIndex = chainActive[index];
-        if (pblockIndex->nMinerAccountId == nMinerAccountId) {
-            vHeight.push_back(pblockIndex->nHeight);
-        }
-    }
-
-    return std::move(vHeight);
 }
 
 bool IsInitialBlockDownload()
@@ -1301,9 +1294,9 @@ static void CheckForkWarningConditions()
     if (IsInitialBlockDownload())
         return;
 
-    // If our best fork is no longer within 72 blocks (+/- 12 hours if no one mines it)
+    // If our best fork is no longer within 144 blocks (+/- 12 hours if no one mines it)
     // of our head, drop it
-    if (pindexBestForkTip && chainActive.Height() - pindexBestForkTip->nHeight >= 72)
+    if (pindexBestForkTip && chainActive.Height() - pindexBestForkTip->nHeight >= 144)
         pindexBestForkTip = nullptr;
 
     if (pindexBestForkTip || (pindexBestInvalid && pindexBestInvalid->nChainWork > chainActive.Tip()->nChainWork + (GetBlockProof(*chainActive.Tip(), Params().GetConsensus()) * 6)))
@@ -1350,7 +1343,7 @@ static void CheckForkWarningConditionsOnNewFork(CBlockIndex* pindexNewForkTip)
     }
 
     // We define a condition where we should warn the user about as a fork of at least 7 blocks
-    // with a tip within 72 blocks (+/- 12 hours if no one mines it) of ours
+    // with a tip within 144 blocks (+/- 12 hours if no one mines it) of ours
     // We use 7 blocks rather arbitrarily as it represents just under 10% of sustained network
     // hash rate operating on the fork.
     // or a chain that is entirely longer than ours and invalid (note that this should be detected by both)
@@ -1358,7 +1351,7 @@ static void CheckForkWarningConditionsOnNewFork(CBlockIndex* pindexNewForkTip)
     // the 7-block condition and from this always have the most-likely-to-cause-warning fork
     if (pfork && (!pindexBestForkTip || pindexNewForkTip->nHeight > pindexBestForkTip->nHeight) &&
             pindexNewForkTip->nChainWork - pfork->nChainWork > (GetBlockProof(*pfork, Params().GetConsensus()) * 7) &&
-            chainActive.Height() - pindexNewForkTip->nHeight < 72)
+            chainActive.Height() - pindexNewForkTip->nHeight < 144)
     {
         pindexBestForkTip = pindexNewForkTip;
         pindexBestForkBase = pfork;
@@ -1372,15 +1365,16 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
     if (!pindexBestInvalid || pindexNew->nChainWork > pindexBestInvalid->nChainWork)
         pindexBestInvalid = pindexNew;
 
-    LogPrintf("%s: invalid block=%s  height=%d  log2_work=%.8g  date=%s\n", __func__,
-      pindexNew->GetBlockHash().ToString(), pindexNew->nHeight,
-      log(pindexNew->nChainWork.getdouble())/log(2.0), DateTimeStrFormat("%Y-%m-%d %H:%M:%S",
-      pindexNew->GetBlockTime()));
+    LogPrintf("%s: invalid block=%s height=%d date='%s' log2_work=%.8g\n", __func__,
+        pindexNew->GetBlockHash().ToString(), pindexNew->nHeight,
+        DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexNew->GetBlockTime()),
+        log(pindexNew->nChainWork.getdouble())/log(2.0));
     CBlockIndex *tip = chainActive.Tip();
     assert (tip);
-    LogPrintf("%s:  current best=%s  height=%d  log2_work=%.8g  date=%s\n", __func__,
-      tip->GetBlockHash().ToString(), chainActive.Height(), log(tip->nChainWork.getdouble())/log(2.0),
-      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", tip->GetBlockTime()));
+    LogPrintf("%s: current best=%s height=%d date='%s' log2_work=%.8g\n", __func__,
+        tip->GetBlockHash().ToString(), chainActive.Height(),
+        DateTimeStrFormat("%Y-%m-%d %H:%M:%S", tip->GetBlockTime()),
+        log(tip->nChainWork.getdouble())/log(2.0));
     CheckForkWarningConditions();
 }
 
@@ -1788,7 +1782,7 @@ VersionBitsCache versionbitscache;
 int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
-    int32_t nVersion = VERSIONBITS_TOP_BITS;
+    int32_t nVersion = VERSIONBITS_TOP_BITS | VERSIONBITS_BHDV2_BITS;
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         ThresholdState state = VersionBitsState(pindexPrev, params, (Consensus::DeploymentPos)i, versionbitscache);
@@ -2026,24 +2020,123 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
+    if (pindex->nMinerAccountId == 0) {
+        return state.DoS(100,
+                         error("ConnectBlock(): Invalidate miner address"),
+                               REJECT_INVALID, "bad-cb-address");
+    }
+
     BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->nMinerAccountId, pindex->nPlotterId, view, chainparams.GetConsensus());
-    if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.fund)
+    if (block.vtx[0]->GetValueOut() > blockReward.miner0 + blockReward.miner1 + blockReward.fund)
         return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
-                               block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.fund),
+                               block.vtx[0]->GetValueOut(), blockReward.miner0 + blockReward.miner1 + blockReward.fund),
                                REJECT_INVALID, "bad-cb-amount");
 
-    if (blockReward.fund != 0) {
-        if (block.vtx[0]->vout.size() < 2 || block.vtx[0]->vout[1].nValue < blockReward.fund)
-            return state.DoS(100,
-                         error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
-                               (block.vtx[0]->vout.size() < 2 ? 0 : block.vtx[0]->vout[1].nValue), blockReward.fund),
-                               REJECT_INVALID, "bad-cb-amount-fund");
+    if (blockReward.miner1 != 0 || blockReward.fund != 0) {
+        // All output for miner must be one miner account
+    }
 
-        if (GetAccountId(block.vtx[0]->vout[1].scriptPubKey) != chainparams.GetConsensus().BtchdFundAccountId)
-            return state.DoS(100,
-                         error("ConnectBlock(): coinbase pays nothing to fund"),
-                               REJECT_INVALID, "bad-cb-amount-fund-nothing");
+    if (pindex->nVersion&VERSIONBITS_BHDV2_BITS) {
+        // New block
+        unsigned int fundIndex = std::numeric_limits<unsigned int>::max();
+        // Check real fund
+        if (blockReward.fund != 0) {
+            fundIndex = (blockReward.miner1 != 0) ? 2 : 1;
+            // Check output size
+            if (fundIndex >= block.vtx[0]->vout.size())
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase not pays to fund (limit=%d)",
+                                       blockReward.fund),
+                                       REJECT_INVALID, "bad-cb-amount");
+
+            // Check output address
+            std::string address;
+            {
+                CTxDestination dest;
+                if (ExtractDestination(block.vtx[0]->vout[fundIndex].scriptPubKey, dest)) {
+                    address = EncodeDestination(dest);
+                }
+            }
+            if (chainparams.GetConsensus().BtchdFundAddressPool.find(address) == chainparams.GetConsensus().BtchdFundAddressPool.end())
+                return state.DoS(100,
+                                    error("ConnectBlock(): coinbase not pays to fund account (limit=%d)",
+                                        blockReward.miner1),
+                                        REJECT_INVALID, "bad-cb-amount");
+
+            // Check output amount
+            if (block.vtx[0]->vout[fundIndex].nValue < blockReward.fund)
+                return state.DoS(100,
+                                    error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
+                                        block.vtx[0]->vout[fundIndex].nValue, blockReward.fund),
+                                        REJECT_INVALID, "bad-cb-amount");
+        }
+
+        // Check output amount for miner[1], let old wallet can verify
+        if (blockReward.miner1 != 0) {
+            // Check output size
+            if (block.vtx[0]->vout.size() < 2)
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase not pay to miner[1] (limit=%d)",
+                                       blockReward.fund),
+                                       REJECT_INVALID, "bad-cb-amount");
+
+            // Check output amount
+            if (block.vtx[0]->vout[1].nValue < blockReward.miner1)
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase pays too less to miner[1] (actual=%d vs limit=%d)",
+                                       block.vtx[0]->vout[1].nValue, blockReward.miner1),
+                                       REJECT_INVALID, "bad-cb-amount");
+        }
+
+        // All output for miner must be unique miner account
+        for (unsigned int i = 1; i < block.vtx.size(); i++) {
+            if (i != fundIndex && block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase cannot pays to multi miners"),
+                                       REJECT_INVALID, "bad-cb-multiminer");
+            }
+        }
+    } else {
+        // Old block
+        if (blockReward.miner1 != 0) {
+            // Check output size
+            if (block.vtx[0]->vout.size() < 2)
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase not pay to fund (limit=%d)",
+                                       blockReward.fund),
+                                       REJECT_INVALID, "bad-cb-amount");
+
+            // Check output address
+            std::string address;
+            {
+                CTxDestination dest;
+                if (ExtractDestination(block.vtx[0]->vout[1].scriptPubKey, dest)) {
+                    address = EncodeDestination(dest);
+                }
+            }
+            if (chainparams.GetConsensus().BtchdFundAddressPool.find(address) == chainparams.GetConsensus().BtchdFundAddressPool.end())
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase not pays to fund account (limit=%d)",
+                                       blockReward.miner1),
+                                       REJECT_INVALID, "bad-cb-amount");
+
+            // Check output amount
+            if (block.vtx[0]->vout[1].nValue < blockReward.miner1)
+                return state.DoS(100,
+                                 error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
+                                       block.vtx[0]->vout[1].nValue, blockReward.miner1),
+                                       REJECT_INVALID, "bad-cb-amount");
+
+            // All output for miner must be unique miner account
+            for (unsigned int i = 2; i < block.vtx.size(); i++) {
+                if (block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
+                    return state.DoS(100,
+                                     error("ConnectBlock(): coinbase cannot pays to multi miners"),
+                                           REJECT_INVALID, "bad-cb-multiminer");
+                }
+            }
+        }
     }
 
     if (!control.Wait())
@@ -2256,11 +2349,12 @@ void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainPar
             DoWarning(strWarning);
         }
     }
-    LogPrintf("%s: new best=%s height=%d version=0x%08x log2_work=%.8g tx=%lu date='%s' progress=%f cache=%.1fMiB(%utxo)", __func__,
-      pindexNew->GetBlockHash().ToString(), pindexNew->nHeight, pindexNew->nVersion,
-      log(pindexNew->nChainWork.getdouble())/log(2.0), (unsigned long)pindexNew->nChainTx,
-      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexNew->GetBlockTime()),
-      GuessVerificationProgress(chainParams.TxData(), pindexNew), pcoinsTip->DynamicMemoryUsage() * (1.0 / (1<<20)), pcoinsTip->GetCacheSize());
+    LogPrintf("%s: new best=%s height=%d version=0x%08x tx=%lu date='%s' progress=%f log2_work=%.8g cache=%.1fMiB(%utxo)", __func__,
+        pindexNew->GetBlockHash().ToString(), pindexNew->nHeight, pindexNew->nVersion, (unsigned long)pindexNew->nChainTx,
+        DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexNew->GetBlockTime()),
+        GuessVerificationProgress(chainParams.TxData(), pindexNew),
+        log(pindexNew->nChainWork.getdouble())/log(2.0),
+        pcoinsTip->DynamicMemoryUsage() * (1.0 / (1<<20)), pcoinsTip->GetCacheSize());
     if (!warningMessages.empty())
         LogPrintf(" warning='%s'", boost::algorithm::join(warningMessages, ", "));
     LogPrintf("\n");
@@ -2902,7 +2996,7 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
     if (IsWitnessEnabled(pindexNew->pprev, consensusParams)) {
         pindexNew->nStatus |= BLOCK_OPT_WITNESS;
     }
-    pindexNew->nMinerAccountId = GetAccountId(block.vtx[0]->vout[0].scriptPubKey);
+    pindexNew->nMinerAccountId = GetAccountIdByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
     pindexNew->RaiseValidity(BLOCK_VALID_TRANSACTIONS);
     setDirtyBlockIndex.insert(pindexNew);
 
@@ -3198,7 +3292,8 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
 
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
-        return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
+        return state.Invalid(false, REJECT_INVALID, "time-too-new",
+                             strprintf("block timestamp too far in the future %d seconds", block.GetBlockTime() - nAdjustedTime));
 
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
     // check for version 2, 3 and 4 upgrades
@@ -3519,7 +3614,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     CBlockIndex indexDummy(block);
     indexDummy.pprev = pindexPrev;
     indexDummy.nHeight = pindexPrev->nHeight + 1;
-    indexDummy.nMinerAccountId = GetAccountId(block.vtx[0]->vout[0].scriptPubKey);
+    indexDummy.nMinerAccountId = GetAccountIdByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
 
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))

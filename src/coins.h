@@ -11,6 +11,7 @@
 #include <core_memusage.h>
 #include <hash.h>
 #include <memusage.h>
+#include <script/standard.h>
 #include <serialize.h>
 #include <uint256.h>
 
@@ -350,6 +351,9 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool 
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
 
 //! Utility function to get account id with given scriptPubKey.
-CAccountId GetAccountId(const CScript &scriptPubKey);
+CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey);
+
+//! Utility function to get account id with given CTxDestination.
+CAccountId GetAccountIdByTxDestination(const CTxDestination &dest);
 
 #endif // BITCOIN_COINS_H

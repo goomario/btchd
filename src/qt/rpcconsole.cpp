@@ -881,7 +881,7 @@ void RPCConsole::updateMortgage()
         if (!IsValidDestination(dest)) {
             return;
         }
-        CAccountId nAccountId = GetAccountId(GetScriptForDestination(dest));
+        CAccountId nAccountId = GetAccountIdByTxDestination(dest);
         if (nAccountId == 0) {
             return;
         }
@@ -891,7 +891,7 @@ void RPCConsole::updateMortgage()
         ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
 
         // Master address capacity and mortgage
-        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
+        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), std::numeric_limits<uint64_t>::max(), Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
         ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QLabel { color: red; }" : "");

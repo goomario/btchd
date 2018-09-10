@@ -6,9 +6,12 @@
 #ifndef BITCOIN_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_PARAMS_H
 
+#include <amount.h>
 #include <uint256.h>
+
 #include <limits>
 #include <map>
+#include <set>
 #include <string>
 
 namespace Consensus {
@@ -49,8 +52,7 @@ struct BIP9Deployment {
 struct Params {
     /** BitcoinHD Fund address */
     std::string BtchdFundAddress;
-    /** BitcoinHD Fund account ID */
-    uint64_t BtchdFundAccountId;
+    std::set<std::string> BtchdFundAddressPool;
     /** BitcoinHD fund pre-mining height */
     int BtchdFundPreMingingHeight;
     /** BitcoinHD fund royalty percent */
@@ -60,7 +62,7 @@ struct Params {
     /** BitcoinHD miner no mortgage height before */
     int BtchdNoMortgageHeight;
     /** BitcoinHD miner mortgage amount per TB */
-    int BtchdMortgageAmountPerTB;
+    CAmount BtchdMortgageAmountPerTB;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;

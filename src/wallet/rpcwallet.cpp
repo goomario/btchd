@@ -3436,7 +3436,7 @@ UniValue getmortgage(const JSONRPCRequest& request)
             "1. plotterId       (string, optional) Plotter ID\n"
             "2. height          (integer, optional) Mortgage height\n"
             "\nResult:\n"
-            "The mortage amount of wallet\n"
+            "The mortage information of wallet master address\n"
             "\n"
             "\nExample:\n"
             + HelpExampleCli("getmortgage", "\"0\" 90000")
@@ -3462,7 +3462,7 @@ UniValue getmortgage(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
 
-    uint64_t nPlotterId = 0;
+    uint64_t nPlotterId = std::numeric_limits<uint64_t>::max();
     if (request.params.size() >= 1) {
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
     }

@@ -315,7 +315,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
         // Insert items
         {
             for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-                if (it->second.nCoins == 0)
+                if (it->first.nAccountId == 0 || it->second.nCoins == 0)
                     continue;
 
                 LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", it->first.nAccountId, it->first.nHeight,
@@ -371,7 +371,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
 
     // Commit changes
     LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", (batch.SizeEstimate() + accountDiffCoinsMemorySize) * (1.0 / 1048576.0));
-    bool ret = db.WriteBatch(batch) && autoTx.Commit();
+    bool ret = autoTx.Commit() && db.WriteBatch(batch);
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
     LogPrint(BCLog::COINDB, "Committed %u changed account balance outputs to account database...\n", (unsigned int)accountChanged);
     if (ret) {
