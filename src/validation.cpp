@@ -2090,7 +2090,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
 
         // All output for miner must be unique miner account
-        for (unsigned int i = 1; i < block.vtx.size(); i++) {
+        for (unsigned int i = 1; i < block.vtx[0].vout.size(); i++) {
             if (i != fundIndex && block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase cannot pays to multi miners"),
@@ -2129,7 +2129,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
 
             // All output for miner must be unique miner account
-            for (unsigned int i = 2; i < block.vtx.size(); i++) {
+            for (unsigned int i = 2; i < block.vtx[0].vout.size(); i++) {
                 if (block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
                     return state.DoS(100,
                                      error("ConnectBlock(): coinbase cannot pays to multi miners"),
