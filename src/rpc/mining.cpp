@@ -874,7 +874,7 @@ UniValue getmortgageofaddress(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    uint64_t nPlotterId = 0;
+    uint64_t nPlotterId = std::numeric_limits<uint64_t>::max();
     if (request.params.size() >= 2) {
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
     }
