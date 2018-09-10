@@ -16,6 +16,7 @@
 #include <validation.h>
 #include <miner.h>
 #include <net.h>
+#include <poc/poc.h>
 #include <policy/fees.h>
 #include <pow.h>
 #include <rpc/blockchain.h>
@@ -27,7 +28,9 @@
 #include <validationinterface.h>
 #include <warnings.h>
 
+#include <map>
 #include <memory>
+#include <string>
 #include <stdint.h>
 
 unsigned int ParseConfirmTarget(const UniValue& value)
@@ -702,8 +705,8 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
-    CAccountId nAccountId = GetAccountIdByTxDestination(dest);
-    if (nAccountId == 0) {
+    CAccountId nMinerAccountId = GetAccountIdByTxDestination(dest);
+    if (nMinerAccountId == 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
@@ -711,81 +714,142 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
     }
 
-    CAmount nMortgageAmountMultiMiningAdditional;
-    CAmount nMortgageAmount = GetMinerMortgage(nAccountId, nHeight - 1, nPlotterId, Params().GetConsensus(), &nMortgageAmountMultiMiningAdditional);
-    CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, nHeight - 1);
+    typedef struct {
+        int lastForgeHeight;
+        int forgeCount;
+        int forgeCountAdditional;
+        std::map<CAccountId, int> bindedMinerAtLastHeight; // miner => height
+    } PlotterItem;
+    std::map<uint64_t, PlotterItem> mapBindPlotter; // Plotter ID => PlotterItem
+    int64_t nNetCapacityTB = 0;
+    int nTotalForgeCount = 0;
+
+    // Calc
+    int nEndHeight = nHeight - 1;
+    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+    if (nEndHeight >= nBeginHeight) {
+        uint64_t nAvgBaseTarget = 0;
+        // Current account
+        for (int index = nEndHeight; index >= nBeginHeight; index--) {
+            CBlockIndex *pblockIndex = chainActive[index];
+            nAvgBaseTarget += pblockIndex->nBaseTarget;
+
+            if (pblockIndex->nMinerAccountId == nMinerAccountId) {
+                nTotalForgeCount++;
+
+                // Bind plotter ID to miner
+                auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
+                if (itPlotter == mapBindPlotter.end()) {
+                    mapBindPlotter.insert(std::make_pair(pblockIndex->nPlotterId, PlotterItem{index, 1, 0, {}}));
+                } else {
+                    itPlotter->second.forgeCount++;
+                }
+            } else if (pblockIndex->nPlotterId == nPlotterId) {
+                nTotalForgeCount++;
+            }
+        }
+        // Other account
+        for (int index = nEndHeight; index >= nBeginHeight; index--) {
+            CBlockIndex *pblockIndex = chainActive[index];
+            auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
+            if (itPlotter == mapBindPlotter.end())
+                continue;
+            if (pblockIndex->nMinerAccountId != nMinerAccountId && pblockIndex->nPlotterId == itPlotter->first)
+                itPlotter->second.forgeCountAdditional++;
+            if (itPlotter->second.bindedMinerAtLastHeight.find(pblockIndex->nMinerAccountId) == itPlotter->second.bindedMinerAtLastHeight.end()) {
+                itPlotter->second.bindedMinerAtLastHeight[pblockIndex->nMinerAccountId] = index;
+            }
+        }
+
+        nAvgBaseTarget /= (nEndHeight - nBeginHeight + 1);
+        nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+    }
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("mortgage", ValueFromAmount(nMortgageAmount));
-    if (nMortgageAmountMultiMiningAdditional != 0) {
-        result.pushKV("mortgageOfMultiMiningAdditional", ValueFromAmount(nMortgageAmountMultiMiningAdditional));
-    }
-    result.pushKV("balance", ValueFromAmount(nBalance));
+    result.pushKV("balance", ValueFromAmount(pcoinsTip->GetAccountBalance(nMinerAccountId, nEndHeight)));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
-    result.pushKV("accountId", std::to_string(static_cast<uint64_t>(nAccountId)));
-    if (nPlotterId != 0) {
-        result.pushKV("plotterId", std::to_string(nPlotterId));
-    }
     if (nHeight < Params().GetConsensus().BtchdNoMortgageHeight + 1) {
         result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
     }
-    if (nMortgageAmount != 0) {
-        result.pushKV("capacity", std::to_string(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB) +" TB");
-    }
+    if (nTotalForgeCount == 0) {
+        result.pushKV("capacity", "0 TB");
+        result.pushKV("mortgage", ValueFromAmount(0));
+    } else {
+        assert(nEndHeight >= nBeginHeight);
+        int64_t nCapacityTB;
 
-    // Relation plotterId and address
-    if (nPlotterId == 0) {
-        std::set<uint64_t> bindPlotterId;
-        std::vector<int> vHeight = GetMinerOwnerHeights(nHeight - 1, nAccountId, Params().GetConsensus());
-        for (auto it = vHeight.rbegin(); it != vHeight.rend(); it++) {
-            CBlockIndex *pblockIndex = chainActive[*it];
-            if (pblockIndex != nullptr) {
-                bindPlotterId.insert(pblockIndex->nPlotterId);
+        // Miner
+        nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+        result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+        result.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+
+        // Bind plotter
+        UniValue objBindPlotters(UniValue::VOBJ);
+        for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
+            CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
+            nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+
+            UniValue item(UniValue::VOBJ);
+            item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+            item.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+            {
+                UniValue lastBlock(UniValue::VOBJ);
+                lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
+                lastBlock.pushKV("blockheight", it->second.lastForgeHeight);
+                item.pushKV("lastBlock", lastBlock);
             }
-        }
 
-        // Bind
-        UniValue arrBindPlotter(UniValue::VARR);
-        for (auto itPlotter = bindPlotterId.cbegin(); itPlotter != bindPlotterId.cend(); itPlotter++) {
-            arrBindPlotter.push_back(*itPlotter);
-        }
-        result.pushKV("bindPlotter", arrBindPlotter);
+            if (it->second.forgeCountAdditional > 0) {
+                nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                UniValue objAdditional(UniValue::VOBJ);
+                objAdditional.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+                objAdditional.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+                item.pushKV("additional", objAdditional);
+            }
 
-        // Multi
-        UniValue objMultiMiningPlotter(UniValue::VOBJ);
-        for (auto itPlotter = bindPlotterId.cbegin(); itPlotter != bindPlotterId.cend(); itPlotter++) {
-            std::set<CAccountId> existMinerAccount;
-            UniValue objAddress(UniValue::VOBJ);
-            std::vector<int> vPlotterHeight = GetPlotterOwnerHeights(nHeight - 1, *itPlotter, Params().GetConsensus());
-            for (auto itHeight = vPlotterHeight.cbegin(); itHeight != vPlotterHeight.cend(); itHeight++) {
-                CBlockIndex *pblockIndex = chainActive[*itHeight];
-                if (pblockIndex != nullptr && existMinerAccount.find(pblockIndex->nMinerAccountId) == existMinerAccount.end()) {
-                    existMinerAccount.insert(pblockIndex->nMinerAccountId);
-
+            // Multi mining
+            if (it->second.bindedMinerAtLastHeight.size() > 1) {
+                UniValue objMultiMining(UniValue::VOBJ);
+                for (auto itBinded = it->second.bindedMinerAtLastHeight.cbegin(); itBinded != it->second.bindedMinerAtLastHeight.cend(); itBinded++) {
+                    CBlockIndex *plastblockIndex = chainActive[itBinded->second];
+                    // Get coinbase output address
+                    std::string address;
                     CBlock block;
-                    if (pblockIndex->nTx > 0 && ReadBlockFromDisk(block, pblockIndex, Params().GetConsensus())) {
+                    if (plastblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastblockIndex, Params().GetConsensus())) {
                         CTxDestination dest;
                         if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
-                            UniValue item(UniValue::VOBJ);
-                            item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
-                            item.pushKV("blockheight", pblockIndex->nHeight);
-                            item.pushKV("accountId", std::to_string(pblockIndex->nMinerAccountId));
-                            objAddress.pushKV(EncodeDestination(dest), item);
+                            address = EncodeDestination(dest);
                         }
                     }
-                }
-            }
-            if (objAddress.size() >= 2) {
-                objMultiMiningPlotter.pushKV(std::to_string(*itPlotter), objAddress);
-            }
-        }
-        result.pushKV("multiMining", objMultiMiningPlotter);
-    }
 
-    if (nMortgageAmount > nBalance) {
-        result.pushKV("message", "Low mortgage!");
+                    UniValue item(UniValue::VOBJ);
+                    {
+                        int forgeCount = 0;
+                        for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                            CBlockIndex *pblockIndex = chainActive[index];
+                            if (pblockIndex->nMinerAccountId == plastblockIndex->nMinerAccountId && pblockIndex->nPlotterId == it->first)
+                                forgeCount++;
+                        }
+                        nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                        item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+                        item.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+                    }
+                    {
+                        UniValue lastBlock(UniValue::VOBJ);
+                        lastBlock.pushKV("blockhash", plastblockIndex->GetBlockHash().GetHex());
+                        lastBlock.pushKV("blockheight", plastblockIndex->nHeight);
+                        item.pushKV("lastBlock", lastBlock);
+                    }
+                    objMultiMining.pushKV(address, item);
+                }
+                item.pushKV("multiMining", objMultiMining);
+            }
+            objBindPlotters.pushKV(std::to_string(it->first), item);
+        }
+        result.pushKV("bindPlotters", objBindPlotters);
     }
+    result.pushKV("minerAccountId", std::to_string(static_cast<uint64_t>(nMinerAccountId)));
 
     return result;
 }
@@ -801,7 +865,7 @@ UniValue getmortgageofaddress(const JSONRPCRequest& request)
             "2. plotterId       (string, optional) Plotter ID\n"
             "3. height          (integer, optional) Mortgage height\n"
             "\nResult:\n"
-            "The mortage amount of address\n"
+            "The mortage information of address\n"
             "\n"
             "\nExample:\n"
             + HelpExampleCli("getmortgageofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
@@ -852,21 +916,55 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
     }
 
-    UniValue result(UniValue::VOBJ);
-    // Address => <block,plotter>
-    std::set<CAccountId> exist;
-    std::vector<int> vHeight = GetPlotterOwnerHeights(nHeight - 1, nPlotterId, Params().GetConsensus());
-    for (auto it = vHeight.cbegin(); it != vHeight.cend(); it++) {
-        CBlockIndex *pblockIndex = chainActive[*it];
-        if (pblockIndex == nullptr || exist.find(pblockIndex->nMinerAccountId) != exist.end()) {
-            continue;
+    typedef struct {
+        int lastForgeHeight;
+        int forgeCount;
+    } BindInfo;
+    std::map<CAccountId, BindInfo> mapBindInfo;
+    int nTotalForgeCount = 0;
+    int64_t nNetCapacityTB = 0, nCapacityTB = 0;
+
+    int nEndHeight = nHeight - 1;
+    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+    if (nEndHeight >= nBeginHeight) {
+        uint64_t nAvgBaseTarget = 0;
+        for (int index = nEndHeight; index >= nBeginHeight; index--) {
+            CBlockIndex *pblockIndex = chainActive[index];
+            nAvgBaseTarget += pblockIndex->nBaseTarget;
+            if (pblockIndex->nPlotterId != nPlotterId) continue;
+
+            nTotalForgeCount++;
+
+            auto it = mapBindInfo.find(pblockIndex->nMinerAccountId);
+            if (it == mapBindInfo.end()) {
+                mapBindInfo.insert(std::make_pair(pblockIndex->nMinerAccountId, BindInfo{index, 1}));
+            } else {
+                it->second.forgeCount++;
+            }
         }
-        exist.insert(pblockIndex->nMinerAccountId);
+
+        nAvgBaseTarget /= (nEndHeight - nBeginHeight + 1);
+        nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("plotterId", std::to_string(nPlotterId));
+    if (nTotalForgeCount == 0) {
+        result.pushKV("capacity", "0 TB");
+    } else {
+        nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+        result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+        result.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+    }
+
+    UniValue objBindAddress(UniValue::VOBJ);
+    for (auto it = mapBindInfo.cbegin(); it != mapBindInfo.end(); it++) {
+        CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
 
         // Get coinbase output address
         std::string address;
         CBlock block;
-        if (pblockIndex->nTx > 0 && ReadBlockFromDisk(block, pblockIndex, Params().GetConsensus())) {
+        if (plastForgeblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastForgeblockIndex, Params().GetConsensus())) {
             CTxDestination dest;
             if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
                 address = EncodeDestination(dest);
@@ -874,11 +972,18 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         }
 
         UniValue item(UniValue::VOBJ);
-        item.pushKV("blockhash", pblockIndex->GetBlockHash().GetHex());
-        item.pushKV("blockheight", pblockIndex->nHeight);
-        item.pushKV("accountId", std::to_string(pblockIndex->nMinerAccountId));
-        result.pushKV(address, item);
+        nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+        item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+        item.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+        {
+            UniValue lastBlock(UniValue::VOBJ);
+            lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
+            lastBlock.pushKV("blockheight", plastForgeblockIndex->nHeight);
+            item.pushKV("lastBlock", lastBlock);
+        }
+        objBindAddress.pushKV(address, item);
     }
+    result.pushKV("bindAddresses", objBindAddress);
 
     return result;
 }

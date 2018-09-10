@@ -3436,7 +3436,7 @@ UniValue getmortgage(const JSONRPCRequest& request)
             "1. plotterId       (string, optional) Plotter ID\n"
             "2. height          (integer, optional) Mortgage height\n"
             "\nResult:\n"
-            "The mortage amount of wallet\n"
+            "The mortage information of wallet master address\n"
             "\n"
             "\nExample:\n"
             + HelpExampleCli("getmortgage", "\"0\" 90000")

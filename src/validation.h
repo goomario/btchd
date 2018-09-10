@@ -289,9 +289,6 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
 /** Get miner mortgage */
 CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams,
                           CAmount *pMinerMortgageMultiMiningAdditionalByPlotterId = nullptr, CAmount *pMinerMortgageOldConsensus = nullptr);
-/** Get miner mining information */
-std::vector<int> GetPlotterOwnerHeights(int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams);
-std::vector<int> GetMinerOwnerHeights(int nHeight, const CAccountId &nMinerAccountId, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);
