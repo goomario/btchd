@@ -315,7 +315,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
         // Insert items
         {
             for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-                if (it->second.nCoins == 0)
+                if (it->first.nAccountId == 0 || it->second.nCoins == 0)
                     continue;
 
                 LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", it->first.nAccountId, it->first.nHeight,
