@@ -133,8 +133,8 @@ private:
     /** show detailed information on ui about selected node */
     void updateNodeDetail(const CNodeCombinedStats *stats);
 
-    /** update mortgage */
-    void updateMortgage();
+    /** update pledge */
+    void updatePledge();
 
     enum ColumnWidths
     {

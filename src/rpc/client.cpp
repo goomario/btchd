@@ -127,8 +127,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "logging", 0, "include" },
     { "logging", 1, "exclude" },
     { "disconnectnode", 1, "nodeid" },
-    { "getmortgage", 1, "height" },
-    { "getmortgageofaddress", 2, "height" },
+    { "getpledge", 1, "height" },
+    { "getpledgeofaddress", 2, "height" },
     { "getplottermininginfo", 1, "height" },
     // Echo with conversion (For testing only)
     { "echojson", 0, "arg0" },

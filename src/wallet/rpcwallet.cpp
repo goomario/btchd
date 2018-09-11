@@ -3420,7 +3420,7 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
     return response;
 }
 
-UniValue getmortgage(const JSONRPCRequest& request)
+UniValue getpledge(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
 
@@ -3430,17 +3430,17 @@ UniValue getmortgage(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 2)
         throw std::runtime_error(
-            "getmortgage plotterId height\n"
+            "getpledge plotterId height\n"
             "Get mortage amount of wallet.\n"
             "\nArguments:\n"
             "1. plotterId       (string, optional) Plotter ID\n"
-            "2. height          (integer, optional) Mortgage height\n"
+            "2. height          (integer, optional) Pledge height\n"
             "\nResult:\n"
             "The mortage information of wallet master address\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getmortgage", "\"0\" 90000")
-            + HelpExampleRpc("getmortgage", "\"0\", 90000")
+            + HelpExampleCli("getpledge", "\"0\" 90000")
+            + HelpExampleRpc("getpledge", "\"0\", 90000")
             );
 
     LOCK2(cs_main, pwallet->cs_wallet);
@@ -3472,7 +3472,7 @@ UniValue getmortgage(const JSONRPCRequest& request)
         nHeight = request.params[1].get_int();
     }
 
-    return GetMortgage(EncodeDestination(dest), nPlotterId, nHeight);
+    return GetPledge(EncodeDestination(dest), nPlotterId, nHeight);
 }
 
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
@@ -3542,7 +3542,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
-    { "generating",         "getmortgage",              &getmortgage,              {"plotterId", "height"} },
+    { "generating",         "getpledge",              &getpledge,              {"plotterId", "height"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)

@@ -550,14 +550,14 @@
         </widget>
        </item>
        <item row="21" column="0">
-        <widget class="QLabel" name="labelMiningRequireMortgage">
+        <widget class="QLabel" name="labelMiningRequirePledge">
          <property name="text">
-          <string>Mortgage</string>
+          <string>Pledge</string>
          </property>
         </widget>
        </item>
        <item row="21" column="1">
-        <widget class="QLabel" name="miningRequireMortgage">
+        <widget class="QLabel" name="miningRequirePledge">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>
