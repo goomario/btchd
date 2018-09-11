@@ -1156,8 +1156,8 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     if (nHeight <= consensusParams.BtchdFundPreMingingHeight) {
         // Fund pre-mining
         reward.fund = nSubsidy + nFees;
-    } else if (nHeight <= consensusParams.BtchdNoMortgageHeight) {
-        // No mortgage
+    } else if (nHeight <= consensusParams.BtchdNoPledgeHeight) {
+        // No pledge
         reward.miner0 = nSubsidy + nFees;
     } else {
         // Normal mining
@@ -1168,17 +1168,17 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
             // Y[95%->miner, 5%->fund]   =>    N[30%->miner, 70%->fund] pass (impossible case)
             // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
             // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
-            CAmount nMinerMortgageOldConsensus;
-            CAmount nMinerMortgage = GetMinerMortgage(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams, &nMinerMortgageOldConsensus);
+            CAmount nMinerPledgeOldConsensus;
+            CAmount nMinerPledge = GetMinerPledge(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams, &nMinerPledgeOldConsensus);
             CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
-            if (nMinerBalance >= nMinerMortgage) {
+            if (nMinerBalance >= nMinerPledge) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
-                if (nMinerBalance < nMinerMortgageOldConsensus) {
+                if (nMinerBalance < nMinerPledgeOldConsensus) {
                     // Old consensus
-                    reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
+                    reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
                 }
             } else {
-                reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowMortgage) / 100;
+                reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
             }
         }
         reward.miner0 = nSubsidy + nFees - reward.fund - reward.miner1;
@@ -1188,12 +1188,12 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     return reward;
 }
 
-CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerMortgageOldConsensus)
+CAmount GetMinerPledge(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerPledgeOldConsensus)
 {
     assert(nHeight <= chainActive.Height());
     int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
     if (nHeight < nBeginHeight) {
-        if (pMinerMortgageOldConsensus != nullptr) *pMinerMortgageOldConsensus = 0;
+        if (pMinerPledgeOldConsensus != nullptr) *pMinerPledgeOldConsensus = 0;
         return 0;
     }
 
@@ -1203,7 +1203,7 @@ CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const u
         CBlockIndex *pblockIndex = chainActive[index];
 
         // 1. Multi plotter ID generate to same wallet (like pool)
-        // 2. Same plotter ID generate to multi wallets (for decrease mortgage)
+        // 2. Same plotter ID generate to multi wallets (for decrease pledge)
         if (pblockIndex->nMinerAccountId == nMinerAccountId || pblockIndex->nPlotterId == nPlotterId) {
             nTotalForgeCount++;
 
@@ -1221,26 +1221,26 @@ CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const u
 
     assert(nTotalForgeCount >= nTotalForgeCountOldConsensus);
     if (nTotalForgeCount == 0) {
-        if (pMinerMortgageOldConsensus != nullptr) *pMinerMortgageOldConsensus = 0;
+        if (pMinerPledgeOldConsensus != nullptr) *pMinerPledgeOldConsensus = 0;
         return 0;
     }
 
     // Net capacity
     int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
 
-    // Old consensus mortgage
-    if (pMinerMortgageOldConsensus != nullptr) {
+    // Old consensus pledge
+    if (pMinerPledgeOldConsensus != nullptr) {
         if (nTotalForgeCountOldConsensus == -1) {
-            *pMinerMortgageOldConsensus = MAX_MONEY;
+            *pMinerPledgeOldConsensus = MAX_MONEY;
         } else {
             int64_t nMinerCapacityTBOldConsensus = std::max((nNetCapacityTB * nTotalForgeCountOldConsensus) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-            *pMinerMortgageOldConsensus = consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTBOldConsensus;
+            *pMinerPledgeOldConsensus = consensusParams.BtchdPledgeAmountPerTB * nMinerCapacityTBOldConsensus;
         }
     }
 
-    // New consensus mortgage
+    // New consensus pledge
     int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-    return consensusParams.BtchdMortgageAmountPerTB * nMinerCapacityTB;
+    return consensusParams.BtchdPledgeAmountPerTB * nMinerCapacityTB;
 }
 
 bool IsInitialBlockDownload()
@@ -2089,7 +2089,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
         }
 
-        // All output for miner must be unique miner account, otherwise can steal mortgage of other miner
+        // All output for miner must be unique miner account, otherwise can steal pledge of other miner
         for (unsigned int i = 1; i < block.vtx[0]->vout.size(); i++) {
             if (i != fundIndex && block.vtx[0]->vout[i].nValue > 0 && GetAccountIdByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->nMinerAccountId) {
                 return state.DoS(100,
@@ -2128,7 +2128,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        block.vtx[0]->vout[1].nValue, blockReward.miner1),
                                        REJECT_INVALID, "bad-cb-amount");
 
-            // All output for miner must be unique miner account, otherwise can steal mortgage of other miner
+            // All output for miner must be unique miner account, otherwise can steal pledge of other miner
             for (unsigned int i = 2; i < block.vtx[0]->vout.size(); i++) {
                 if (block.vtx[0]->vout[i].nValue > 0 && GetAccountIdByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->nMinerAccountId) {
                     return state.DoS(100,

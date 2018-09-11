@@ -95,9 +95,9 @@ public:
 
         consensus.BtchdFundPreMingingHeight = 84000 + 1; // 21M * 10% = 2.1M, 2.1M/25=84000, + 1 to deprecated test data
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
-        consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
-        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
-        consensus.BtchdMortgageAmountPerTB = 3 * COIN;
+        consensus.BtchdFundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BtchdNoPledgeHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BtchdPledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.fPocAllowMinDifficultyBlocks = false;
@@ -220,9 +220,9 @@ public:
 
         consensus.BtchdFundPreMingingHeight = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
-        consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
-        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 4000;
-        consensus.BtchdMortgageAmountPerTB = 3 * COIN;
+        consensus.BtchdFundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BtchdNoPledgeHeight = consensus.BtchdFundPreMingingHeight + 4000;
+        consensus.BtchdPledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.fPocAllowMinDifficultyBlocks = false;
@@ -322,9 +322,9 @@ public:
 
         consensus.BtchdFundPreMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BtchdFundRoyaltyPercent = 5; // 5%
-        consensus.BtchdFundRoyaltyPercentOnLowMortgage = 70; // 70%
-        consensus.BtchdNoMortgageHeight = consensus.BtchdFundPreMingingHeight + 10;
-        consensus.BtchdMortgageAmountPerTB = 3 * COIN;
+        consensus.BtchdFundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BtchdNoPledgeHeight = consensus.BtchdFundPreMingingHeight + 10;
+        consensus.BtchdPledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 300;
         consensus.fPocAllowMinDifficultyBlocks = true;

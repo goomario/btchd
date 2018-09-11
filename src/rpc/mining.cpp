@@ -699,7 +699,7 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
-UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeight)
+UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight)
 {
     CTxDestination dest = DecodeDestination(address);
     if (!IsValidDestination(dest)) {
@@ -769,12 +769,12 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     result.pushKV("balance", ValueFromAmount(pcoinsTip->GetAccountBalance(nMinerAccountId, nEndHeight)));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
-    if (nHeight < Params().GetConsensus().BtchdNoMortgageHeight + 1) {
-        result.pushKV("start", Params().GetConsensus().BtchdNoMortgageHeight + 1);
+    if (nHeight < Params().GetConsensus().BtchdNoPledgeHeight + 1) {
+        result.pushKV("start", Params().GetConsensus().BtchdNoPledgeHeight + 1);
     }
     if (nTotalForgeCount == 0) {
         result.pushKV("capacity", "0 TB");
-        result.pushKV("mortgage", ValueFromAmount(0));
+        result.pushKV("pledge", ValueFromAmount(0));
     } else {
         assert(nEndHeight >= nBeginHeight);
         int64_t nCapacityTB;
@@ -782,7 +782,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
         // Miner
         nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
         result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-        result.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
 
         // Bind plotter
         UniValue objBindPlotters(UniValue::VOBJ);
@@ -792,7 +792,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
 
             UniValue item(UniValue::VOBJ);
             item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-            item.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
             {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
@@ -804,7 +804,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
                 nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
                 UniValue objAdditional(UniValue::VOBJ);
                 objAdditional.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                objAdditional.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+                objAdditional.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
                 item.pushKV("additional", objAdditional);
             }
 
@@ -833,7 +833,7 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
                         }
                         nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
                         item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                        item.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+                        item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
                     }
                     {
                         UniValue lastBlock(UniValue::VOBJ);
@@ -854,22 +854,22 @@ UniValue GetMortgage(const std::string &address, uint64_t nPlotterId, int nHeigh
     return result;
 }
 
-UniValue getmortgageofaddress(const JSONRPCRequest& request)
+UniValue getpledgeofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
-            "getmortgageofaddress address plotterId height\n"
+            "getpledgeofaddress address plotterId height\n"
             "Get mortage amount of address.\n"
             "\nArguments:\n"
             "1. address         (string, required) The BitcoinHD address.\n"
             "2. plotterId       (string, optional) Plotter ID\n"
-            "3. height          (integer, optional) Mortgage height\n"
+            "3. height          (integer, optional) Pledge height\n"
             "\nResult:\n"
             "The mortage information of address\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getmortgageofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
-            + HelpExampleRpc("getmortgageofaddress", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", \"0\", 90000")
+            + HelpExampleCli("getpledgeofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
+            + HelpExampleRpc("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", \"0\", 90000")
             );
 
     LOCK(cs_main);
@@ -884,7 +884,7 @@ UniValue getmortgageofaddress(const JSONRPCRequest& request)
         nHeight = request.params[2].get_int();
     }
 
-    return GetMortgage(request.params[0].get_str(), nPlotterId, nHeight);
+    return GetPledge(request.params[0].get_str(), nPlotterId, nHeight);
 }
 
 UniValue getplottermininginfo(const JSONRPCRequest& request)
@@ -895,7 +895,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
             "Get mining information of plotter ID.\n"
             "\nArguments:\n"
             "1. plotterId       (string, required) Plotter ID\n"
-            "2. height          (integer, optional) Mortgage height\n"
+            "2. height          (integer, optional) Pledge height\n"
             "\nResult:\n"
             "The mining information of plotter ID\n"
             "\n"
@@ -954,7 +954,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     } else {
         nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
         result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-        result.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
     }
 
     UniValue objBindAddress(UniValue::VOBJ);
@@ -974,7 +974,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         UniValue item(UniValue::VOBJ);
         nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
         item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-        item.pushKV("mortgage", ValueFromAmount(Params().GetConsensus().BtchdMortgageAmountPerTB * nCapacityTB));
+        item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
         {
             UniValue lastBlock(UniValue::VOBJ);
             lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
@@ -1199,7 +1199,7 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "getmortgageofaddress",   &getmortgageofaddress,   {"address", "plotterId", "height"} },
+    { "mining",             "getpledgeofaddress",   &getpledgeofaddress,   {"address", "plotterId", "height"} },
     { "mining",             "getplottermininginfo",   &getplottermininginfo,   {"plotterId", "height"} },
 
 

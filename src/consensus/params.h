@@ -57,12 +57,12 @@ struct Params {
     int BtchdFundPreMingingHeight;
     /** BitcoinHD fund royalty percent */
     int BtchdFundRoyaltyPercent;
-    /** BitcoinHD fund royalty percent on low mortgage */
-    int BtchdFundRoyaltyPercentOnLowMortgage;
-    /** BitcoinHD miner no mortgage height before */
-    int BtchdNoMortgageHeight;
-    /** BitcoinHD miner mortgage amount per TB */
-    CAmount BtchdMortgageAmountPerTB;
+    /** BitcoinHD fund royalty percent on low pledge */
+    int BtchdFundRoyaltyPercentOnLowPledge;
+    /** BitcoinHD miner no pledge height before */
+    int BtchdNoPledgeHeight;
+    /** BitcoinHD miner pledge amount per TB */
+    CAmount BtchdPledgeAmountPerTB;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;

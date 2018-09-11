@@ -286,8 +286,8 @@ typedef struct {
 } BlockReward;
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const uint64_t &nPlotterId,
                            const CCoinsView &view, const Consensus::Params& consensusParams);
-/** Get miner mortgage */
-CAmount GetMinerMortgage(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams, CAmount *pMinerMortgageOldConsensus = nullptr);
+/** Get miner pledge */
+CAmount GetMinerPledge(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams, CAmount *pMinerPledgeOldConsensus = nullptr);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

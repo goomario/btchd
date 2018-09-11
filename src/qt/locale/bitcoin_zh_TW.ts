@@ -1675,7 +1675,7 @@
         <translation>估算的算力</translation>
     </message>
     <message>
-        <source>Mortgage</source>
+        <source>Pledge</source>
         <translation>挖礦需要的抵押額</translation>
     </message>
     <message>

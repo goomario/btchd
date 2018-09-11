@@ -850,7 +850,7 @@ void RPCConsole::setNumBlocks(int count, const QDateTime& blockDate, double nVer
         ui->numberOfBlocks->setText(QString::number(count));
         ui->lastBlockTime->setText(blockDate.toString(Qt::SystemLocaleLongDate));
 
-        updateMortgage();
+        updatePledge();
     }
 }
 
@@ -867,10 +867,10 @@ void RPCConsole::setMempoolSize(long numberOfTxs, size_t dynUsage)
 void RPCConsole::walletChanged(WalletModel *walletModel)
 {
     ui->masterAddress->setText(walletModel != nullptr ? walletModel->getMasterAddress() : "");
-    updateMortgage();
+    updatePledge();
 }
 
-void RPCConsole::updateMortgage()
+void RPCConsole::updatePledge()
 {
     const QString masterAddress = ui->masterAddress->text();
     if (!masterAddress.isEmpty() && !IsInitialBlockDownload()) {
@@ -890,11 +890,11 @@ void RPCConsole::updateMortgage()
         CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
         ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
 
-        // Master address capacity and mortgage
-        CAmount nMortgageAmount = GetMinerMortgage(nAccountId, chainActive.Height(), std::numeric_limits<uint64_t>::max(), Params().GetConsensus());
-        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nMortgageAmount / Params().GetConsensus().BtchdMortgageAmountPerTB * 1024));
-        ui->miningRequireMortgage->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nMortgageAmount, false, BitcoinUnits::separatorAlways));
-        ui->miningRequireMortgage->setStyleSheet(nMortgageAmount > nBalance ? "QLabel { color: red; }" : "");
+        // Master address capacity and pledge
+        CAmount nPledgeAmount = GetMinerPledge(nAccountId, chainActive.Height(), std::numeric_limits<uint64_t>::max(), Params().GetConsensus());
+        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BtchdPledgeAmountPerTB * 1024));
+        ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
+        ui->miningRequirePledge->setStyleSheet(nPledgeAmount > nBalance ? "QLabel { color: red; }" : "");
 
         // Master bind plotter ID
         QString strBindPlotters;
@@ -919,7 +919,7 @@ void RPCConsole::updateMortgage()
         ui->masterAddressBalance->setText("N/A");
         ui->estimateCapacity->setText("N/A");
         ui->bindPlotterId->setText("N/A");
-        ui->miningRequireMortgage->setText("N/A");
+        ui->miningRequirePledge->setText("N/A");
     }
 }
 
