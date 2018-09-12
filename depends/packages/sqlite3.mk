@@ -9,7 +9,7 @@ define $(package)_config_cmds
 endef
 
 define $(package)_build_cmds
-  $($(package)_cc) $($(package)_cflags) -c sqlite3.c -o sqlite3.o && \
+  $($(package)_cc) $($(package)_cflags) -c sqlite3.c -o sqlite3.o -fPIC && \
   $($(package)_ar) -r libsqlite3.a sqlite3.o
 endef
 
