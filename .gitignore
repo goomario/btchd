@@ -121,4 +121,8 @@ contrib/devtools/split-debug.sh
 src/qt/tools
 release/
 
+# mac deploy
+dist/
+*.background.tiff
+
 .vscode/
