@@ -13,12 +13,10 @@ define $(package)_build_cmds
   $($(package)_ar) -r libsqlite3.a sqlite3.o
 endef
 
+define $(package)_build_cmds
+  $(MAKE)
+endef
+
 define $(package)_stage_cmds
-  mkdir -p $($(package)_staging_dir)/$(host_prefix)/include && \
-  mkdir -p $($(package)_staging_dir)/$(host_prefix)/lib && \
-  mkdir -p $($(package)_staging_dir)/$(host_prefix)/lib/pkgconfig && \
-  cp $($(package)_extract_dir)/sqlite3.h $($(package)_staging_dir)/$(host_prefix)/include/ && \
-  cp $($(package)_extract_dir)/sqlite3ext.h $($(package)_staging_dir)/$(host_prefix)/include/ && \
-  cp $($(package)_extract_dir)/libsqlite3.a $($(package)_staging_dir)/$(host_prefix)/lib/ && \
-  cp $($(package)_extract_dir)/sqlite3.pc $($(package)_staging_dir)/$(host_prefix)/lib/pkgconfig/
+  $(MAKE) DESTDIR=$($(package)_staging_dir) install
 endef
