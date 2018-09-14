@@ -4,8 +4,17 @@ $(package)_download_path=https://www.sqlite.org/2018
 $(package)_file_name=sqlite-autoconf-3240000.tar.gz
 $(package)_sha256_hash=d9d14e88c6fb6d68de9ca0d1f9797477d82fc3aed613558f87ffbdbbc5ceb74a
 
+define $(package)_set_vars
+$(package)_build_opts= CC="$($(package)_cc)"
+$(package)_build_opts+=CFLAGS="$($(package)_cflags) $($(package)_cppflags) -fPIC"
+$(package)_build_opts+=RANLIB="$($(package)_ranlib)"
+$(package)_build_opts+=AR="$($(package)_ar)"
+$(package)_build_opts_darwin+=AR="$($(package)_libtool)"
+$(package)_build_opts_darwin+=ARFLAGS="-o"
+endef
+
 define $(package)_config_cmds
-  ./configure --prefix=$(host_prefix)
+  ./configure --prefix=$(host_prefix) --disable-shared
 endef
 
 define $(package)_build_cmds
@@ -13,10 +22,12 @@ define $(package)_build_cmds
   $($(package)_ar) -r libsqlite3.a sqlite3.o
 endef
 
-define $(package)_build_cmds
-  $(MAKE)
-endef
-
 define $(package)_stage_cmds
-  $(MAKE) DESTDIR=$($(package)_staging_dir) install
+  mkdir -p $($(package)_staging_dir)/$(host_prefix)/include && \
+  mkdir -p $($(package)_staging_dir)/$(host_prefix)/lib && \
+  mkdir -p $($(package)_staging_dir)/$(host_prefix)/lib/pkgconfig && \
+  cp $($(package)_extract_dir)/sqlite3.h $($(package)_staging_dir)/$(host_prefix)/include/ && \
+  cp $($(package)_extract_dir)/sqlite3ext.h $($(package)_staging_dir)/$(host_prefix)/include/ && \
+  cp $($(package)_extract_dir)/libsqlite3.a $($(package)_staging_dir)/$(host_prefix)/lib/ && \
+  cp $($(package)_extract_dir)/sqlite3.pc $($(package)_staging_dir)/$(host_prefix)/lib/pkgconfig/
 endef
