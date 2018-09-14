@@ -4,12 +4,21 @@ $(package)_download_path=https://www.sqlite.org/2018
 $(package)_file_name=sqlite-autoconf-3240000.tar.gz
 $(package)_sha256_hash=d9d14e88c6fb6d68de9ca0d1f9797477d82fc3aed613558f87ffbdbbc5ceb74a
 
+define $(package)_set_vars
+$(package)_build_opts= CC="$($(package)_cc)"
+$(package)_build_opts+=CFLAGS="$($(package)_cflags) $($(package)_cppflags) -fPIC"
+$(package)_build_opts+=RANLIB="$($(package)_ranlib)"
+$(package)_build_opts+=AR="$($(package)_ar)"
+$(package)_build_opts_darwin+=AR="$($(package)_libtool)"
+$(package)_build_opts_darwin+=ARFLAGS="-o"
+endef
+
 define $(package)_config_cmds
-  ./configure --prefix=$(host_prefix)
+  ./configure --prefix=$(host_prefix) --disable-shared
 endef
 
 define $(package)_build_cmds
-  $($(package)_cc) $($(package)_cflags) -c sqlite3.c -o sqlite3.o && \
+  $($(package)_cc) $($(package)_cflags) -c sqlite3.c -o sqlite3.o -fPIC && \
   $($(package)_ar) -r libsqlite3.a sqlite3.o
 endef
 
