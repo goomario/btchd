@@ -337,7 +337,7 @@
     </message>
     <message>
         <source>Syncing Headers (%1%)...</source>
-        <translation>正在同步前導資料(%1%)中...</translation>
+        <translation>正在同步前導資料(%1%)中。此過程可能需要比較長的時間，請耐心等待......</translation>
     </message>
     <message>
         <source>Reindexing blocks on disk...</source>
@@ -410,6 +410,14 @@
     <message>
         <source>&amp;Settings</source>
         <translation>設定(&amp;S)</translation>
+    </message>
+    <message>
+        <source>&amp;Tools</source>
+        <translation>工具(&amp;T)</translation>
+    </message>
+    <message>
+        <source>&amp;Generate mining account</source>
+        <translation>生成挖礦訊息(&amp;G)</translation>
     </message>
     <message>
         <source>&amp;Help</source>

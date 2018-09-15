@@ -337,7 +337,7 @@
     </message>
     <message>
         <source>Syncing Headers (%1%)...</source>
-        <translation>同步区块头 (%1%)...</translation>
+        <translation>同步区块头 (%1%)。此过程可能需要比较长的时间，请耐心等待...</translation>
     </message>
     <message>
         <source>Reindexing blocks on disk...</source>
