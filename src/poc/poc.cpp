@@ -117,11 +117,10 @@ void CheckDeadlineThread()
         std::shared_ptr<CBlock> pblock;
         uint64_t deadline = 0;
         int height = 0;
-        CBlockIndex *pindexTip = nullptr, *pindexPrev = nullptr;
         {
             LOCK(cs_main);
             if (!mapGenerators.empty()) {
-                pindexTip = chainActive.Tip();
+                CBlockIndex *pindexTip = chainActive.Tip();
                 int64_t nCurrentTime = std::max(pindexTip->GetMedianTimePast() + 1, GetAdjustedTime());
                 auto it = mapGenerators.begin();
                 while (it != mapGenerators.end() && !pblock) {
@@ -138,7 +137,6 @@ void CheckDeadlineThread()
                             } else {
                                 height = it->first;
                                 deadline = it->second.deadline;
-                                pindexPrev = pindexTip;
                             }
                         } else {
                             // Continue wait forge time
@@ -159,6 +157,7 @@ void CheckDeadlineThread()
                                 LogPrint(BCLog::POC, "Generate block(Snatch): height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", preDeadline=%" PRIu64 "\n",
                                     it->first, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.bestBlockDeadline);
                                 // Invalidate tip block
+                                // TODO felix rewrite this logic
                                 CValidationState state;
                                 if (!InvalidateBlock(state, Params(), pindexTip)) {
                                     LogPrint(BCLog::POC, "Generate block(Snatch): invalidate current tip block error, %s\n", state.GetRejectReason());
@@ -172,8 +171,8 @@ void CheckDeadlineThread()
                                         // Snatch block
                                         height = it->first;
                                         deadline = it->second.deadline;
-                                        pindexPrev = pindexTip->pprev;
                                     }
+                                    ResetBlockFailureFlags(pindexTip);
                                 }
                             } else {
                                 // Continue wait forge time
@@ -192,24 +191,10 @@ void CheckDeadlineThread()
             }
         }
 
-        // Forge or Rollback
-        if (pindexPrev != nullptr && pindexTip != nullptr) {
-            // ProcessNewBlock
-            if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-                LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                    height, pblock->nNonce, pblock->nPlotterId, deadline);
-            }
-
-            // Revalidate block
-            if (pindexPrev != pindexTip) {
-                {
-                    LOCK(cs_main);
-                    ResetBlockFailureFlags(pindexTip);
-                }
-                
-                CValidationState state;
-                ActivateBestChain(state, Params());
-            }
+        // Broadcast
+        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                height, pblock->nNonce, pblock->nPlotterId, deadline);
         }
     }
 }
