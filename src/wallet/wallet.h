@@ -1168,6 +1168,11 @@ public:
      * This function will automatically add the necessary scripts to the wallet.
      */
     CTxDestination AddAndGetDestinationForScript(const CScript& script, OutputType);
+
+    /**
+     * Get the wallet primary address
+     */
+    std::string GetPrimaryAddress();
 };
 
 /** A key allocated from the key pool. */
@@ -1231,6 +1236,9 @@ public:
         READWRITE(vchPubKey);
     }
 };
+
+//! Primary account name
+static const std::string PRIMARY_ACCOUNTNAME = "\x02\x03\x03";
 
 // Helper for producing a bunch of max-sized low-S signatures (eg 72 bytes)
 // ContainerType is meant to hold pair<CWalletTx *, int>, and be iterable

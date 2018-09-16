@@ -356,4 +356,7 @@ CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey);
 //! Utility function to get account id with given CTxDestination.
 CAccountId GetAccountIdByTxDestination(const CTxDestination &dest);
 
+//! Utility function to get account id with given address.
+CAccountId GetAccountIdByAddress(const std::string &address);
+
 #endif // BITCOIN_COINS_H

@@ -421,14 +421,14 @@
         </widget>
        </item>
        <item row="17" column="0">
-        <widget class="QLabel" name="labelMasterAddress">
+        <widget class="QLabel" name="labelPrimaryAddress">
          <property name="text">
-          <string>Master address</string>
+          <string>Primary address</string>
          </property>
         </widget>
        </item>
        <item row="17" column="1">
-        <widget class="QLabel" name="masterAddress">
+        <widget class="QLabel" name="primaryAddress">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>
@@ -444,14 +444,14 @@
         </widget>
        </item>
        <item row="18" column="0">
-        <widget class="QLabel" name="labelMasterAddressBalance">
+        <widget class="QLabel" name="labelPrimaryAddressBalance">
          <property name="text">
-          <string>Master address balance</string>
+          <string>Primary address balance</string>
          </property>
         </widget>
        </item>
        <item row="18" column="1">
-        <widget class="QLabel" name="masterAddressBalance">
+        <widget class="QLabel" name="primaryAddressBalance">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>

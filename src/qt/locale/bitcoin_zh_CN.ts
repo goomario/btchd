@@ -1691,11 +1691,11 @@
         <translation>当前钱包</translation>
     </message>
     <message>
-        <source>Master address</source>
+        <source>Primary address</source>
         <translation>首先地址</translation>
     </message>
     <message>
-        <source>Master address balance</source>
+        <source>Primary address balance</source>
         <translation>首先地址余额</translation>
     </message>
     <message>

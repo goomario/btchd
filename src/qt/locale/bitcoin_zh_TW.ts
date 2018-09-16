@@ -1667,11 +1667,11 @@
         <translation>當前錢包</translation>
     </message>
     <message>
-        <source>Master address</source>
+        <source>Primary address</source>
         <translation>主要地址</translation>
     </message>
     <message>
-        <source>Master address balance</source>
+        <source>Primary address balance</source>
         <translation>主要地址餘額</translation>
     </message>
     <message>

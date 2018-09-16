@@ -866,37 +866,33 @@ void RPCConsole::setMempoolSize(long numberOfTxs, size_t dynUsage)
 
 void RPCConsole::walletChanged(WalletModel *walletModel)
 {
-    ui->masterAddress->setText(walletModel != nullptr ? walletModel->getMasterAddress() : "");
+    ui->primaryAddress->setText(walletModel != nullptr ? walletModel->getPrimaryAddress() : "");
     updatePledge();
 }
 
 void RPCConsole::updatePledge()
 {
-    const QString masterAddress = ui->masterAddress->text();
-    if (!masterAddress.isEmpty() && !IsInitialBlockDownload()) {
+    const QString primaryAddress = ui->primaryAddress->text();
+    if (!primaryAddress.isEmpty() && !IsInitialBlockDownload()) {
         LOCK(cs_main);
 
         // Get account id of address
-        CTxDestination dest = DecodeDestination(masterAddress.toStdString());
-        if (!IsValidDestination(dest)) {
-            return;
-        }
-        CAccountId nAccountId = GetAccountIdByTxDestination(dest);
+        CAccountId nAccountId = GetAccountIdByAddress(primaryAddress.toStdString());
         if (nAccountId == 0) {
             return;
         }
 
-        // Master address total balance
+        // Primary address total balance
         CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
-        ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
+        ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
 
-        // Master address capacity and pledge
+        // Primary address capacity and pledge
         CAmount nPledgeAmount = GetMinerPledge(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BtchdPledgeAmountPerTB * 1024));
         ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequirePledge->setStyleSheet(nPledgeAmount > nBalance ? "QLabel { color: red; }" : "");
 
-        // Master bind plotter ID
+        // Bind plotter ID
         QString strBindPlotters;
         {
             std::set<uint64_t> existPlotterId;
@@ -916,7 +912,7 @@ void RPCConsole::updatePledge()
         }
         ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
     } else {
-        ui->masterAddressBalance->setText("N/A");
+        ui->primaryAddressBalance->setText("N/A");
         ui->estimateCapacity->setText("N/A");
         ui->bindPlotterId->setText("N/A");
         ui->miningRequirePledge->setText("N/A");
