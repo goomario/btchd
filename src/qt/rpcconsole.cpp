@@ -891,7 +891,7 @@ void RPCConsole::updatePledge()
         ui->masterAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
 
         // Master address capacity and pledge
-        CAmount nPledgeAmount = GetMinerPledge(nAccountId, chainActive.Height(), std::numeric_limits<uint64_t>::max(), Params().GetConsensus());
+        CAmount nPledgeAmount = GetMinerPledge(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BtchdPledgeAmountPerTB * 1024));
         ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequirePledge->setStyleSheet(nPledgeAmount > nBalance ? "QLabel { color: red; }" : "");
