@@ -874,7 +874,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    uint64_t nPlotterId = std::numeric_limits<uint64_t>::max();
+    uint64_t nPlotterId = 0;
     if (request.params.size() >= 2) {
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
     }
@@ -1199,9 +1199,8 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "getpledgeofaddress",   &getpledgeofaddress,   {"address", "plotterId", "height"} },
+    { "mining",             "getpledgeofaddress",     &getpledgeofaddress,     {"address", "plotterId", "height"} },
     { "mining",             "getplottermininginfo",   &getplottermininginfo,   {"plotterId", "height"} },
-
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
 

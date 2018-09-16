@@ -3462,7 +3462,7 @@ UniValue getpledge(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
 
-    uint64_t nPlotterId = std::numeric_limits<uint64_t>::max();
+    uint64_t nPlotterId = 0;
     if (request.params.size() >= 1) {
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
     }
