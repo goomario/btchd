@@ -124,10 +124,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000f22e0ecba1e72b9");
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000101cf389cd621ba5");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xe64abdd6ba26a53f90144a145f816e710ad2ff6e39ecc6d323ee0e7f29cda926"); // 96800
+        consensus.defaultAssumeValid = uint256S("0xbe54eaa59966ddc0bd1a9a43b019c2d43519edced0cd4090813e45f8ccb32210"); // 97540
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -156,11 +156,14 @@ public:
         vSeeds.push_back("seed2-chain.btchd.net");
         vSeeds.push_back("seed3-chain.btchd.net");
         vSeeds.push_back("seed4-chain.btchd.net");
-        vSeeds.push_back("seed5-chain.btchd.net");
-        vSeeds.push_back("seed6-chain.btchd.net");
-        vSeeds.push_back("seed7-chain.btchd.net");
-        vSeeds.push_back("seed8-chain.btchd.net");
-        vSeeds.push_back("seed9-chain.btchd.net");
+        vSeeds.push_back("seed0-chain.btchd.org");
+        vSeeds.push_back("seed1-chain.btchd.org");
+        vSeeds.push_back("seed2-chain.btchd.org");
+        vSeeds.push_back("seed3-chain.btchd.org");
+        vSeeds.push_back("seed0-chain.btchd.info");
+        vSeeds.push_back("seed0-chain.btchd.top");
+        vSeeds.push_back("seed0-chain.btchd.pro");
+        vSeeds.push_back("bhd.chain.nanvann.top");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
@@ -194,15 +197,17 @@ public:
                 { 92000, uint256S("0xfe0f3540c630cde2afc5e5081a4aec25ea43a57e1bf603e403054e218a3dc9cf") },
                 { 94000, uint256S("0x7dd832ac7da06f01cf8db0e6e9917dab12e37d009f7369cff00c0484cdd42a22") },
                 { 96000, uint256S("0x18ada0a6fbd634489a4b05318731035fa048bdbb381084b10071107b3790dd3b") },
+                { 97500, uint256S("0x1cf0cd1f1e699f205c122fc2c8d09e96c012bd845dee0a4ef7b5df1b41caa983") },
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 5441930fcd3427c501546fcac3091f1ee3852069487e219fb1479fd1350566e8 (height 95200)
-            1536556074, // * UNIX timestamp of last known number of transactions
-            95200, // * total number of transactions between genesis and that timestamp
-                   //   (the tx=... number in the SetBestChain debug.log lines)
-            0      // * estimated number of transactions per second after that timestamp
+            // Call by getchaintxstats
+            // Data as of block be54eaa59966ddc0bd1a9a43b019c2d43519edced0cd4090813e45f8ccb32210 (height 97540)
+            1537233645, // * UNIX timestamp of last known number of transactions
+            101470,     // * total number of transactions between genesis and that timestamp
+                        //   (the tx=... number in the SetBestChain debug.log lines)
+            0.004       // * estimated number of transactions per second after that timestamp
         };
     }
 };
@@ -274,6 +279,8 @@ public:
         vSeeds.push_back("testnet-seed1-chain.btchd.net");
         vSeeds.push_back("testnet-seed2-chain.btchd.net");
         vSeeds.push_back("testnet-seed3-chain.btchd.net");
+        vSeeds.push_back("testnet-seed0-chain.btchd.org");
+        vSeeds.push_back("testnet-seed1-chain.btchd.org");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
