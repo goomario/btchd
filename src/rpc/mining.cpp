@@ -701,11 +701,7 @@ UniValue submitblock(const JSONRPCRequest& request)
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight)
 {
-    CTxDestination dest = DecodeDestination(address);
-    if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    }
-    CAccountId nMinerAccountId = GetAccountIdByTxDestination(dest);
+    CAccountId nMinerAccountId = GetAccountIdByAddress(address);
     if (nMinerAccountId == 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }

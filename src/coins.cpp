@@ -4,6 +4,7 @@
 
 #include <coins.h>
 
+#include <base58.h>
 #include <consensus/consensus.h>
 #include <pubkey.h>
 #include <random.h>
@@ -400,4 +401,13 @@ CAccountId GetAccountIdByTxDestination(const CTxDestination &dest) {
     CAccountId nAccountId;
     boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
     return nAccountId;
+}
+
+CAccountId GetAccountIdByAddress(const std::string &address) {
+    CTxDestination dest = DecodeDestination(address);
+    if (IsValidDestination(dest)) {
+        return GetAccountIdByTxDestination(dest);
+    } else {
+        return 0;
+    }
 }

@@ -1667,16 +1667,16 @@
         <translation>當前錢包</translation>
     </message>
     <message>
-        <source>Master address</source>
+        <source>Primary address</source>
         <translation>主要地址</translation>
     </message>
     <message>
-        <source>Master address balance</source>
+        <source>Primary address balance</source>
         <translation>主要地址餘額</translation>
     </message>
     <message>
         <source>Bind plotter ID</source>
-        <translation>綁定到錢包的算力</translation>
+        <translation>綁定到錢包的算力ID</translation>
     </message>
     <message>
         <source>Estimate capacity</source>
@@ -1685,6 +1685,10 @@
     <message>
         <source>Pledge</source>
         <translation>挖礦需要的抵押額</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>無</translation>
     </message>
     <message>
         <source>&amp;Reset</source>

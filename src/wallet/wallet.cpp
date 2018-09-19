@@ -4313,3 +4313,20 @@ CTxDestination CWallet::AddAndGetDestinationForScript(const CScript& script, Out
     default: assert(false);
     }
 }
+
+std::string CWallet::GetPrimaryAddress()
+{
+    AssertLockHeld(cs_wallet);
+    if (!IsLocked()) {
+        TopUpKeyPool();
+    }
+
+    // Generate a new key that is added to wallet
+    CPubKey newKey;
+    if (!GetKeyFromPool(newKey)) {
+        return std::string();
+    }
+    LearnRelatedScripts(newKey, g_address_type);
+    CTxDestination dest = GetDestinationForKey(newKey, g_address_type);
+    return EncodeDestination(dest);
+}
