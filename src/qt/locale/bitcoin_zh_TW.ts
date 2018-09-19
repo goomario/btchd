@@ -1676,7 +1676,7 @@
     </message>
     <message>
         <source>Bind plotter ID</source>
-        <translation>綁定到錢包的算力</translation>
+        <translation>綁定到錢包的算力ID</translation>
     </message>
     <message>
         <source>Estimate capacity</source>
@@ -1685,6 +1685,10 @@
     <message>
         <source>Pledge</source>
         <translation>挖礦需要的抵押額</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>無</translation>
     </message>
     <message>
         <source>&amp;Reset</source>

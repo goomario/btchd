@@ -1692,15 +1692,15 @@
     </message>
     <message>
         <source>Primary address</source>
-        <translation>首先地址</translation>
+        <translation>首选地址</translation>
     </message>
     <message>
         <source>Primary address balance</source>
-        <translation>首先地址余额</translation>
+        <translation>首选地址余额</translation>
     </message>
     <message>
         <source>Bind plotter ID</source>
-        <translation>绑定到钱包的算力</translation>
+        <translation>绑定到钱包的算力ID</translation>
     </message>
     <message>
         <source>Estimate capacity</source>
@@ -1709,6 +1709,10 @@
     <message>
         <source>Pledge</source>
         <translation>挖矿需要的抵押额</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>无</translation>
     </message>
     <message>
         <source>&amp;Reset</source>
