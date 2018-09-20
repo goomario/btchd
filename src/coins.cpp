@@ -59,23 +59,6 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
     return ret;
 }
 
-void CCoinsViewCache::EraseAccountCoin(const COutPoint &outpoint) {
-    for (auto itDiff = cacheAccountDiffCoins.begin(); itDiff != cacheAccountDiffCoins.end();) {
-        auto itAudit = itDiff->second.vAudit.find(outpoint);
-        if (itAudit != itDiff->second.vAudit.end()) {
-            itDiff->second.nCoins -= itAudit->second;
-            itDiff->second.vAudit.erase(itAudit);
-            if (itDiff->second.vAudit.empty()) {
-                // Delete pair<accountId,height> on diff balance is zero
-                assert(itDiff->second.nCoins == 0);
-                itDiff = cacheAccountDiffCoins.erase(itDiff);
-                continue;
-            }
-        }
-        itDiff++;
-    }
-}
-
 bool CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     CCoinsMap::const_iterator it = FetchCoin(outpoint);
     if (it != cacheCoins.end()) {
@@ -105,13 +88,16 @@ void CCoinsViewCache::AddCoin(int nHeight, const COutPoint &outpoint, Coin&& coi
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 
-    if (!inserted) {
-        // Erase account coin record on replace
-        EraseAccountCoin(outpoint);
+    // Add coin
+    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[nHeight][GetAccountIdByScriptPubKey(it->second.coin.out.scriptPubKey)];
+    diffCoinsValue.nDiffCoins += it->second.coin.out.nValue;
+    CAmount &coinAudit = diffCoinsValue.vAudit[outpoint];
+    if (coinAudit > 0) {
+        // Replace coin
+        diffCoinsValue.nDiffCoins -= coinAudit;
+        coinAudit = 0;
     }
-    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, nHeight)];
-    diffCoinsValue.vAudit[outpoint] += it->second.coin.out.nValue;
-    diffCoinsValue.nCoins += it->second.coin.out.nValue;
+    coinAudit += it->second.coin.out.nValue;
 }
 
 void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool check) {
@@ -130,10 +116,10 @@ bool CCoinsViewCache::SpendCoin(int nHeight, const COutPoint &outpoint, Coin* mo
     if (it == cacheCoins.end()) return false;
 
     // Spent coin
-    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[MakeAccountDiffCoinsKey(it->second.coin.out.scriptPubKey, nHeight)];
+    CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[nHeight][GetAccountIdByScriptPubKey(it->second.coin.out.scriptPubKey)];
+    diffCoinsValue.nDiffCoins -= it->second.coin.out.nValue;
     diffCoinsValue.vAudit[outpoint] -= it->second.coin.out.nValue;
-    diffCoinsValue.nCoins -= it->second.coin.out.nValue;
-    
+
     cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
     if (moveout) {
         *moveout = std::move(it->second.coin);
@@ -234,13 +220,15 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapA
     }
 
     // Merge account coin changes
-    for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-        CAccountDiffCoinsValue &diffIn = it->second;
-        CAccountDiffCoinsValue &diffOut = cacheAccountDiffCoins[it->first];
-        for (auto itAudit = diffIn.vAudit.begin(); itAudit != diffIn.vAudit.end(); itAudit = diffIn.vAudit.erase(itAudit)) {
-            diffOut.vAudit[itAudit->first] += itAudit->second;
+    for (auto itHeight = mapAccountDiffCoins.begin(); itHeight != mapAccountDiffCoins.end(); itHeight = mapAccountDiffCoins.erase(itHeight)) {
+        for (auto itAccount = itHeight->second.begin(); itAccount != itHeight->second.end(); itAccount++) {
+            CAccountDiffCoinsValue &diffIn = itAccount->second;
+            CAccountDiffCoinsValue &diffOut = cacheAccountDiffCoins[itHeight->first][itAccount->first];
+            for (auto itAudit = diffIn.vAudit.begin(); itAudit != diffIn.vAudit.end(); itAudit = diffIn.vAudit.erase(itAudit)) {
+                diffOut.vAudit[itAudit->first] += itAudit->second;
+            }
+            diffOut.nDiffCoins += diffIn.nDiffCoins;
         }
-        diffOut.nCoins += diffIn.nCoins;
     }
 
     hashBlock = hashBlockIn;
@@ -249,9 +237,12 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapA
 
 CAmount CCoinsViewCache::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const {
     CAmount nCacheAmountDiff = 0;
-    for (auto it = cacheAccountDiffCoins.cbegin(); it != cacheAccountDiffCoins.cend(); it++) {
-        if (it->first.nAccountId == nAccountId && it->first.nHeight <= nHeight) {
-            nCacheAmountDiff += it->second.nCoins;
+    for (auto itHeight = cacheAccountDiffCoins.begin(); itHeight != cacheAccountDiffCoins.end(); itHeight++) {
+        if (itHeight->first <= nHeight) {
+            auto itAccount = itHeight->second.find(nAccountId);
+            if (itAccount != itHeight->second.end()) {
+                nCacheAmountDiff += itAccount->second.nDiffCoins;
+            }
         }
     }
 
@@ -272,7 +263,34 @@ void CCoinsViewCache::Uncache(const COutPoint& outpoint)
     if (it != cacheCoins.end() && it->second.flags == 0) {
         cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
         cacheCoins.erase(it);
-        EraseAccountCoin(outpoint);
+
+        // Erase coin
+        for (auto itHeight = cacheAccountDiffCoins.begin(); itHeight != cacheAccountDiffCoins.end();) {
+            auto &mapAccountDiff = itHeight->second;
+            for (auto itAccount = mapAccountDiff.begin(); itAccount != mapAccountDiff.end();) {
+                auto &accountDiff = itAccount->second;
+                auto itAudit = accountDiff.vAudit.find(outpoint);
+                if (itAudit != accountDiff.vAudit.end()) {
+                    accountDiff.nDiffCoins -= itAudit->second;
+                    accountDiff.vAudit.erase(itAudit);
+                    if (accountDiff.vAudit.empty()) {
+                        // Must remove empty coin
+                        assert(accountDiff.nDiffCoins == 0);
+                        itAccount = mapAccountDiff.erase(itAccount);
+                        continue;
+                    }
+                }
+
+                itAccount++;
+            }
+
+            if (mapAccountDiff.empty()) {
+                // Remove empty item
+                itHeight = cacheAccountDiffCoins.erase(itHeight);
+            } else {
+                itHeight++;
+            }
+        }
     }
 }
 
@@ -377,15 +395,6 @@ private:
     }
 };
 
-}
-
-CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn) {
-    CAccountId nAccountId = GetAccountIdByScriptPubKey(scriptPubKey);
-    if (nAccountId != 0) {
-        return CAccountDiffCoinsKey{nAccountId, nHeightIn};
-    } else {
-        return CAccountDiffCoinsKey{0, 0};
-    }
 }
 
 CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey) {

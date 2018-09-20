@@ -314,51 +314,57 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
     if (!mapAccountDiffCoins.empty()) {
         // Insert items
         {
-            for (auto it = mapAccountDiffCoins.begin(); it != mapAccountDiffCoins.end(); it = mapAccountDiffCoins.erase(it)) {
-                if (it->first.nAccountId == 0 || it->second.nCoins == 0)
-                    continue;
+            for (auto itHeight = mapAccountDiffCoins.begin(); itHeight != mapAccountDiffCoins.end(); itHeight = mapAccountDiffCoins.erase(itHeight)) {
+                int nDataHeight = itHeight->first;
+                auto &mapAccountDiff = itHeight->second;
+                for (auto itAccount = mapAccountDiff.begin(); itAccount != mapAccountDiff.end(); itAccount = mapAccountDiff.erase(itAccount)) {
+                    auto &nAccountId = itAccount->first;
+                    auto &accountDiff = itAccount->second;
+                    if (nAccountId == 0 || accountDiff.nDiffCoins == 0)
+                        continue;
 
-                LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", it->first.nAccountId, it->first.nHeight,
-                    (int)(it->second.nCoins / COIN), abs((int)(it->second.nCoins % COIN)));
+                    LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", nAccountId, nDataHeight,
+                        (int)(accountDiff.nDiffCoins / COIN), abs((int)(accountDiff.nDiffCoins % COIN)));
 
-                // Query near balance
-                CAmount nAccountBalance;
-                int nHeight;
-                {
-                    SqlAutoResetStmt autoResetStmt(getAccountNearestStmt);
-                    sqlite3_bind_int64(getAccountNearestStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
-                    sqlite3_bind_int(getAccountNearestStmt.get(), 2, it->first.nHeight);
-                    if (sqlite3_step(getAccountNearestStmt.get()) == SQLITE_ROW) {
-                        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountNearestStmt.get(), 0));
-                        nHeight = sqlite3_column_int(getAccountNearestStmt.get(), 1);
-                    } else {
-                        nAccountBalance = 0;
-                        nHeight = -1;
+                    // Query near balance
+                    CAmount nAccountBalance;
+                    int nBalanceHeight;
+                    {
+                        SqlAutoResetStmt autoResetStmt(getAccountNearestStmt);
+                        sqlite3_bind_int64(getAccountNearestStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
+                        sqlite3_bind_int(getAccountNearestStmt.get(), 2, nDataHeight);
+                        if (sqlite3_step(getAccountNearestStmt.get()) == SQLITE_ROW) {
+                            nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountNearestStmt.get(), 0));
+                            nBalanceHeight = sqlite3_column_int(getAccountNearestStmt.get(), 1);
+                        } else {
+                            nAccountBalance = 0;
+                            nBalanceHeight = -1;
+                        }
                     }
-                }
-                nAccountBalance += it->second.nCoins;
-                assert(nAccountBalance >= 0);
-                if (nHeight == it->first.nHeight) {
-                    // Update current and all new height balance
-                    SqlAutoResetStmt autoResetStmt(updateAccountBalanceStmt);
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(it->second.nCoins));
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(it->first.nAccountId));
-                    sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, it->first.nHeight);
-                    CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
-                } else {
-                    // Add new item
-                    SqlAutoResetStmt autoResetStmt(addAccountStmt);
-                    sqlite3_bind_int64(addAccountStmt.get(), 1, static_cast<sqlite_int64>(it->first.nAccountId));
-                    sqlite3_bind_int64(addAccountStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
-                    sqlite3_bind_int(addAccountStmt.get(), 3, it->first.nHeight);
-                    CRC_DONE(sqlite3_step(addAccountStmt.get()));
+                    nAccountBalance += accountDiff.nDiffCoins;
+                    assert(nAccountBalance >= 0);
+                    if (nBalanceHeight == nDataHeight) {
+                        // Update current and all new height balance
+                        SqlAutoResetStmt autoResetStmt(updateAccountBalanceStmt);
+                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
+                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
+                        sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight);
+                        CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
+                    } else {
+                        // Add new item
+                        SqlAutoResetStmt autoResetStmt(addAccountStmt);
+                        sqlite3_bind_int64(addAccountStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
+                        sqlite3_bind_int64(addAccountStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
+                        sqlite3_bind_int(addAccountStmt.get(), 3, nDataHeight);
+                        CRC_DONE(sqlite3_step(addAccountStmt.get()));
 
-                    // Update all new height balance
-                    SqlAutoResetStmt autoResetStmt2(updateAccountBalanceStmt);
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(it->second.nCoins));
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(it->first.nAccountId));
-                    sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, it->first.nHeight + 1);
-                    CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
+                        // Update all new height balance
+                        SqlAutoResetStmt autoResetStmt2(updateAccountBalanceStmt);
+                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
+                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
+                        sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight + 1);
+                        CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
+                    }
                 }
             }
         }

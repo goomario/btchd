@@ -123,35 +123,14 @@ struct CCoinsCacheEntry
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
 
-/** <AcountID, Height> */
-struct CAccountDiffCoinsKey
-{
-    //! account Id from scriptOutKey
-    CAccountId nAccountId;
-
-    //! at which height this containing transaction was included in the active block chain
-    int nHeight;
-};
-CAccountDiffCoinsKey MakeAccountDiffCoinsKey(const CScript &scriptPubKey, int nHeightIn);
-
-class CAccountDiffCoinsKeyCompare
-{
-public:
-    bool operator()(const CAccountDiffCoinsKey& a, const CAccountDiffCoinsKey& b) const
-    {
-        int cmp = a.nHeight - b.nHeight;
-        return cmp < 0 || (cmp == 0 && a.nAccountId < b.nAccountId);
-    }
-};
-
 /** Account different coins value record */
 struct CAccountDiffCoinsValue
 {
-    std::map<COutPoint, CAmount> vAudit;
-    CAmount nCoins;
+    std::map<COutPoint, CAmount> vAudit; // utxo => amount
+    CAmount nDiffCoins; // Change relative current height
 };
-
-typedef std::map<CAccountDiffCoinsKey, CAccountDiffCoinsValue, CAccountDiffCoinsKeyCompare> CAccountDiffCoinsMap;
+typedef std::map<CAccountId, CAccountDiffCoinsValue> CAccountDiffCoins; // AccountId => Diff
+typedef std::map<int, CAccountDiffCoins> CAccountDiffCoinsMap; // Height => AccountId => Diff. Order by height asc
 
 /** Cursor for iterating over CoinsView state */
 class CCoinsViewCursor
@@ -333,7 +312,6 @@ public:
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;
-    void EraseAccountCoin(const COutPoint &outpoint);
 };
 
 //! Utility function to add all of a transaction's outputs to a cache.
