@@ -19,6 +19,7 @@
 #include <sqlite3.h>
 
 class CBlockIndex;
+class CChainParams;
 class CCoinsViewDBCursor;
 class uint256;
 
@@ -78,11 +79,10 @@ protected:
     // SQL
     mutable SqlAutoReleaseDB accountDB;
     mutable SqlAutoReleaseStmt getAccountNearestStmt; // height <= ?
-    mutable SqlAutoReleaseStmt addAccountStmt;
-    mutable SqlAutoReleaseStmt updateAccountBalanceStmt;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
+    bool CheckDB(const CChainParams &chainparams);
 
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
@@ -96,6 +96,10 @@ public:
     size_t EstimateSize() const override;
 
     CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
+
+private:
+    bool ClearAccount();
+
 };
 
 /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */

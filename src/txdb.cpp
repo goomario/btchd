@@ -14,6 +14,7 @@
 #include <uint256.h>
 #include <util.h>
 #include <ui_interface.h>
+#include <validation.h>
 
 #include <exception>
 #include <map>
@@ -177,7 +178,7 @@ const std::string ACCOUNT_DDL_SQL =
     ");"
     "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
     "CREATE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
-    "CREATE TABLE IF NOT EXISTS `account_ver` (`ver` INTEGER);";
+    "CREATE TABLE IF NOT EXISTS `account_meta` (`name` VARCHAR(32) PRIMARY KEY, `value` VARCHAR(64));";
 const std::string ACCOUNT_GET_NEAREST_BALANCE_SQL =
     "SELECT `balance`,`height` FROM `account`"
     " WHERE `accountId` = ? AND `height` <= ?"
@@ -190,7 +191,7 @@ const std::string ACCOUNT_UPDATE_BALANCE_SQL =
     "UPDATE `account` SET `balance` = `balance` + ?"
     " WHERE `accountId` = ? AND `height` >= ?";
 
-const int ACCOUNT_VERSION = 20180808;
+const int ACCOUNT_VERSION = 20180920;
 int nCurrentAccountDbVersion = 0;
 
 }
@@ -201,32 +202,62 @@ int nCurrentAccountDbVersion = 0;
 CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
     db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
     accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3", ACCOUNT_DDL_SQL)),
-    getAccountNearestStmt(CreateStatement(accountDB, ACCOUNT_GET_NEAREST_BALANCE_SQL)),
-    addAccountStmt(CreateStatement(accountDB, ACCOUNT_INSERT_SQL)),
-    updateAccountBalanceStmt(CreateStatement(accountDB, ACCOUNT_UPDATE_BALANCE_SQL))
+    getAccountNearestStmt(CreateStatement(accountDB, ACCOUNT_GET_NEAREST_BALANCE_SQL))
 {
     if (fWipe) {
         // Clear
-        SqlAutoTransaction autoTx(accountDB);
-        SqlAutoReleaseStmt clearAccountStmt(CreateStatement(accountDB, "DELETE FROM `account`"));
-        SqlAutoReleaseStmt clearAccountVersionStmt(CreateStatement(accountDB, "DELETE FROM `account_ver`"));
-        sqlite3_step(clearAccountStmt.get());
-        sqlite3_step(clearAccountVersionStmt.get());
-        // Reset account table sequence
-        TryExecuteSql(accountDB, "DELETE FROM `sqlite_sequence` WHERE `name` = 'account' OR `name` = 'account_ver';");
-        autoTx.Commit();
-        nCurrentAccountDbVersion = 0;
-    } else {
-        // Check account version
-        SqlAutoReleaseStmt accountVersionStmt(CreateStatement(accountDB, "SELECT `ver` FROM `account_ver`"));
-        if (sqlite3_step(accountVersionStmt.get()) == SQLITE_ROW) {
-            nCurrentAccountDbVersion = sqlite3_column_int(accountVersionStmt.get(), 0);
-        }
-        if (nCurrentAccountDbVersion != ACCOUNT_VERSION && !(GetBestBlock().IsNull() && GetHeadBlocks().empty())) {
-            // Require -reindex or -reindex-chainstate
+        if (!ClearAccount()) {
             throw CUpgradeAccountException();
         }
+        nCurrentAccountDbVersion = 0;
     }
+}
+
+bool CCoinsViewDB::ClearAccount() {
+    SqlAutoTransaction autoTx(accountDB);
+    SqlAutoReleaseStmt clearAccountStmt(CreateStatement(accountDB, "DELETE FROM `account`"));
+    SqlAutoReleaseStmt clearAccountMetaStmt(CreateStatement(accountDB, "DELETE FROM `account_meta`"));
+    SqlAutoReleaseStmt dropAccountVersionStmt(CreateStatement(accountDB, "DROP TABLE IF EXISTS `account_ver`"));
+    SqlAutoReleaseStmt resetSequenceStmt(CreateStatement(accountDB, "DELETE FROM `sqlite_sequence` WHERE `name` = 'account'"));
+    CRC_DONE(sqlite3_step(clearAccountStmt.get()));
+    CRC_DONE(sqlite3_step(clearAccountMetaStmt.get()));
+    CRC_DONE(sqlite3_step(dropAccountVersionStmt.get()));
+    CRC_DONE(sqlite3_step(resetSequenceStmt.get()));
+    return autoTx.Commit();
+}
+
+bool CCoinsViewDB::CheckDB(const CChainParams &chainparams) {
+    std::map<std::string, std::string> mapAccountMeta;
+    // Load meta data
+    {
+        SqlAutoReleaseStmt accountMetaStmt(CreateStatement(accountDB, "SELECT `name`,`value` FROM `account_meta`"));
+        while (sqlite3_step(accountMetaStmt.get()) == SQLITE_ROW) {
+            char * name = (char *) sqlite3_column_text(accountMetaStmt.get(), 0);
+            char * value = (char *) sqlite3_column_text(accountMetaStmt.get(), 1);
+            mapAccountMeta[std::string(name)] = std::move(std::string(value?value : ""));
+        }
+    }
+
+    // Check best block
+    uint256 bestBlock = GetBestBlock();
+    if (bestBlock.IsNull()) {
+        // Empty
+        return ClearAccount();
+    }
+
+    if (mapAccountMeta.count("bestHash") == 0 || mapAccountMeta["bestHash"] != bestBlock.ToString()) {
+        // Bad block
+        return false;
+    }
+
+    // Check account version
+    nCurrentAccountDbVersion = mapAccountMeta.count("ver") ? std::stoi(mapAccountMeta["ver"]) : 0;
+    if (nCurrentAccountDbVersion != ACCOUNT_VERSION) {
+        // Require upgrade
+        return false;
+    }
+
+    return true;
 }
 
 bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
@@ -311,73 +342,105 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
     size_t accountChanged = mapAccountDiffCoins.size();
     size_t accountDiffCoinsMemorySize = memusage::DynamicUsage(mapAccountDiffCoins);
     SqlAutoTransaction autoTx(accountDB);
+    // Check account best block
+    {
+        uint256 currentBestBlock;
+        SqlAutoReleaseStmt accountBestStmt(CreateStatement(accountDB, "SELECT `value` FROM `account_meta` WHERE `name` = 'bestHash'"));
+        if (sqlite3_step(accountBestStmt.get()) == SQLITE_ROW) {
+            char * bestBlockHash = (char *) sqlite3_column_text(accountBestStmt.get(), 0);
+            if (bestBlockHash) {
+                currentBestBlock = uint256S(bestBlockHash);
+            }
+        }
+        if (currentBestBlock != old_tip) {
+            // levelDB and sqlite not synced
+            return false;
+        }
+
+        SqlAutoReleaseStmt deleteBestStmt(CreateStatement(accountDB, "DELETE FROM `account_meta` WHERE `name` = 'bestHash' OR `name` = 'bestHeight'"));
+        CRC_DONE(sqlite3_step(deleteBestStmt.get()));
+    }
     if (!mapAccountDiffCoins.empty()) {
         // Insert items
-        {
-            for (auto itHeight = mapAccountDiffCoins.begin(); itHeight != mapAccountDiffCoins.end(); itHeight = mapAccountDiffCoins.erase(itHeight)) {
-                int nDataHeight = itHeight->first;
-                auto &mapAccountDiff = itHeight->second;
-                for (auto itAccount = mapAccountDiff.begin(); itAccount != mapAccountDiff.end(); itAccount = mapAccountDiff.erase(itAccount)) {
-                    auto &nAccountId = itAccount->first;
-                    auto &accountDiff = itAccount->second;
-                    if (nAccountId == 0 || accountDiff.nDiffCoins == 0)
-                        continue;
+        SqlAutoReleaseStmt addAccountStmt(CreateStatement(accountDB, ACCOUNT_INSERT_SQL));
+        SqlAutoReleaseStmt updateAccountBalanceStmt(CreateStatement(accountDB, ACCOUNT_UPDATE_BALANCE_SQL));
+        for (auto itHeight = mapAccountDiffCoins.begin(); itHeight != mapAccountDiffCoins.end(); itHeight = mapAccountDiffCoins.erase(itHeight)) {
+            int nDataHeight = itHeight->first;
+            auto &mapAccountDiff = itHeight->second;
+            for (auto itAccount = mapAccountDiff.begin(); itAccount != mapAccountDiff.end(); itAccount = mapAccountDiff.erase(itAccount)) {
+                auto &nAccountId = itAccount->first;
+                auto &accountDiff = itAccount->second;
+                if (nAccountId == 0 || accountDiff.nDiffCoins == 0)
+                    continue;
 
-                    LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", nAccountId, nDataHeight,
-                        (int)(accountDiff.nDiffCoins / COIN), abs((int)(accountDiff.nDiffCoins % COIN)));
+                LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", nAccountId, nDataHeight,
+                    (int)(accountDiff.nDiffCoins / COIN), abs((int)(accountDiff.nDiffCoins % COIN)));
 
-                    // Query near balance
-                    CAmount nAccountBalance;
-                    int nBalanceHeight;
-                    {
-                        SqlAutoResetStmt autoResetStmt(getAccountNearestStmt);
-                        sqlite3_bind_int64(getAccountNearestStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
-                        sqlite3_bind_int(getAccountNearestStmt.get(), 2, nDataHeight);
-                        if (sqlite3_step(getAccountNearestStmt.get()) == SQLITE_ROW) {
-                            nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountNearestStmt.get(), 0));
-                            nBalanceHeight = sqlite3_column_int(getAccountNearestStmt.get(), 1);
-                        } else {
-                            nAccountBalance = 0;
-                            nBalanceHeight = -1;
-                        }
-                    }
-                    nAccountBalance += accountDiff.nDiffCoins;
-                    assert(nAccountBalance >= 0);
-                    if (nBalanceHeight == nDataHeight) {
-                        // Update current and all new height balance
-                        SqlAutoResetStmt autoResetStmt(updateAccountBalanceStmt);
-                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
-                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
-                        sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight);
-                        CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
+                // Query near balance
+                CAmount nAccountBalance;
+                int nBalanceHeight;
+                {
+                    SqlAutoResetStmt autoResetStmt(getAccountNearestStmt);
+                    sqlite3_bind_int64(getAccountNearestStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
+                    sqlite3_bind_int(getAccountNearestStmt.get(), 2, nDataHeight);
+                    if (sqlite3_step(getAccountNearestStmt.get()) == SQLITE_ROW) {
+                        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountNearestStmt.get(), 0));
+                        nBalanceHeight = sqlite3_column_int(getAccountNearestStmt.get(), 1);
                     } else {
-                        // Add new item
-                        SqlAutoResetStmt autoResetStmt(addAccountStmt);
-                        sqlite3_bind_int64(addAccountStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
-                        sqlite3_bind_int64(addAccountStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
-                        sqlite3_bind_int(addAccountStmt.get(), 3, nDataHeight);
-                        CRC_DONE(sqlite3_step(addAccountStmt.get()));
-
-                        // Update all new height balance
-                        SqlAutoResetStmt autoResetStmt2(updateAccountBalanceStmt);
-                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
-                        sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
-                        sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight + 1);
-                        CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
+                        nAccountBalance = 0;
+                        nBalanceHeight = -1;
                     }
+                }
+                nAccountBalance += accountDiff.nDiffCoins;
+                assert(nAccountBalance >= 0);
+                if (nBalanceHeight == nDataHeight) {
+                    // Update current and all new height balance
+                    SqlAutoResetStmt autoResetStmt(updateAccountBalanceStmt);
+                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
+                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
+                    sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight);
+                    CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
+                } else {
+                    // Add new item
+                    SqlAutoResetStmt autoResetStmt(addAccountStmt);
+                    sqlite3_bind_int64(addAccountStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
+                    sqlite3_bind_int64(addAccountStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
+                    sqlite3_bind_int(addAccountStmt.get(), 3, nDataHeight);
+                    CRC_DONE(sqlite3_step(addAccountStmt.get()));
+
+                    // Update all new height balance
+                    SqlAutoResetStmt autoResetStmt2(updateAccountBalanceStmt);
+                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
+                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
+                    sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight + 1);
+                    CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
                 }
             }
         }
     }
+    // Write version
     if (nCurrentAccountDbVersion != ACCOUNT_VERSION) {
-        SqlAutoReleaseStmt insertAccountVersionStmt(CreateStatement(accountDB, "INSERT INTO `account_ver`(`ver`) VALUES(?)"));
+        SqlAutoReleaseStmt insertAccountVersionStmt(CreateStatement(accountDB, "INSERT INTO `account_meta`(`name`,`value`) VALUES('ver',?)"));
         sqlite3_bind_int(insertAccountVersionStmt.get(), 1, ACCOUNT_VERSION);
         CRC_DONE(sqlite3_step(insertAccountVersionStmt.get()));
+    }
+    // Write best block
+    {
+        int nHeight = mapBlockIndex[hashBlock]->nHeight;
+        std::string bestBlockHash = hashBlock.ToString();
+        // Hash
+        SqlAutoReleaseStmt insertAccountBestHashStmt(CreateStatement(accountDB, "INSERT INTO `account_meta`(`name`,`value`) VALUES('bestHash',?)"));
+        sqlite3_bind_text(insertAccountBestHashStmt.get(), 1, bestBlockHash.c_str(), -1, NULL);
+        CRC_DONE(sqlite3_step(insertAccountBestHashStmt.get()));
+        // Height
+        SqlAutoReleaseStmt insertAccountBestHeightStmt(CreateStatement(accountDB, "INSERT INTO `account_meta`(`name`,`value`) VALUES('bestHeight',?)"));
+        sqlite3_bind_int(insertAccountBestHeightStmt.get(), 1, nHeight);
+        CRC_DONE(sqlite3_step(insertAccountBestHeightStmt.get()));
     }
 
     // Commit changes
     LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", (batch.SizeEstimate() + accountDiffCoinsMemorySize) * (1.0 / 1048576.0));
-    bool ret = autoTx.Commit() && db.WriteBatch(batch);
+    bool ret = db.WriteBatch(batch) && autoTx.Commit();
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
     LogPrint(BCLog::COINDB, "Committed %u changed account balance outputs to account database...\n", (unsigned int)accountChanged);
     if (ret) {

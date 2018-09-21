@@ -9,10 +9,13 @@
  * network protocol versioning
  */
 
-static const int PROTOCOL_VERSION = 80018;
+static const int PROTOCOL_VERSION = 80019;
 
 //! BitcoinHD V2 version
-static const int BHD_V2_VERSION = 80018;
+static const int BHD_V2_VERSION = 80019;
+
+//! BitcoinHD V2 version preview
+static const int BHD_V2PRE_VERSION = 80018;
 
 //! BitcoinHD V1 version
 static const int BHD_V1_VERSION = 80017;
@@ -21,7 +24,7 @@ static const int BHD_V1_VERSION = 80017;
 static const int PRETEST_VERSION = 80015;
 
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 80017;
+static const int MIN_PEER_PROTO_VERSION = 80018;
 
 
 /********************************************************/

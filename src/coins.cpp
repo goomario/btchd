@@ -118,7 +118,13 @@ bool CCoinsViewCache::SpendCoin(int nHeight, const COutPoint &outpoint, Coin* mo
     // Spent coin
     CAccountDiffCoinsValue &diffCoinsValue = cacheAccountDiffCoins[nHeight][GetAccountIdByScriptPubKey(it->second.coin.out.scriptPubKey)];
     diffCoinsValue.nDiffCoins -= it->second.coin.out.nValue;
-    diffCoinsValue.vAudit[outpoint] -= it->second.coin.out.nValue;
+    CAmount &coinAudit = diffCoinsValue.vAudit[outpoint];
+    if (coinAudit < 0) {
+        // Has spend
+        diffCoinsValue.nDiffCoins -= coinAudit;
+        coinAudit = 0;
+    }
+    coinAudit -= it->second.coin.out.nValue;
 
     cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
     if (moveout) {
@@ -274,7 +280,7 @@ void CCoinsViewCache::Uncache(const COutPoint& outpoint)
                     accountDiff.nDiffCoins -= itAudit->second;
                     accountDiff.vAudit.erase(itAudit);
                     if (accountDiff.vAudit.empty()) {
-                        // Must remove empty coin
+                        // Remove empty coin
                         assert(accountDiff.nDiffCoins == 0);
                         itAccount = mapAccountDiff.erase(itAccount);
                         continue;
