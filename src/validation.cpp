@@ -2101,14 +2101,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        pindex->nVersion),
                                        REJECT_INVALID, "bad-block-version");
 
-        CAmount fund;
-        if (pindex->nHeight < chainparams.GetConsensus().BtchdV2BeginForkHeight) {
-            // Old BitcoinHD consensus
-            fund = (blockReward.miner1 != 0 ? blockReward.miner1 : blockReward.fund);
-        } else {
-            // [BtchdV2BeginForkHeight, ~] verify fund bug
-            fund = blockReward.miner1;
-        }
+        CAmount fund = (blockReward.miner1 != 0 ? blockReward.miner1 : blockReward.fund);
         if (fund != 0) {
             // Check output size
             if (block.vtx[0]->vout.size() < 2)
@@ -2132,11 +2125,18 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                        REJECT_INVALID, "bad-cb-amount");
 
             // Check output amount
-            if (block.vtx[0]->vout[1].nValue < fund)
-                return state.DoS(100,
-                                 error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
-                                       block.vtx[0]->vout[1].nValue, fund),
-                                       REJECT_INVALID, "bad-cb-amount");
+            if (block.vtx[0]->vout[1].nValue < fund) {
+                if (pindex->nHeight >= chainparams.GetConsensus().BtchdV2BeginForkHeight) {
+                    // bug, accept corruption pay for fund
+                    LogPrintf("ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n",
+                        pindex->GetBlockHash().ToString(), pindex->nHeight);
+                } else {
+                    return state.DoS(100,
+                                     error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
+                                           block.vtx[0]->vout[1].nValue, fund),
+                                           REJECT_INVALID, "bad-cb-amount");
+                }
+            }
 
             // All output for miner must be unique miner account, otherwise can steal pledge of other miner
             for (unsigned int i = 2; i < block.vtx[0]->vout.size(); i++) {
