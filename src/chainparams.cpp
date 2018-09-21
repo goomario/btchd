@@ -124,10 +124,15 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000101cf389cd621ba5");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000001185cd194d7b2dde");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xbe54eaa59966ddc0bd1a9a43b019c2d43519edced0cd4090813e45f8ccb32210"); // 97540
+        consensus.defaultAssumeValid = uint256S("0xf894c7b0203511f5f57a8f82b992461728a1ba54117f558b871adba878f1c07d"); // 98400
+
+        // BitcoinHD new consensus upgrade bug.
+        // 96264 is invalid block
+        consensus.BtchdV2BeginForkHeight = 96264;
+        consensus.BtchdV2EndForkHeight = 99000;
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -197,7 +202,8 @@ public:
                 { 92000, uint256S("0xfe0f3540c630cde2afc5e5081a4aec25ea43a57e1bf603e403054e218a3dc9cf") },
                 { 94000, uint256S("0x7dd832ac7da06f01cf8db0e6e9917dab12e37d009f7369cff00c0484cdd42a22") },
                 { 96000, uint256S("0x18ada0a6fbd634489a4b05318731035fa048bdbb381084b10071107b3790dd3b") },
-                { 97500, uint256S("0x1cf0cd1f1e699f205c122fc2c8d09e96c012bd845dee0a4ef7b5df1b41caa983") },
+                { 96294, uint256S("0x1428f89dadaa5bc902711c1a12ace43ca707c4824c0714b621be87aef1482d72") }, // first fork point
+                { 98000, uint256S("0x3f1068eb2eb9a6b1a2e3a93ef74a34c59fefe0d0e48b6d1f458bc562a8c83a05") },
             }
         };
 
@@ -259,6 +265,10 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
+
+        // BitcoinHD new consensus upgrade bug.
+        consensus.BtchdV2BeginForkHeight = 12400;
+        consensus.BtchdV2EndForkHeight = 21000;
 
         pchMessageStart[0] = 0x1e;
         pchMessageStart[1] = 0x12;
@@ -360,6 +370,10 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
+
+        // BitcoinHD new consensus upgrade bug.
+        consensus.BtchdV2BeginForkHeight = 0;
+        consensus.BtchdV2EndForkHeight = 0;
 
         pchMessageStart[0] = 0xe6;
         pchMessageStart[1] = 0xbb;

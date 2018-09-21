@@ -88,6 +88,10 @@ struct Params {
     int64_t nPowTargetSpacing;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
+
+    /** Some block error, has fork in blow range */
+    int BtchdV2BeginForkHeight;
+    int BtchdV2EndForkHeight;
 };
 } // namespace Consensus
 

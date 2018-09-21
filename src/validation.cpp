@@ -1173,8 +1173,8 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
             CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
             if (nMinerBalance >= nMinerPledge) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
-                if (nMinerBalance < nMinerPledgeOldConsensus) {
-                    // Old consensus
+                if (nHeight < consensusParams.BtchdV2EndForkHeight && nMinerBalance < nMinerPledgeOldConsensus) {
+                    // Old consensus => fund
                     reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
                 }
             } else {
@@ -2033,12 +2033,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                block.vtx[0]->GetValueOut(), blockReward.miner0 + blockReward.miner1 + blockReward.fund),
                                REJECT_INVALID, "bad-cb-amount");
 
-    if (blockReward.miner1 != 0 || blockReward.fund != 0) {
-        // All output for miner must be one miner account
-    }
-
     if (pindex->nVersion&VERSIONBITS_BHDV2_BITS) {
-        // New block
+        // New block: 0x20000004
         unsigned int fundIndex = std::numeric_limits<unsigned int>::max();
         // Check real fund
         if (blockReward.fund != 0) {
@@ -2098,13 +2094,27 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
         }
     } else {
-        // Old block
-        if (blockReward.miner1 != 0) {
+        // Old block: 0x20000000
+        if (pindex->nHeight >= chainparams.GetConsensus().BtchdV2EndForkHeight)
+            return state.DoS(100,
+                                 error("ConnectBlock(): Depreacted block version %08x",
+                                       pindex->nVersion),
+                                       REJECT_INVALID, "bad-block-version");
+
+        CAmount fund;
+        if (pindex->nHeight < chainparams.GetConsensus().BtchdV2BeginForkHeight) {
+            // Old BitcoinHD consensus
+            fund = (blockReward.miner1 != 0 ? blockReward.miner1 : blockReward.fund);
+        } else {
+            // [BtchdV2BeginForkHeight, ~] verify fund bug
+            fund = blockReward.miner1;
+        }
+        if (fund != 0) {
             // Check output size
             if (block.vtx[0]->vout.size() < 2)
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase not pay to fund (limit=%d)",
-                                       blockReward.fund),
+                                       fund),
                                        REJECT_INVALID, "bad-cb-amount");
 
             // Check output address
@@ -2118,14 +2128,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (chainparams.GetConsensus().BtchdFundAddressPool.find(address) == chainparams.GetConsensus().BtchdFundAddressPool.end())
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase not pays to fund account (limit=%d)",
-                                       blockReward.miner1),
+                                       fund),
                                        REJECT_INVALID, "bad-cb-amount");
 
             // Check output amount
-            if (block.vtx[0]->vout[1].nValue < blockReward.miner1)
+            if (block.vtx[0]->vout[1].nValue < fund)
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
-                                       block.vtx[0]->vout[1].nValue, blockReward.miner1),
+                                       block.vtx[0]->vout[1].nValue, fund),
                                        REJECT_INVALID, "bad-cb-amount");
 
             // All output for miner must be unique miner account, otherwise can steal pledge of other miner
