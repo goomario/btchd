@@ -455,6 +455,11 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
         return false;
     }
 
+    // Dont verify last checkpoint before deadline
+    if (!Params().Checkpoints().mapCheckpoints.empty() && Params().Checkpoints().mapCheckpoints.rbegin()->first > prevBlockIndex.nHeight) {
+        return true;
+    }
+
     // Check deadline
     uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
     return deadline <= MAX_TARGET_DEADLINE && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
