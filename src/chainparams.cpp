@@ -124,10 +124,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000001185cd194d7b2dde");
+        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000012383270eebf22f7");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xf894c7b0203511f5f57a8f82b992461728a1ba54117f558b871adba878f1c07d"); // 98400
+        consensus.defaultAssumeValid = uint256S("0x7189eb3effbc085496331dbf7a6cf5f35127fa191f2f132fd4d678d48adbffd0"); // 98800
 
         // BitcoinHD new consensus upgrade bug.
         // 96264 is invalid block
@@ -204,6 +204,7 @@ public:
                 { 96000, uint256S("0x18ada0a6fbd634489a4b05318731035fa048bdbb381084b10071107b3790dd3b") },
                 { 96294, uint256S("0x1428f89dadaa5bc902711c1a12ace43ca707c4824c0714b621be87aef1482d72") }, // first fork point
                 { 98000, uint256S("0x3f1068eb2eb9a6b1a2e3a93ef74a34c59fefe0d0e48b6d1f458bc562a8c83a05") },
+                { 98800, uint256S("0x7189eb3effbc085496331dbf7a6cf5f35127fa191f2f132fd4d678d48adbffd0") },
             }
         };
 
