@@ -135,6 +135,8 @@ void WalletModel::pollBalanceChanged()
         checkBalanceChanged();
         if(transactionTableModel)
             transactionTableModel->updateConfirmations();
+        if(addressTableModel)
+            addressTableModel->updateBalance();
     }
 }
 
@@ -408,10 +410,9 @@ WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
     }
 }
 
-QString WalletModel::getPrimaryAddress() const
+CWallet * WalletModel::getWallet()
 {
-    LOCK(wallet->cs_wallet);
-    return QString::fromStdString(wallet->GetPrimaryAddress());
+    return wallet;
 }
 
 bool WalletModel::setWalletEncrypted(bool encrypted, const SecureString &passphrase)

@@ -162,6 +162,9 @@ public:
     StringMap destdata;
 };
 
+//! Primary key name for destdata
+static const std::string DESTDATA_PRIRMAY = "primary";
+
 struct CRecipient
 {
     CScript scriptPubKey;
@@ -942,6 +945,13 @@ public:
     bool AccountMove(std::string strFrom, std::string strTo, CAmount nAmount, std::string strComment = "");
     bool GetAccountDestination(CTxDestination &dest, std::string strAccount, bool bForceNew = false);
 
+    /**
+     * The wallet primary destination
+     */
+    CTxDestination GetPrimaryDestination();
+    bool SetPrimaryDestination(const CTxDestination &dest);
+    bool IsPrimaryDestination(const CTxDestination &dest) const;
+
     void MarkDirty();
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     bool LoadToWallet(const CWalletTx& wtxIn);
@@ -1168,11 +1178,6 @@ public:
      * This function will automatically add the necessary scripts to the wallet.
      */
     CTxDestination AddAndGetDestinationForScript(const CScript& script, OutputType);
-
-    /**
-     * Get the wallet primary address
-     */
-    std::string GetPrimaryAddress();
 };
 
 /** A key allocated from the key pool. */
@@ -1236,9 +1241,6 @@ public:
         READWRITE(vchPubKey);
     }
 };
-
-//! Primary account name
-static const std::string PRIMARY_ACCOUNTNAME = "\x02\x03\x03";
 
 // Helper for producing a bunch of max-sized low-S signatures (eg 72 bytes)
 // ContainerType is meant to hold pair<CWalletTx *, int>, and be iterable

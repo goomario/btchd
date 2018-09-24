@@ -52,7 +52,6 @@ std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t 
     if (address.empty()) {
         // From wallet
         CWallet * const pwallet = ::vpwallets[0];
-        LOCK(pwallet->cs_wallet);
 
         std::shared_ptr<CReserveScript> coinbaseScript;
         pwallet->GetScriptForMining(coinbaseScript);
@@ -450,6 +449,7 @@ bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHe
         return true;
     }
 
+    // TODO felix repeated verify, remove it.
     // Check base target
     if (block.nBaseTarget != CalculateBaseTarget(prevBlockIndex, block, params)) {
         return false;

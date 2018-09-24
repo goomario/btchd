@@ -84,6 +84,10 @@
         <translation>编辑(&amp;E)</translation>
     </message>
     <message>
+        <source>Set as &amp;Primary Address</source>
+        <translation>设置为首选地址(&amp;P)</translation>
+    </message>
+    <message>
         <source>Export Address List</source>
         <translation>导出地址列表</translation>
     </message>
@@ -111,8 +115,16 @@
         <translation>地址</translation>
     </message>
     <message>
+        <source>Amount</source>
+        <translation>总额</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(无标签)</translation>
+    </message>
+    <message>
+        <source>Primary address</source>
+        <translation>首选地址</translation>
     </message>
 </context>
 <context>

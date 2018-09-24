@@ -16,8 +16,15 @@
 #include <qt/guiutil.h>
 #include <qt/platformstyle.h>
 
+#include <base58.h>
+#include <script/standard.h>
+#include <sync.h>
+#include <wallet/wallet.h>
+
+#include <QList>
 #include <QIcon>
 #include <QMenu>
+#include <QModelIndex>
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
 
@@ -26,7 +33,8 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     ui(new Ui::AddressBookPage),
     model(0),
     mode(_mode),
-    tab(_tab)
+    tab(_tab),
+    setPrimaryAction(0)
 {
     ui->setupUi(this);
 
@@ -81,14 +89,19 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     QAction *copyLabelAction = new QAction(tr("Copy &Label"), this);
     QAction *editAction = new QAction(tr("&Edit"), this);
     deleteAction = new QAction(ui->deleteAddress->text(), this);
+    setPrimaryAction = new QAction(tr("Set as &Primary Address"), this);
 
     // Build context menu
     contextMenu = new QMenu(this);
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
     contextMenu->addAction(editAction);
-    if(tab == SendingTab)
+    if (tab == SendingTab) {
         contextMenu->addAction(deleteAction);
+    } else {
+        contextMenu->addSeparator();
+        contextMenu->addAction(setPrimaryAction);
+    }
     contextMenu->addSeparator();
 
     // Connect signals for context menu actions
@@ -96,6 +109,7 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     connect(copyLabelAction, SIGNAL(triggered()), this, SLOT(onCopyLabelAction()));
     connect(editAction, SIGNAL(triggered()), this, SLOT(onEditAction()));
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(on_deleteAddress_clicked()));
+    connect(setPrimaryAction, SIGNAL(triggered()), this, SLOT(onSetPrimaryAction()));
 
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
 
@@ -136,11 +150,15 @@ void AddressBookPage::setModel(AddressTableModel *_model)
 
     // Set column widths
 #if QT_VERSION < 0x050000
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
 #else
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
 #endif
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
@@ -160,6 +178,19 @@ void AddressBookPage::on_copyAddress_clicked()
 void AddressBookPage::onCopyLabelAction()
 {
     GUIUtil::copyEntryData(ui->tableView, AddressTableModel::Label);
+}
+
+void AddressBookPage::onSetPrimaryAction()
+{
+    QList<QModelIndex> currentIndexes = GUIUtil::getEntryData(ui->tableView, AddressTableModel::Address);
+    if (!currentIndexes.isEmpty()) {
+        std::string strAddress = currentIndexes.at(0).data(Qt::EditRole).toString().toStdString();
+        CTxDestination dest = DecodeDestination(strAddress);
+        {
+            LOCK(model->getWallet()->cs_wallet);
+            model->getWallet()->SetPrimaryDestination(dest);
+        }
+    }
 }
 
 void AddressBookPage::onEditAction()
@@ -284,6 +315,7 @@ void AddressBookPage::on_exportButton_clicked()
     writer.setModel(proxyModel);
     writer.addColumn("Label", AddressTableModel::Label, Qt::EditRole);
     writer.addColumn("Address", AddressTableModel::Address, Qt::EditRole);
+    writer.addColumn("Amount", AddressTableModel::Amount, Qt::EditRole);
 
     if(!writer.write()) {
         QMessageBox::critical(this, tr("Exporting Failed"),
@@ -296,6 +328,15 @@ void AddressBookPage::contextualMenu(const QPoint &point)
     QModelIndex index = ui->tableView->indexAt(point);
     if(index.isValid())
     {
+        if (setPrimaryAction) {
+            std::string strAddress = index.sibling(index.row(), (int)AddressTableModel::Address).data(Qt::EditRole).toString().toStdString();
+            CTxDestination dest = DecodeDestination(strAddress);
+            {
+                LOCK(model->getWallet()->cs_wallet);
+                setPrimaryAction->setEnabled(!model->getWallet()->IsPrimaryDestination(dest));
+            }
+        }
+
         contextMenu->exec(QCursor::pos());
     }
 }

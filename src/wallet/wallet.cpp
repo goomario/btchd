@@ -22,6 +22,7 @@
 #include <policy/rbf.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
+#include <script/ismine.h>
 #include <script/script.h>
 #include <scheduler.h>
 #include <timedata.h>
@@ -838,7 +839,7 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
     if (!bForceNew) {
         if (!account.vchPubKey.IsValid())
             bForceNew = true;
-        else {
+        /*else {
             // Check if the current key has been used (TODO: check other addresses with the same key)
             CScript scriptPubKey = GetScriptForDestination(GetDestinationForKey(account.vchPubKey, g_address_type));
             for (std::map<uint256, CWalletTx>::iterator it = mapWallet.begin();
@@ -849,7 +850,7 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
                         bForceNew = true;
                         break;
                     }
-        }
+        }*/
     }
 
     // Generate a new key
@@ -866,6 +867,56 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
     }
 
     return true;
+}
+
+CTxDestination CWallet::GetPrimaryDestination()
+{
+    AssertLockHeld(cs_wallet);
+
+    CTxDestination dest;
+    for (auto it = mapAddressBook.begin(); it != mapAddressBook.end(); it++) {
+        if (it->second.destdata.count(DESTDATA_PRIRMAY)) {
+            dest = it->first;
+            break;
+        }
+    }
+
+    return dest;
+}
+
+bool CWallet::SetPrimaryDestination(const CTxDestination &dest)
+{
+    AssertLockHeld(cs_wallet);
+
+    if (!boost::get<CScriptID>(&dest)) {
+        return false;
+    }
+
+    if (mapAddressBook.count(dest)) {
+        for (auto it = mapAddressBook.begin(); it != mapAddressBook.end(); it++) {
+            if (it->second.destdata.count(DESTDATA_PRIRMAY)) {
+                if (!EraseDestData(it->first, DESTDATA_PRIRMAY))
+                    return false;
+            }
+        }
+        
+        if (AddDestData(dest, DESTDATA_PRIRMAY, "1")) {
+            uiInterface.NotifyWalletPrimaryAddressChanged(this);
+            return true;
+        }
+    } else if (::IsMine(*this, dest)) {
+        if (SetAddressBook(dest, "", "receive") && AddDestData(dest, DESTDATA_PRIRMAY, "1")) {
+            uiInterface.NotifyWalletPrimaryAddressChanged(this);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool CWallet::IsPrimaryDestination(const CTxDestination &dest) const
+{
+    return GetDestData(dest, DESTDATA_PRIRMAY, nullptr);
 }
 
 void CWallet::MarkDirty()
@@ -1051,8 +1102,6 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
              * This can happen when restoring an old wallet backup that does not contain
              * the mostly recently created transactions from newer versions of the wallet.
              */
-
-            // BitcoinHD Note Dont check address usage
             /*
             // loop though all outputs
             for (const CTxOut& txout: tx.vout) {
@@ -2785,27 +2834,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
             if (!boost::get<CNoDestination>(&coin_control.destChange)) {
                 scriptChange = GetScriptForDestination(coin_control.destChange);
             } else { // no coin control: send change to newly generated address
-                // Note: We use a new key here to keep it from being obvious which side is the change.
-                //  The drawback is that by not reusing a previous key, the change may be lost if a
-                //  backup is restored, if the backup doesn't have the new private key for the change.
-                //  If we reused the old key, it would be possible to add code to look for and
-                //  rediscover unknown transactions that were written with keys of ours to recover
-                //  post-backup change.
-
-                // Reserve a new key pair from key pool
-                CPubKey vchPubKey;
-                bool ret;
-                ret = reservekey.GetReservedKey(vchPubKey, true);
-                if (!ret)
-                {
-                    strFailReason = _("Keypool ran out, please call keypoolrefill first");
-                    return false;
-                }
-
-                const OutputType change_type = TransactionChangeType(coin_control.change_type, vecSend);
-
-                LearnRelatedScripts(vchPubKey, change_type);
-                scriptChange = GetScriptForDestination(GetDestinationForKey(vchPubKey, change_type));
+                scriptChange = GetScriptForDestination(GetPrimaryDestination());
             }
             CTxOut change_prototype_txout(0, scriptChange);
             size_t change_prototype_size = GetSerializeSize(change_prototype_txout, SER_DISK, 0);
@@ -3245,6 +3274,11 @@ bool CWallet::DelAddressBook(const CTxDestination& address)
     {
         LOCK(cs_wallet); // mapAddressBook
 
+        // Cannot delete primary address
+        if (IsPrimaryDestination(address)) {
+            return false;
+        }
+
         // Delete destdata tuples associated with address
         std::string strAddress = EncodeDestination(address);
         for (const std::pair<std::string, std::string> &item : mapAddressBook[address].destdata)
@@ -3281,7 +3315,7 @@ const std::string& CWallet::GetAccountName(const CScript& scriptPubKey) const
  */
 bool CWallet::NewKeyPool()
 {
-    {
+    /*{
         LOCK(cs_wallet);
         CWalletDB walletdb(*dbw);
 
@@ -3301,7 +3335,7 @@ bool CWallet::NewKeyPool()
             return false;
         }
         LogPrintf("CWallet::NewKeyPool rewrote keypool\n");
-    }
+    }*/
     return true;
 }
 
@@ -3422,9 +3456,10 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
 void CWallet::KeepKey(int64_t nIndex)
 {
     // Remove from key pool
-    CWalletDB walletdb(*dbw);
+    /*CWalletDB walletdb(*dbw);
     walletdb.ErasePool(nIndex);
     LogPrintf("keypool keep %d\n", nIndex);
+    */
 }
 
 void CWallet::ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey)
@@ -3458,7 +3493,7 @@ bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
             result = GenerateNewKey(walletdb, internal);
             return true;
         }
-        //KeepKey(nIndex); // BitcoinHD Note Dont remove any key
+        KeepKey(nIndex);
         result = keypool.vchPubKey;
     }
     return true;
@@ -3561,14 +3596,14 @@ std::set< std::set<CTxDestination> > CWallet::GetAddressGroupings()
             // group change with input addresses
             if (any_mine)
             {
-               for (CTxOut txout : pcoin->tx->vout)
-                   if (IsChange(txout))
-                   {
-                       CTxDestination txoutAddr;
-                       if(!ExtractDestination(txout.scriptPubKey, txoutAddr))
-                           continue;
-                       grouping.insert(txoutAddr);
-                   }
+                for (CTxOut txout : pcoin->tx->vout)
+                    if (IsChange(txout))
+                    {
+                        CTxDestination txoutAddr;
+                        if(!ExtractDestination(txout.scriptPubKey, txoutAddr))
+                            continue;
+                        grouping.insert(txoutAddr);
+                    }
             }
             if (grouping.size() > 0)
             {
@@ -3662,11 +3697,9 @@ bool CReserveKey::GetReservedKey(CPubKey& pubkey, bool internal)
 
 void CReserveKey::KeepKey()
 {
-    // BitcoinHD Note Dont remove any key
-    /*
     if (nIndex != -1)
         pwallet->KeepKey(nIndex);
-    */
+
     nIndex = -1;
     vchPubKey = CPubKey();
 }
@@ -3682,6 +3715,8 @@ void CReserveKey::ReturnKey()
 
 void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
 {
+    // BitcoinHD Note Do not remove for BitcoinHD
+    /*
     AssertLockHeld(cs_wallet);
     bool internal = setInternalKeyPool.count(keypool_id);
     if (!internal) assert(setExternalKeyPool.count(keypool_id));
@@ -3701,19 +3736,14 @@ void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
         walletdb.ErasePool(index);
         LogPrintf("keypool index %d removed\n", index);
         it = setKeyPool->erase(it);
-    }
+    }*/
 }
 
 void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
 {
-    std::shared_ptr<CReserveKey> rKey = std::make_shared<CReserveKey>(this);
-    CPubKey pubkey;
-    if (!rKey->GetReservedKey(pubkey))
-        return;
-
-    script = rKey;
-    //script->reserveScript = CScript() << ToByteVector(pubkey) << OP_CHECKSIG;
-    script->reserveScript = GetScriptForDestination(GetDestinationForKey(pubkey, g_address_type)); // BitcoinHD must uniform script pubkey
+    LOCK(cs_wallet);
+    script = std::make_shared<CReserveKey>(this);
+    script->reserveScript = GetScriptForDestination(GetPrimaryDestination()); // BitcoinHD must uniform script pubkey
 }
 
 void CWallet::LockCoin(const COutPoint& output)
@@ -4031,6 +4061,25 @@ CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
     // Try to top up keypool. No-op if the wallet is locked.
     walletInstance->TopUpKeyPool();
 
+    // Check and Set Primary address
+    {
+        LOCK(walletInstance->cs_wallet);
+        CTxDestination primaryDest = walletInstance->GetPrimaryDestination();
+        if (!boost::get<CScriptID>(&primaryDest)) {
+            // Create new address
+            CPubKey pubkey;
+            if (walletInstance->GetKeyFromPool(pubkey)) {
+                walletInstance->LearnRelatedScripts(pubkey, g_address_type);
+                primaryDest = GetDestinationForKey(pubkey, g_address_type);
+            }
+
+            // Set primary
+            if (boost::get<CScriptID>(&primaryDest)) {
+                walletInstance->SetPrimaryDestination(primaryDest);
+            }
+        }
+    }
+
     CBlockIndex *pindexRescan = chainActive.Genesis();
     if (!gArgs.GetBoolArg("-rescan", false))
     {
@@ -4114,6 +4163,7 @@ CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
         LogPrintf("setKeyPool.size() = %u\n",      walletInstance->GetKeyPoolSize());
         LogPrintf("mapWallet.size() = %u\n",       walletInstance->mapWallet.size());
         LogPrintf("mapAddressBook.size() = %u\n",  walletInstance->mapAddressBook.size());
+        LogPrintf("Primary address = %s\n",        EncodeDestination(walletInstance->GetPrimaryDestination()));
     }
 
     return walletInstance;
@@ -4280,9 +4330,13 @@ std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {
     CKeyID keyid = key.GetID();
     if (key.IsCompressed()) {
-        CTxDestination segwit = WitnessV0KeyHash(keyid);
+        /*CTxDestination segwit = WitnessV0KeyHash(keyid);
         CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
         return std::vector<CTxDestination>{std::move(keyid), std::move(p2sh), std::move(segwit)};
+        */
+        CTxDestination segwit = WitnessV0KeyHash(keyid);
+        CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
+        return std::vector<CTxDestination>{std::move(p2sh)};
     } else {
         return std::vector<CTxDestination>{std::move(keyid)};
     }
@@ -4312,21 +4366,4 @@ CTxDestination CWallet::AddAndGetDestinationForScript(const CScript& script, Out
     }
     default: assert(false);
     }
-}
-
-std::string CWallet::GetPrimaryAddress()
-{
-    AssertLockHeld(cs_wallet);
-    if (!IsLocked()) {
-        TopUpKeyPool();
-    }
-
-    // Generate a new key that is added to wallet
-    CPubKey newKey;
-    if (!GetKeyFromPool(newKey)) {
-        return std::string();
-    }
-    LearnRelatedScripts(newKey, g_address_type);
-    CTxDestination dest = GetDestinationForKey(newKey, g_address_type);
-    return EncodeDestination(dest);
 }

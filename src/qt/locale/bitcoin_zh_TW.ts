@@ -84,6 +84,10 @@
         <translation>編輯(&amp;E)</translation>
     </message>
     <message>
+        <source>Set as &amp;Primary Address</source>
+        <translation>設置為主要位址(&amp;P)</translation>
+    </message>
+    <message>
         <source>Export Address List</source>
         <translation>匯出位址清單</translation>
     </message>
@@ -111,8 +115,16 @@
         <translation>位址</translation>
     </message>
     <message>
+        <source>Amount</source>
+        <translation>金額</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(無標記)</translation>
+    </message>
+    <message>
+        <source>Primary address</source>
+        <translation>主要位址</translation>
     </message>
 </context>
 <context>

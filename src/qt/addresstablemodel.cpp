@@ -4,15 +4,19 @@
 
 #include <qt/addresstablemodel.h>
 
+#include <qt/bitcoinunits.h>
 #include <qt/guiutil.h>
 #include <qt/walletmodel.h>
 
 #include <base58.h>
+#include <validation.h>
 #include <wallet/wallet.h>
 
-
-#include <QFont>
 #include <QDebug>
+#include <QFont>
+#include <QIcon>
+#include <QPixmap>
+#include <QSize>
 
 const QString AddressTableModel::Send = "S";
 const QString AddressTableModel::Receive = "R";
@@ -166,7 +170,7 @@ public:
 AddressTableModel::AddressTableModel(CWallet *_wallet, WalletModel *parent) :
     QAbstractTableModel(parent),walletModel(parent),wallet(_wallet),priv(0)
 {
-    columns << tr("Label") << tr("Address");
+    columns << "" << tr("Label") << tr("Address") << tr("Amount");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -199,6 +203,15 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
     {
         switch(index.column())
         {
+        case Status:
+            {
+                LOCK(wallet->cs_wallet);
+                if (wallet->IsPrimaryDestination(DecodeDestination(rec->address.toStdString()))) {
+                    return tr("Primary address");
+                } else {
+                    return QVariant();
+                }
+            }
         case Label:
             if(rec->label.isEmpty() && role == Qt::DisplayRole)
             {
@@ -210,6 +223,16 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
             }
         case Address:
             return rec->address;
+        case Amount:
+            {
+                LOCK(cs_main);
+                CAccountId nAccountId = GetAccountIdByAddress(rec->address.toStdString());
+                if (nAccountId == 0) {
+                    return tr("N/A");
+                }
+                CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
+                return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorNever);
+            }
         }
     }
     else if (role == Qt::FontRole)
@@ -339,6 +362,14 @@ void AddressTableModel::updateEntry(const QString &address,
 {
     // Update address book model from Bitcoin core
     priv->updateEntry(address, label, isMine, purpose, status);
+}
+
+void AddressTableModel::updateBalance()
+{
+    if (priv->size() > 0) {
+        priv->refreshAddressTable();
+        Q_EMIT dataChanged(index(0, (int)ColumnIndex::Amount), index(priv->size() - 1, (int)ColumnIndex::Amount));
+    }
 }
 
 QString AddressTableModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)
