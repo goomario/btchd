@@ -66,8 +66,8 @@
         <translation>Dit is jou BitcoinHD-adresse vir die stuur van betalings. Kontroleer altyd die bedrag en die ontvangsadres voordat u munte stuur.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Dit is jou BitcoinHD-adresse vir die stuur van betalings. Kontroleer altyd die bedrag en die ontvangsadres voordat jy munte stuur.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Dit is jou BitcoinHD-adresse vir die stuur van betalings.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

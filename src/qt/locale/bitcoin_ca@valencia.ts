@@ -66,8 +66,8 @@
         <translation>Estes són les vostres adreces de BitcoinHD per enviar els pagaments. Sempre reviseu l'import i l'adreça del destinatari abans de transferir monedes.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Estes són les vostres adreces BitcoinHD per rebre pagaments. Es recomana utilitzar una adreça nova de recepció per a cada transacció.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Estes són les vostres adreces BitcoinHD per rebre pagaments.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

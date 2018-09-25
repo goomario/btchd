@@ -68,8 +68,8 @@
         <translation>这些是你要付款过去的 BitcoinHD 地址。在付钱之前，务必要检查金额和收款地址是否正确。</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>这些是你用来收款的 BitcoinHD 地址。建议在每次交易时，都使用一个新的收款地址。</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>这些是你用来收款的 BitcoinHD 地址。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

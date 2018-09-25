@@ -66,8 +66,8 @@
         <translation>Это ваши биткойн адреса для отправки платежа. Всегда проверяйте сумму и адрес получателя перед отправкой платежа.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Это ваши биткойн адреса для получения платежей. Настоятельно рекомендуем использовать новые адреса для получения каждой транзакции.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Это ваши биткойн адреса для получения платежей.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

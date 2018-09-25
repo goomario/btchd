@@ -66,8 +66,8 @@
         <translation>Tohle jsou tvé bitcoinové adresy pro posílání plateb. Před odesláním mincí si vždy zkontroluj částku a cílovou adresu.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Tohle jsou tvé bitcoinové adresy pro příjem plateb. Je doporučeno pro každou transakci vždy vygenerovat novou adresu.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Tohle jsou tvé bitcoinové adresy pro příjem plateb.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

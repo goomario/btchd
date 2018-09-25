@@ -66,8 +66,8 @@
         <translation>Ovo su Vaše BitcoinHD adrese na koju se vrše uplate. Uvek proverite iznos i prijemnu adresu pre slanja novčića.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ovo su Vaše BitcoinHD adrese za primanje uplata. Preporučuje se upotreba nove adrese za svaku transakciju.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Ovo su Vaše BitcoinHD adrese za primanje uplata.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

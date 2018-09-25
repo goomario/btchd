@@ -66,8 +66,8 @@
         <translation>这是你的BitcoinHD发币地址。发送前请确认发送数量和接收地址</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>这是你的BitcoinHD接收地址。建议每次交易都使用新地址</translation>
+        <source>These are your BitcoinHD addresses for receiving payments. </source>
+        <translation>这是你的BitcoinHD接收地址。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

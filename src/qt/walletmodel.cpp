@@ -48,7 +48,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     fHaveWatchOnly = wallet->HaveWatchOnly();
     fForceCheckBalanceChanged = false;
 
-    addressTableModel = new AddressTableModel(wallet, this);
+    addressTableModel = new AddressTableModel(platformStyle, wallet, this);
     transactionTableModel = new TransactionTableModel(platformStyle, wallet, this);
     recentRequestsTableModel = new RecentRequestsTableModel(wallet, this);
 
@@ -138,6 +138,12 @@ void WalletModel::pollBalanceChanged()
         if(addressTableModel)
             addressTableModel->updateBalance();
     }
+}
+
+void WalletModel::walletPrimaryAddressChanged(CWallet * wallet)
+{
+    if (addressTableModel && wallet == addressTableModel->getWallet())
+        addressTableModel->reload();
 }
 
 void WalletModel::checkBalanceChanged()
@@ -732,7 +738,7 @@ bool WalletModel::bumpFee(uint256 hash)
 
 bool WalletModel::isWalletEnabled()
 {
-   return !gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET);
+    return !gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET);
 }
 
 bool WalletModel::hdEnabled() const

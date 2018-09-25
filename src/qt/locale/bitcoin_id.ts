@@ -62,8 +62,8 @@
         <translation>Ini adalah alamat BitcoinHD anda untuk mengirim pembayaran. Selalu periksa jumlah dan alamat penerima sebelum mengirim koin</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ini adalah alamat BitcoinHD anda untuk menerima pembayaran. Disarankan untuk menggunakan alamat penerimaan baru untuk setiap transaksi</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Ini adalah alamat BitcoinHD anda untuk menerima pembayaran.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

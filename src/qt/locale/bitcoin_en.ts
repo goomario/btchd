@@ -85,7 +85,7 @@
     </message>
     <message>
         <location line="+4"/>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

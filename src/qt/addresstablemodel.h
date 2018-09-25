@@ -10,6 +10,7 @@
 
 enum OutputType : int;
 
+class PlatformStyle;
 class AddressTablePriv;
 class WalletModel;
 
@@ -23,11 +24,11 @@ class AddressTableModel : public QAbstractTableModel
     Q_OBJECT
 
 public:
-    explicit AddressTableModel(CWallet *wallet, WalletModel *parent = 0);
+    explicit AddressTableModel(const PlatformStyle *platformStyle, CWallet *wallet, WalletModel *parent = 0);
     ~AddressTableModel();
 
     enum ColumnIndex {
-        Status = 0,    /**< Item status */
+        Status = 0,  /**< Status */
         Label = 1,   /**< User specified label */
         Address = 2, /**< Bitcoin address */
         Amount = 3,  /**< Bitcoin amount */
@@ -81,6 +82,8 @@ public:
     CWallet * getWallet() { return wallet; }
 
 private:
+    const PlatformStyle *platformStyle;
+
     WalletModel *walletModel;
     CWallet *wallet;
     AddressTablePriv *priv;
@@ -98,6 +101,10 @@ public Q_SLOTS:
     /* Update address list balance
      */
     void updateBalance();
+
+    /* Reload address list
+     */
+    void reload();
 
     friend class AddressTablePriv;
 };

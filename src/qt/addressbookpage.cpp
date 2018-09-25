@@ -76,10 +76,12 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     {
     case SendingTab:
         ui->labelExplanation->setText(tr("These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins."));
+        ui->newAddress->setVisible(true);
         ui->deleteAddress->setVisible(true);
         break;
     case ReceivingTab:
-        ui->labelExplanation->setText(tr("These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction."));
+        ui->labelExplanation->setText(tr("These are your BitcoinHD addresses for receiving payments."));
+        ui->newAddress->setVisible(false);
         ui->deleteAddress->setVisible(false);
         break;
     }
@@ -188,7 +190,9 @@ void AddressBookPage::onSetPrimaryAction()
         CTxDestination dest = DecodeDestination(strAddress);
         {
             LOCK(model->getWallet()->cs_wallet);
-            model->getWallet()->SetPrimaryDestination(dest);
+            if (model->getWallet()->SetPrimaryDestination(dest)) {
+                model->reload();
+            }
         }
     }
 }
@@ -313,6 +317,7 @@ void AddressBookPage::on_exportButton_clicked()
 
     // name, column, role
     writer.setModel(proxyModel);
+    writer.addColumn("Status", AddressTableModel::Status, Qt::EditRole);
     writer.addColumn("Label", AddressTableModel::Label, Qt::EditRole);
     writer.addColumn("Address", AddressTableModel::Address, Qt::EditRole);
     writer.addColumn("Amount", AddressTableModel::Amount, Qt::EditRole);

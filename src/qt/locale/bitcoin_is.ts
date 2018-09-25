@@ -66,8 +66,8 @@
         <translation>Þetta eru BitcoinHD færslugildin sem senda greiðslur. Skoðið ævinlega vel upphæðina og færslugildin sem þiggja greiðslur áður en mynt er send.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Þetta eru BitcoinHD færslugildin sem þiggja greiðslur. Mælt er með að nota aldrei sama færslugildið til að þiggja fleiri en eina greiðslu.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Þetta eru BitcoinHD færslugildin sem þiggja greiðslur.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

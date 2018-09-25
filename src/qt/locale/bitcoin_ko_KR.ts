@@ -66,8 +66,8 @@
         <translation>비트코인을 보내는 계좌 주소입니다. 코인을 보내기 전에 잔고와 받는 주소를 항상 확인하세요.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>비트코인을 받을 수 있는 계좌 주소입니다. 매 거래마다 새로운 주소 사용을 권장합니다. </translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>비트코인을 받을 수 있는 계좌 주소입니다. </translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

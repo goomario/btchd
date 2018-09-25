@@ -66,8 +66,8 @@
         <translation>Acestea sunt adresele tale BitcoinHD pentru trimiterea plății. Verifică mereu suma și adresa de primire înainte de trimiterea monedelor.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Acestea sunt adresele tale BitcoinHD pentru primirea plăților. Este recomandată folosirea de noi adrese de primire pentru fiecare tranzacție.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Acestea sunt adresele tale BitcoinHD pentru primirea plăților.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

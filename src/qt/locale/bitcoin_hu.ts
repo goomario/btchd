@@ -66,8 +66,8 @@
         <translation>Ezek a BitcoinHD címeid kifizetések küldéséhez. Mindíg ellenőrizd az összeget és a fogadó címet mielőtt coinokat küldenél.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ezek a BitcoinHD címeid kifizetések fogadásához. Ajánlott új címet használni minden új fogadáshoz.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Ezek a BitcoinHD címeid kifizetések fogadásához.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

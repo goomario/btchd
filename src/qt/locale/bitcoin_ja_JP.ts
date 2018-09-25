@@ -66,8 +66,8 @@
         <translation>支払送信するためのビットコインアドレスです。コインを送付する前に、いつも残高と受信アドレスの確認をしてください。</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>支払の受信をするためのビットコインアドレスです。それぞれの処理に新規に受信アドレスを使用することを推奨します。</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>支払の受信をするためのビットコインアドレスです。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

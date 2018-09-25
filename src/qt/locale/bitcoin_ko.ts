@@ -54,8 +54,8 @@
         <translation>이것은 비트코인 전송을 위한 주소입니다. 코인을 보내기 전에 항상 받는 주소와 수량을 확인하세요</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>이것은 비트코인 수신을 위한 주소입니다. 코인을 받을 때 마다 항상 다른 주소를 사용 하시는 것을 권장합니다.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>이것은 비트코인 수신을 위한 주소입니다.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

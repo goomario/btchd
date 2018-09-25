@@ -66,8 +66,8 @@
         <translation>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>These are your BitcoinHD addresses for receiving payments.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

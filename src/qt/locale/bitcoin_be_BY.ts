@@ -66,8 +66,8 @@
         <translation>Тут знаходзяцца Біткойн-адрасы для высылання плацяжоў. Заўсёды спраўджвайце колькасць і адрас прызначэння перад здзяйсненнем транзакцыі.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Тут знаходзяцца Біткойн-адрасы для прымання плацяжоў. Пажадана выкарыстоўваць новы адрас для кожнай транзакцыі.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Тут знаходзяцца Біткойн-адрасы для прымання плацяжоў.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

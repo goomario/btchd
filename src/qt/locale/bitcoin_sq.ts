@@ -58,8 +58,8 @@
         <translation>Këto janë BitcoinHD adresat e juaja për të dërguar pagesa. Gjithmon kontrolloni shumën dhe adresën pranuese para se të dërgoni monedha.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Këto janë BitcoinHD adresat e juaja për të pranuar pagesa. Rekomandohet që gjithmon të përdorni një adresë të re për çdo transaksion.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Këto janë BitcoinHD adresat e juaja për të pranuar pagesa.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

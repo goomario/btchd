@@ -66,8 +66,8 @@
         <translation>Jen viaj Bitmon-adresoj por sendi pagojn. Zorge kontrolu la sumon kaj la alsendan adreson antaŭ ol sendi.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Jen viaj bitmonaj adresoj por ricevi pagojn. Estas konsilinde uzi apartan ricevan adreson por ĉiu transakcio.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Jen viaj bitmonaj adresoj por ricevi pagojn.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

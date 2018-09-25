@@ -66,8 +66,8 @@
         <translation>Това са адресите на получателите на плащания. Винаги проверявайте размера на сумата и адреса на получателя, преди да изпратите монети.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Това са Вашите Биткойн адреси,благодарение на които ще получавате плащания.Препоръчително е да използвате нови адреси за получаване на всяка транзакция.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Това са Вашите Биткойн адреси,благодарение на които ще получавате плащания.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

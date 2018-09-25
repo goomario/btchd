@@ -66,8 +66,8 @@
         <translation>Bunlar ödeme göndermek için gereken BitcoinHD adreslerinizdir. Para göndermeden önce her zaman miktarı ve alıcı adresi kontrol edin.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Bunlar ödeme almak için kullanılacak BitcoinHD adreslerinizdir. Her işlem için yeni bir ödeme alma adresi kullanılması tavsiye edilir.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Bunlar ödeme almak için kullanılacak BitcoinHD adreslerinizdir.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

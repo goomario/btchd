@@ -66,8 +66,8 @@
         <translation>Ezek az Ön kifizetéseinek küldésekor használandó BitcoinHD-címek. Fizetés indítása előtt mindig ellenőrizze az összeget és a fogadó címet!</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ezek az Ön fizetéseinek fogadásakor használandó BitcoinHD-címek. Célszerű minden tranzakcióhoz új fogadó címet használni.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Ezek az Ön fizetéseinek fogadásakor használandó BitcoinHD-címek.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

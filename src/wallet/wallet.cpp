@@ -683,6 +683,7 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
         delete pwalletdbEncryption;
         pwalletdbEncryption = nullptr;
 
+        /* 1.Disabled change master key. 2.Disabled rebuild key pool
         Lock();
         Unlock(strWalletPassphrase);
 
@@ -693,7 +694,7 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
             }
         }
 
-        NewKeyPool();
+        NewKeyPool();*/
         Lock();
 
         // Need to completely rewrite the wallet file; if we don't, bdb might keep
@@ -3315,7 +3316,7 @@ const std::string& CWallet::GetAccountName(const CScript& scriptPubKey) const
  */
 bool CWallet::NewKeyPool()
 {
-    /*{
+    {
         LOCK(cs_wallet);
         CWalletDB walletdb(*dbw);
 
@@ -3335,7 +3336,7 @@ bool CWallet::NewKeyPool()
             return false;
         }
         LogPrintf("CWallet::NewKeyPool rewrote keypool\n");
-    }*/
+    }
     return true;
 }
 
@@ -4074,9 +4075,9 @@ CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
             }
 
             // Set primary
-            if (boost::get<CScriptID>(&primaryDest)) {
-                walletInstance->SetPrimaryDestination(primaryDest);
-            }
+            assert(boost::get<CScriptID>(&primaryDest));
+            bool fSuccess = walletInstance->SetPrimaryDestination(primaryDest);
+            assert(fSuccess);
         }
     }
 
@@ -4328,17 +4329,14 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
 
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {
+    // Only support P2SH
     CKeyID keyid = key.GetID();
     if (key.IsCompressed()) {
-        /*CTxDestination segwit = WitnessV0KeyHash(keyid);
-        CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
-        return std::vector<CTxDestination>{std::move(keyid), std::move(p2sh), std::move(segwit)};
-        */
         CTxDestination segwit = WitnessV0KeyHash(keyid);
         CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
         return std::vector<CTxDestination>{std::move(p2sh)};
     } else {
-        return std::vector<CTxDestination>{std::move(keyid)};
+        return std::vector<CTxDestination>{};
     }
 }
 

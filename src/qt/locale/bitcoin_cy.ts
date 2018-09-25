@@ -66,8 +66,8 @@
         <translation>Rhain ydi eich cyfeiriadau BitcoinHD ar gyfer gyrru taliadau. Gwnewch yn sicr o'r swm a'r cyfeiriad derbyn cyn gyrru arian.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Dyma eich cyfeiriadau BitcoinHD ar gyfer derbyn taliadau. Argymhellwn ddefnyddio cyfeiriad derbyn newydd ar gyfer bob trafodyn.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Dyma eich cyfeiriadau BitcoinHD ar gyfer derbyn taliadau.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

@@ -67,8 +67,8 @@ Alihkan fail data ke dalam tab semasa</translation>
         <translation>Ini adalah alamat BitcoinHD anda untuk pembayaran. Periksa jumlah dan alamat penerima sebelum membuat penghantaran koin sentiasa.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Ini adalah alamat BitcoinHD anda untuk menerima pembayaraan.  Anda disyorkan untuk menguna alamat menerima untuk setiap transaksi.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Ini adalah alamat BitcoinHD anda untuk menerima pembayaraan.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

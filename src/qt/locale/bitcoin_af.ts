@@ -66,8 +66,8 @@
         <translation>Hierdie is die adresse vanwaar u BitcoinHD betalings stuur. U moet altyd die bedrag en die adres van die ontvanger nagaan voordat u enige munte stuur.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Hierdie is die adresse waar u Bitcoins sal ontvang. Ons beveel aan dat u 'n nuwe adres kies vir elke transaksie</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Hierdie is die adresse waar u Bitcoins sal ontvang.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
