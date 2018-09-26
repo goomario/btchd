@@ -124,10 +124,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000012383270eebf22f7");
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000140b0f54eaf9a16d");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x7189eb3effbc085496331dbf7a6cf5f35127fa191f2f132fd4d678d48adbffd0"); // 98800
+        consensus.defaultAssumeValid = uint256S("0xf54080c3942ea4457463ce3ba2543ed67e55378af769dee8f0667947ee17fc62"); // 99900
 
         // BitcoinHD new consensus upgrade bug.
         // 96264 is invalid block
@@ -204,17 +204,18 @@ public:
                 { 96000, uint256S("0x18ada0a6fbd634489a4b05318731035fa048bdbb381084b10071107b3790dd3b") },
                 { 96294, uint256S("0x1428f89dadaa5bc902711c1a12ace43ca707c4824c0714b621be87aef1482d72") }, // first fork point
                 { 98000, uint256S("0x3f1068eb2eb9a6b1a2e3a93ef74a34c59fefe0d0e48b6d1f458bc562a8c83a05") },
-                { 98800, uint256S("0x7189eb3effbc085496331dbf7a6cf5f35127fa191f2f132fd4d678d48adbffd0") },
+                { 99000, uint256S("0x85f44668b874c3d54c3db34b5779648c7a110a402245c218b5b913f414442a67") },
+                { 100000, uint256S("0x5ef9b2dae9a7aceac25c5229225a64e49a493435ed0ecbe6baf92a6496515931") },
             }
         };
 
         chainTxData = ChainTxData{
             // Call by getchaintxstats
-            // Data as of block be54eaa59966ddc0bd1a9a43b019c2d43519edced0cd4090813e45f8ccb32210 (height 97540)
-            1537233645, // * UNIX timestamp of last known number of transactions
-            101470,     // * total number of transactions between genesis and that timestamp
+            // Data as of block d028aef239d277dfdb565f83bb6c8aed0149fe30ff378e90b606cc8d2809a8b0 (height 99999)
+            1537947583, // * UNIX timestamp of last known number of transactions
+            106707,     // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
-            0.004       // * estimated number of transactions per second after that timestamp
+            0.006       // * estimated number of transactions per second after that timestamp
         };
     }
 };
@@ -314,14 +315,21 @@ public:
                 {  2016, uint256S("0x5a65c10dd86be6c2fb70f7f7c46b430b7737869f19e1241947001297aea9117f") },
                 {  4032, uint256S("0xb34269b52d97712617f6772e6c1d69b7d29eedc61766a4e8f9286d7bde8d020d") },
                 {  8064, uint256S("0x3848e775a239d9d87cd6325d30012e2058e7713c21797d284160859e66cfdb68") },
+                { 10080, uint256S("0xf39844f0b438c4738a75d38f81e7329455b561005b95795c8428a556dd95f775") },
+                { 12400, uint256S("0xf8488fafd7732a0f1a6033e8e5c484f4179e8a2c150770aaa9e54b6a4f8e72c4") },
+                { 14000, uint256S("0x225060edd20c722111a96eb7f1947a9cca58755f524fc8c23a6d64fe7fc5be92") },
+                { 16000, uint256S("0x32e35edd797596ce166609b58f6ee6b920f8e60bfc7f4131f98ae21faa8398b7") },
+                { 18000, uint256S("0xd0b4e5638db1d664dffc561a6c4c9f6bf691c376a36ccbfc412418c4aee03df1") },
+                { 20000, uint256S("0xd886caeac8c821716d0cab7a1ffc58836eca7e24193c0fb7cdb0ccf0f08f8eea") },
+                { 21700, uint256S("0x37bfbddf734b0219c0ee2ee63083ae97144c75b35d3790ad83911cfb7e9b1365") },
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block xxx (height xxx)
-            0,
-            0,
-            0
+            // Data as of block 0a1ae3832c84a0f52eb8585f0f8926f30a02ed48268966eb4637db500a0991d3 (height 21726)
+            1537950568,
+            21748,
+            0.003
         };
 
     }

@@ -1744,20 +1744,23 @@ CBlockIndex* CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, CBlock
                 LogPrintf("Still rescanning. At block %d. Progress=%f\n", pindex->nHeight, GuessVerificationProgress(chainParams.TxData(), pindex));
             }
 
-            CBlock block;
-            if (ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
-                LOCK2(cs_main, cs_wallet);
-                if (pindex && !chainActive.Contains(pindex)) {
-                    // Abort scan if current block is no longer active, to prevent
-                    // marking transactions as coming from the wrong block.
+            {
+                LOCK(cs_main);
+                CBlock block;
+                if (ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
+                    LOCK(cs_wallet);
+                    if (pindex && !chainActive.Contains(pindex)) {
+                        // Abort scan if current block is no longer active, to prevent
+                        // marking transactions as coming from the wrong block.
+                        ret = pindex;
+                        break;
+                    }
+                    for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
+                        AddToWalletIfInvolvingMe(block.vtx[posInBlock], pindex, posInBlock, fUpdate);
+                    }
+                } else {
                     ret = pindex;
-                    break;
                 }
-                for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
-                    AddToWalletIfInvolvingMe(block.vtx[posInBlock], pindex, posInBlock, fUpdate);
-                }
-            } else {
-                ret = pindex;
             }
             if (pindex == pindexStop) {
                 break;

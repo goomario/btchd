@@ -298,6 +298,10 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
         return 0;
     }
 
+    uint64_t &deadline = mapBlockDeadlineCache[block.GetHash()];
+    if (deadline != 0)
+        return deadline;
+
     const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
     const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
     const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
@@ -349,7 +353,9 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
         .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
         .Finalize((unsigned char*)base.begin());
 
-    return base.GetUint64(0) / prevBlockIndex.nBaseTarget;
+
+    deadline = base.GetUint64(0) / prevBlockIndex.nBaseTarget;
+    return deadline;
 }
 
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
@@ -439,30 +445,6 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
         return newBaseTarget;
     }
-}
-
-bool VerifyGenerationSignature(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, bool bForceCheckDeadline, const Consensus::Params& params)
-{
-    // Optional check deadline.
-    // If block forge time interval more than 30 minute, then force check block deadline.
-    if (!bForceCheckDeadline && block.nTime < prevBlockIndex.nTime + 30 * 60) {
-        return true;
-    }
-
-    // TODO felix repeated verify, remove it.
-    // Check base target
-    if (block.nBaseTarget != CalculateBaseTarget(prevBlockIndex, block, params)) {
-        return false;
-    }
-
-    // Dont verify last checkpoint before deadline
-    if (!Params().Checkpoints().mapCheckpoints.empty() && Params().Checkpoints().mapCheckpoints.rbegin()->first > prevBlockIndex.nHeight) {
-        return true;
-    }
-
-    // Check deadline
-    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
-    return deadline <= MAX_TARGET_DEADLINE && (deadline == 0 || block.nTime > prevBlockIndex.nTime + deadline);
 }
 
 uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const std::string &address, const Consensus::Params& params)

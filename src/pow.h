@@ -17,6 +17,6 @@ class uint256;
 uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params&);
 
 /** Check whether a block hash satisfies the proof-of-capacity requirement specified by nBaseTarget */
-bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params&, bool bCheckPocDeadline = true);
+bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params&, bool fForceVerify = true);
 
 #endif // BITCOIN_POW_H
