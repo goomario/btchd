@@ -95,6 +95,12 @@ enum DisconnectResult
 
 class ConnectTrace;
 
+enum class PocVerifyLevel {
+    Auto,
+    Force,
+    Skip,
+};
+
 /**
  * CChainState stores and provides an API to update our local knowledge of the
  * current best chain and header tree.
@@ -153,6 +159,7 @@ private:
 public:
     CChain chainActive;
     BlockMap mapBlockIndex;
+    BlockDeadlineMap mapBlockDeadlineCache;
     std::multimap<CBlockIndex*, CBlockIndex*> mapBlocksUnlinked;
     CBlockIndex *pindexBestInvalid = nullptr;
 
@@ -160,7 +167,7 @@ public:
 
     bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock);
 
-    bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex);
+    bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex, PocVerifyLevel pocVerifyLevel = PocVerifyLevel::Auto);
     bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex, bool fRequested, const CDiskBlockPos* dbp, bool* fNewBlock);
 
     // Block (dis)connection on a given view:
@@ -206,6 +213,7 @@ private:
 CCriticalSection cs_main;
 
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
+BlockDeadlineMap& mapBlockDeadlineCache = g_chainstate.mapBlockDeadlineCache;
 CChain& chainActive = g_chainstate.chainActive;
 CBlockIndex *pindexBestHeader = nullptr;
 CWaitableCriticalSection csBestBlock;
@@ -1113,8 +1121,11 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     }
 
     // Check the header
-    if (!CheckProofOfCapacity(&block, consensusParams, false))
-        return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    {
+        LOCK(cs_main);
+        if (!CheckProofOfCapacity(&block, consensusParams, false))
+            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    }
 
     return true;
 }
@@ -2128,8 +2139,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (block.vtx[0]->vout[1].nValue < fund) {
                 if (pindex->nHeight >= chainparams.GetConsensus().BtchdV2BeginForkHeight) {
                     // bug, accept corruption pay for fund
-                    LogPrintf("ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n",
-                        pindex->GetBlockHash().ToString(), pindex->nHeight);
+                    //LogPrintf("ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n",
+                    //    pindex->GetBlockHash().ToString(), pindex->nHeight);
                 } else {
                     return state.DoS(100,
                                      error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
@@ -3132,16 +3143,16 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
-static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOC = true)
+static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, PocVerifyLevel pocVerifyLevel)
 {
     // Check proof of capacity matches claimed amount
-    if (fCheckPOC && !CheckProofOfCapacity(&block, consensusParams, true))
+    if (pocVerifyLevel != PocVerifyLevel::Skip && !CheckProofOfCapacity(&block, consensusParams, pocVerifyLevel == PocVerifyLevel::Force))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
 
     return true;
 }
 
-bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOC, bool fCheckMerkleRoot)
+bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPoC, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
 
@@ -3150,7 +3161,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
     // Check that the header is valid (particularly PoC).  This is mostly
     // redundant with the call in AcceptBlockHeader.
-    if (!CheckBlockHeader(block, state, consensusParams, fCheckPOC))
+    if (!CheckBlockHeader(block, state, consensusParams, fCheckPoC ? PocVerifyLevel::Auto : PocVerifyLevel::Skip))
         return false;
 
     // Check the merkle root.
@@ -3199,7 +3210,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (nSigOps * WITNESS_SCALE_FACTOR > MAX_BLOCK_SIGOPS_COST)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
-    if (fCheckPOC && fCheckMerkleRoot)
+    if (fCheckPoC && fCheckMerkleRoot)
         block.fChecked = true;
 
     return true;
@@ -3402,7 +3413,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     return true;
 }
 
-bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex)
+bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex, PocVerifyLevel pocVerifyLevel)
 {
     AssertLockHeld(cs_main);
     // Check for duplicate
@@ -3421,7 +3432,7 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
             return true;
         }
 
-        if (!CheckBlockHeader(block, state, chainparams.GetConsensus()))
+        if (!CheckBlockHeader(block, state, chainparams.GetConsensus(), pocVerifyLevel))
             return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
         // Get prev block index
@@ -3467,12 +3478,34 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
     if (first_invalid != nullptr) first_invalid->SetNull();
     {
         LOCK(cs_main);
+
+        int nBeginCheckIndex = 0;
+        if (!gArgs.GetBoolArg("-forceverifypoc", false) && !chainparams.Checkpoints().mapCheckpoints.empty() && headers.size() > 10) {
+            int index = 0;
+            const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
+            for (const CBlockHeader& header : headers) {
+                uint256 hash = header.GetHash();
+                for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend(); it++) {
+                    if (it->second == hash) {
+                        nBeginCheckIndex = index;
+                        break;
+                    }
+                }
+                ++index;
+            }
+            LogPrint(BCLog::POC, "ProcessNewBlockHeaders: [%s-%s], Verify shabal %d-%d\n",
+                headers.begin()->GetHash().ToString(), headers.rbegin()->GetHash().ToString(),
+                nBeginCheckIndex, (int) headers.size());
+        }
+
+        int index = 0;
         for (const CBlockHeader& header : headers) {
             CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
-            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex)) {
+            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, index >= nBeginCheckIndex ? PocVerifyLevel::Force : PocVerifyLevel::Skip)) {
                 if (first_invalid) *first_invalid = header;
                 return false;
             }
+            ++index;
             if (ppindex) {
                 *ppindex = pindex;
             }
@@ -3512,7 +3545,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     CBlockIndex *pindexDummy = nullptr;
     CBlockIndex *&pindex = ppindex ? *ppindex : pindexDummy;
 
-    if (!AcceptBlockHeader(block, state, chainparams, &pindex))
+    if (!AcceptBlockHeader(block, state, chainparams, &pindex, PocVerifyLevel::Auto))
         return false;
 
     // Try to process all requested blocks that we don't have, but only
@@ -3590,12 +3623,13 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     {
         CBlockIndex *pindex = nullptr;
         if (fNewBlock) *fNewBlock = false;
+
+        LOCK(cs_main);
+
         CValidationState state;
         // Ensure that CheckBlock() passes before calling AcceptBlock, as
         // belt-and-suspenders.
         bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
-
-        LOCK(cs_main);
 
         if (ret) {
             // Store to disk
@@ -3616,7 +3650,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     return true;
 }
 
-bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOC, bool fCheckMerkleRoot)
+bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPoC, bool fCheckMerkleRoot)
 {
     AssertLockHeld(cs_main);
     assert(pindexPrev && pindexPrev == chainActive.Tip());
@@ -3629,7 +3663,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
         return error("%s: Consensus::ContextualCheckBlockHeader: %s", __func__, FormatStateMessage(state));
-    if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOC, fCheckMerkleRoot))
+    if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPoC, fCheckMerkleRoot))
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev))
         return error("%s: Consensus::ContextualCheckBlock: %s", __func__, FormatStateMessage(state));
@@ -3865,12 +3899,14 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
         return false;
 
     // Check mapBlockIndex valid
-    // Poc CheckProofOfCapacity depends previous block
-    for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
-        CBlockIndex *pindex = it->second;
-        CBlockHeader blockHeader = pindex->GetBlockHeader();
-        if (!CheckProofOfCapacity(&blockHeader, consensus_params, false))
-            return error("%s: CheckProofOfCapacity failed: %s", __func__, pindex->ToString());
+    {
+        LOCK(cs_main);
+        for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
+            CBlockIndex *pindex = it->second;
+            CBlockHeader blockHeader = pindex->GetBlockHeader();
+            if (!CheckProofOfCapacity(&blockHeader, consensus_params, false))
+                return error("%s: CheckProofOfCapacity failed: %s", __func__, pindex->ToString());
+        }
     }
 
     boost::this_thread::interruption_point();
@@ -3922,6 +3958,8 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
 
 bool static LoadBlockIndexDB(const CChainParams& chainparams)
 {
+    AssertLockNotHeld(cs_main);
+
     if (!g_chainstate.LoadBlockIndex(chainparams.GetConsensus(), *pblocktree))
         return false;
 

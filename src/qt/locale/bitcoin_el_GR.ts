@@ -66,8 +66,8 @@
         <translation>Αυτές είναι οι BitcoinHD διευθύνσεις σας για να στέλνετε πληρωμές. Να ελέγχετε πάντα το ποσό, καθώς και τη διεύθυνση παραλήπτη πριν στείλετε νομίσματα.</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>Αυτές είναι οι BitcoinHD διευθύνσεις σας για να λαμβάνετε πληρωμές. Προτείνετε να χρησιμοποιείτε μια νέα διεύθυνση παραλήπτη για κάθε συναλλαγή.</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>Αυτές είναι οι BitcoinHD διευθύνσεις σας για να λαμβάνετε πληρωμές.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>

@@ -4,15 +4,20 @@
 
 #include <qt/addresstablemodel.h>
 
+#include <qt/bitcoinunits.h>
 #include <qt/guiutil.h>
+#include <qt/platformstyle.h>
 #include <qt/walletmodel.h>
 
 #include <base58.h>
+#include <validation.h>
 #include <wallet/wallet.h>
 
-
-#include <QFont>
 #include <QDebug>
+#include <QFont>
+#include <QIcon>
+#include <QPixmap>
+#include <QSize>
 
 const QString AddressTableModel::Send = "S";
 const QString AddressTableModel::Receive = "R";
@@ -28,10 +33,11 @@ struct AddressTableEntry
     Type type;
     QString label;
     QString address;
+    bool fPrimary;
 
     AddressTableEntry() {}
-    AddressTableEntry(Type _type, const QString &_label, const QString &_address):
-        type(_type), label(_label), address(_address) {}
+    AddressTableEntry(Type _type, const QString &_label, const QString &_address, bool _fPrimary):
+        type(_type), label(_label), address(_address), fPrimary(_fPrimary) {}
 };
 
 struct AddressTableEntryLessThan
@@ -82,6 +88,8 @@ public:
             LOCK(wallet->cs_wallet);
             for (const std::pair<CTxDestination, CAddressBookData>& item : wallet->mapAddressBook)
             {
+                if (!boost::get<CScriptID>(&item.first))
+                    continue; // Only support P2SH
                 const CTxDestination& address = item.first;
                 bool fMine = IsMine(*wallet, address);
                 AddressTableEntry::Type addressType = translateTransactionType(
@@ -89,7 +97,8 @@ public:
                 const std::string& strName = item.second.name;
                 cachedAddressTable.append(AddressTableEntry(addressType,
                                   QString::fromStdString(strName),
-                                  QString::fromStdString(EncodeDestination(address))));
+                                  QString::fromStdString(EncodeDestination(address)),
+                                  wallet->IsPrimaryDestination(address)));
             }
         }
         // qLowerBound() and qUpperBound() require our cachedAddressTable list to be sorted in asc order
@@ -119,7 +128,14 @@ public:
                 break;
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedAddressTable.insert(lowerIndex, AddressTableEntry(newEntryType, label, address));
+            {
+                bool fPrimary = false;
+                if (isMine) {
+                    LOCK(wallet->cs_wallet);
+                    fPrimary = wallet->IsPrimaryDestination(DecodeDestination(address.toStdString()));
+                }
+                cachedAddressTable.insert(lowerIndex, AddressTableEntry(newEntryType, label, address, fPrimary));
+            }
             parent->endInsertRows();
             break;
         case CT_UPDATED:
@@ -163,10 +179,14 @@ public:
     }
 };
 
-AddressTableModel::AddressTableModel(CWallet *_wallet, WalletModel *parent) :
-    QAbstractTableModel(parent),walletModel(parent),wallet(_wallet),priv(0)
+AddressTableModel::AddressTableModel(const PlatformStyle *_platformStyle, CWallet *_wallet, WalletModel *parent) :
+    QAbstractTableModel(parent),
+    platformStyle(_platformStyle),
+    walletModel(parent),
+    wallet(_wallet),
+    priv(0)
 {
-    columns << tr("Label") << tr("Address");
+    columns << "" << tr("Label") << tr("Address") << tr("Amount");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -199,6 +219,10 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
     {
         switch(index.column())
         {
+        case Status:
+            if (!rec->fPrimary)
+                return " ";
+            break; 
         case Label:
             if(rec->label.isEmpty() && role == Qt::DisplayRole)
             {
@@ -210,6 +234,16 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
             }
         case Address:
             return rec->address;
+        case Amount:
+            {
+                LOCK(cs_main);
+                CAccountId nAccountId = GetAccountIdByAddress(rec->address.toStdString());
+                if (nAccountId == 0) {
+                    return tr("N/A");
+                }
+                CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
+                return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorNever);
+            }
         }
     }
     else if (role == Qt::FontRole)
@@ -230,6 +264,24 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         case AddressTableEntry::Receiving:
             return Receive;
         default: break;
+        }
+    }
+    else if (role == Qt::DecorationRole)
+    {
+        if (index.column() == Status)
+        {
+            if (rec->fPrimary) {
+                return platformStyle->SingleColorIcon(":/icons/key");
+            }
+        }
+    }
+    else if (role == Qt::ToolTipRole)
+    {
+        if (index.column() == Status)
+        {
+            if (rec->fPrimary) {
+                return tr("Primary address");
+            }
         }
     }
     return QVariant();
@@ -339,6 +391,22 @@ void AddressTableModel::updateEntry(const QString &address,
 {
     // Update address book model from Bitcoin core
     priv->updateEntry(address, label, isMine, purpose, status);
+}
+
+void AddressTableModel::updateBalance()
+{
+    if (priv->size() > 0) {
+        priv->refreshAddressTable();
+        Q_EMIT dataChanged(index(0, (int)ColumnIndex::Amount), index(priv->size() - 1, (int)ColumnIndex::Amount));
+    }
+}
+
+void AddressTableModel::reload()
+{
+    if (priv->size() > 0) {
+        priv->refreshAddressTable();
+        Q_EMIT dataChanged(index(0, 0), index(priv->size() - 1, (int)ColumnIndex::Amount));
+    }
 }
 
 QString AddressTableModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)

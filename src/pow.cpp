@@ -11,25 +11,53 @@
 #include <poc/poc.h>
 #include <primitives/block.h>
 #include <uint256.h>
+#include <util.h>
 #include <validation.h>
 
-uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
+uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& consensusParams)
 {
     assert(pindexLast != nullptr);
+    AssertLockHeld(cs_main);
 
-    return ::poc::CalculateBaseTarget(*pindexLast, *pblock, params);
+    return ::poc::CalculateBaseTarget(*pindexLast, *pblock, consensusParams);
 }
 
-bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params& params, bool bCheckPoCDeadline)
+bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params& consensusParams, bool fForceVerify)
 {
-    if (pblock->hashPrevBlock.IsNull()) {
-        // Genesis
-        return pblock->GetHash() == params.hashGenesisBlock;
+    assert(pblock != nullptr);
+    AssertLockHeld(cs_main);
+
+    const CBlockIndex* pindexPrev = nullptr;
+    if (!pblock->hashPrevBlock.IsNull()) {
+        auto mi = mapBlockIndex.find(pblock->hashPrevBlock);
+        pindexPrev = (mi != mapBlockIndex.end() ? mi->second : nullptr);
     }
 
-    auto iter = mapBlockIndex.find(pblock->hashPrevBlock);
-    if (iter == mapBlockIndex.end()) {
-        return false;
+    uint256 blockHash = pblock->GetHash();
+    if (pindexPrev == nullptr) {
+        // Genesis
+        return blockHash == consensusParams.hashGenesisBlock;
     }
-    return ::poc::VerifyGenerationSignature(*(iter->second), *pblock, bCheckPoCDeadline, params);
+
+    bool fForceVerifyPoC = fForceVerify || gArgs.GetBoolArg("-forceverifypoc", false);
+    if (!fForceVerifyPoC) {
+        const MapCheckpoints &mapCheckpoints = Params().Checkpoints().mapCheckpoints;
+        if (mapCheckpoints.empty()) {
+            // Force check
+            fForceVerifyPoC = true;
+        } else if (mapCheckpoints.count(pindexPrev->nHeight + 1)) {
+            // Verify checkpoint
+            if (mapCheckpoints.find(pindexPrev->nHeight + 1)->second != blockHash)
+                return false;
+        } else if (pindexPrev->nHeight + 1 > mapCheckpoints.rbegin()->first) {
+            // Force check new block
+            fForceVerifyPoC = true;
+        }
+    }
+    if (!fForceVerifyPoC)
+        return true;
+
+    // Check deadline
+    uint64_t deadline = poc::CalculateDeadline(*pindexPrev, *pblock, consensusParams);
+    return deadline <= poc::MAX_TARGET_DEADLINE && (deadline == 0 || pblock->nTime > pindexPrev->nTime + deadline);
 }

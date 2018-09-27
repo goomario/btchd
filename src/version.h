@@ -24,7 +24,7 @@ static const int BHD_V1_VERSION = 80017;
 static const int PRETEST_VERSION = 80015;
 
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 80018;
+static const int MIN_PEER_PROTO_VERSION = 80019;
 
 
 /********************************************************/

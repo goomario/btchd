@@ -82,8 +82,11 @@ Q_DECLARE_METATYPE(bool*)
 Q_DECLARE_METATYPE(CAmount)
 Q_DECLARE_METATYPE(int32_t)
 Q_DECLARE_METATYPE(uint32_t)
-//Q_DECLARE_METATYPE(int64_t) // long int
 Q_DECLARE_METATYPE(uint64_t)
+
+#ifdef ENABLE_WALLET
+Q_DECLARE_METATYPE(CWallet*)
+#endif
 
 static void InitMessage(const std::string &message)
 {
@@ -493,6 +496,8 @@ void BitcoinApplication::initializeResult(bool success)
 
             connect(walletModel, SIGNAL(coinsSent(CWallet*,SendCoinsRecipient,QByteArray)),
                              paymentServer, SLOT(fetchPaymentACK(CWallet*,const SendCoinsRecipient&,QByteArray)));
+            connect(clientModel, SIGNAL(walletPrimaryAddressChanged(CWallet*)),
+                             walletModel, SLOT(walletPrimaryAddressChanged(CWallet*)));
         }
 #endif
 
@@ -590,6 +595,15 @@ int main(int argc, char *argv[])
     //   IMPORTANT if it is no longer a typedef use the normal variant above
     qRegisterMetaType< CAmount >("CAmount");
     qRegisterMetaType< std::function<void(void)> >("std::function<void(void)>");
+
+    qRegisterMetaType< int32_t >("int32_t");
+    qRegisterMetaType< uint32_t >("uint32_t");
+    qRegisterMetaType< uint64_t >("uint64_t");
+
+#ifdef ENABLE_WALLET
+    qRegisterMetaType< CWallet* >("CWallet*");
+#endif
+    
 
     /// 3. Application identification
     // must be set before OptionsModel is initialized or translations are loaded,

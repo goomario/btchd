@@ -68,8 +68,8 @@
         <translation>這些是你要付款過去的 BitcoinHD 位址。在付錢之前，務必要檢查金額和收款位址是否正確。</translation>
     </message>
     <message>
-        <source>These are your BitcoinHD addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>這些是你用來收款的 BitcoinHD 位址。建議在每次交易時，都使用一個新的收款位址。</translation>
+        <source>These are your BitcoinHD addresses for receiving payments.</source>
+        <translation>這些是你用來收款的 BitcoinHD 位址。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -82,6 +82,10 @@
     <message>
         <source>&amp;Edit</source>
         <translation>編輯(&amp;E)</translation>
+    </message>
+    <message>
+        <source>Set as &amp;Primary Address</source>
+        <translation>設置為主要位址(&amp;P)</translation>
     </message>
     <message>
         <source>Export Address List</source>
@@ -111,8 +115,16 @@
         <translation>位址</translation>
     </message>
     <message>
+        <source>Amount</source>
+        <translation>金額</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(無標記)</translation>
+    </message>
+    <message>
+        <source>Primary address</source>
+        <translation>主要位址</translation>
     </message>
 </context>
 <context>
@@ -174,8 +186,8 @@
         <translation>確認錢包加密</translation>
     </message>
     <message>
-        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINS&lt;/b&gt;!</source>
-        <translation>警告: 如果把錢包加密後又忘記密碼，你就會從此&lt;b&gt;失去其中所有的 BitcoinHD 了&lt;/b&gt;！</translation>
+        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINHDS&lt;/b&gt;!</source>
+        <translation>警告: 如果把錢包加密後又忘記密碼，你就會從此&lt;b&gt;失去其中所有的 BitcoinHD &lt;/b&gt;！</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>

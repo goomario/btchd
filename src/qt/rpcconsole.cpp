@@ -8,18 +8,18 @@
 
 #include <qt/rpcconsole.h>
 #include <qt/forms/ui_debugwindow.h>
-
 #include <qt/bantablemodel.h>
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/platformstyle.h>
-#include <qt/walletmodel.h>
+#include <base58.h>
 #include <chainparams.h>
 #include <netbase.h>
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <util.h>
 #include <validation.h>
+#include <wallet/wallet.h>
 
 #include <openssl/crypto.h>
 
@@ -581,8 +581,10 @@ void RPCConsole::setClientModel(ClientModel *model)
 
         connect(model, SIGNAL(mempoolSizeChanged(long,size_t)), this, SLOT(setMempoolSize(long,size_t)));
 
-        connect(model, SIGNAL(walletChanged(WalletModel*)), this, SLOT(walletChanged(WalletModel*)));
-
+#ifdef ENABLE_WALLET
+        connect(model, SIGNAL(walletChanged(CWallet*)), this, SLOT(currentWalletPrimaryAddressChanged(CWallet*)));
+        connect(model, SIGNAL(walletPrimaryAddressChanged(CWallet*)), this, SLOT(currentWalletPrimaryAddressChanged(CWallet*)));
+#endif
         // set up peer table
         ui->peerWidget->setModel(model->getPeerTableModel());
         ui->peerWidget->verticalHeader()->hide();
@@ -864,11 +866,18 @@ void RPCConsole::setMempoolSize(long numberOfTxs, size_t dynUsage)
         ui->mempoolSize->setText(QString::number(dynUsage/1000000.0, 'f', 2) + " MB");
 }
 
-void RPCConsole::walletChanged(WalletModel *walletModel)
+#ifdef ENABLE_WALLET
+void RPCConsole::currentWalletPrimaryAddressChanged(CWallet *wallet)
 {
-    ui->primaryAddress->setText(walletModel != nullptr ? walletModel->getPrimaryAddress() : "");
+    if (wallet != nullptr) {
+        LOCK(wallet->cs_wallet);
+        ui->primaryAddress->setText(QString::fromStdString(EncodeDestination(wallet->GetPrimaryDestination())));
+    } else {
+        ui->primaryAddress->clear();
+    }
     updatePledge();
 }
+#endif
 
 void RPCConsole::updatePledge()
 {

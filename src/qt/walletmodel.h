@@ -140,8 +140,8 @@ public:
     CAmount getWatchImmatureBalance() const;
     EncryptionStatus getEncryptionStatus() const;
 
-    // Get primary address
-    QString getPrimaryAddress() const;
+    // Get wallet
+    CWallet * getWallet();
 
     // Check address for validity
     bool validateAddress(const QString &address);
@@ -288,6 +288,8 @@ public Q_SLOTS:
     void updateWatchOnlyFlag(bool fHaveWatchonly);
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
     void pollBalanceChanged();
+    /* Wallet primary change */
+    void walletPrimaryAddressChanged(CWallet *wallet);
 };
 
 #endif // BITCOIN_QT_WALLETMODEL_H
