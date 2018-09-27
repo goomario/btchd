@@ -169,21 +169,10 @@ UniValue getnewaddress(const JSONRPCRequest& request)
     if (!request.params[0].isNull())
         strAccount = AccountFromValue(request.params[0]);
 
-    OutputType output_type = g_address_type;
+    CTxDestination dest = pwallet->GetPrimaryDestination();
 
-    if (!pwallet->IsLocked()) {
-        pwallet->TopUpKeyPool();
-    }
-
-    // Generate a new key that is added to wallet
-    CPubKey newKey;
-    if (!pwallet->GetKeyFromPool(newKey)) {
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
-    }
-    pwallet->LearnRelatedScripts(newKey, output_type);
-    CTxDestination dest = GetDestinationForKey(newKey, output_type);
-
-    pwallet->SetAddressBook(dest, strAccount, "receive");
+    if (!strAccount.empty())
+        pwallet->SetAddressBook(dest, strAccount, "receive");
 
     return EncodeDestination(dest);
 }
@@ -3484,19 +3473,7 @@ UniValue getpledge(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    OutputType output_type = g_address_type;
-
-    if (!pwallet->IsLocked()) {
-        pwallet->TopUpKeyPool();
-    }
-
-    // Generate a new key that is added to wallet
-    CPubKey newKey;
-    if (!pwallet->GetKeyFromPool(newKey)) {
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
-    }
-    pwallet->LearnRelatedScripts(newKey, output_type);
-    CTxDestination dest = GetDestinationForKey(newKey, output_type);
+    CTxDestination dest = pwallet->GetPrimaryDestination();
     if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
