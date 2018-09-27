@@ -141,6 +141,8 @@ static struct event_base* eventBase = nullptr;
 struct evhttp* eventHTTP = nullptr;
 //! List of subnets to allow RPC connections from
 static std::vector<CSubNet> rpc_allow_subnets;
+//! Allow user-agent
+static bool rpc_allow_ua = false;
 //! Work queue for handling longer requests off the event loop thread
 static WorkQueue<HTTPClosure>* workQueue = nullptr;
 //! Handlers for (sub)paths
@@ -239,7 +241,7 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
     }
 
     // CSRF: Forbidden request from browser
-    if (hreq->GetHeader("user-agent").first) {
+    if (!rpc_allow_ua && hreq->GetHeader("user-agent").first) {
         hreq->WriteReply(HTTP_FORBIDDEN);
         return;
     }
@@ -433,6 +435,7 @@ bool StartHTTPServer()
     LogPrint(BCLog::HTTP, "Starting HTTP server\n");
     int rpcThreads = std::max((long)gArgs.GetArg("-rpcthreads", DEFAULT_HTTP_THREADS), 1L);
     LogPrintf("HTTP: starting %d worker threads\n", rpcThreads);
+    rpc_allow_ua = gArgs.GetBoolArg("-rpcallowua", false);
     std::packaged_task<bool(event_base*, evhttp*)> task(ThreadHTTP);
     threadResult = task.get_future();
     threadHTTP = std::thread(std::move(task), eventBase, eventHTTP);
