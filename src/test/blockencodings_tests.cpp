@@ -47,7 +47,7 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(&block, Params().GetConsensus(), -1)) ++block.nNonce;
+    while (!CheckProofOfCapacity(&block, Params().GetConsensus())) ++block.nNonce;
     return block;
 }
 

@@ -2139,8 +2139,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (block.vtx[0]->vout[1].nValue < fund) {
                 if (pindex->nHeight >= chainparams.GetConsensus().BtchdV2BeginForkHeight) {
                     // bug, accept corruption pay for fund
-                    LogPrintf("ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n",
-                        pindex->GetBlockHash().ToString(), pindex->nHeight);
+                    //LogPrintf("ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n",
+                    //    pindex->GetBlockHash().ToString(), pindex->nHeight);
                 } else {
                     return state.DoS(100,
                                      error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)",
