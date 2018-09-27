@@ -3899,7 +3899,7 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
         return false;
 
     // Check mapBlockIndex valid
-    {
+    if (gArgs.GetBoolArg("-pocverifyonlaunch", true)) {
         LOCK(cs_main);
         for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
             CBlockIndex *pindex = it->second;
