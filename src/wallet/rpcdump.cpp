@@ -167,7 +167,7 @@ UniValue importprivkey(const JSONRPCRequest& request)
 
             // Don't throw error in case a key is already there
             if (pwallet->HaveKey(vchAddress)) {
-                return NullUniValue;
+                return true;
             }
 
             // whenever a key is imported, we need to scan the whole chain
@@ -184,7 +184,7 @@ UniValue importprivkey(const JSONRPCRequest& request)
         pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
     }
 
-    return NullUniValue;
+    return true;
 }
 
 UniValue abortrescan(const JSONRPCRequest& request)
