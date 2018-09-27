@@ -3480,7 +3480,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
         LOCK(cs_main);
 
         int nBeginCheckIndex = 0;
-        if (!gArgs.GetBoolArg("-forceverifypoc", false) && !chainparams.Checkpoints().mapCheckpoints.empty()) {
+        if (!gArgs.GetBoolArg("-forceverifypoc", false) && !chainparams.Checkpoints().mapCheckpoints.empty() && headers.size() > 10) {
             int index = 0;
             const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
             for (const CBlockHeader& header : headers) {
@@ -3493,7 +3493,9 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
                 }
                 ++index;
             }
-            LogPrint(BCLog::POC, "ProcessNewBlockHeaders: Verify shabal %d-%d\n", nBeginCheckIndex, (int) headers.size());
+            LogPrint(BCLog::POC, "ProcessNewBlockHeaders: [%s-%s], Verify shabal %d-%d\n",
+                headers.begin()->GetHash().ToString(), headers.rbegin()->GetHash().ToString(),
+                nBeginCheckIndex, (int) headers.size());
         }
 
         int index = 0;

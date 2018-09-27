@@ -1615,6 +1615,33 @@ UniValue savemempool(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue createcheckpoint(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0) {
+        throw std::runtime_error(
+            "createcheckpoint\n"
+            "\nCreate checkpoint.\n"
+            "\nExamples:\n"
+            + HelpExampleCli("createcheckpoint", "")
+            + HelpExampleRpc("createcheckpoint", "")
+        );
+    }
+
+    LOCK(cs_main);
+
+    auto &paramConsensus = Params().GetConsensus();
+
+    std::string strCheckpoints;
+    char buffer[128];
+    for (int nHeight = 200 * ((paramConsensus.BtchdFundPreMingingHeight + 1) / 200); nHeight < chainActive.Height(); nHeight += 200) {
+        sprintf(buffer, "{ %6d, uint256S(\"0x%s\") },\n", nHeight, chainActive[nHeight]->phashBlock->ToString().c_str());
+        strCheckpoints += buffer;
+    }
+    return strCheckpoints;
+}
+
+
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -1647,6 +1674,7 @@ static const CRPCCommand commands[] =
     { "hidden",             "waitforblock",           &waitforblock,           {"blockhash","timeout"} },
     { "hidden",             "waitforblockheight",     &waitforblockheight,     {"height","timeout"} },
     { "hidden",             "syncwithvalidationinterfacequeue", &syncwithvalidationinterfacequeue, {} },
+    { "hidden",             "createcheckpoint",       &createcheckpoint,       {} },
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &t)
