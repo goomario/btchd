@@ -95,12 +95,6 @@ enum DisconnectResult
 
 class ConnectTrace;
 
-enum class PocVerifyLevel {
-    Auto,
-    Force,
-    Skip,
-};
-
 /**
  * CChainState stores and provides an API to update our local knowledge of the
  * current best chain and header tree.
@@ -1123,7 +1117,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     // Check the header
     {
         LOCK(cs_main);
-        if (!CheckProofOfCapacity(&block, consensusParams, false))
+        if (!CheckProofOfCapacity(&block, consensusParams, PocVerifyLevel::Auto))
             return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
     }
 
@@ -3146,7 +3140,7 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, PocVerifyLevel pocVerifyLevel)
 {
     // Check proof of capacity matches claimed amount
-    if (pocVerifyLevel != PocVerifyLevel::Skip && !CheckProofOfCapacity(&block, consensusParams, pocVerifyLevel == PocVerifyLevel::Force))
+    if (pocVerifyLevel != PocVerifyLevel::Skip && !CheckProofOfCapacity(&block, consensusParams, pocVerifyLevel))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
 
     return true;
@@ -3899,12 +3893,13 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
         return false;
 
     // Check mapBlockIndex valid
-    if (gArgs.GetBoolArg("-pocverifyonlaunch", true)) {
+    {
         LOCK(cs_main);
+        auto pocVerifyLevel = gArgs.GetBoolArg("-pocforceverifyonlaunch", false) ? PocVerifyLevel::Force : PocVerifyLevel::Checkpoint;
         for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
             CBlockIndex *pindex = it->second;
             CBlockHeader blockHeader = pindex->GetBlockHeader();
-            if (!CheckProofOfCapacity(&blockHeader, consensus_params, false))
+            if (!CheckProofOfCapacity(&blockHeader, consensus_params, pocVerifyLevel))
                 return error("%s: CheckProofOfCapacity failed: %s", __func__, pindex->ToString());
         }
     }

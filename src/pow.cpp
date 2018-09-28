@@ -22,7 +22,7 @@ uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *
     return ::poc::CalculateBaseTarget(*pindexLast, *pblock, consensusParams);
 }
 
-bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params& consensusParams, bool fForceVerify)
+bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params& consensusParams, PocVerifyLevel pocVerifyLevel)
 {
     assert(pblock != nullptr);
     AssertLockHeld(cs_main);
@@ -39,22 +39,22 @@ bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params& c
         return blockHash == consensusParams.hashGenesisBlock;
     }
 
-    bool fForceVerifyPoC = fForceVerify || gArgs.GetBoolArg("-forceverifypoc", false);
-    if (!fForceVerifyPoC) {
+    bool fVerifyPoC = pocVerifyLevel == PocVerifyLevel::Force || gArgs.GetBoolArg("-forceverifypoc", false);
+    if (!fVerifyPoC) {
         const MapCheckpoints &mapCheckpoints = Params().Checkpoints().mapCheckpoints;
         if (mapCheckpoints.empty()) {
             // Force check
-            fForceVerifyPoC = true;
+            fVerifyPoC = true;
         } else if (mapCheckpoints.count(pindexPrev->nHeight + 1)) {
             // Verify checkpoint
             if (mapCheckpoints.find(pindexPrev->nHeight + 1)->second != blockHash)
                 return false;
-        } else if (pindexPrev->nHeight + 1 > mapCheckpoints.rbegin()->first) {
+        } else if (pindexPrev->nHeight + 1 > mapCheckpoints.rbegin()->first && pocVerifyLevel != PocVerifyLevel::Checkpoint) {
             // Force check new block
-            fForceVerifyPoC = true;
+            fVerifyPoC = true;
         }
     }
-    if (!fForceVerifyPoC)
+    if (!fVerifyPoC)
         return true;
 
     // Check deadline
