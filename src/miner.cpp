@@ -124,13 +124,15 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         pblock->nVersion = gArgs.GetArg("-blockversion", pblock->nVersion);
 
     //
-    // The following code will make miners motivated to earlier post block. Maybe make it less difficult.
+    // The following code will make miners motivated to earlier post block. Maybe make it less difficulty.
     // pblock->nTime = GetAdjustedTime();
     //
-    // The difficult will largest.
-    // pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
-    //
-    pblock->nTime = static_cast<uint32_t>(std::max((int64_t)(pindexPrev->GetBlockTime() + deadline + 1), GetAdjustedTime()));
+    if (chainparams.GetConsensus().fPocAllowMinDifficultyBlocks || nHeight < chainparams.GetConsensus().BtchdFundPreMingingHeight) {
+        pblock->nTime = static_cast<uint32_t>(std::max((int64_t)(pindexPrev->GetBlockTime() + deadline + 1), GetAdjustedTime()));
+    } else {
+        // Keep largest difficulty
+        pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
+    }
 
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
