@@ -124,10 +124,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000140b0f54eaf9a16d");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000001c4b19f7a43d1743");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xf54080c3942ea4457463ce3ba2543ed67e55378af769dee8f0667947ee17fc62"); // 99900
+        consensus.defaultAssumeValid = uint256S("0xe3bc1f73efd9f01168bb70d47c293be5db5a84c69d03be423859862daa4fb17c"); // 103800
 
         // BitcoinHD new consensus upgrade bug.
         // 96264 is invalid block
@@ -201,6 +201,7 @@ public:
                 { 80000, uint256S("0x4a6f5a5c944105a70aaba7e64c5a7c8f4fc4f3759ac8af423c824db8c89f7482") },
                 { 84001, uint256S("0xa474cb4eeca85ada0f4600b1d6fe656bb09c88328e00c3fcccc0136f2c360e94") },
                 // Offset +200. Generate by `createcheckpoint`
+                {  84000, uint256S("0x8d1846b9e447624d86bbf81d4f02dbe52f08efb692c1c3a15a231297fc05b214") },
                 {  84200, uint256S("0x2f33e669d67cae589d63385229a145b303957eaaf58b1b520a533071d4a96bb9") },
                 {  84400, uint256S("0x259db7622b22d26f7eceb1d7c503d0ea3e10fa79ff1999119c74b0f696e2b59f") },
                 {  84600, uint256S("0x107d9ed8bfdd68c3e8885ccfcbca229d6c293a2b9cebe150260c3ad0b9a716e2") },
@@ -282,16 +283,34 @@ public:
                 {  99800, uint256S("0xdb831f51bdf6435e89e0ddc39369dee5f9a04f549e35d8434dbc43802808ce86") },
                 { 100000, uint256S("0x5ef9b2dae9a7aceac25c5229225a64e49a493435ed0ecbe6baf92a6496515931") },
                 { 100200, uint256S("0x8d3b0d2014ffb75c3c59dc38c5e6255d0229d96d32541f9ddc7dd89a9743a477") },
+                { 100400, uint256S("0xc0b6c0d821c532ade8818b5da1dd42ee6ed8872c1abebae6ae3f1950ca4a76fd") },
+                { 100600, uint256S("0x6b72dc593f1f5f8a3c06e2787b02ab9ba803f0303e673130afa34c72821747d6") },
+                { 100800, uint256S("0x12c1184cd2884c41360cf89f9aa2c473188d6fb674de9f8f6a552924ebd79f16") },
+                { 101000, uint256S("0xec5c821be5b16d509f4c29bc9620461768808e5ae40a7b3eb6a7ca260801f939") },
+                { 101200, uint256S("0xba713a70f08641ee894c686abc74db7c49b27d2cac5fd6ef811271f20a0fd9ba") },
+                { 101400, uint256S("0x821c881b2b92e17a176c2844c8241efa5b48c6a26145fbdda931e4d9a94beda4") },
+                { 101600, uint256S("0xac9a4e8e46da7b350b878308a0dfd076273574657d6bc1a68507fc3c134244ec") },
+                { 101800, uint256S("0xf2682f5fb2be4a49e65f6efb96ac1ef193bf86dd456a88c30d877f702c2d30fb") },
+                { 102000, uint256S("0x90a77896d7c1ac9c52504c5779f4b070530cd4de8047babe443de4c71feef0e4") },
+                { 102200, uint256S("0x86bc4eca7ceb31b9fba875bb83866b75e0bae1b19d369773aecbfa04929e3ca2") },
+                { 102400, uint256S("0xebede659b70faf3e51988915f45a4b51d0cf68ba56e5d7aba6306675a686abfd") },
+                { 102600, uint256S("0xc4aa31c7de323a2a7f4a4471341ea6d45a53a613dcabeae653b7a2ec7ed6f0f5") },
+                { 102800, uint256S("0x612e99309f87b8904f9b4e94e6a9c22a3fcf347810c5631d8d09126ae9627d3b") },
+                { 103000, uint256S("0xfcc8b4afb2c6bf51132b1bf7c45e19015b4e54d2aed6d0f9afe61a314edf1a1a") },
+                { 103200, uint256S("0x93459500d27f3205a074f1e2c60c40cdc95b8f821dda90571240569a50c6fc7f") },
+                { 103400, uint256S("0xf699df557176b5776755951642c0c4f7f9c3158a8c68ef22292f3d4fe0de5c40") },
+                { 103600, uint256S("0xd7b88efee82e26bb548e30b2649ebae159a041a8488c5fe841140e8ed3ffcb2d") },
+                { 103800, uint256S("0xe3bc1f73efd9f01168bb70d47c293be5db5a84c69d03be423859862daa4fb17c") },
             }
         };
 
         chainTxData = ChainTxData{
             // Call by getchaintxstats
-            // Data as of block d028aef239d277dfdb565f83bb6c8aed0149fe30ff378e90b606cc8d2809a8b0 (height 99999)
-            1537947583, // * UNIX timestamp of last known number of transactions
-            106707,     // * total number of transactions between genesis and that timestamp
+            // Data as of block e3bc1f73efd9f01168bb70d47c293be5db5a84c69d03be423859862daa4fb17c (height 103800)
+            1539060730, // * UNIX timestamp of last known number of transactions
+            115450,     // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
-            0.006       // * estimated number of transactions per second after that timestamp
+            0.007       // * estimated number of transactions per second after that timestamp
         };
     }
 };
@@ -461,6 +480,14 @@ public:
                 {  21400, uint256S("0x017599ba5e3d3d7c544cfe0eeea98204021cd9ffc7024a5be51d0bb90fc29876") },
                 {  21600, uint256S("0xb537d4a8e1192853305d7e339b993182d585e34b72ea0520765be6d41d5d8140") },
                 {  21800, uint256S("0x35a87e36579b077bacbd043b1ff9d2192bd77626c821b4cf4642c6cc54ba6a31") },
+                {  22000, uint256S("0x54ebf72c827700d162290d8369321266d78443d43387ed4dacc6bcc8e8dee61c") },
+                {  22200, uint256S("0xd68c5fc927284d47b414eaad093b2714cfe7d4d10a0545ce441992d817e9c457") },
+                {  22400, uint256S("0x6afbc26f595168e4ce1aa6de53f98b151e978156bd985bfa336eea741f438adc") },
+                {  22600, uint256S("0x47676c21d5620f2d892685f58e65ea16a5d81872d731d56eda95cbbfbb570d44") },
+                {  22800, uint256S("0xf71b469bff33044a2f5fac4d2aed2cf31648afa4456a5375657193b5e2be959a") },
+                {  23000, uint256S("0x0b0885eb92f712cf502c6adeef8e13e7b96c50cecc0e6f9972844be2cd66a578") },
+                {  23200, uint256S("0xd603db91e3cbbb4fa9e49490804608057cdc84ff2f3962690b25e3c84836ff37") },
+                {  23400, uint256S("0x358d3b36b1878b061e13b6b3d07ccc8b836e8a7d309c4852537848263caa0e00") },
             }
         };
 
