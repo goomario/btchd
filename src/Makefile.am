@@ -290,7 +290,7 @@ if USE_ASM
 crypto_libbitcoin_crypto_a_SOURCES += crypto/sha256_sse4.cpp
 endif
 
-# burst: shabal
+# shabal256
 crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/shabal/sph_types.h \
   crypto/shabal/sph_shabal.h \
@@ -298,7 +298,7 @@ crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/shabal256.cpp \
   crypto/shabal256.h
 
-# burst: curve25519
+# curve25519
 crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/curve/curve25519_i64.h \
   crypto/curve/curve25519_i64.cpp \

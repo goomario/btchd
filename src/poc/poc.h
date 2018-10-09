@@ -36,7 +36,6 @@ static const int64_t MAX_TARGET_DEADLINE = 365 * 24 * 60 * 60;
 static const uint64_t INVALID_DEADLINE = std::numeric_limits<uint64_t>::max();
 
 uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);
-uint64_t parseAccountId(const std::string& account);
 
 /**
  * Get account Id
