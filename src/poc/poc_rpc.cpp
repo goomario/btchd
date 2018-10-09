@@ -95,14 +95,14 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     result.pushKV("result", "success");
     result.pushKV("deadline", deadline);
     result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
-    result.pushKV("block", pBlockIndex->nHeight + 1);
+    result.pushKV("height", pBlockIndex->nHeight + 1);
 }
 
 static UniValue submitNonceToPool(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonce \"nonce\" \"accountId\" \"height\"\n"
+            "submitNonceToPool \"nonce\" \"accountId\" height \"address\"\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
@@ -145,11 +145,11 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonce \"nonce\" \"passPhrase\"\n"
+            "submitNonceAsSolo \"nonce\" \"passphrase\" height \"address\"\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
-            "2. \"passPhrase\"      (string, optional) The string of the burst account passPhrase\n"
+            "2. \"passphrase\"      (string, optional) The string of the passphrase.\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
             "4. \"address\"         (string, optional) Target address for mining\n"
             "\nResult:\n"
@@ -360,10 +360,10 @@ static UniValue getPlotterId(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "getPlotterId \"passPhrase\"\n"
+            "getPlotterId \"passphrase\"\n"
             "\nGet potter id from passphrase.\n"
             "\nArguments:\n"
-            "1. \"passPhrase\"      (string, required) The string of the burst account passPhrase\n"
+            "1. \"passphrase\"      (string, required) The string of the passphrase\n"
             "\nResult:\n"
             "Id\n"
         );
@@ -394,7 +394,7 @@ static const CRPCCommand commands[] =
     { "hidden",           "getPlotterId",             &poc::rpc::getPlotterId,          { "passPhrase" } },
 };
 
-void RegisterBurstRPCCommands(CRPCTable &t)
+void RegisterPoCRPCCommands(CRPCTable &t)
 {
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++) {
         t.appendCommand(commands[vcidx].name, &commands[vcidx]);

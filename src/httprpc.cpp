@@ -81,7 +81,7 @@ static void JSONErrorReply(HTTPRequest* req, const UniValue& objError, const Uni
     req->WriteReply(nStatus, strReply);
 }
 
-static void BurstJSONErrorReply(HTTPRequest* req, int nErrorCode, const std::string &strErrorDescription) 
+static void PoCJSONErrorReply(HTTPRequest* req, int nErrorCode, const std::string &strErrorDescription) 
 {
     UniValue result;
     result.pushKV("errorCode", nErrorCode);
@@ -252,12 +252,12 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
             }
         }
         else {
-            BurstJSONErrorReply(req, 1, "Incorrect request");
+            PoCJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
     }
     else {
-        BurstJSONErrorReply(req, 1, "Incorrect request");
+        PoCJSONErrorReply(req, 1, "Incorrect request");
         return false;
     }
     return true;
@@ -278,7 +278,7 @@ static bool AdjustGetBlockParam(JSONRPCRequest& jreq, HTTPRequest* req, const st
     return true;
 }
 
-static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
+static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
 {
     if (req->GetRequestMethod() != HTTPRequest::POST) {
         LogPrintf("The uri: %s\n", req->GetURI().c_str());
@@ -293,7 +293,7 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         const auto requestType = parameters.find("requestType");
         if (requestType == parameters.cend()) {
             LogPrintf("Not find requestType, threadid=%ld \n", std::this_thread::get_id());
-            BurstJSONErrorReply(req, 1, "Incorrect request");
+            PoCJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
         const time_t startTime = ::time(nullptr);
@@ -323,13 +323,13 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         UniValue result = tableRPC.execute(jreq);
         if (result.isBool()) {
             if (result.isFalse()) {
-                BurstJSONErrorReply(req, 1, "Incorrect request");
+                PoCJSONErrorReply(req, 1, "Incorrect request");
                 return false;
             } else {
                 result.setObject();
             }
         } else if (result.isNull() || !result.isObject()) {
-            BurstJSONErrorReply(req, 1, "Incorrect request");
+            PoCJSONErrorReply(req, 1, "Incorrect request");
             return false;
         }
 
@@ -340,7 +340,7 @@ static bool HTTPReq_BurstJSONRPC(HTTPRequest* req, const std::string &)
         req->WriteReply(HTTP_OK, result.write());
         return true;
     } catch (const UniValue& objError) {
-        BurstJSONErrorReply(req, 1, objError.getValStr());
+        PoCJSONErrorReply(req, 1, objError.getValStr());
         LogPrint(BCLog::POC, "Call rpc fail: %s", objError.getValStr().c_str());
         return false;
     } catch (const std::exception& e) {
@@ -383,7 +383,7 @@ bool StartHTTPRPC()
     RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);
 #endif
 
-    RegisterHTTPHandler("/burst", false, HTTPReq_BurstJSONRPC);
+    RegisterHTTPHandler("/burst", false, HTTPReq_PoCJSONRPC);
 
     assert(EventBase());
     httpRPCTimerInterface = MakeUnique<HTTPRPCTimerInterface>(EventBase());
