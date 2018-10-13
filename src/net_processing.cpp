@@ -1600,6 +1600,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return false;
         }
 
+        if (nTimeOffset >= DEFAULT_MAX_TIME_ADJUSTMENT) {
+            // disconnect from peers time offset small than DEFAULT_MAX_TIME_ADJUSTMENT
+            LogPrintf("peer=%d time offset %ds great then %ds; disconnecting\n", pfrom->GetId(), nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT);
+            connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
+                                strprintf("Time offset %ds great then %ds", nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT)));
+            pfrom->fDisconnect = true;
+            return false;
+        }
+
         if (nVersion == 10300)
             nVersion = 300;
         if (!vRecv.empty())
