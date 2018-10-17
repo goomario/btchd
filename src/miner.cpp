@@ -127,9 +127,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // The following code will make miners motivated to earlier post block. Maybe make it less difficulty.
     // pblock->nTime = GetAdjustedTime();
     //
-    if (GetAdjustedTime() > (int64_t) (pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
+    int64_t nAdjustedTime = GetAdjustedTime();
+    if (nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
         // Time changed
-        pblock->nTime = static_cast<uint32_t>(GetAdjustedTime());
+        pblock->nTime = static_cast<uint32_t>(nAdjustedTime);
     } else {
         // Keep largest difficulty
         pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
@@ -159,6 +160,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockWeight = nBlockWeight;
 
     CAccountId nAccountId = GetAccountIdByScriptPubKey(scriptPubKeyIn);
+    assert (nAccountId != 0);
 
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;

@@ -367,6 +367,7 @@ public:
     const CBlockIndex* GetAncestor(int height) const;
 };
 
+arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params&);
 arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params&);
 /** Return the time it would take to redo the work difference between from and to, assuming the current hashrate corresponds to the difficulty at tip, in seconds. */
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params&);

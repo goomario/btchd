@@ -874,11 +874,13 @@ void PeerLogicValidation::NewPoWValidBlock(const CBlockIndex *pindex, const std:
             return;
         ProcessBlockAvailability(pnode->GetId());
         CNodeState &state = *State(pnode->GetId());
-        // If the peer has, or we announced to them the previous block already,
+        // If the peer has, or we announced to them the previous block already, or has high chainwork
         // but we don't think they have this one, go ahead and announce it
         if (state.fPreferHeaderAndIDs && (!fWitnessEnabled || state.fWantsCmpctWitness) &&
-                !PeerHasHeader(&state, pindex) && PeerHasHeader(&state, pindex->pprev)) {
-
+                !PeerHasHeader(&state, pindex) && PeerHasHeader(&state, pindex->pprev) &&
+                state.pindexBestKnownBlock != nullptr &&
+                    (state.pindexBestKnownBlock->nChainWork < pindex->nChainWork ||
+                        (state.pindexBestKnownBlock->nChainWork == pindex->nChainWork && state.pindexBestKnownBlock->nTime > pindex->nTime))) {
             LogPrint(BCLog::NET, "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoWValidBlock",
                     hashBlock.ToString(), pnode->GetId());
             connman->PushMessage(pnode, msgMaker.Make(NetMsgType::CMPCTBLOCK, *pcmpctblock));
@@ -1600,11 +1602,11 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return false;
         }
 
-        if (nTimeOffset >= DEFAULT_MAX_TIME_ADJUSTMENT) {
-            // disconnect from peers time offset small than DEFAULT_MAX_TIME_ADJUSTMENT
-            LogPrintf("peer=%d time offset %ds great then %ds; disconnecting\n", pfrom->GetId(), nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT);
+        if (nTimeOffset <= -DEFAULT_MAX_TIME_ADJUSTMENT || nTimeOffset >= DEFAULT_MAX_TIME_ADJUSTMENT) {
+            // disconnect from peers time offset not between [-DEFAULT_MAX_TIME_ADJUSTMENT,DEFAULT_MAX_TIME_ADJUSTMENT]
+            LogPrintf("peer=%d time offset %d not between [-%d,%d]; disconnecting\n", pfrom->GetId(), nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT, DEFAULT_MAX_TIME_ADJUSTMENT);
             connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
-                                strprintf("Time offset %ds great then %ds", nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT)));
+                                strprintf("Time offset %d not between [-%d,%d]", nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT, DEFAULT_MAX_TIME_ADJUSTMENT)));
             pfrom->fDisconnect = true;
             return false;
         }
