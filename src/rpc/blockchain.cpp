@@ -89,7 +89,6 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("merkleroot", blockindex->hashMerkleRoot.GetHex()));
     result.push_back(Pair("time", (int64_t)blockindex->nTime));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
-    result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->GetBlockHeader()))));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
     result.push_back(Pair("baseTarget", (uint64_t)blockindex->nBaseTarget));
@@ -98,6 +97,8 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
+        if (blockindex->nHeight > Params().GetConsensus().BtchdFundPreMingingHeight)
+            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
@@ -140,7 +141,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("tx", txs));
     result.push_back(Pair("time", block.GetBlockTime()));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
-    result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->GetBlockHeader()))));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
     result.push_back(Pair("baseTarget", (uint64_t)block.nBaseTarget));
@@ -149,6 +149,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
+        if (blockindex->nHeight > Params().GetConsensus().BtchdFundPreMingingHeight)
+            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
@@ -1266,11 +1268,13 @@ struct CompareBlocksByHeight
 
 UniValue getchaintips(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 0)
+    if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
-            "getchaintips\n"
+            "getchaintips (verbose)\n"
             "Return information about all known tips in the block tree,"
             " including the main chain as well as orphaned branches.\n"
+            "\nArguments:\n"
+            "1. verbose (boolean, optional, default=false) True will output detail\n"
             "\nResult:\n"
             "[\n"
             "  {\n"
@@ -1298,6 +1302,10 @@ UniValue getchaintips(const JSONRPCRequest& request)
         );
 
     LOCK(cs_main);
+
+    bool fVerbose = false;
+    if (!request.params.empty() && !request.params[0].isNull())
+        fVerbose = request.params[0].get_bool();
 
     /*
      * Idea:  the set of chain tips is chainActive.tip, plus orphan blocks which do not have another orphan building off of them.
@@ -1332,11 +1340,13 @@ UniValue getchaintips(const JSONRPCRequest& request)
     UniValue res(UniValue::VARR);
     for (const CBlockIndex* block : setTips)
     {
+        const int branchLen = block->nHeight - chainActive.FindFork(block)->nHeight;
+        if (!fVerbose && branchLen > 0 && chainActive.Tip()->nTime > block->nTime + 24 * 3600)
+            continue;
+
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("height", block->nHeight));
         obj.push_back(Pair("hash", block->phashBlock->GetHex()));
-
-        const int branchLen = block->nHeight - chainActive.FindFork(block)->nHeight;
         obj.push_back(Pair("branchlen", branchLen));
 
         std::string status;

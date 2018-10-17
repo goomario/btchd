@@ -153,7 +153,6 @@ private:
 public:
     CChain chainActive;
     BlockMap mapBlockIndex;
-    BlockDeadlineMap mapBlockDeadlineCache;
     std::multimap<CBlockIndex*, CBlockIndex*> mapBlocksUnlinked;
     CBlockIndex *pindexBestInvalid = nullptr;
 
@@ -207,7 +206,6 @@ private:
 CCriticalSection cs_main;
 
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
-BlockDeadlineMap& mapBlockDeadlineCache = g_chainstate.mapBlockDeadlineCache;
 CChain& chainActive = g_chainstate.chainActive;
 CBlockIndex *pindexBestHeader = nullptr;
 CWaitableCriticalSection csBestBlock;
@@ -3412,10 +3410,9 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
     AssertLockHeld(cs_main);
     // Check for duplicate
     uint256 hash = block.GetHash();
-    BlockMap::iterator miSelf = mapBlockIndex.find(hash);
     CBlockIndex *pindex = nullptr;
     if (hash != chainparams.GetConsensus().hashGenesisBlock) {
-
+        BlockMap::iterator miSelf = mapBlockIndex.find(hash);
         if (miSelf != mapBlockIndex.end()) {
             // Block header is already known.
             pindex = miSelf->second;
@@ -3425,9 +3422,6 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
                 return state.Invalid(error("%s: block %s is marked invalid", __func__, hash.ToString()), 0, "duplicate");
             return true;
         }
-
-        if (!CheckBlockHeader(block, state, chainparams.GetConsensus(), pocVerifyLevel))
-            return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
         // Get prev block index
         CBlockIndex* pindexPrev = nullptr;
@@ -3454,6 +3448,9 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
                 }
             }
         }
+
+        if (!CheckBlockHeader(block, state, chainparams.GetConsensus(), pocVerifyLevel))
+            return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
     }
     if (pindex == nullptr)
         pindex = AddToBlockIndex(block);
@@ -3473,33 +3470,53 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
     {
         LOCK(cs_main);
 
-        int nBeginCheckIndex = 0;
-        if (!gArgs.GetBoolArg("-forceverifypoc", false) && !chainparams.Checkpoints().mapCheckpoints.empty() && headers.size() > 10) {
-            int index = 0;
+        int nLastKnownBlockIndex = -1;
+        if (headers.size() > 10 && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
             const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
-            for (const CBlockHeader& header : headers) {
+            for (std::size_t index = 0; index < headers.size(); index++) {
+                const CBlockHeader& header = headers[index];
                 uint256 hash = header.GetHash();
                 for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend(); it++) {
                     if (it->second == hash) {
-                        nBeginCheckIndex = index;
+                        nLastKnownBlockIndex = static_cast<int>(index);
                         break;
                     }
                 }
-                ++index;
             }
             LogPrint(BCLog::POC, "ProcessNewBlockHeaders: [%s-%s], Verify shabal %d-%d\n",
                 headers.begin()->GetHash().ToString(), headers.rbegin()->GetHash().ToString(),
-                nBeginCheckIndex, (int) headers.size());
+                nLastKnownBlockIndex + 1, (int) headers.size());
         }
 
-        int index = 0;
-        for (const CBlockHeader& header : headers) {
+        // DoS check
+        if (headers.size() == 1 && nLastKnownBlockIndex != 0) {
+            const CBlockHeader& header = headers[0];
+            uint256 hash = header.GetHash();
+            if (mapBlockIndex.count(hash) == 0) {
+                // New block
+                BlockMap::iterator mi = mapBlockIndex.find(header.hashPrevBlock);
+                if (mi != mapBlockIndex.end()) {
+                    CBlockIndex *pindexPrev = (*mi).second;
+                    CBlockIndex *pindexTip = chainActive.Tip();
+                    arith_uint256 nNewChainWork = pindexPrev->nChainWork + GetBlockProof(header, chainparams.GetConsensus());
+                    arith_uint256 nBestChainWork = pindexTip ? pindexTip->nChainWork : 0;
+                    if (nNewChainWork < nBestChainWork || (nNewChainWork == nBestChainWork && pindexTip != nullptr && pindexTip->nTime < header.nTime)) {
+                        // Not better chainwork. Reject low chainwork fork
+                        if (first_invalid) *first_invalid = header;
+                        return state.Invalid(error("%s: Reject not better chainwork for block(%s <- %s)", __func__, hash.ToString(), pindexPrev->phashBlock->ToString()),
+                            REJECT_INVALID, "bad-chainwork");
+                    }
+                }
+            }
+        }
+
+        for (std::size_t index = 0; index < headers.size(); index++) {
+            const CBlockHeader& header = headers[index];
             CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
-            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, index >= nBeginCheckIndex ? PocVerifyLevel::Force : PocVerifyLevel::Skip)) {
+            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, static_cast<int>(index) > nLastKnownBlockIndex ? PocVerifyLevel::Force : PocVerifyLevel::Skip)) {
                 if (first_invalid) *first_invalid = header;
                 return false;
             }
-            ++index;
             if (ppindex) {
                 *ppindex = pindex;
             }
@@ -3546,7 +3563,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     // process an unrequested block if it's new and has enough work to
     // advance our tip, and isn't too many blocks ahead.
     bool fAlreadyHave = pindex->nStatus & BLOCK_HAVE_DATA;
-    bool fHasMoreOrSameWork = (chainActive.Tip() ? pindex->nChainWork >= chainActive.Tip()->nChainWork : true);
+    bool fHasSameOrMoreWork = (chainActive.Tip() ? pindex->nChainWork >= chainActive.Tip()->nChainWork : true);
     // Blocks that are too out-of-order needlessly limit the effectiveness of
     // pruning, because pruning will not delete block files that contain any
     // blocks which are too close in height to the tip.  Apply this test
@@ -3564,7 +3581,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     if (fAlreadyHave) return true;
     if (!fRequested) {  // If we didn't ask for it:
         if (pindex->nTx != 0) return true;    // This is a previously-processed block that was pruned
-        if (!fHasMoreOrSameWork) return true; // Don't process less-work chains
+        if (!fHasSameOrMoreWork) return true; // Don't process less-work chains
         if (fTooFarAhead) return true;        // Block height is too high
 
         // Protect against DoS attacks from low-work chains.

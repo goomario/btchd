@@ -160,8 +160,6 @@ extern CBlockPolicyEstimator feeEstimator;
 extern CTxMemPool mempool;
 typedef std::unordered_map<uint256, CBlockIndex*, BlockHasher> BlockMap;
 extern BlockMap& mapBlockIndex;
-typedef std::unordered_map<uint256, uint64_t, BlockHasher> BlockDeadlineMap;
-extern BlockDeadlineMap& mapBlockDeadlineCache;
 extern uint64_t nLastBlockTx;
 extern uint64_t nLastBlockWeight;
 extern const std::string strMessageMagic;

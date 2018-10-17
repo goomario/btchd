@@ -119,6 +119,11 @@ void CBlockIndex::BuildSkip()
         pskip = pprev->GetAncestor(GetSkipHeight(nHeight));
 }
 
+arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params& params)
+{
+    return poc::TWO64 / header.nBaseTarget;
+}
+
 arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params& params)
 {
     return poc::TWO64 / block.nBaseTarget;
