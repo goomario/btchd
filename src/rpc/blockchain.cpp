@@ -89,7 +89,6 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("merkleroot", blockindex->hashMerkleRoot.GetHex()));
     result.push_back(Pair("time", (int64_t)blockindex->nTime));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
-    result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->GetBlockHeader()))));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
     result.push_back(Pair("baseTarget", (uint64_t)blockindex->nBaseTarget));
@@ -98,6 +97,8 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
+        if (blockindex->nHeight > Params().GetConsensus().BtchdFundPreMingingHeight)
+            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
@@ -140,7 +141,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("tx", txs));
     result.push_back(Pair("time", block.GetBlockTime()));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
-    result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->GetBlockHeader()))));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
     result.push_back(Pair("baseTarget", (uint64_t)block.nBaseTarget));
@@ -149,6 +149,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
+        if (blockindex->nHeight > Params().GetConsensus().BtchdFundPreMingingHeight)
+            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
