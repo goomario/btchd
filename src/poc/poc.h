@@ -58,7 +58,7 @@ uint64_t GetBlockId(const CBlockIndex &blockIndex);
 uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight);
 
 /** Calculate deadline */
-uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
+uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache = true);
 
 /** Calculate base target */
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
