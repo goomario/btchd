@@ -301,8 +301,63 @@ static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE;
 
 static const int HASH_CAP = 4096;
 
+static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params) {
+    const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
+    const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
+    const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
+    const uint64_t nonce = htobe64(block.nNonce);
+
+    std::unique_ptr<uint8_t> _gendata(new uint8_t[PLOT_SIZE + 16]);
+    uint8_t *const gendata = _gendata.get();
+    memcpy(gendata + PLOT_SIZE, (const unsigned char*)&addr, 8);
+    memcpy(gendata + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
+    for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
+        int len = PLOT_SIZE + 16 - i;
+        if (len > HASH_CAP) {
+            len = HASH_CAP;
+        }
+
+        uint256 temp;
+        CShabal256()
+            .Write((const unsigned char*)gendata + i, len)
+            .Finalize((unsigned char*)temp.begin());
+        memcpy((uint8_t*)gendata + i - HASH_SIZE, (const uint8_t*)temp.begin(), HASH_SIZE);
+    }
+    uint256 base;
+    CShabal256()
+        .Write((const unsigned char*)gendata, PLOT_SIZE + 16)
+        .Finalize((unsigned char*)base.begin());
+
+    std::unique_ptr<uint8_t> _data(new uint8_t[PLOT_SIZE]);
+    uint8_t *data = _data.get();
+    for (int i = 0; i < PLOT_SIZE; i++) {
+        data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
+    }
+    _gendata.reset(nullptr);
+
+    // PoC2 Rearrangement
+    //
+    // [0] [1] [2] [3] ... [N-1]
+    // [1] <-> [N-1]
+    // [3] <-> [N-3]
+    // [5] <-> [N-5]
+    uint8_t hashBuffer[HASH_SIZE];
+    for (int pos = 32, revPos = PLOT_SIZE - HASH_SIZE; pos < (PLOT_SIZE / 2); pos += 64, revPos -= 64) {
+        memcpy(hashBuffer, data + pos, HASH_SIZE); // Copy low scoop second hash to buffer
+        memcpy(data + pos, data + revPos, HASH_SIZE); // Copy high scoop second hash to low scoop second hash
+        memcpy(data + revPos, hashBuffer, HASH_SIZE); // Copy buffer to high scoop second hash
+    }
+
+    CShabal256()
+        .Write((const unsigned char*)genSig.begin(), genSig.size())
+        .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
+        .Finalize((unsigned char*)base.begin());
+
+    return base.GetUint64(0) / prevBlockIndex.nBaseTarget;
+}
+
 // Require hold cs_main
-uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
+uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache)
 {
     // Fund
     if (prevBlockIndex.nHeight + 1 <= params.BtchdFundPreMingingHeight)
@@ -312,66 +367,19 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
     if (params.fPocAllowMinDifficultyBlocks)
         return block.nNonce;
 
-    // From cache
-    BlockDeadlineCacheMap::iterator it;
-    bool inserted;
-    std::tie(it, inserted) = mapBlockDeadlineCache.emplace(block.GetHash(), poc::INVALID_DEADLINE);
-    if (inserted) {
-        const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
-        const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
-        const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
-        const uint64_t nonce = htobe64(block.nNonce);
-
-        std::unique_ptr<uint8_t> _gendata(new uint8_t[PLOT_SIZE + 16]);
-        uint8_t *const gendata = _gendata.get();
-        memcpy(gendata + PLOT_SIZE, (const unsigned char*)&addr, 8);
-        memcpy(gendata + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
-        for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
-            int len = PLOT_SIZE + 16 - i;
-            if (len > HASH_CAP) {
-                len = HASH_CAP;
-            }
-
-            uint256 temp;
-            CShabal256()
-                .Write((const unsigned char*)gendata + i, len)
-                .Finalize((unsigned char*)temp.begin());
-            memcpy((uint8_t*)gendata + i - HASH_SIZE, (const uint8_t*)temp.begin(), HASH_SIZE);
-        }
-        uint256 base;
-        CShabal256()
-            .Write((const unsigned char*)gendata, PLOT_SIZE + 16)
-            .Finalize((unsigned char*)base.begin());
-
-        std::unique_ptr<uint8_t> _data(new uint8_t[PLOT_SIZE]);
-        uint8_t *data = _data.get();
-        for (int i = 0; i < PLOT_SIZE; i++) {
-            data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
-        }
-        _gendata.reset(nullptr);
-
-        // PoC2 Rearrangement
-        //
-        // [0] [1] [2] [3] ... [N-1]
-        // [1] <-> [N-1]
-        // [3] <-> [N-3]
-        // [5] <-> [N-5]
-        uint8_t hashBuffer[HASH_SIZE];
-        for (int pos = 32, revPos = PLOT_SIZE - HASH_SIZE; pos < (PLOT_SIZE / 2); pos += 64, revPos -= 64) {
-            memcpy(hashBuffer, data + pos, HASH_SIZE); // Copy low scoop second hash to buffer
-            memcpy(data + pos, data + revPos, HASH_SIZE); // Copy high scoop second hash to low scoop second hash
-            memcpy(data + revPos, hashBuffer, HASH_SIZE); // Copy buffer to high scoop second hash
+    if (fEnableCache) {
+        // From cache
+        BlockDeadlineCacheMap::iterator it;
+        bool inserted;
+        std::tie(it, inserted) = mapBlockDeadlineCache.emplace(block.GetHash(), poc::INVALID_DEADLINE);
+        if (inserted) {
+            it->second = CalcDL(prevBlockIndex, block, params);
         }
 
-        CShabal256()
-            .Write((const unsigned char*)genSig.begin(), genSig.size())
-            .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
-            .Finalize((unsigned char*)base.begin());
-
-        it->second = base.GetUint64(0) / prevBlockIndex.nBaseTarget;
+        return it->second;
+    } else {
+        return CalcDL(prevBlockIndex, block, params);
     }
-
-    return it->second;
 }
 
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
@@ -473,7 +481,7 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
     block.nNonce     = nNonce;
     block.nPlotterId = nPlotterId;
 
-    uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params);
+    uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params, false);
     if (calcDeadline > MAX_TARGET_DEADLINE) {
         LogPrint(BCLog::POC, "Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
             calcDeadline / (24 * 60 * 60 * 1.0f), MAX_TARGET_DEADLINE / (24 * 60 * 60));
