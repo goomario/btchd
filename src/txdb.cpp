@@ -93,11 +93,13 @@ void TryExecuteSql(SqlAutoReleaseDB &db, const std::string &sql) {
     }
 }
 
-SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql) {
+SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql, bool fWipe) {
     sqlite3 *db = NULL;
 #ifdef WIN32
+    if (fWipe) ::DeleteFileW(path.c_str()); // Remove database file
     int rc = sqlite3_open16(path.c_str(), &db);
 #else
+    if (fWipe) unlink(path.c_str()); // Remove database file
     int rc = sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 #endif
     auto autoDB = SqlAutoReleaseDB(db, sqlite3_close);
@@ -201,11 +203,11 @@ int nCurrentAccountDbVersion = 0;
 
 CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
     db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
-    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3", ACCOUNT_DDL_SQL)),
+    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3", ACCOUNT_DDL_SQL, fWipe)),
     getAccountNearestStmt(CreateStatement(accountDB, ACCOUNT_GET_NEAREST_BALANCE_SQL))
 {
     if (fWipe) {
-        // Clear
+        // Clear (try test database, dont remvove)
         if (!ClearAccount()) {
             throw CUpgradeAccountException();
         }
