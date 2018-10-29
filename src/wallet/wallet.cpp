@@ -3377,18 +3377,13 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
             return false;
 
         // Top up key pool
-        unsigned int nTargetSize = 1;
+        unsigned int nTargetSize = std::max(kpSize, (unsigned int)1);
 
         // count amount of available keys (internal, external)
         // make sure the keypool of external and internal keys fits the user selected target (-keypool)
         int64_t missingExternal = std::max(std::max((int64_t) nTargetSize, (int64_t) 1) - (int64_t)setExternalKeyPool.size(), (int64_t) 0);
-        int64_t missingInternal = std::max(std::max((int64_t) nTargetSize, (int64_t) 1) - (int64_t)setInternalKeyPool.size(), (int64_t) 0);
+        int64_t missingInternal = 0;
 
-        if (!IsHDEnabled() || !CanSupportFeature(FEATURE_HD_SPLIT))
-        {
-            // don't create extra internal keys
-            missingInternal = 0;
-        }
         bool internal = false;
         CWalletDB walletdb(*dbw);
         for (int64_t i = missingInternal + missingExternal; i--;)
@@ -3676,6 +3671,28 @@ std::set<CTxDestination> CWallet::GetAccountAddresses(const std::string& strAcco
         if (strName == strAccount)
             result.insert(address);
     }
+    return result;
+}
+
+std::vector<CTxDestination> CWallet::GetExternalAddresses(int64_t fromIndex, int64_t toIndex) const
+{
+    LOCK(cs_wallet);
+
+    std::vector<CTxDestination> result;
+    int64_t i = 0;
+    CWalletDB walletdb(*dbw);
+    for (auto it = setExternalKeyPool.begin(); it != setExternalKeyPool.end(); it++, i++) {
+        if (i < fromIndex || i >= toIndex)
+            continue;
+
+        CKeyPool keypool;
+        if (!walletdb.ReadPool(*it, keypool)) {
+            throw std::runtime_error(std::string(__func__) + ": read failed");
+        }
+        assert(keypool.vchPubKey.IsValid());
+        result.push_back(GetDestinationForKey(keypool.vchPubKey, g_address_type));
+    }
+
     return result;
 }
 

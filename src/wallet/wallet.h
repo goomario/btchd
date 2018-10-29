@@ -1021,6 +1021,7 @@ public:
     std::map<CTxDestination, CAmount> GetAddressBalances();
 
     std::set<CTxDestination> GetAccountAddresses(const std::string& strAccount) const;
+    std::vector<CTxDestination> GetExternalAddresses(int64_t fromIndex, int64_t toIndex) const;
 
     isminetype IsMine(const CTxIn& txin) const;
     /**

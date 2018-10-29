@@ -3448,6 +3448,49 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
     return response;
 }
 
+UniValue exportkeys(const JSONRPCRequest& request)
+{
+    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 2) {
+        throw std::runtime_error(
+            "exportkeys (\"from_index\") (\"to_index\")\n"
+            "\nExport keys.\n"
+            "\nArguments:\n"
+            "1. \"from_index\"      (numeric, required) key start index\n"
+            "2. \"to_index\"        (numeric, required) key end index\n"
+            "\nResult:\n"
+            "[\n"
+            "]\n"
+            "\nExamples:\n"
+            + HelpExampleCli("exportkeys", "0 100")
+            + HelpExampleRpc("exportkeys", "0, 100")
+            );
+    }
+
+    LOCK(pwallet->cs_wallet);
+    int64_t fromIndex = request.params[0].get_int64();
+    int64_t toIndex = request.params[1].get_int64();
+    if (fromIndex < 0 || fromIndex > toIndex) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid index");
+    }
+    UniValue addresses(UniValue::VARR);
+    for (CTxDestination dest : pwallet->GetExternalAddresses(fromIndex, toIndex)) {
+        addresses.push_back(EncodeDestination(dest));
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("total", pwallet->KeypoolCountExternalKeys());
+    result.pushKV("from", fromIndex);
+    result.pushKV("to", toIndex);
+    result.pushKV("addresses", addresses);
+
+    return result;
+}
+
 UniValue getpledge(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -3558,6 +3601,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrase",         &walletpassphrase,         {"passphrase","timeout"} },
     { "wallet",             "removeprunedfunds",        &removeprunedfunds,        {"txid"} },
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
+    { "wallet",             "exportkeys",               &exportkeys,               {"from_index", "to_index"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
     { "generating",         "getpledge",                &getpledge,                {"plotterId", "height"} },
