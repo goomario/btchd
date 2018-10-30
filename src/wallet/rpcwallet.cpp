@@ -3471,23 +3471,40 @@ UniValue exportkeys(const JSONRPCRequest& request)
             );
     }
 
-    LOCK(pwallet->cs_wallet);
+    LOCK2(cs_main, pwallet->cs_wallet);
+
     int64_t fromIndex = request.params[0].get_int64();
     int64_t toIndex = request.params[1].get_int64();
     if (fromIndex < 0 || fromIndex > toIndex) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid index");
     }
-    UniValue addresses(UniValue::VARR);
+    EnsureWalletIsUnlocked(pwallet);
+
+    int nHeight = chainActive.Height();
+
+    UniValue keys(UniValue::VARR);
     for (CTxDestination dest : pwallet->GetExternalAddresses(fromIndex, toIndex)) {
-        addresses.push_back(EncodeDestination(dest));
+        auto keyid = GetKeyForDestination(*pwallet, dest);
+        if (keyid.IsNull()) {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
+        }
+        CKey vchSecret;
+        if (!pwallet->GetKey(keyid, vchSecret)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + EncodeDestination(dest) + " is not known");
+        }
+
+        UniValue item(UniValue::VOBJ);
+        item.pushKV("privkey", CBitcoinSecret(vchSecret).ToString());
+        item.pushKV("address", EncodeDestination(dest));
+        item.pushKV("balance", ValueFromAmount(pcoinsTip->GetAccountBalance(GetAccountIdByTxDestination(dest), nHeight)));
+        keys.push_back(item);
     }
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("total", pwallet->KeypoolCountExternalKeys());
     result.pushKV("from", fromIndex);
     result.pushKV("to", toIndex);
-    result.pushKV("addresses", addresses);
-
+    result.pushKV("keys", keys);
     return result;
 }
 
