@@ -3457,7 +3457,7 @@ UniValue exportkeys(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 2) {
         throw std::runtime_error(
-            "exportkeys (\"from_index\") (\"to_index\")\n"
+            "exportkeys \"from_index\" \"to_index\"\n"
             "\nExport keys.\n"
             "\nArguments:\n"
             "1. \"from_index\"      (numeric, required) key start index\n"
