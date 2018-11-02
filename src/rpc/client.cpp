@@ -51,6 +51,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "waitforblockheight", 1, "timeout" },
     { "waitforblock", 1, "timeout" },
     { "waitfornewblock", 0, "timeout" },
+    { "dumpprivkeys", 0, "from_index"},
+    { "dumpprivkeys", 1, "to_index"},
     { "move", 2, "amount" },
     { "move", 3, "minconf" },
     { "sendfrom", 2, "amount" },
@@ -145,8 +147,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "echojson", 9, "arg9" },
     { "rescanblockchain", 0, "start_height"},
     { "rescanblockchain", 1, "stop_height"},
-    { "exportkeys", 0, "from_index"},
-    { "exportkeys", 1, "to_index"},
 };
 
 class CRPCConvertTable

@@ -12,6 +12,8 @@
 
 #include <boost/optional.hpp>
 
+
+
 /** Coin Control Features. */
 class CCoinControl
 {
@@ -34,6 +36,8 @@ public:
     bool signalRbf;
     //! Fee estimation mode to control arguments to estimateSmartFee
     FeeEstimateMode m_fee_mode;
+    //! Pay policy
+    PayPolicy payPolicy;
 
     CCoinControl()
     {
@@ -52,6 +56,7 @@ public:
         m_confirm_target.reset();
         signalRbf = fWalletRbf;
         m_fee_mode = FeeEstimateMode::UNSET;
+        payPolicy = PAYPOLICY_FROM_ANY;
     }
 
     bool HasSelected() const
