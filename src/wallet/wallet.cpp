@@ -870,7 +870,7 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
     return true;
 }
 
-CTxDestination CWallet::GetPrimaryDestination()
+CTxDestination CWallet::GetPrimaryDestination() const
 {
     AssertLockHeld(cs_wallet);
 
@@ -2266,6 +2266,8 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
     {
         LOCK2(cs_main, cs_wallet);
 
+        const CScript primaryScriptPubKey = GetScriptForDestination(GetPrimaryDestination());
+        const CScript destChangeScriptPubKey = coinControl ? GetScriptForDestination(coinControl->destChange) : CScript();
         CAmount nTotal = 0;
 
         for (const auto& entry : mapWallet)
@@ -2332,8 +2334,22 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
                 if (pcoin->tx->vout[i].nValue < nMinimumAmount || pcoin->tx->vout[i].nValue > nMaximumAmount)
                     continue;
 
-                if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(COutPoint(entry.first, i)))
-                    continue;
+                if (coinControl) {
+                    if (coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(COutPoint(entry.first, i)))
+                        continue;
+
+                    // Pay policy
+                    if (coinControl->payPolicy == PAYPOLICY_FROM_PRIMARY_ONLY) {
+                        if (pcoin->tx->vout[i].scriptPubKey != primaryScriptPubKey)
+                            continue;
+                    } else if (coinControl->payPolicy == PAYPOLICY_FROM_PRIMARY_EXCLUDE) {
+                        if (pcoin->tx->vout[i].scriptPubKey == primaryScriptPubKey)
+                            continue;
+                    } else if (coinControl->payPolicy == PAYPOLICY_MOVETO) {
+                        if (pcoin->tx->vout[i].scriptPubKey == destChangeScriptPubKey)
+                            continue;
+                    }
+                }
 
                 if (IsLockedCoin(entry.first, i))
                     continue;
@@ -2595,7 +2611,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
         for (const COutput& out : vCoins)
         {
             if (!out.fSpendable)
-                 continue;
+                continue;
             nValueRet += out.tx->tx->vout[out.i].nValue;
             setCoinsRet.insert(CInputCoin(out.tx, out.i));
         }
@@ -2834,12 +2850,37 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
             // change transaction isn't always pay-to-bitcoin-address
             CScript scriptChange;
 
-            // coin control: send change to custom address
-            if (!boost::get<CNoDestination>(&coin_control.destChange)) {
-                scriptChange = GetScriptForDestination(coin_control.destChange);
-            } else { // no coin control: send change to newly generated address
+            // Process moveto policy
+            if (coin_control.payPolicy == PAYPOLICY_MOVETO)
+            {
+                assert (vecSend.size() == 1);
+                nValue = 0;
+                for (const COutput& out : vAvailableCoins)
+                {
+                    if (!out.fSpendable)
+                        continue;
+                    nValue += out.tx->tx->vout[out.i].nValue;
+                }
+                const CRecipient &recipient = vecSend[0];
+                if (nValue < recipient.nAmount)
+                {
+                    strFailReason = _("Not enough move amount");
+                    return false;
+                }
+                const_cast<CRecipient&>(recipient).nAmount = nValue;
+                // "Move to" impossible have change
                 scriptChange = GetScriptForDestination(GetPrimaryDestination());
             }
+            else
+            {
+                // coin control: send change to custom address
+                if (!boost::get<CNoDestination>(&coin_control.destChange)) {
+                    scriptChange = GetScriptForDestination(coin_control.destChange);
+                } else { // no coin control: send change to newly generated address
+                    scriptChange = GetScriptForDestination(GetPrimaryDestination());
+                }
+            }
+
             CTxOut change_prototype_txout(0, scriptChange);
             size_t change_prototype_size = GetSerializeSize(change_prototype_txout, SER_DISK, 0);
 
@@ -3377,18 +3418,13 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
             return false;
 
         // Top up key pool
-        unsigned int nTargetSize = 1;
+        unsigned int nTargetSize = std::max(kpSize, (unsigned int)1);
 
         // count amount of available keys (internal, external)
         // make sure the keypool of external and internal keys fits the user selected target (-keypool)
         int64_t missingExternal = std::max(std::max((int64_t) nTargetSize, (int64_t) 1) - (int64_t)setExternalKeyPool.size(), (int64_t) 0);
-        int64_t missingInternal = std::max(std::max((int64_t) nTargetSize, (int64_t) 1) - (int64_t)setInternalKeyPool.size(), (int64_t) 0);
+        int64_t missingInternal = 0;
 
-        if (!IsHDEnabled() || !CanSupportFeature(FEATURE_HD_SPLIT))
-        {
-            // don't create extra internal keys
-            missingInternal = 0;
-        }
         bool internal = false;
         CWalletDB walletdb(*dbw);
         for (int64_t i = missingInternal + missingExternal; i--;)
@@ -3676,6 +3712,28 @@ std::set<CTxDestination> CWallet::GetAccountAddresses(const std::string& strAcco
         if (strName == strAccount)
             result.insert(address);
     }
+    return result;
+}
+
+std::vector<CTxDestination> CWallet::GetExternalAddresses(int64_t fromIndex, int64_t toIndex) const
+{
+    LOCK(cs_wallet);
+
+    std::vector<CTxDestination> result;
+    int64_t i = 0;
+    CWalletDB walletdb(*dbw);
+    for (auto it = setExternalKeyPool.begin(); it != setExternalKeyPool.end(); it++, i++) {
+        if (i < fromIndex || i >= toIndex)
+            continue;
+
+        CKeyPool keypool;
+        if (!walletdb.ReadPool(*it, keypool)) {
+            throw std::runtime_error(std::string(__func__) + ": read failed");
+        }
+        assert(keypool.vchPubKey.IsValid());
+        result.push_back(GetDestinationForKey(keypool.vchPubKey, g_address_type));
+    }
+
     return result;
 }
 

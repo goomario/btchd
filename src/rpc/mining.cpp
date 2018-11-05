@@ -1188,6 +1188,35 @@ UniValue estimaterawfee(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue getbalanceofheight(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            "getbalanceofheight \"address\" (\"height\")\n"
+            "\nArguments:\n"
+            "1. address           (string,optional) The BitcoinHD address\n"
+            "2. height            (numeric,optional) The height of blockchain\n"
+            "\nResult:\n"
+            "Balance\n"
+            "\n"
+            "\nExample:\n"
+            + HelpExampleCli("getbalanceofheight", Params().GetConsensus().BtchdFundAddress + " 90000")
+            + HelpExampleRpc("getbalanceofheight", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", 90000")
+            );
+
+    CAccountId nMinerAccountId = GetAccountIdByAddress(request.params[0].get_str());
+    if (nMinerAccountId == 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
+    }
+
+    int nHeight = chainActive.Height() + 1;
+    if (request.params.size() > 1) {
+        nHeight = request.params[1].get_int();
+    }
+
+    return ValueFromAmount(pcoinsTip->GetAccountBalance(nMinerAccountId,nHeight));
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -1202,6 +1231,7 @@ static const CRPCCommand commands[] =
 
     { "util",               "estimatefee",            &estimatefee,            {"nblocks"} },
     { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
+    { "util",               "getbalanceofheight",     &getbalanceofheight,     {"address", "height"} },
 
     { "hidden",             "estimaterawfee",         &estimaterawfee,         {"conf_target", "threshold"} },
 };

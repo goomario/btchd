@@ -425,7 +425,7 @@ UniValue setprimaryaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_MISC_ERROR, "setprimaryaddress can only be used with own address");
 }
 
-void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
+CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
 {
     CAmount curBalance = pwallet->GetBalance();
 
@@ -445,7 +445,7 @@ void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount n
 
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired;
+    CAmount nFeeRequired = 0;
     std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
@@ -461,6 +461,8 @@ void SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount n
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
+
+    return vecSend[0].nAmount;
 }
 
 UniValue sendtoaddress(const JSONRPCRequest& request)
@@ -470,9 +472,9 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 8)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 10)
         throw std::runtime_error(
-            "sendtoaddress \"address\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\")\n"
+            "sendtoaddress \"address\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\" \"pay_policy\" \"changeaddress\")\n"
             "\nSend an amount to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
@@ -491,6 +493,12 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "       \"UNSET\"\n"
             "       \"ECONOMICAL\"\n"
             "       \"CONSERVATIVE\"\n"
+            "9. \"pay_policy\"         (string, optional, default=ANY) The pay from policy, must be on of:\n"
+            "       \"ANY\"\n"
+            "       \"PRIMARYONLY\"\n"
+            "       \"PRIMARYEXCLUDE\"\n"
+            "       \"MOVETO\"\n"
+            "10. \"changeaddress\"     (string,optional) The change address. Not use on pay_policy=MOVETO"
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
@@ -545,12 +553,43 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
         }
     }
 
+    if (!request.params[8].isNull()) {
+        if (request.params[8].get_str() == "ANY") {
+            coin_control.payPolicy = PAYPOLICY_FROM_ANY;
+        } else if (request.params[8].get_str() == "PRIMARYONLY") {
+            coin_control.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+        } else if (request.params[8].get_str() == "PRIMARYEXCLUDE") {
+            coin_control.payPolicy = PAYPOLICY_FROM_PRIMARY_EXCLUDE;
+        } else if (request.params[8].get_str() == "MOVETO") {
+            coin_control.payPolicy = PAYPOLICY_MOVETO;
+            coin_control.destChange = dest;
+        } else {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid pay_policy parameter");
+        }
+    }
+    if (!request.params[9].isNull() && !request.params[9].get_str().empty()) {
+        if (coin_control.payPolicy == PAYPOLICY_MOVETO)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid changeaddress parameter on pay_policy=MOVETO");
+
+        CTxDestination changeDest = DecodeDestination(request.params[9].get_str());
+        if (!IsValidDestination(dest)) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid change address");
+        }
+        coin_control.destChange = changeDest;
+    }
 
     EnsureWalletIsUnlocked(pwallet);
 
-    SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
-
-    return wtx.GetHash().GetHex();
+    CAmount sendAmount = SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
+    if (coin_control.payPolicy == PAYPOLICY_MOVETO) {
+        UniValue result(UniValue::VOBJ);
+        result.pushKV("txid", wtx.GetHash().GetHex());
+        result.pushKV("vout", 0);
+        result.pushKV("amount", ValueFromAmount(sendAmount));
+        return result;
+    } else {
+        return wtx.GetHash().GetHex();
+    }
 }
 
 UniValue listaddressgroupings(const JSONRPCRequest& request)
@@ -959,7 +998,6 @@ UniValue movecmd(const JSONRPCRequest& request)
     return true;
 }
 
-
 UniValue sendfrom(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -1072,7 +1110,7 @@ UniValue sendmany(const JSONRPCRequest& request)
             "       \"UNSET\"\n"
             "       \"ECONOMICAL\"\n"
             "       \"CONSERVATIVE\"\n"
-             "\nResult:\n"
+            "\nResult:\n"
             "\"txid\"                   (string) The transaction id for the send. Only 1 transaction is created regardless of \n"
             "                                    the number of addresses.\n"
             "\nExamples:\n"
@@ -3493,6 +3531,7 @@ UniValue getpledge(const JSONRPCRequest& request)
 
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
+extern UniValue dumpprivkeys(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue importprivkey(const JSONRPCRequest& request);
 extern UniValue importaddress(const JSONRPCRequest& request);
 extern UniValue importpubkey(const JSONRPCRequest& request);
@@ -3513,7 +3552,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "addmultisigaddress",       &addmultisigaddress,       {"nrequired","keys","account"} },
     { "wallet",             "backupwallet",             &backupwallet,             {"destination"} },
     { "wallet",             "bumpfee",                  &bumpfee,                  {"txid", "options"} },
-    { "wallet",             "dumpprivkey",              &dumpprivkey,              {"address"}  },
+    { "wallet",             "dumpprivkey",              &dumpprivkey,              {"address"} },
+    { "wallet",             "dumpprivkeys",             &dumpprivkeys,             {"from_index", "to_index"} },
     { "wallet",             "dumpwallet",               &dumpwallet,               {"filename"} },
     { "wallet",             "encryptwallet",            &encryptwallet,            {"passphrase"} },
     { "wallet",             "getaccountaddress",        &getaccountaddress,        {"account"} },
@@ -3549,7 +3589,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "move",                     &movecmd,                  {"fromaccount","toaccount","amount","minconf","comment"} },
     { "wallet",             "sendfrom",                 &sendfrom,                 {"fromaccount","toaddress","amount","minconf","comment","comment_to"} },
     { "wallet",             "sendmany",                 &sendmany,                 {"fromaccount","amounts","minconf","comment","subtractfeefrom","replaceable","conf_target","estimate_mode"} },
-    { "wallet",             "sendtoaddress",            &sendtoaddress,            {"address","amount","comment","comment_to","subtractfeefromamount","replaceable","conf_target","estimate_mode"} },
+    { "wallet",             "sendtoaddress",            &sendtoaddress,            {"address","amount","comment","comment_to","subtractfeefromamount","replaceable","conf_target","estimate_mode","pay_policy","changeaddress"} },
     { "wallet",             "setaccount",               &setaccount,               {"address","account"} },
     { "wallet",             "settxfee",                 &settxfee,                 {"amount"} },
     //{ "wallet",             "signmessage",              &signmessage,              {"address","message"} },
