@@ -111,6 +111,10 @@
         <translation>仅支付全额的%1</translation>
     </message>
     <message>
+        <source>Estimated to begin confirmation within %n block(s).</source>
+        <translation>预计在 %n 个区块内开始确认。</translation>
+    </message>
+    <message>
         <source>Warning: Invalid BitcoinHD address</source>
         <translation>警告：BitcoinHD地址无效</translation>
     </message>

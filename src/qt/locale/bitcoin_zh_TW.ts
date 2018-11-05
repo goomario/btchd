@@ -2355,6 +2355,10 @@
         <translation>只付必要的手續費 %1</translation>
     </message>
     <message>
+        <source>Estimated to begin confirmation within %n block(s).</source>
+        <translation>預計在 %n 個區塊內開始確認。</translation>
+    </message>
+    <message>
         <source>Warning: Invalid BitcoinHD address</source>
         <translation>警告: BitcoinHD 位址無效</translation>
     </message>
