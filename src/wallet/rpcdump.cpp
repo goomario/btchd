@@ -715,7 +715,7 @@ UniValue dumpprivkeys(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("total", pwallet->KeypoolCountExternalKeys());
+    result.pushKV("total", (uint64_t)pwallet->KeypoolCountExternalKeys());
     result.pushKV("from", fromIndex);
     result.pushKV("to", toIndex);
     result.pushKV("keys", keys);
@@ -817,7 +817,7 @@ UniValue dumpwallet(const JSONRPCRequest& request)
         if (pwallet->GetKey(keyid, key)) {
             file << strprintf("%s %s ", CBitcoinSecret(key).ToString(), strTime);
             if (GetWalletAddressesForKey(pwallet, keyid, strAddr, strLabel)) {
-               file << strprintf("label=%s", strLabel);
+                file << strprintf("label=%s", strLabel);
             } else if (keyid == masterKeyID) {
                 file << "hdmaster=1";
             } else if (mapKeyPool.count(keyid)) {
