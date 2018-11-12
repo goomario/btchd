@@ -124,10 +124,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000328d2e375192dda5");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000003a061e117380c2a8");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x3971f056b5f11e140965e0e122b370721abd1d2be6c3c14c9f07d3dcdef50bbe"); // 111800
+        consensus.defaultAssumeValid = uint256S("0x7af7b16776f8e91f5dcafae8405ea3ccdb0b8db06d85b64549ca61eca4990f35"); // 113900
 
         // BitcoinHD new consensus upgrade bug.
         // 96264 is invalid block
@@ -340,6 +340,17 @@ public:
                 { 111400, uint256S("0xe594bc426808fd7fb98ad64b6b09834a3323e678a2b9a14508b06ab69f7879ce") },
                 { 111600, uint256S("0xedb76d9b771d1522c36b61afbec89df6582f5a6db49083f4647a0e33b97b8398") },
                 { 111800, uint256S("0x3971f056b5f11e140965e0e122b370721abd1d2be6c3c14c9f07d3dcdef50bbe") },
+                { 112000, uint256S("0xfd78fbf7e6e6274919f12c384e46ea7f5e3ffc2c7a3828a35664622d06885667") },
+                { 112200, uint256S("0x540d714fe20d6436b48eb2d5672cc3dbd881dd208e6cef34194d36df5e0d610d") },
+                { 112400, uint256S("0xba7262dafdc2322fbc7eed5622293f13b0cb82edfd869585c6da0f5ae4a27456") },
+                { 112600, uint256S("0x2b3f3dfe550647445d8e0f76877398e72474cd5e7a847a953d4a24c23da49c19") },
+                { 112800, uint256S("0x11e736b1c4c2d2d48d18df13cba43752e5e1717875ff1c91d29a6f6db7ac2957") },
+                { 113000, uint256S("0xfa577eb0c02a6f81642a166791dace0d035515c1afaa2f071447d8c462ac88c8") },
+                { 113200, uint256S("0x5465bf0e2faecced817ece5f91c9176230a4354dfed92b078d2fe4bcddcbbf81") },
+                { 113400, uint256S("0x62e472da5d5857f1f1cf2f23269b1796efa9611e44d323b46ffc6280e1a4963b") },
+                { 113600, uint256S("0x3433898f22bacb95ae21fa6c68561bb1c4d14c055f434ecfa029b7598ef53871") },
+                { 113800, uint256S("0xf1a58e7e268e5399dd450e38b67ce0e8ffe046950270028a373a24a43ebae922") },
+                { 113900, uint256S("0x7af7b16776f8e91f5dcafae8405ea3ccdb0b8db06d85b64549ca61eca4990f35") }
             }
         };
 
