@@ -280,12 +280,6 @@ static bool AdjustGetBlockParam(JSONRPCRequest& jreq, HTTPRequest* req, const st
 
 static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
 {
-    if (req->GetRequestMethod() != HTTPRequest::POST) {
-        LogPrintf("The uri: %s\n", req->GetURI().c_str());
-        req->WriteReply(HTTP_BAD_METHOD, "JSONRPC server handles only POST requests");
-        return false;
-    }
-
     JSONRPCRequest jreq;
     try {
         // Parse request
@@ -294,6 +288,12 @@ static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
         if (requestType == parameters.cend()) {
             LogPrintf("Not find requestType, threadid=%ld \n", std::this_thread::get_id());
             PoCJSONErrorReply(req, 1, "Incorrect request");
+            return false;
+        }
+        // getMiningInfo support GET
+        if (req->GetRequestMethod() != HTTPRequest::POST && (requestType->second != "getMiningInfo" || req->GetRequestMethod() != HTTPRequest::GET)) {
+            LogPrintf("The uri: %s\n", req->GetURI().c_str());
+            req->WriteReply(HTTP_BAD_METHOD, "JSONRPC server handles only POST requests");
             return false;
         }
         const time_t startTime = ::time(nullptr);
