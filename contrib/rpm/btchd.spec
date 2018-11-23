@@ -20,8 +20,8 @@ Summary:	Peer to Peer Cryptographic Currency
 
 Group:		Applications/System
 License:	MIT
-URL:		http://btchd.org/
-Source0:	http://btchd.org/bin/BitcoinHD-core-%{version}/BitcoinHD-%{version}.tar.gz
+URL:		https://btchd.org/
+Source0:	https://btchd.org/bin/BitcoinHD-core-%{version}/BitcoinHD-%{version}.tar.gz
 Source1:	http://download.oracle.com/berkeley-db/db-%{bdbv}.NC.tar.gz
 
 Source10:	https://raw.githubusercontent.com/btchd/btchd/v%{version}/contrib/debian/examples/btchd.conf

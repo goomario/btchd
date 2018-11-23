@@ -27,7 +27,7 @@ Build-Depends: debhelper,
  libzmq3-dev,
  libsqlite3-dev
 Standards-Version: 3.9.2
-Homepage: http://btchd.org/
+Homepage: https://btchd.org/
 Vcs-Git: git://github.com/btchd/btchd.git
 Vcs-Browser: https://github.com/btchd/btchd
 

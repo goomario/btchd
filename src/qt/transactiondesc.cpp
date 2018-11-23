@@ -24,11 +24,11 @@
 namespace {
 
 QString AddLinkToAddress(const QString &address) {
-    return "<a href=\"http://btchd.org/explorer/address/" + address + "\">" + address + "</a>";
+    return "<a href=\"https://btchd.org/explorer/address/" + address + "\">" + address + "</a>";
 }
 
 QString AddLinkToTx(const QString &tx) {
-    return "<a href=\"http://btchd.org/explorer/tx/" + tx + "\">" + tx + "</a>";
+    return "<a href=\"https://btchd.org/explorer/tx/" + tx + "\">" + tx + "</a>";
 }
 
 }

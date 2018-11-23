@@ -1,6 +1,6 @@
 BitcoinHD Core version 1.0.x is now available from:
 
-  <http://btchd.org/bin/btchd-core-1.0.x/>
+  <https://btchd.org/bin/btchd-core-1.0.x/>
 
 This is a new major version release, including new features, various bugfixes
 and performance improvements, as well as updated translations.
@@ -11,7 +11,7 @@ Please report bugs using the issue tracker at GitHub:
 
 To receive security and update notifications, please subscribe to:
 
-  <http://btchd.org/en/list/announcements/join/>
+  <https://btchd.org/en/list/announcements/join/>
 
 How to Upgrade
 ==============
