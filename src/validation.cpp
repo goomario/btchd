@@ -3512,13 +3512,18 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
 
         for (std::size_t index = 0; index < headers.size(); index++) {
             const CBlockHeader& header = headers[index];
+            const PocVerifyLevel pocVerifyLevel = static_cast<int>(index) > nLastKnownBlockIndex ? PocVerifyLevel::Force : PocVerifyLevel::Skip;
             CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
-            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, static_cast<int>(index) > nLastKnownBlockIndex ? PocVerifyLevel::Force : PocVerifyLevel::Skip)) {
+            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, pocVerifyLevel)) {
                 if (first_invalid) *first_invalid = header;
                 return false;
             }
             if (ppindex) {
                 *ppindex = pindex;
+            }
+            // Exit on shutdown requested
+            if (pocVerifyLevel != PocVerifyLevel::Skip && ShutdownRequested()) {
+                break;
             }
         }
     }
