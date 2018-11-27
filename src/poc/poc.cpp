@@ -425,10 +425,11 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
         return newBaseTarget;
     } else {
-        // [N-1,N-2,N-3,...,N-25]
+        const int N = nHeight < params.BHDIP1010Height ? 25 : (24 * 3600 / consensus.nPowTargetSpacing);
+        // [X-1,X-2,...,X-N]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
-        for (int i = nHeight - 2, blockCounter = 1; i >= nHeight - 25; i--,blockCounter++) {
+        for (int i = nHeight - 2, blockCounter = 1; i >= nHeight - N; i--,blockCounter++) {
             pLastindex = pLastindex->pprev;
             if (pLastindex == nullptr) {
                 break;
@@ -436,9 +437,9 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
             avgBaseTarget = (avgBaseTarget * blockCounter + pLastindex->nBaseTarget) / (blockCounter + 1);
         }
         assert(pLastindex != nullptr);
-        
+
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = params.nPowTargetSpacing * 24; // 5m * 24blocks
+        int64_t targetTimespan = params.nPowTargetSpacing * (N - 1); // 5m * (N-1)blocks
 
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;

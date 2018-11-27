@@ -75,6 +75,11 @@ struct Params {
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
 
+    /** Block height at which BHDIP1010 becomes active */
+    int BHDIP1010Height;
+    /** Block height at which BHDIP1011 becomes active */
+    int BHDIP1011Height;
+
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
