@@ -425,7 +425,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
         return newBaseTarget;
     } else {
-        const int N = nHeight < params.BHDIP1010Height ? 25 : (24 * 3600 / consensus.nPowTargetSpacing);
+        const int N = nHeight < params.BHDIP1010Height ? 25 : (24 * 3600 / params.nPowTargetSpacing);
         // [X-1,X-2,...,X-N]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
