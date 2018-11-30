@@ -171,11 +171,11 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
                     (coin.IsSpent() ? added_an_entry : updated_an_entry) = true;
                     coin = newcoin;
                 }
-                stack.back()->AddCoin(newcoin.nHeight, COutPoint(txid, 0), std::move(newcoin), !coin.IsSpent() || InsecureRand32() & 1);
+                stack.back()->AddCoin(COutPoint(txid, 0), std::move(newcoin), !coin.IsSpent() || InsecureRand32() & 1);
             } else {
                 removed_an_entry = true;
                 coin.Clear();
-                stack.back()->SpendCoin(1, COutPoint(txid, 0));
+                stack.back()->SpendCoin(COutPoint(txid, 0));
             }
         }
 
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE(updatecoins_simulation_test)
             // Disconnect the tx from the current UTXO
             // See code in DisconnectBlock
             // remove outputs
-            stack.back()->SpendCoin(1, utxod->first);
+            stack.back()->SpendCoin(utxod->first);
             // restore inputs
             if (!tx.IsCoinBase()) {
                 const COutPoint &out = tx.vin[0].prevout;
@@ -659,7 +659,7 @@ BOOST_AUTO_TEST_CASE(ccoins_access)
 void CheckSpendCoins(CAmount base_value, CAmount cache_value, CAmount expected_value, char cache_flags, char expected_flags)
 {
     SingleEntryCacheTest test(base_value, cache_value, cache_flags);
-    test.cache.SpendCoin(1, OUTPOINT);
+    test.cache.SpendCoin(OUTPOINT);
     test.cache.SelfTest();
 
     CAmount result_value;
@@ -716,7 +716,7 @@ void CheckAddCoinBase(CAmount base_value, CAmount cache_value, CAmount modify_va
     try {
         CTxOut output;
         output.nValue = modify_value;
-        test.cache.AddCoin(1, OUTPOINT, Coin(std::move(output), 1, coinbase), coinbase);
+        test.cache.AddCoin(OUTPOINT, Coin(std::move(output), 1, coinbase), coinbase);
         test.cache.SelfTest();
         GetCoinsMapEntry(test.cache.map(), result_value, result_flags);
     } catch (std::logic_error& e) {
