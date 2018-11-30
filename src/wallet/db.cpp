@@ -19,7 +19,6 @@
 #endif
 
 #include <boost/thread.hpp>
-#include <sqlite3.h>
 
 namespace {
 //! Make sure database has a unique fileid within the environment. If it
@@ -283,7 +282,6 @@ bool CDB::Recover(const std::string& filename, void *callbackDataIn, bool (*reco
 bool CDB::VerifyEnvironment(const std::string& walletFile, const fs::path& walletDir, std::string& errorStr)
 {
     LogPrintf("Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
-    LogPrintf("Using SQLite version %s\n", sqlite3_libversion());
     LogPrintf("Using wallet %s\n", walletFile);
 
     // Wallet file must be a plain filename without a directory

@@ -285,7 +285,7 @@ typedef struct {
     CAmount fund;
 } BlockReward;
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const uint64_t &nPlotterId,
-                           const CCoinsView &view, const Consensus::Params& consensusParams);
+                           const CCoinsViewCache &view, const Consensus::Params& consensusParams);
 /** Get miner pledge */
 CAmount GetMinerPledge(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams, CAmount *pMinerPledgeOldConsensus = nullptr);
 

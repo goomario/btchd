@@ -5,6 +5,7 @@
 
 #include <script/standard.h>
 
+#include <base58.h>
 #include <pubkey.h>
 #include <script/script.h>
 #include <util.h>
@@ -360,4 +361,89 @@ CScript GetScriptForWitness(const CScript& redeemscript)
 
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
+}
+
+namespace {
+
+class CAccountIdVisitor : public boost::static_visitor<bool> {
+private:
+    CAccountId *nAccountId;
+
+public:
+    explicit CAccountIdVisitor(CAccountId *nAccountIdIn) { nAccountId = nAccountIdIn; }
+
+    bool operator()(const CNoDestination&) const {
+        *nAccountId = 0;
+        return false;
+    }
+
+    bool operator()(const CKeyID &keyID) const {
+        *nAccountId = 0;
+        return false;
+    }
+
+    bool operator()(const CScriptID &scriptID) const {
+        return ToId(scriptID.begin(), scriptID.end());
+    }
+
+    bool operator()(const WitnessV0KeyHash &id) const {
+        *nAccountId = 0;
+        return false;
+    }
+
+    bool operator()(const WitnessV0ScriptHash &id) const {
+        *nAccountId = 0;
+        return false;
+    }
+
+    bool operator()(const WitnessUnknown &id) const {
+       *nAccountId = 0;
+        return false;
+    }
+
+private:
+    template <typename T>
+    bool ToId(const T begin, const T end) const
+    {
+        if (end - begin >= 8) {
+            *nAccountId = ((uint64_t)begin[0]) |
+                          ((uint64_t)begin[1]) << 8 |
+                          ((uint64_t)begin[2]) << 16 |
+                          ((uint64_t)begin[3]) << 24 |
+                          ((uint64_t)begin[4]) << 32 |
+                          ((uint64_t)begin[5]) << 40 |
+                          ((uint64_t)begin[6]) << 48 |
+                          ((uint64_t)begin[7]) << 56;
+            return true;
+        } else {
+            *nAccountId = 0;
+            return false;
+        }
+    }
+};
+
+}
+
+CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey) {
+    CTxDestination dest;
+    if (ExtractDestination(scriptPubKey, dest)) {
+        return GetAccountIdByTxDestination(dest);
+    } else {
+        return 0;
+    }
+}
+
+CAccountId GetAccountIdByTxDestination(const CTxDestination &dest) {
+    CAccountId nAccountId;
+    boost::apply_visitor(CAccountIdVisitor(&nAccountId), dest);
+    return nAccountId;
+}
+
+CAccountId GetAccountIdByAddress(const std::string &address) {
+    CTxDestination dest = DecodeDestination(address);
+    if (IsValidDestination(dest)) {
+        return GetAccountIdByTxDestination(dest);
+    } else {
+        return 0;
+    }
 }

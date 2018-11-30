@@ -25,12 +25,14 @@ class TxInUndoSerializer
 public:
     template<typename Stream>
     void Serialize(Stream &s) const {
-        ::Serialize(s, VARINT(txout->nHeight * 2 + (txout->fCoinBase ? 1 : 0)));
+        ::Serialize(s, VARINT((txout->extraData.empty() ? 0 : 0x80000000) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00)));
         if (txout->nHeight > 0) {
             // Required to maintain compatibility with older undo format.
             ::Serialize(s, (unsigned char)0);
         }
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
+        if (!txout->extraData.empty())
+            ::Serialize(s, CScriptCompressor(REF(txout->extraData)));
     }
 
     explicit TxInUndoSerializer(const Coin* coin) : txout(coin) {}
@@ -45,8 +47,8 @@ public:
     void Unserialize(Stream &s) {
         unsigned int nCode = 0;
         ::Unserialize(s, VARINT(nCode));
-        txout->nHeight = nCode / 2;
-        txout->fCoinBase = nCode & 1;
+        txout->nHeight = (nCode&0x7fffffff) >> 1;
+        txout->fCoinBase = nCode & 0x01;
         if (txout->nHeight > 0) {
             // Old versions stored the version number for the last spend of
             // a transaction's outputs. Non-final spends were indicated with
@@ -55,6 +57,11 @@ public:
             ::Unserialize(s, VARINT(nVersionDummy));
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
+        if (nCode & 0x80000000)
+            ::Unserialize(s, REF(CScriptCompressor(txout->extraData)));
+
+        txout->outAccountId = GetAccountIdByScriptPubKey(txout->out.scriptPubKey);
+        txout->outValue = txout->out.nValue;
     }
 
     explicit TxInUndoDeserializer(Coin* coin) : txout(coin) {}

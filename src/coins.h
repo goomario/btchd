@@ -19,14 +19,14 @@
 #include <stdint.h>
 
 #include <unordered_map>
-#include <map>
 
 /**
  * A UTXO entry.
  *
  * Serialized format:
- * - VARINT((coinbase ? 1 : 0) | (height << 1))
+ * - VARINT((coinbase ? 1 : 0) | (height << 1) | (extraData ? 0 : 0x80000000))
  * - the non-spent CTxOut (via CTxOutCompressor)
+ * - the extra-data CScript (via CScriptCompressor)
  */
 class Coin
 {
@@ -38,11 +38,22 @@ public:
     unsigned int fCoinBase : 1;
 
     //! at which height this containing transaction was included in the active block chain
-    uint32_t nHeight : 31;
+    uint32_t nHeight : 30;
+
+    //! extra data of relevant coin
+    CScript extraData;
+
+    //! Memory Only. account from out.scriptPubKey
+    CAccountId outAccountId;
+
+    //! Memory Only. account from out.nValue
+    CAmount outValue;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
-    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
-    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), fCoinBase(fCoinBaseIn),nHeight(nHeightIn) {}
+    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), fCoinBase(fCoinBaseIn), nHeight(nHeightIn),
+        outAccountId(GetAccountIdByScriptPubKey(out.scriptPubKey)), outValue(out.nValue) {}
+    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), fCoinBase(fCoinBaseIn), nHeight(nHeightIn),
+        outAccountId(GetAccountIdByScriptPubKey(out.scriptPubKey)), outValue(out.nValue) {}
 
     void Clear() {
         out.SetNull();
@@ -51,7 +62,7 @@ public:
     }
 
     //! empty constructor
-    Coin() : fCoinBase(false), nHeight(0) { }
+    Coin() : fCoinBase(false), nHeight(0), outAccountId(0), outValue(0) { }
 
     bool IsCoinBase() const {
         return fCoinBase;
@@ -60,18 +71,25 @@ public:
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
-        uint32_t code = nHeight * 2 + fCoinBase;
+        uint32_t code = (extraData.empty() ? 0 : 0x80000000) | (nHeight << 1) | (fCoinBase ? 1 : 0);
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
+        if (!extraData.empty())
+            ::Serialize(s, CScriptCompressor(REF(extraData)));
     }
 
     template<typename Stream>
     void Unserialize(Stream &s) {
         uint32_t code = 0;
         ::Unserialize(s, VARINT(code));
-        nHeight = code >> 1;
-        fCoinBase = code & 1;
+        nHeight = (code&0x7fffffff) >> 1;
+        fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
+        if (code & 0x80000000)
+            ::Unserialize(s, REF(CScriptCompressor(extraData)));
+
+        outAccountId = GetAccountIdByScriptPubKey(out.scriptPubKey);
+        outValue = out.nValue;
     }
 
     bool IsSpent() const {
@@ -79,7 +97,7 @@ public:
     }
 
     size_t DynamicMemoryUsage() const {
-        return memusage::DynamicUsage(out.scriptPubKey);
+        return memusage::DynamicUsage(out.scriptPubKey) + (extraData.empty() ? 0 : memusage::DynamicUsage(extraData));
     }
 };
 
@@ -122,15 +140,6 @@ struct CCoinsCacheEntry
 };
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
-
-/** Account different coins value record */
-struct CAccountDiffCoinsValue
-{
-    std::map<COutPoint, CAmount> vAudit; // utxo => amount
-    CAmount nDiffCoins; // Change relative current height
-};
-typedef std::map<CAccountId, CAccountDiffCoinsValue> CAccountDiffCoins; // AccountId => Diff
-typedef std::map<int, CAccountDiffCoins> CAccountDiffCoinsMap; // Height => AccountId => Diff. Order by height asc
 
 /** Cursor for iterating over CoinsView state */
 class CCoinsViewCursor
@@ -176,7 +185,7 @@ public:
 
     //! Do a bulk modification (multiple Coin changes + BestBlock change).
     //! The passed mapCoins can be modified.
-    virtual bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock);
+    virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
 
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursor *Cursor() const;
@@ -187,8 +196,8 @@ public:
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
 
-    //! Get amount
-    virtual CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const;
+    //! Get account balance
+    virtual CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const;
 };
 
 
@@ -205,10 +214,10 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
-    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
+    CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const override;
 };
 
 
@@ -222,7 +231,6 @@ protected:
      */
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
-    mutable CAccountDiffCoinsMap cacheAccountDiffCoins;
 
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage;
@@ -240,11 +248,11 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
-    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
+    CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -310,6 +318,9 @@ public:
     //! Check whether all prevouts of the transaction are present in the UTXO set represented by this view
     bool HaveInputs(const CTransaction& tx) const;
 
+    //! Get account balance
+    CAmount GetAccountBalance(const CAccountId &accountId, int height) const { return base->GetAccountBalance(accountId, cacheCoins); }
+
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;
 };
@@ -327,14 +338,5 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool 
 // which is not found in the cache, it can cause up to MAX_OUTPUTS_PER_BLOCK
 // lookups to database, so it should be used with care.
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
-
-//! Utility function to get account id with given scriptPubKey.
-CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey);
-
-//! Utility function to get account id with given CTxDestination.
-CAccountId GetAccountIdByTxDestination(const CTxDestination &dest);
-
-//! Utility function to get account id with given address.
-CAccountId GetAccountIdByAddress(const std::string &address);
 
 #endif // BITCOIN_COINS_H

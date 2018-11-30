@@ -3496,37 +3496,39 @@ UniValue getpledge(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 2)
         throw std::runtime_error(
-            "getpledge plotterId height\n"
+            "getpledge (plotterId)\n"
             "Get mortage amount of wallet.\n"
             "\nArguments:\n"
             "1. plotterId       (string, optional) Plotter ID\n"
-            "2. height          (integer, optional) Pledge height\n"
+            "2. verbose         (bool, optional, default=true) If true, return detail pledge\n"
             "\nResult:\n"
             "The mortage information of wallet master address\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getpledge", "\"0\" 90000")
-            + HelpExampleRpc("getpledge", "\"0\", 90000")
-            );
+            + HelpExampleCli("getpledge", "\"0\" true")
+            + HelpExampleRpc("getpledge", "\"0\", true")
+        );
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
     CTxDestination dest = pwallet->GetPrimaryDestination();
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+        throw JSONRPCError(RPC_TYPE_ERROR, "Inner error! Invalid primary address.");
     }
 
     uint64_t nPlotterId = 0;
-    if (request.params.size() >= 1) {
+    if (!request.params[0].isNull()) {
+        if (!request.params[0].isStr())
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
     }
 
-    int nHeight = chainActive.Height() + 1;
-    if (request.params.size() >= 2) {
-        nHeight = request.params[1].get_int();
+    bool fVerbose = true;
+    if (!request.params[1].isNull()) {
+        fVerbose = request.params[1].isNum() ? (request.params[1].get_int() != 0) : request.params[1].get_bool();
     }
 
-    return GetPledge(EncodeDestination(dest), nPlotterId, nHeight);
+    return GetPledge(EncodeDestination(dest), nPlotterId, fVerbose);
 }
 
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
@@ -3600,7 +3602,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height", "stop_height"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
-    { "generating",         "getpledge",                &getpledge,                {"plotterId", "height"} },
+    { "generating",         "getpledge",                &getpledge,                {"plotterId", "verbose"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)

@@ -116,39 +116,13 @@
         </widget>
        </item>
        <item row="4" column="0">
-        <widget class="QLabel" name="label_sqliteDBVersion">
-         <property name="text">
-          <string>Using SQLite version</string>
-         </property>
-         <property name="indent">
-          <number>10</number>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1" colspan="2">
-        <widget class="QLabel" name="sqliteDBVersion">
-         <property name="cursor">
-          <cursorShape>IBeamCursor</cursorShape>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::PlainText</enum>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
         <widget class="QLabel" name="label_12">
          <property name="text">
           <string>Datadir</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="1" colspan="2">
+       <item row="4" column="1" colspan="2">
         <widget class="QLabel" name="dataDir">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -167,14 +141,14 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="0">
+       <item row="5" column="0">
         <widget class="QLabel" name="label_13">
          <property name="text">
           <string>Startup time</string>
          </property>
         </widget>
        </item>
-       <item row="6" column="1" colspan="2">
+       <item row="5" column="1" colspan="2">
         <widget class="QLabel" name="startupTime">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -190,7 +164,7 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
+       <item row="6" column="0">
         <widget class="QLabel" name="labelNetwork">
          <property name="font">
           <font>
@@ -203,14 +177,14 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="0">
+       <item row="7" column="0">
         <widget class="QLabel" name="label_8">
          <property name="text">
           <string>Name</string>
          </property>
         </widget>
        </item>
-       <item row="8" column="1" colspan="2">
+       <item row="7" column="1" colspan="2">
         <widget class="QLabel" name="networkName">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -226,14 +200,14 @@
          </property>
         </widget>
        </item>
-       <item row="9" column="0">
+       <item row="8" column="0">
         <widget class="QLabel" name="label_7">
          <property name="text">
           <string>Number of connections</string>
          </property>
         </widget>
        </item>
-       <item row="9" column="1" colspan="2">
+       <item row="8" column="1" colspan="2">
         <widget class="QLabel" name="numberOfConnections">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -249,7 +223,7 @@
          </property>
         </widget>
        </item>
-       <item row="10" column="0">
+       <item row="9" column="0">
         <widget class="QLabel" name="label_10">
          <property name="font">
           <font>
@@ -262,14 +236,14 @@
          </property>
         </widget>
        </item>
-       <item row="11" column="0">
+       <item row="10" column="0">
         <widget class="QLabel" name="label_3">
          <property name="text">
           <string>Current number of blocks</string>
          </property>
         </widget>
        </item>
-       <item row="11" column="1" colspan="2">
+       <item row="10" column="1" colspan="2">
         <widget class="QLabel" name="numberOfBlocks">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -285,14 +259,14 @@
          </property>
         </widget>
        </item>
-       <item row="12" column="0">
+       <item row="11" column="0">
         <widget class="QLabel" name="labelLastBlockTime">
          <property name="text">
           <string>Last block time</string>
          </property>
         </widget>
        </item>
-       <item row="12" column="1" colspan="2">
+       <item row="11" column="1" colspan="2">
         <widget class="QLabel" name="lastBlockTime">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -308,7 +282,7 @@
          </property>
         </widget>
        </item>
-       <item row="13" column="2" rowspan="3">
+       <item row="12" column="2" rowspan="3">
         <layout class="QVBoxLayout" name="verticalLayoutDebugButton">
          <property name="spacing">
           <number>3</number>
@@ -348,7 +322,7 @@
          </item>
         </layout>
        </item>
-       <item row="13" column="0">
+       <item row="12" column="0">
         <widget class="QLabel" name="labelMempoolTitle">
          <property name="font">
           <font>
@@ -361,14 +335,14 @@
          </property>
         </widget>
        </item>
-       <item row="14" column="0">
+       <item row="13" column="0">
         <widget class="QLabel" name="labelNumberOfTransactions">
          <property name="text">
           <string>Current number of transactions</string>
          </property>
         </widget>
        </item>
-       <item row="14" column="1">
+       <item row="13" column="1">
         <widget class="QLabel" name="mempoolNumberTxs">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -384,14 +358,14 @@
          </property>
         </widget>
        </item>
-       <item row="15" column="0">
+       <item row="14" column="0">
         <widget class="QLabel" name="labelMemoryUsage">
          <property name="text">
           <string>Memory usage</string>
          </property>
         </widget>
        </item>
-       <item row="15" column="1">
+       <item row="14" column="1">
         <widget class="QLabel" name="mempoolSize">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -407,7 +381,7 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="0">
+       <item row="15" column="0">
         <widget class="QLabel" name="labelCurrentWalletTitle">
          <property name="font">
           <font>
@@ -420,14 +394,14 @@
          </property>
         </widget>
        </item>
-       <item row="17" column="0">
+       <item row="16" column="0">
         <widget class="QLabel" name="labelPrimaryAddress">
          <property name="text">
           <string>Primary address</string>
          </property>
         </widget>
        </item>
-       <item row="17" column="1">
+       <item row="16" column="1">
         <widget class="QLabel" name="primaryAddress">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -443,14 +417,14 @@
          </property>
         </widget>
        </item>
-       <item row="18" column="0">
+       <item row="17" column="0">
         <widget class="QLabel" name="labelPrimaryAddressBalance">
          <property name="text">
           <string>Primary address balance</string>
          </property>
         </widget>
        </item>
-       <item row="18" column="1">
+       <item row="17" column="1">
         <widget class="QLabel" name="primaryAddressBalance">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -466,14 +440,14 @@
          </property>
         </widget>
        </item>
-       <item row="19" column="0">
+       <item row="18" column="0">
         <widget class="QLabel" name="labelBindPlotterId">
          <property name="text">
           <string>Bind plotter ID</string>
          </property>
         </widget>
        </item>
-       <item row="19" column="1" colspan="2">
+       <item row="18" column="1" colspan="2">
         <widget class="QScrollArea" name="bindPlotterIdContainer">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -526,14 +500,14 @@
          </widget>
         </widget>
        </item>
-       <item row="20" column="0">
+       <item row="19" column="0">
         <widget class="QLabel" name="labelEstimateCapacity">
          <property name="text">
           <string>Estimate capacity</string>
          </property>
         </widget>
        </item>
-       <item row="20" column="1">
+       <item row="19" column="1">
         <widget class="QLabel" name="estimateCapacity">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -549,14 +523,14 @@
          </property>
         </widget>
        </item>
-       <item row="21" column="0">
+       <item row="20" column="0">
         <widget class="QLabel" name="labelMiningRequirePledge">
          <property name="text">
           <string>Pledge</string>
          </property>
         </widget>
        </item>
-       <item row="21" column="1">
+       <item row="20" column="1">
         <widget class="QLabel" name="miningRequirePledge">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
@@ -572,7 +546,7 @@
          </property>
         </widget>
        </item>
-       <item row="22" column="0">
+       <item row="21" column="0">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>

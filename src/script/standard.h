@@ -185,4 +185,13 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+/** Utility function to get account id with given scriptPubKey. */
+CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey);
+
+/** Utility function to get account id with given CTxDestination. */
+CAccountId GetAccountIdByTxDestination(const CTxDestination &dest);
+
+/** Utility function to get account id with given address. */
+CAccountId GetAccountIdByAddress(const std::string &address);
+
 #endif // BITCOIN_SCRIPT_STANDARD_H

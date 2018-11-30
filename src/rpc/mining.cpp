@@ -699,15 +699,11 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
-UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight)
+UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
 {
     CAccountId nMinerAccountId = GetAccountIdByAddress(address);
     if (nMinerAccountId == 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
-    }
-
-    if (nHeight < 1 || nHeight > chainActive.Height() + 1) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
     }
 
     typedef struct {
@@ -721,6 +717,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight)
     int nTotalForgeCount = 0;
 
     // Calc
+    int nHeight = chainActive.Height() + 1; // For next block
     int nEndHeight = nHeight - 1;
     int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BtchdFundPreMingingHeight + 1);
     if (nEndHeight >= nBeginHeight) {
@@ -771,6 +768,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight)
     if (nTotalForgeCount == 0) {
         result.pushKV("capacity", "0 TB");
         result.pushKV("pledge", ValueFromAmount(0));
+        result.pushKV("maxAdditionalPledge", ValueFromAmount(0));
     } else {
         assert(nEndHeight >= nBeginHeight);
         int64_t nCapacityTB;
@@ -781,71 +779,83 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight)
         result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
 
         // Bind plotter
-        UniValue objBindPlotters(UniValue::VOBJ);
-        for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
-            CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
-            nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+        CAmount maxAdditionalPledge = 0;
+        if (fVerbose) {
+            UniValue objBindPlotters(UniValue::VOBJ);
+            for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
+                CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
+                nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
 
-            UniValue item(UniValue::VOBJ);
-            item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
-            {
-                UniValue lastBlock(UniValue::VOBJ);
-                lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
-                lastBlock.pushKV("blockheight", it->second.lastForgeHeight);
-                item.pushKV("lastBlock", lastBlock);
-            }
-
-            if (it->second.forgeCountAdditional > 0) {
-                nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-                UniValue objAdditional(UniValue::VOBJ);
-                objAdditional.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                objAdditional.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
-                item.pushKV("additional", objAdditional);
-            }
-
-            // Multi mining
-            if (it->second.bindedMinerAtLastHeight.size() > 1) {
-                UniValue objMultiMining(UniValue::VOBJ);
-                for (auto itBinded = it->second.bindedMinerAtLastHeight.cbegin(); itBinded != it->second.bindedMinerAtLastHeight.cend(); itBinded++) {
-                    CBlockIndex *plastblockIndex = chainActive[itBinded->second];
-                    // Get coinbase output address
-                    std::string address;
-                    CBlock block;
-                    if (plastblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastblockIndex, Params().GetConsensus())) {
-                        CTxDestination dest;
-                        if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
-                            address = EncodeDestination(dest);
-                        }
-                    }
-
-                    UniValue item(UniValue::VOBJ);
-                    {
-                        int forgeCount = 0;
-                        for (int index = nEndHeight; index >= nBeginHeight; index--) {
-                            CBlockIndex *pblockIndex = chainActive[index];
-                            if (pblockIndex->nMinerAccountId == plastblockIndex->nMinerAccountId && pblockIndex->nPlotterId == it->first)
-                                forgeCount++;
-                        }
-                        nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-                        item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                        item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
-                    }
-                    {
-                        UniValue lastBlock(UniValue::VOBJ);
-                        lastBlock.pushKV("blockhash", plastblockIndex->GetBlockHash().GetHex());
-                        lastBlock.pushKV("blockheight", plastblockIndex->nHeight);
-                        item.pushKV("lastBlock", lastBlock);
-                    }
-                    objMultiMining.pushKV(address, item);
+                UniValue item(UniValue::VOBJ);
+                item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+                item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+                {
+                    UniValue lastBlock(UniValue::VOBJ);
+                    lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
+                    lastBlock.pushKV("blockheight", it->second.lastForgeHeight);
+                    item.pushKV("lastBlock", lastBlock);
                 }
-                item.pushKV("multiMining", objMultiMining);
+
+                if (it->second.forgeCountAdditional > 0) {
+                    nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                    UniValue objAdditional(UniValue::VOBJ);
+                    objAdditional.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+                    objAdditional.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+                    item.pushKV("additional", objAdditional);
+                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB);
+                }
+
+                // Multi mining
+                if (it->second.bindedMinerAtLastHeight.size() > 1) {
+                    UniValue objMultiMining(UniValue::VOBJ);
+                    for (auto itBinded = it->second.bindedMinerAtLastHeight.cbegin(); itBinded != it->second.bindedMinerAtLastHeight.cend(); itBinded++) {
+                        CBlockIndex *plastblockIndex = chainActive[itBinded->second];
+                        // Get coinbase output address
+                        std::string address;
+                        CBlock block;
+                        if (plastblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastblockIndex, Params().GetConsensus())) {
+                            CTxDestination dest;
+                            if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
+                                address = EncodeDestination(dest);
+                            }
+                        }
+
+                        UniValue item(UniValue::VOBJ);
+                        {
+                            int forgeCount = 0;
+                            for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                                CBlockIndex *pblockIndex = chainActive[index];
+                                if (pblockIndex->nMinerAccountId == plastblockIndex->nMinerAccountId && pblockIndex->nPlotterId == it->first)
+                                    forgeCount++;
+                            }
+                            nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                            item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+                            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+                        }
+                        {
+                            UniValue lastBlock(UniValue::VOBJ);
+                            lastBlock.pushKV("blockhash", plastblockIndex->GetBlockHash().GetHex());
+                            lastBlock.pushKV("blockheight", plastblockIndex->nHeight);
+                            item.pushKV("lastBlock", lastBlock);
+                        }
+                        objMultiMining.pushKV(address, item);
+                    }
+                    item.pushKV("multiMining", objMultiMining);
+                }
+                objBindPlotters.pushKV(std::to_string(it->first), item);
             }
-            objBindPlotters.pushKV(std::to_string(it->first), item);
+            result.pushKV("maxAdditionalPledge", ValueFromAmount(maxAdditionalPledge));
+            result.pushKV("bindPlotters", objBindPlotters);
+        } else {
+            for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
+                if (it->second.forgeCountAdditional > 0) {
+                    nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB);
+                }
+            }
+            result.pushKV("maxAdditionalPledge", ValueFromAmount(maxAdditionalPledge));
         }
-        result.pushKV("bindPlotters", objBindPlotters);
     }
-    result.pushKV("minerAccountId", std::to_string(static_cast<uint64_t>(nMinerAccountId)));
 
     return result;
 }
@@ -854,33 +864,38 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
-            "getpledgeofaddress address plotterId height\n"
+            "getpledgeofaddress address (plotterId)\n"
             "Get mortage amount of address.\n"
             "\nArguments:\n"
             "1. address         (string, required) The BitcoinHD address.\n"
             "2. plotterId       (string, optional) Plotter ID\n"
-            "3. height          (integer, optional) Pledge height\n"
+            "3. verbose         (bool, optional, default=true) If true, return detail pledge\n"
             "\nResult:\n"
             "The mortage information of address\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getpledgeofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" 90000")
-            + HelpExampleRpc("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", \"0\", 90000")
+            + HelpExampleCli("getpledgeofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" true")
+            + HelpExampleRpc("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", \"0\", true")
             );
 
     LOCK(cs_main);
 
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+
     uint64_t nPlotterId = 0;
-    if (request.params.size() >= 2) {
+    if (!request.params[1].isNull()) {
+        if (!request.params[1].isStr())
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
     }
 
-    int nHeight = chainActive.Height() + 1;
-    if (request.params.size() >= 3) {
-        nHeight = request.params[2].get_int();
+    bool fVerbose = true;
+    if (!request.params[2].isNull()) {
+        fVerbose = request.params[2].isNum() ? (request.params[2].get_int() != 0) : request.params[2].get_bool();
     }
 
-    return GetPledge(request.params[0].get_str(), nPlotterId, nHeight);
+    return GetPledge(request.params[0].get_str(), nPlotterId, fVerbose);
 }
 
 UniValue getplottermininginfo(const JSONRPCRequest& request)
@@ -891,25 +906,24 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
             "Get mining information of plotter ID.\n"
             "\nArguments:\n"
             "1. plotterId       (string, required) Plotter ID\n"
-            "2. height          (integer, optional) Pledge height\n"
+            "2. verbose         (bool, optional, default=true) If true, return detail plotter mining information\n"
             "\nResult:\n"
             "The mining information of plotter ID\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getplottermininginfo", "\"1234567890\" 90000")
-            + HelpExampleRpc("getplottermininginfo", "\"1234567890\", 90000")
+            + HelpExampleCli("getplottermininginfo", "\"1234567890\" true")
+            + HelpExampleRpc("getplottermininginfo", "\"1234567890\", true")
             );
 
     LOCK(cs_main);
 
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
     uint64_t nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
 
-    int nHeight = chainActive.Height() + 1;
-    if (request.params.size() >= 2) {
-        nHeight = request.params[1].get_int();
-    }
-    if (nHeight < 1 || nHeight > chainActive.Height() + 1) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid height");
+    bool fVerbose = true;
+    if (!request.params[1].isNull()) {
+        fVerbose = request.params[1].isNum() ? (request.params[1].get_int() != 0) : request.params[1].get_bool();
     }
 
     typedef struct {
@@ -920,6 +934,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     int nTotalForgeCount = 0;
     int64_t nNetCapacityTB = 0, nCapacityTB = 0;
 
+    int nHeight = chainActive.Height() + 1;
     int nEndHeight = nHeight - 1;
     int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BtchdFundPreMingingHeight + 1);
     if (nEndHeight >= nBeginHeight) {
@@ -953,33 +968,35 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
     }
 
-    UniValue objBindAddress(UniValue::VOBJ);
-    for (auto it = mapBindInfo.cbegin(); it != mapBindInfo.end(); it++) {
-        CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
+    if (fVerbose) {
+        UniValue objBindAddress(UniValue::VOBJ);
+        for (auto it = mapBindInfo.cbegin(); it != mapBindInfo.end(); it++) {
+            CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
 
-        // Get coinbase output address
-        std::string address;
-        CBlock block;
-        if (plastForgeblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastForgeblockIndex, Params().GetConsensus())) {
-            CTxDestination dest;
-            if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
-                address = EncodeDestination(dest);
+            // Get coinbase output address
+            std::string address;
+            CBlock block;
+            if (plastForgeblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastForgeblockIndex, Params().GetConsensus())) {
+                CTxDestination dest;
+                if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
+                    address = EncodeDestination(dest);
+                }
             }
-        }
 
-        UniValue item(UniValue::VOBJ);
-        nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-        item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-        item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
-        {
-            UniValue lastBlock(UniValue::VOBJ);
-            lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
-            lastBlock.pushKV("blockheight", plastForgeblockIndex->nHeight);
-            item.pushKV("lastBlock", lastBlock);
+            UniValue item(UniValue::VOBJ);
+            nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+            item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
+            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+            {
+                UniValue lastBlock(UniValue::VOBJ);
+                lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
+                lastBlock.pushKV("blockheight", plastForgeblockIndex->nHeight);
+                item.pushKV("lastBlock", lastBlock);
+            }
+            objBindAddress.pushKV(address, item);
         }
-        objBindAddress.pushKV(address, item);
+        result.pushKV("bindAddresses", objBindAddress);
     }
-    result.pushKV("bindAddresses", objBindAddress);
 
     return result;
 }
@@ -1224,8 +1241,8 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "getpledgeofaddress",     &getpledgeofaddress,     {"address", "plotterId", "height"} },
-    { "mining",             "getplottermininginfo",   &getplottermininginfo,   {"plotterId", "height"} },
+    { "mining",             "getpledgeofaddress",     &getpledgeofaddress,     {"address", "plotterId", "verbose"} },
+    { "mining",             "getplottermininginfo",   &getplottermininginfo,   {"plotterId", "verbose"} },
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
 

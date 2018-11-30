@@ -16,8 +16,6 @@
 #include <utility>
 #include <vector>
 
-#include <sqlite3.h>
-
 class CBlockIndex;
 class CChainParams;
 class CCoinsViewDBCursor;
@@ -67,39 +65,27 @@ struct CDiskTxPos : public CDiskBlockPos
     }
 };
 
-typedef std::unique_ptr<sqlite3, int(*)(sqlite3*)> SqlAutoReleaseDB;
-typedef std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> SqlAutoReleaseStmt;
-
 /** CCoinsView backed by the coin database (chainstate/) */
 class CCoinsViewDB final : public CCoinsView
 {
 protected:
-    CDBWrapper      db;
-
-    // SQL
-    mutable SqlAutoReleaseDB accountDB;
-    mutable SqlAutoReleaseStmt getAccountNearestStmt; // height <= ?
+    mutable CDBWrapper  db;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
-    bool CheckDB(const CChainParams &chainparams);
 
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
-    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();
     size_t EstimateSize() const override;
 
-    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
-
-private:
-    bool ClearAccount();
-
+    CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const override;
 };
 
 /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
