@@ -26,7 +26,7 @@
  * Serialized format:
  * - VARINT((coinbase ? 1 : 0) | (height << 1) | (extraData ? 0 : 0x80000000))
  * - the non-spent CTxOut (via CTxOutCompressor)
- * - the extra-data CScript (via CScriptCompressor)
+ * - the extra-data CScript (via std::vector<unsigned char>)
  */
 class Coin
 {
@@ -40,20 +40,20 @@ public:
     //! at which height this containing transaction was included in the active block chain
     uint32_t nHeight : 30;
 
-    //! extra data of relevant coin
+    //! relevant extra data
     CScript extraData;
 
     //! Memory Only. account from out.scriptPubKey
-    CAccountId outAccountId;
+    CAccountID outAccountID;
 
     //! Memory Only. account from out.nValue
     CAmount outValue;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
     Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), fCoinBase(fCoinBaseIn), nHeight(nHeightIn),
-        outAccountId(GetAccountIdByScriptPubKey(out.scriptPubKey)), outValue(out.nValue) {}
+        outAccountID(GetAccountIDByScriptPubKey(out.scriptPubKey)), outValue(out.nValue) {}
     Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), fCoinBase(fCoinBaseIn), nHeight(nHeightIn),
-        outAccountId(GetAccountIdByScriptPubKey(out.scriptPubKey)), outValue(out.nValue) {}
+        outAccountID(GetAccountIDByScriptPubKey(out.scriptPubKey)), outValue(out.nValue) {}
 
     void Clear() {
         out.SetNull();
@@ -62,7 +62,7 @@ public:
     }
 
     //! empty constructor
-    Coin() : fCoinBase(false), nHeight(0), outAccountId(0), outValue(0) { }
+    Coin() : fCoinBase(false), nHeight(0), outAccountID(0), outValue(0) { }
 
     bool IsCoinBase() const {
         return fCoinBase;
@@ -75,7 +75,7 @@ public:
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
         if (!extraData.empty())
-            ::Serialize(s, CScriptCompressor(REF(extraData)));
+            ::Serialize(s, REF(extraData));
     }
 
     template<typename Stream>
@@ -86,9 +86,9 @@ public:
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
         if (code & 0x80000000)
-            ::Unserialize(s, REF(CScriptCompressor(extraData)));
+            ::Unserialize(s, REF(extraData));
 
-        outAccountId = GetAccountIdByScriptPubKey(out.scriptPubKey);
+        outAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
         outValue = out.nValue;
     }
 
@@ -196,8 +196,10 @@ public:
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
 
-    //! Get account balance
-    virtual CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const;
+protected:
+    //! Get account balance. Return all available balance
+    virtual CAmount GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const;
 };
 
 
@@ -217,7 +219,10 @@ public:
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const override;
+
+protected:
+    CAmount GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const override;
 };
 
 
@@ -252,7 +257,6 @@ public:
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -319,7 +323,15 @@ public:
     bool HaveInputs(const CTransaction& tx) const;
 
     //! Get account balance
-    CAmount GetAccountBalance(const CAccountId &accountId, int height) const { return base->GetAccountBalance(accountId, cacheCoins); }
+    CAmount GetAccountBalance(const CAccountID &accountID,
+        CAmount *pLockInBindIdBalance = nullptr, //! The balance lock in bind ID
+        CAmount *pLockInRentBalance = nullptr, //! The balance lock in rent
+        CAmount *pRentedBalance = nullptr //! The balance from rented
+    ) const;
+
+protected:
+    CAmount GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const override;
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;

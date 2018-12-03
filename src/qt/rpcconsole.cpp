@@ -882,20 +882,20 @@ void RPCConsole::updatePledge()
         LOCK(cs_main);
 
         // Get account id of address
-        CAccountId nAccountId = GetAccountIdByAddress(primaryAddress.toStdString());
-        if (nAccountId == 0) {
+        CAccountID accountID = GetAccountIDByAddress(primaryAddress.toStdString());
+        if (accountID == 0) {
             return;
         }
 
         // Primary address total balance
-        CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
-        ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorAlways));
+        CAmount balance = pcoinsTip->GetAccountBalance(accountID);
+        ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
         // Primary address capacity and pledge
-        CAmount nPledgeAmount = GetMinerPledge(nAccountId, chainActive.Height(), 0, Params().GetConsensus());
+        CAmount nPledgeAmount = GetMinerPledge(accountID, chainActive.Height(), 0, Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BtchdPledgeAmountPerTB * 1024));
         ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
-        ui->miningRequirePledge->setStyleSheet(nPledgeAmount > nBalance ? "QLabel { color: red; }" : "");
+        ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
 
         // Bind plotter ID
         QString strBindPlotters;
@@ -906,7 +906,7 @@ void RPCConsole::updatePledge()
                                               Params().GetConsensus().BtchdFundPreMingingHeight + 1);
             for (int index = nEndHeight; index >= nBeginHeight; index--) {
                 CBlockIndex *pblockIndex = chainActive[index];
-                if (pblockIndex == nullptr || pblockIndex->nMinerAccountId != nAccountId || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
+                if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
                     continue;
                 if (!strBindPlotters.isEmpty()) {
                     strBindPlotters += ",";

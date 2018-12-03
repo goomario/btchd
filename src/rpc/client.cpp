@@ -118,7 +118,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "estimatesmartfee", 0, "conf_target" },
     { "estimaterawfee", 0, "conf_target" },
     { "estimaterawfee", 1, "threshold" },
-    { "getbalanceofheight", 1, "height" },
     { "prioritisetransaction", 1, "dummy" },
     { "prioritisetransaction", 2, "fee_delta" },
     { "setban", 2, "bantime" },

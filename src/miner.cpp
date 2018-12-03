@@ -159,8 +159,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockTx = nBlockTx;
     nLastBlockWeight = nBlockWeight;
 
-    CAccountId nAccountId = GetAccountIdByScriptPubKey(scriptPubKeyIn);
-    assert (nAccountId != 0);
+    CAccountID accountID = GetAccountIDByScriptPubKey(scriptPubKeyIn);
+    assert (accountID != 0);
 
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;
@@ -168,7 +168,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vin[0].prevout.SetNull();
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     // Reward
-    BlockReward blockReward = GetBlockReward(nHeight, nFees, nAccountId, plotterId, *pcoinsTip, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(nHeight, nFees, accountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
     if (blockReward.miner1 != 0) {
         // Let old wallet can verify

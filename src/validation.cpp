@@ -1139,7 +1139,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &nMinerAccountId, const uint64_t &nPlotterId,
+BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
                            const CCoinsViewCache &view, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy;
@@ -1171,12 +1171,12 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
             // Y[95%->miner, 5%->fund]   =>    N[30%->miner, 70%->fund] pass (impossible case)
             // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
             // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
-            CAmount nMinerPledgeOldConsensus;
-            CAmount nMinerPledge = GetMinerPledge(nMinerAccountId, nHeight - 1, nPlotterId, consensusParams, &nMinerPledgeOldConsensus);
-            CAmount nMinerBalance = view.GetAccountBalance(nMinerAccountId, nHeight - 1);
-            if (nMinerBalance >= nMinerPledge) {
+            CAmount nMinerPledge, nMinerPledgeOldConsensus, availableBalance = 0, lockInRentBalance = 0, rentedBalance = 0;
+            nMinerPledge = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams, &nMinerPledgeOldConsensus);
+            availableBalance = view.GetAccountBalance(minerAccountID, nullptr, &lockInRentBalance, &rentedBalance);
+            if (availableBalance - lockInRentBalance + rentedBalance >= nMinerPledge) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
-                if (nHeight < consensusParams.BtchdV2EndForkHeight && nMinerBalance < nMinerPledgeOldConsensus) {
+                if (nHeight < consensusParams.BtchdV2EndForkHeight && availableBalance < nMinerPledgeOldConsensus) {
                     // Old consensus => fund
                     reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
                 }
@@ -1191,7 +1191,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountId &
     return reward;
 }
 
-CAmount GetMinerPledge(const CAccountId &nMinerAccountId, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerPledgeOldConsensus)
+CAmount GetMinerPledge(const CAccountID &minerAccountID, int nHeight, const uint64_t &nPlotterId, const Consensus::Params &consensusParams, CAmount *pMinerPledgeOldConsensus)
 {
     assert(nHeight <= chainActive.Height());
     int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BtchdFundPreMingingHeight + 1);
@@ -1207,10 +1207,10 @@ CAmount GetMinerPledge(const CAccountId &nMinerAccountId, int nHeight, const uin
 
         // 1. Multi plotter ID generate to same wallet (like pool)
         // 2. Same plotter ID generate to multi wallets (for decrease pledge)
-        if (pblockIndex->nMinerAccountId == nMinerAccountId || pblockIndex->nPlotterId == nPlotterId) {
+        if (pblockIndex->minerAccountID == minerAccountID || pblockIndex->nPlotterId == nPlotterId) {
             nTotalForgeCount++;
 
-            if (pblockIndex->nMinerAccountId != nMinerAccountId) {
+            if (pblockIndex->minerAccountID != minerAccountID) {
                 // Old consensus: multi mining. Plotter ID bind to multi miner (also multi wallet)
                 nTotalForgeCountOldConsensus = -1;
             } else if (nTotalForgeCountOldConsensus != -1) {
@@ -2024,14 +2024,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    if (pindex->nMinerAccountId == 0) {
+    if (pindex->minerAccountID == 0) {
         return state.DoS(100,
                          error("ConnectBlock(): Invalidate miner address"),
                                REJECT_INVALID, "bad-cb-address");
     }
 
     // GetBlockReward() must use pre CCoinsView
-    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->nMinerAccountId, pindex->nPlotterId, view, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->minerAccountID, pindex->nPlotterId, view, chainparams.GetConsensus());
     if (block.vtx[0]->GetValueOut() > blockReward.miner0 + blockReward.miner1 + blockReward.fund)
         return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
@@ -2092,7 +2092,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
         // All output for miner must be unique miner account, otherwise can steal pledge of other miner
         for (unsigned int i = 1; i < block.vtx[0]->vout.size(); i++) {
-            if (i != fundIndex && block.vtx[0]->vout[i].nValue > 0 && GetAccountIdByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->nMinerAccountId) {
+            if (i != fundIndex && block.vtx[0]->vout[i].nValue > 0 && GetAccountIDByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->minerAccountID) {
                 return state.DoS(100,
                                  error("ConnectBlock(): coinbase cannot pays to multi miners"),
                                        REJECT_INVALID, "bad-cb-multiminer");
@@ -2145,7 +2145,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
             // All output for miner must be unique miner account, otherwise can steal pledge of other miner
             for (unsigned int i = 2; i < block.vtx[0]->vout.size(); i++) {
-                if (block.vtx[0]->vout[i].nValue > 0 && GetAccountIdByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->nMinerAccountId) {
+                if (block.vtx[0]->vout[i].nValue > 0 && GetAccountIDByScriptPubKey(block.vtx[0]->vout[i].scriptPubKey) != pindex->minerAccountID) {
                     return state.DoS(100,
                                      error("ConnectBlock(): coinbase cannot pays to multi miners"),
                                            REJECT_INVALID, "bad-cb-multiminer");
@@ -3013,7 +3013,7 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
     if (IsWitnessEnabled(pindexNew->pprev, consensusParams)) {
         pindexNew->nStatus |= BLOCK_OPT_WITNESS;
     }
-    pindexNew->nMinerAccountId = GetAccountIdByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
+    pindexNew->minerAccountID = GetAccountIDByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
     pindexNew->RaiseValidity(BLOCK_VALID_TRANSACTIONS);
     setDirtyBlockIndex.insert(pindexNew);
 
@@ -3678,7 +3678,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     CBlockIndex indexDummy(block);
     indexDummy.pprev = pindexPrev;
     indexDummy.nHeight = pindexPrev->nHeight + 1;
-    indexDummy.nMinerAccountId = GetAccountIdByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
+    indexDummy.minerAccountID = GetAccountIDByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
 
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
@@ -4317,7 +4317,7 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             pindexIter->nTx = 0;
             pindexIter->nChainTx = 0;
             pindexIter->nSequenceId = 0;
-            pindexIter->nMinerAccountId = 0;
+            pindexIter->minerAccountID = 0;
             // Make sure it gets written.
             setDirtyBlockIndex.insert(pindexIter);
             // Update indexes

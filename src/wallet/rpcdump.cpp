@@ -694,8 +694,6 @@ UniValue dumpprivkeys(const JSONRPCRequest& request)
     }
     EnsureWalletIsUnlocked(pwallet);
 
-    int nHeight = chainActive.Height();
-
     UniValue keys(UniValue::VARR);
     for (CTxDestination dest : pwallet->GetExternalAddresses(fromIndex, toIndex)) {
         auto keyid = GetKeyForDestination(*pwallet, dest);
@@ -707,10 +705,12 @@ UniValue dumpprivkeys(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + EncodeDestination(dest) + " is not known");
         }
 
+        CAmount balance = pcoinsTip->GetAccountBalance(GetAccountIDByTxDestination(dest));
+
         UniValue item(UniValue::VOBJ);
         item.pushKV("privkey", CBitcoinSecret(vchSecret).ToString());
         item.pushKV("address", EncodeDestination(dest));
-        item.pushKV("balance", ValueFromAmount(pcoinsTip->GetAccountBalance(GetAccountIdByTxDestination(dest), nHeight)));
+        item.pushKV("balance", ValueFromAmount(balance));
         keys.push_back(item);
     }
 

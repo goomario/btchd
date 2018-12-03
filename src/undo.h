@@ -32,7 +32,7 @@ public:
         }
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
         if (!txout->extraData.empty())
-            ::Serialize(s, CScriptCompressor(REF(txout->extraData)));
+            ::Serialize(s, REF(txout->extraData));
     }
 
     explicit TxInUndoSerializer(const Coin* coin) : txout(coin) {}
@@ -58,9 +58,9 @@ public:
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
         if (nCode & 0x80000000)
-            ::Unserialize(s, REF(CScriptCompressor(txout->extraData)));
+            ::Unserialize(s, REF(txout->extraData));
 
-        txout->outAccountId = GetAccountIdByScriptPubKey(txout->out.scriptPubKey);
+        txout->outAccountID = GetAccountIDByScriptPubKey(txout->out.scriptPubKey);
         txout->outValue = txout->out.nValue;
     }
 

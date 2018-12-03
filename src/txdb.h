@@ -85,7 +85,8 @@ public:
     bool Upgrade();
     size_t EstimateSize() const override;
 
-    CAmount GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const override;
+    CAmount GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const override;
 };
 
 /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */

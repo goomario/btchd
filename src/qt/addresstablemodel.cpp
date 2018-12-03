@@ -237,12 +237,12 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         case Amount:
             {
                 LOCK(cs_main);
-                CAccountId nAccountId = GetAccountIdByAddress(rec->address.toStdString());
-                if (nAccountId == 0) {
+                CAccountID accountID = GetAccountIDByAddress(rec->address.toStdString());
+                if (accountID == 0) {
                     return tr("N/A");
                 }
-                CAmount nBalance = pcoinsTip->GetAccountBalance(nAccountId, chainActive.Height());
-                return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nBalance, false, BitcoinUnits::separatorNever);
+                CAmount balance = pcoinsTip->GetAccountBalance(accountID);
+                return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorNever);
             }
         }
     }

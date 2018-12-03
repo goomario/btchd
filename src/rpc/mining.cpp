@@ -701,8 +701,8 @@ UniValue submitblock(const JSONRPCRequest& request)
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
 {
-    CAccountId nMinerAccountId = GetAccountIdByAddress(address);
-    if (nMinerAccountId == 0) {
+    CAccountID accountID = GetAccountIDByAddress(address);
+    if (accountID == 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
@@ -710,7 +710,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         int lastForgeHeight;
         int forgeCount;
         int forgeCountAdditional;
-        std::map<CAccountId, int> bindedMinerAtLastHeight; // miner => height
+        std::map<CAccountID, int> bindedMinerAtLastHeight; // miner => height
     } PlotterItem;
     std::map<uint64_t, PlotterItem> mapBindPlotter; // Plotter ID => PlotterItem
     int64_t nNetCapacityTB = 0;
@@ -727,7 +727,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
             CBlockIndex *pblockIndex = chainActive[index];
             nAvgBaseTarget += pblockIndex->nBaseTarget;
 
-            if (pblockIndex->nMinerAccountId == nMinerAccountId) {
+            if (pblockIndex->minerAccountID == accountID) {
                 nTotalForgeCount++;
 
                 // Bind plotter ID to miner
@@ -747,10 +747,10 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
             auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
             if (itPlotter == mapBindPlotter.end())
                 continue;
-            if (pblockIndex->nMinerAccountId != nMinerAccountId && pblockIndex->nPlotterId == itPlotter->first)
+            if (pblockIndex->minerAccountID != accountID && pblockIndex->nPlotterId == itPlotter->first)
                 itPlotter->second.forgeCountAdditional++;
-            if (itPlotter->second.bindedMinerAtLastHeight.find(pblockIndex->nMinerAccountId) == itPlotter->second.bindedMinerAtLastHeight.end()) {
-                itPlotter->second.bindedMinerAtLastHeight[pblockIndex->nMinerAccountId] = index;
+            if (itPlotter->second.bindedMinerAtLastHeight.find(pblockIndex->minerAccountID) == itPlotter->second.bindedMinerAtLastHeight.end()) {
+                itPlotter->second.bindedMinerAtLastHeight[pblockIndex->minerAccountID] = index;
             }
         }
 
@@ -758,8 +758,14 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
+    CAmount availableBalance = 0, lockInBindIdBalance = 0, lockInRentBalance = 0, rentedBalance = 0;
+    availableBalance = pcoinsTip->GetAccountBalance(accountID, &lockInBindIdBalance, &lockInRentBalance, &rentedBalance);
+
     UniValue result(UniValue::VOBJ);
-    result.pushKV("balance", ValueFromAmount(pcoinsTip->GetAccountBalance(nMinerAccountId, nEndHeight)));
+    result.pushKV("balance", ValueFromAmount(availableBalance - lockInBindIdBalance - lockInRentBalance));
+    result.pushKV("lockInBindIdBalance", ValueFromAmount(lockInBindIdBalance));
+    result.pushKV("lockInRentBalance", ValueFromAmount(lockInRentBalance));
+    result.pushKV("rentedBalance", ValueFromAmount(rentedBalance));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
     if (nHeight < Params().GetConsensus().BtchdNoPledgeHeight + 1) {
@@ -825,7 +831,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                             int forgeCount = 0;
                             for (int index = nEndHeight; index >= nBeginHeight; index--) {
                                 CBlockIndex *pblockIndex = chainActive[index];
-                                if (pblockIndex->nMinerAccountId == plastblockIndex->nMinerAccountId && pblockIndex->nPlotterId == it->first)
+                                if (pblockIndex->minerAccountID == plastblockIndex->minerAccountID && pblockIndex->nPlotterId == it->first)
                                     forgeCount++;
                             }
                             nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
@@ -930,7 +936,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         int lastForgeHeight;
         int forgeCount;
     } BindInfo;
-    std::map<CAccountId, BindInfo> mapBindInfo;
+    std::map<CAccountID, BindInfo> mapBindInfo;
     int nTotalForgeCount = 0;
     int64_t nNetCapacityTB = 0, nCapacityTB = 0;
 
@@ -946,9 +952,9 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
             nTotalForgeCount++;
 
-            auto it = mapBindInfo.find(pblockIndex->nMinerAccountId);
+            auto it = mapBindInfo.find(pblockIndex->minerAccountID);
             if (it == mapBindInfo.end()) {
-                mapBindInfo.insert(std::make_pair(pblockIndex->nMinerAccountId, BindInfo{index, 1}));
+                mapBindInfo.insert(std::make_pair(pblockIndex->minerAccountID, BindInfo{index, 1}));
             } else {
                 it->second.forgeCount++;
             }
@@ -1209,29 +1215,29 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
         throw std::runtime_error(
-            "getbalanceofheight \"address\" (\"height\")\n"
+            "DEPRECATED.getbalanceofheight \"address\" (\"height\")\n"
             "\nArguments:\n"
             "1. address           (string,optional) The BitcoinHD address\n"
-            "2. height            (numeric,optional) The height of blockchain\n"
+            "2. height            (numeric,optional) DEPRECATED.The height of blockchain\n"
             "\nResult:\n"
             "Balance\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getbalanceofheight", Params().GetConsensus().BtchdFundAddress + " 90000")
-            + HelpExampleRpc("getbalanceofheight", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", 90000")
+            + HelpExampleCli("getbalanceofheight", Params().GetConsensus().BtchdFundAddress + " 9000")
+            + HelpExampleRpc("getbalanceofheight", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", 9000")
             );
 
-    CAccountId nMinerAccountId = GetAccountIdByAddress(request.params[0].get_str());
-    if (nMinerAccountId == 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
+    LOCK(cs_main);
+
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+
+    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
+    if (accountID == 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, BitcoinHD address of P2SH");
     }
 
-    int nHeight = chainActive.Height() + 1;
-    if (request.params.size() > 1) {
-        nHeight = request.params[1].get_int();
-    }
-
-    return ValueFromAmount(pcoinsTip->GetAccountBalance(nMinerAccountId,nHeight));
+    return ValueFromAmount(pcoinsTip->GetAccountBalance(accountID));
 }
 
 static const CRPCCommand commands[] =

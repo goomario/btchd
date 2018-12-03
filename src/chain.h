@@ -207,7 +207,7 @@ public:
     uint32_t nStatus;
 
     //! Miner account ID.
-    CAccountId nMinerAccountId;
+    CAccountID minerAccountID;
 
     //! block header
     int32_t nVersion;
@@ -236,7 +236,7 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
-        nMinerAccountId = 0;
+        minerAccountID = 0;
         nSequenceId = 0;
         nTimeMax = 0;
 
@@ -400,7 +400,7 @@ public:
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
-        READWRITE(VARINT(nMinerAccountId));
+        READWRITE(VARINT(minerAccountID));
         if (nStatus & (BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO))
             READWRITE(VARINT(nFile));
         if (nStatus & BLOCK_HAVE_DATA)

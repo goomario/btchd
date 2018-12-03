@@ -4,6 +4,7 @@
 
 #include <coins.h>
 
+#include <chainparams.h>
 #include <consensus/consensus.h>
 #include <random.h>
 
@@ -12,7 +13,13 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
-CAmount CCoinsView::GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const { return 0; }
+CAmount CCoinsView::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
+    if (pLockInBindIdBalance) *pLockInBindIdBalance = 0;
+    if (pLockInRentBalance) *pLockInRentBalance = 0;
+    if (pRentedBalance) *pRentedBalance = 0;
+    return 0;
+}
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
 {
@@ -29,7 +36,10 @@ void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-CAmount CCoinsViewBacked::GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const { return base->GetAccountBalance(accountId, mapModifiedCoins); }
+CAmount CCoinsViewBacked::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
+    return base->GetAccountBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+}
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
@@ -95,6 +105,31 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
         cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
     }
+
+    // External data
+    /*if (!fCoinbase && tx.vout.size() == 2 && && nHeight >= Params().GetConsensus().BHDIP1010Height) {
+        // OP_RETURN OP_PUSHDATA1 size [size data]
+        const CScript &script = tx.vout[1].scriptPubKey;
+        if (script.size() >= 28 && script[0] == OP_RETURN && script[1] == OP_PUSHDATA1 && script[2] + 3 == script.size()) {
+            if (script.size() == 28 && script[3] == 0x21 && script[4] == 0xa9 && script[5] == 0xee) {
+                // Rent
+                if (OP_1 <= script[6] && script[6] <= OP_16 && script[7] == 0x14 && script[8] == 0x05 && (size_t)(script[6] - OP_1) < tx.vout.size()) {
+                    CAccountID rentAccountId, utxoOwnerAccountId;
+                    {
+                        CScriptID rentScriptID;
+                        memcpy(rentScriptID.begin(), &script[8], 20);
+                        CTxDestination rentDest = rentScriptID;
+
+                        rentAccountId = GetAccountIDByTxDestination(rentDest);
+                        utxoOwnerAccountId = GetAccountIDByScriptPubKey(tx.vout[script[6] - OP_1].scriptPubKey);
+                    }
+                    if (rentAccountId != 0 && utxoOwnerAccountId != 0 && rentAccountId != utxoOwnerAccountId) {
+
+                    }
+                }
+            }
+        }
+    }*/
 }
 
 bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout) {
@@ -202,25 +237,33 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     hashBlock = hashBlockIn;
     return true;
 }
+CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
+    // Invalid account ID
+    if (accountID == 0) {
+        if (pLockInBindIdBalance) *pLockInBindIdBalance = 0;
+        if (pLockInRentBalance) *pLockInRentBalance = 0;
+        if (pRentedBalance) *pRentedBalance = 0;
+        return 0;
+    }
 
-CAmount CCoinsViewCache::GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const {
     if (cacheCoins.empty()) {
-        return base->GetAccountBalance(accountId, mapModifiedCoins);
+        return base->GetAccountBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
     } else if (mapModifiedCoins.empty()) {
-        return base->GetAccountBalance(accountId, cacheCoins);
+        return base->GetAccountBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
     } else {
         CCoinsMap tempUsCoinsMap;
         // Copy current CCoinsMap
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
-            if (it->second.coin.outAccountId == accountId)
+            if (it->second.coin.outAccountID == accountID)
                 tempUsCoinsMap[it->first] = it->second;
         }
         if (tempUsCoinsMap.empty()) {
-            return base->GetAccountBalance(accountId, mapModifiedCoins);
+            return base->GetAccountBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
         } else {
             // Merge CCoinsMap. See CCoinsViewCache::BatchWrite()
             for (CCoinsMap::const_iterator it = mapModifiedCoins.cbegin(); it != mapModifiedCoins.cend(); it++) {
-                if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || it->second.coin.outAccountId != accountId) {
+                if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || it->second.coin.outAccountID != accountID) {
                     continue;
                 }
                 CCoinsMap::iterator itUs = tempUsCoinsMap.find(it->first);
@@ -245,9 +288,13 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountId &accountId, const CC
                     }
                 }
             }
-            return base->GetAccountBalance(accountId, tempUsCoinsMap);
+            return base->GetAccountBalance(accountID, tempUsCoinsMap, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
         }
     }
+}
+
+CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
+    return base->GetAccountBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
 }
 
 bool CCoinsViewCache::Flush() {

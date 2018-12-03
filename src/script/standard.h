@@ -28,10 +28,10 @@ public:
 };
 
 /**
- * Default setting for nMaxDatacarrierBytes. 80 bytes of data, +1 for OP_RETURN,
- * +2 for the pushdata opcodes.
+ * Default setting for nMaxDatacarrierBytes. 220 bytes of data,
+ * +1 for OP_RETURN, +2 for the pushdata opcodes.
  */
-static const unsigned int MAX_OP_RETURN_RELAY = 83;
+static const unsigned int MAX_OP_RETURN_RELAY = 223;
 
 /**
  * A data carrying output is an unspendable output containing data. The script
@@ -186,12 +186,12 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 CScript GetScriptForWitness(const CScript& redeemscript);
 
 /** Utility function to get account id with given scriptPubKey. */
-CAccountId GetAccountIdByScriptPubKey(const CScript &scriptPubKey);
+CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey);
 
 /** Utility function to get account id with given CTxDestination. */
-CAccountId GetAccountIdByTxDestination(const CTxDestination &dest);
+CAccountID GetAccountIDByTxDestination(const CTxDestination &dest);
 
 /** Utility function to get account id with given address. */
-CAccountId GetAccountIdByAddress(const std::string &address);
+CAccountID GetAccountIDByAddress(const std::string &address);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

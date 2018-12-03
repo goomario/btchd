@@ -36,7 +36,8 @@ static const char DB_FLAG = 'F';
 static const char DB_REINDEX_FLAG = 'R';
 static const char DB_LAST_BLOCK = 'l';
 
-static const char DB_BALANCE = 'T';
+static const char DB_BALANCE = 'T'; // account balance prefix
+static const char DB_RENT = 'E'; // rent prefix
 
 namespace {
 
@@ -61,15 +62,15 @@ struct CoinEntry {
 };
 
 struct AccountCoinRefEntry {
-    CAccountId* accountId;
+    CAccountID* accountID;
     COutPoint* outpoint;
     char key;
-    AccountCoinRefEntry(const CAccountId* ptr1, const COutPoint* ptr2) : accountId(const_cast<CAccountId*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_BALANCE) {}
+    AccountCoinRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) : accountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_BALANCE) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(*accountId);
+        s << VARINT(*accountID);
         s << outpoint->hash;
         s << VARINT(outpoint->n);
     }
@@ -77,22 +78,22 @@ struct AccountCoinRefEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(*accountId);
+        s >> VARINT(*accountID);
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
 };
 
 struct AccountCoinRWEntry {
-    CAccountId accountId;
+    CAccountID accountID;
     COutPoint outpoint;
     char key;
-    AccountCoinRWEntry(const CAccountId &accountIdIn, const COutPoint &outpointIn) : accountId(accountIdIn), outpoint(outpointIn), key(DB_BALANCE) {}
+    AccountCoinRWEntry(const CAccountID &accountIdIn, const COutPoint &outpointIn) : accountID(accountIdIn), outpoint(outpointIn), key(DB_BALANCE) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(accountId);
+        s << VARINT(accountID);
         s << outpoint.hash;
         s << VARINT(outpoint.n);
     }
@@ -100,7 +101,7 @@ struct AccountCoinRWEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(accountId);
+        s >> VARINT(accountID);
         s >> outpoint.hash;
         s >> VARINT(outpoint.n);
     }
@@ -163,10 +164,10 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) {
             if (it->second.coin.IsSpent()) {
                 batch.Erase(CoinEntry(&it->first));
-                batch.Erase(AccountCoinRefEntry(&it->second.coin.outAccountId, &it->first));
+                batch.Erase(AccountCoinRefEntry(&it->second.coin.outAccountID, &it->first));
             } else {
                 batch.Write(CoinEntry(&it->first), it->second.coin);
-                batch.Write(AccountCoinRefEntry(&it->second.coin.outAccountId, &it->first), VARINT(it->second.coin.out.nValue));
+                batch.Write(AccountCoinRefEntry(&it->second.coin.outAccountID, &it->first), VARINT(it->second.coin.out.nValue));
             }
             changed++;
         }
@@ -203,19 +204,23 @@ size_t CCoinsViewDB::EstimateSize() const
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
 }
 
-CAmount CCoinsViewDB::GetAccountBalance(const CAccountId &accountId, const CCoinsMap &mapModifiedCoins) const {
-    CAmount balance = 0;
+CAmount CCoinsViewDB::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
+    CAmount availableBalance = 0;
+    if (pLockInBindIdBalance) *pLockInBindIdBalance = 0;
+    if (pLockInRentBalance) *pLockInRentBalance = 0;
+    if (pRentedBalance) *pRentedBalance = 0;
 
     // Read from database
     {
         std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
         CAmount value;
-        AccountCoinRWEntry entry(accountId, COutPoint(uint256(), 0));
+        AccountCoinRWEntry entry(accountID, COutPoint(uint256(), 0));
         pcursor->Seek(entry);
         while (pcursor->Valid()) {
-            if (pcursor->GetKey(entry) && entry.key == DB_BALANCE && entry.accountId == accountId) {
+            if (pcursor->GetKey(entry) && entry.key == DB_BALANCE && entry.accountID == accountID) {
                 if (pcursor->GetValue(VARINT(value)))
-                    balance += value;
+                    availableBalance += value;
             } else {
                 break;
             }
@@ -225,20 +230,20 @@ CAmount CCoinsViewDB::GetAccountBalance(const CAccountId &accountId, const CCoin
 
     // Apply modified coin
     for (CCoinsMap::const_iterator it = mapModifiedCoins.cbegin(); it != mapModifiedCoins.cend(); it++) {
-        if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.outAccountId == accountId) {
+        if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.outAccountID == accountID) {
             if (it->second.coin.IsSpent()) {
                 if (db.Exists(CoinEntry(&it->first)))
-                    balance -= it->second.coin.outValue;
+                    availableBalance -= it->second.coin.outValue;
             } else {
                 assert(it->second.coin.outValue == it->second.coin.out.nValue);
                 if (!db.Exists(CoinEntry(&it->first)))
-                    balance += it->second.coin.outValue;
+                    availableBalance += it->second.coin.outValue;
             }
         }
     }
+    assert(availableBalance >= 0);
 
-    assert(balance >= 0);
-    return balance;
+    return availableBalance;
 }
 
 CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
@@ -381,7 +386,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nPlotterId      = diskindex.nPlotterId;
                 pindexNew->nStatus         = diskindex.nStatus;
                 pindexNew->nTx             = diskindex.nTx;
-                pindexNew->nMinerAccountId = diskindex.nMinerAccountId;
+                pindexNew->minerAccountID  = diskindex.minerAccountID;
 
                 pcursor->Next();
             } else {
@@ -397,8 +402,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
 /** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    const CAmount tagBalance = std::numeric_limits<CAmount>::max();
-    const AccountCoinRWEntry tagAccountEntry(std::numeric_limits<CAccountId>::max(), COutPoint(uint256(), 0));
+    const CAmount tagBalance = 0;
+    const AccountCoinRWEntry tagAccountEntry(std::numeric_limits<CAccountID>::max(), COutPoint(uint256(), 0));
     CAmount currentTagBalance;
     if (db.Read(tagAccountEntry, VARINT(currentTagBalance)) && currentTagBalance == tagBalance)
         return true; // Exist balance entry
@@ -443,8 +448,8 @@ bool CCoinsViewDB::Upgrade() {
                 if (!pcursor->GetValue(coin))
                     return error("%s: cannot parse coin record", __func__);
 
-                if (coin.outAccountId != 0) {
-                    batch.Write(AccountCoinRefEntry(&coin.outAccountId, &outpoint), VARINT(coin.outValue));
+                if (!coin.outAccountID != 0) {
+                    batch.Write(AccountCoinRefEntry(&coin.outAccountID, &outpoint), VARINT(coin.outValue));
                     add++;
                     if (batch.SizeEstimate() > batch_size) {
                         db.WriteBatch(batch);
