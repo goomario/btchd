@@ -1512,6 +1512,17 @@ bool AppInitMain()
                         break;
                     }
                     assert(chainActive.Tip() != nullptr);
+                    // Reconsider block
+                    if (chainActive.Height() >= chainparams.GetConsensus().BHDIP1010Height - 1 &&
+                            chainActive.Height() < chainparams.GetConsensus().BHDIP1010Height + (int)chainparams.GetConsensus().nMinerConfirmationWindow) {
+                        {
+                            LOCK(cs_main);
+                            ResetBlockFailureFlags(chainActive[chainparams.GetConsensus().BHDIP1010Height - 1]);
+                        }
+
+                        CValidationState state;
+                        ActivateBestChain(state, chainparams);
+                    }
                 }
 
                 if (!fReset) {
