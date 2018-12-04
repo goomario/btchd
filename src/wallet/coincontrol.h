@@ -38,6 +38,8 @@ public:
     FeeEstimateMode m_fee_mode;
     //! Pay policy
     PayPolicy payPolicy;
+    //! OP_REUTRN carrier data
+    CScript carrierData;
 
     CCoinControl()
     {

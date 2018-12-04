@@ -6,18 +6,20 @@
 
 #include <chainparams.h>
 #include <consensus/consensus.h>
+#include <pubkey.h>
 #include <random.h>
+#include <script/script.h>
 
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
-CAmount CCoinsView::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
-    if (pLockInBindIdBalance) *pLockInBindIdBalance = 0;
-    if (pLockInRentBalance) *pLockInRentBalance = 0;
-    if (pRentedBalance) *pRentedBalance = 0;
+CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const {
+    if (pLockInBindIdBalance != nullptr) *pLockInBindIdBalance = 0;
+    if (pLockInRentCreditBalance != nullptr) *pLockInRentCreditBalance = 0;
+    if (pRentDebitBalance != nullptr) *pRentDebitBalance = 0;
     return 0;
 }
 
@@ -36,9 +38,9 @@ void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-CAmount CCoinsViewBacked::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
-    return base->GetAccountBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const {
+    return base->GetBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentCreditBalance, pRentDebitBalance);
 }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
@@ -92,44 +94,31 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
         fresh = !(it->second.flags & CCoinsCacheEntry::DIRTY);
     }
     it->second.coin = std::move(coin);
+    it->second.coin.refOut.accountID = GetAccountIDByScriptPubKey(it->second.coin.out.scriptPubKey);
+    it->second.coin.refOut.value = it->second.coin.out.nValue;
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 }
 
 void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool check) {
+    CoinExtraData extraData;
+    bool fHaveExtraData = GetTransactionExtraData(tx, nHeight, extraData);
+
     bool fCoinbase = tx.IsCoinBase();
     const uint256& txid = tx.GetHash();
     for (size_t i = 0; i < tx.vout.size(); ++i) {
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
-    }
-
-    // External data
-    /*if (!fCoinbase && tx.vout.size() == 2 && && nHeight >= Params().GetConsensus().BHDIP1010Height) {
-        // OP_RETURN OP_PUSHDATA1 size [size data]
-        const CScript &script = tx.vout[1].scriptPubKey;
-        if (script.size() >= 28 && script[0] == OP_RETURN && script[1] == OP_PUSHDATA1 && script[2] + 3 == script.size()) {
-            if (script.size() == 28 && script[3] == 0x21 && script[4] == 0xa9 && script[5] == 0xee) {
-                // Rent
-                if (OP_1 <= script[6] && script[6] <= OP_16 && script[7] == 0x14 && script[8] == 0x05 && (size_t)(script[6] - OP_1) < tx.vout.size()) {
-                    CAccountID rentAccountId, utxoOwnerAccountId;
-                    {
-                        CScriptID rentScriptID;
-                        memcpy(rentScriptID.begin(), &script[8], 20);
-                        CTxDestination rentDest = rentScriptID;
-
-                        rentAccountId = GetAccountIDByTxDestination(rentDest);
-                        utxoOwnerAccountId = GetAccountIDByScriptPubKey(tx.vout[script[6] - OP_1].scriptPubKey);
-                    }
-                    if (rentAccountId != 0 && utxoOwnerAccountId != 0 && rentAccountId != utxoOwnerAccountId) {
-
-                    }
-                }
-            }
+        if (i == 0 && fHaveExtraData) {
+            assert(extraData.protocolId != 0);
+            Coin coin(tx.vout[i], nHeight, fCoinbase);
+            coin.extraData = extraData;
+            cache.AddCoin(COutPoint(txid, i), std::move(coin), overwrite);
+        } else {
+            cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
         }
-    }*/
+    }
 }
 
 bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout) {
@@ -237,33 +226,36 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     hashBlock = hashBlockIn;
     return true;
 }
-CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
+
+CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
+        CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const {
     // Invalid account ID
     if (accountID == 0) {
-        if (pLockInBindIdBalance) *pLockInBindIdBalance = 0;
-        if (pLockInRentBalance) *pLockInRentBalance = 0;
-        if (pRentedBalance) *pRentedBalance = 0;
+        if (pLockInBindIdBalance != nullptr) *pLockInBindIdBalance = 0;
+        if (pLockInRentCreditBalance != nullptr) *pLockInRentCreditBalance = 0;
+        if (pRentDebitBalance != nullptr) *pRentDebitBalance = 0;
         return 0;
     }
 
     if (cacheCoins.empty()) {
-        return base->GetAccountBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+        return base->GetBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentCreditBalance, pRentDebitBalance);
     } else if (mapModifiedCoins.empty()) {
-        return base->GetAccountBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+        return base->GetBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInRentCreditBalance, pRentDebitBalance);
     } else {
+        assert(&mapModifiedCoins != &cacheCoins);
+
         CCoinsMap tempUsCoinsMap;
         // Copy current CCoinsMap
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
-            if (it->second.coin.outAccountID == accountID)
+            if (it->second.coin.refOut.accountID == accountID)
                 tempUsCoinsMap[it->first] = it->second;
         }
         if (tempUsCoinsMap.empty()) {
-            return base->GetAccountBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+            return base->GetBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInRentCreditBalance, pRentDebitBalance);
         } else {
             // Merge CCoinsMap. See CCoinsViewCache::BatchWrite()
             for (CCoinsMap::const_iterator it = mapModifiedCoins.cbegin(); it != mapModifiedCoins.cend(); it++) {
-                if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || it->second.coin.outAccountID != accountID) {
+                if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || it->second.coin.refOut.accountID != accountID) {
                     continue;
                 }
                 CCoinsMap::iterator itUs = tempUsCoinsMap.find(it->first);
@@ -288,13 +280,14 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, const CC
                     }
                 }
             }
-            return base->GetAccountBalance(accountID, tempUsCoinsMap, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+            return base->GetBalance(accountID, tempUsCoinsMap, pLockInBindIdBalance, pLockInRentCreditBalance, pRentDebitBalance);
         }
     }
 }
 
-CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount *pLockInBindIdBalance, CAmount *pLockInRentBalance, CAmount *pRentedBalance) const {
-    return base->GetAccountBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInRentBalance, pRentedBalance);
+CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const {
+    // Merge with base cache coins and calculate balance
+    return base->GetBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInRentCreditBalance, pRentDebitBalance);
 }
 
 bool CCoinsViewCache::Flush() {
@@ -353,4 +346,47 @@ const Coin& AccessByTxid(const CCoinsViewCache& view, const uint256& txid)
         ++iter.n;
     }
     return coinEmpty;
+}
+
+bool GetTransactionExtraData(const CTransaction& tx, int nHeight, CoinExtraData &extraData, CScriptID *pAssocScriptID)
+{
+    if (tx.IsCoinBase() || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable() || nHeight < Params().GetConsensus().BHDIP1010Height)
+        return false;
+
+    // OP_RETURN 0x04 <ProtocolID> <CustomData>
+    const CScript &script = tx.vout[tx.vout.size()-1].scriptPubKey;
+    if (script.size() < 6 || script[0] != OP_RETURN || script[1] != 0x04)
+        return false;
+    CScript::const_iterator pc = script.begin() + 1;
+    opcodetype opcode;
+
+    // Get data protocol ID
+    unsigned int protocolId;
+    {
+        std::vector<unsigned char> protocolIdBytes;
+        if (!script.GetOp(pc, opcode, protocolIdBytes) || opcode != 0x04 || opcode != protocolIdBytes.size())
+            return false;
+        protocolId = (protocolIdBytes[0] << 0) | (protocolIdBytes[1] << 8) | (protocolIdBytes[2] << 16) | (protocolIdBytes[3] << 24);
+    }
+
+    if (protocolId == OPRETURN_PROTOCOLID_BINDID) {
+
+    } else if (protocolId == OPRETURN_PROTOCOLID_RENT) {
+        if (script.size() != 27)
+            return false;
+        std::vector<unsigned char> destBytes;
+        if (!script.GetOp(pc, opcode, destBytes) || opcode != 0x14 || opcode != destBytes.size())
+            return false;
+        CTxDestination dest = CScriptID(uint160(destBytes));
+        extraData.debitAccountID = GetAccountIDByTxDestination(dest);
+        if (extraData.debitAccountID == 0) {
+            return false;
+        }
+        extraData.protocolId = protocolId;
+
+        if (pAssocScriptID != nullptr) *pAssocScriptID = *(boost::get<CScriptID>(&dest));
+        return true;
+    }
+
+    return false;
 }

@@ -363,6 +363,44 @@ bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
 
+namespace {
+
+std::vector<unsigned char> ToByteVector(uint32_t in) {
+    return { (unsigned char)((in >> 0)&0xff), (unsigned char)((in >> 8)&0xff), (unsigned char)((in >> 16)&0xff), (unsigned char)((in >> 24)&0xff) };
+}
+
+}
+
+CScript GetScriptBindIdForDestination(const CTxDestination& dest, const uint64_t &plotterId)
+{
+    CScript script;
+
+    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+    if (scriptID != nullptr) {
+        script << OP_RETURN;
+        script << ToByteVector(OPRETURN_PROTOCOLID_BINDID);
+        script << ToByteVector(*scriptID);
+        script << CScriptNum((int64_t)plotterId);
+    }
+
+    return script;
+}
+
+CScript GetScriptRentForDestination(const CTxDestination& dest)
+{
+    CScript script;
+
+    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+    if (scriptID != nullptr) {
+        script << OP_RETURN;
+        script << ToByteVector(OPRETURN_PROTOCOLID_RENT);
+        script << ToByteVector(*scriptID);
+    }
+
+    assert(script.empty() || script.size() == 27);
+    return script;
+}
+
 CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey) {
     CTxDestination dest;
     if (ExtractDestination(scriptPubKey, dest)) {

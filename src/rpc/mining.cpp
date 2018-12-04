@@ -758,14 +758,14 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
-    CAmount availableBalance = 0, lockInBindIdBalance = 0, lockInRentBalance = 0, rentedBalance = 0;
-    availableBalance = pcoinsTip->GetAccountBalance(accountID, &lockInBindIdBalance, &lockInRentBalance, &rentedBalance);
+    CAmount totalBalance = 0, lockInBindIdBalance = 0, lockInRentCreditBalance = 0, rentDebitBalance = 0;
+    totalBalance = pcoinsTip->GetAccountBalance(accountID, &lockInBindIdBalance, &lockInRentCreditBalance, &rentDebitBalance);
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("balance", ValueFromAmount(availableBalance - lockInBindIdBalance - lockInRentBalance));
+    result.pushKV("availableBalance", ValueFromAmount(totalBalance - lockInBindIdBalance - lockInRentCreditBalance));
     result.pushKV("lockInBindIdBalance", ValueFromAmount(lockInBindIdBalance));
-    result.pushKV("lockInRentBalance", ValueFromAmount(lockInRentBalance));
-    result.pushKV("rentedBalance", ValueFromAmount(rentedBalance));
+    result.pushKV("lockInRentCreditBalance", ValueFromAmount(lockInRentCreditBalance));
+    result.pushKV("rentDebitBalance", ValueFromAmount(rentDebitBalance));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
     if (nHeight < Params().GetConsensus().BtchdNoPledgeHeight + 1) {

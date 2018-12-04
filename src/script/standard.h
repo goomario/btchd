@@ -42,6 +42,15 @@ extern bool fAcceptDatacarrier;
 /** Maximum size of TX_NULL_DATA scripts that this node considers standard. */
 extern unsigned nMaxDatacarrierBytes;
 
+/** Bind mining ID protocol ID */
+static const unsigned int OPRETURN_PROTOCOLID_BINDID = 0x00000100;
+
+/** Rent coin protocol ID */
+static const unsigned int OPRETURN_PROTOCOLID_RENT = 0x00000200;
+
+/** Text data protocol ID */
+static const unsigned int OPRETURN_PROTOCOLID_TEXT = 0x00000300;
+
 /**
  * Mandatory script verification flags that all new blocks must comply with for
  * them to be valid. (but old blocks may not comply with) Currently just P2SH,
@@ -184,6 +193,12 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  * the various witness-specific CTxDestination subtypes.
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
+
+/** Generate a bind id script. */
+CScript GetScriptBindIdForDestination(const CTxDestination& dest, const uint64_t &plotterId);
+
+/** Generate a rent script. */
+CScript GetScriptRentForDestination(const CTxDestination& dest);
 
 /** Utility function to get account id with given scriptPubKey. */
 CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey);

@@ -25,14 +25,23 @@ class TxInUndoSerializer
 public:
     template<typename Stream>
     void Serialize(Stream &s) const {
-        ::Serialize(s, VARINT((txout->extraData.empty() ? 0 : 0x80000000) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00)));
+        unsigned int nCode = (txout->extraData.protocolId == 0 ? 0 : 0x80000000) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00);
+        ::Serialize(s, VARINT(nCode));
         if (txout->nHeight > 0) {
             // Required to maintain compatibility with older undo format.
             ::Serialize(s, (unsigned char)0);
         }
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
-        if (!txout->extraData.empty())
-            ::Serialize(s, REF(txout->extraData));
+        if (nCode & 0x80000000) {
+            ::Serialize(s, VARINT(txout->extraData.protocolId));
+            if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_BINDID) {
+                ::Serialize(s, VARINT(txout->extraData.plotterId));
+            } else if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+                assert(txout->extraData.debitAccountID != 0);
+                ::Serialize(s, VARINT(txout->extraData.debitAccountID));
+            } else
+                assert(false);
+        }
     }
 
     explicit TxInUndoSerializer(const Coin* coin) : txout(coin) {}
@@ -57,11 +66,16 @@ public:
             ::Unserialize(s, VARINT(nVersionDummy));
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
-        if (nCode & 0x80000000)
-            ::Unserialize(s, REF(txout->extraData));
-
-        txout->outAccountID = GetAccountIDByScriptPubKey(txout->out.scriptPubKey);
-        txout->outValue = txout->out.nValue;
+        if (nCode & 0x80000000) {
+            ::Unserialize(s, VARINT(txout->extraData.protocolId));
+            if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_BINDID) {
+                ::Unserialize(s, VARINT(txout->extraData.plotterId));
+            } else if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+                ::Unserialize(s, VARINT(txout->extraData.debitAccountID));
+                assert(txout->extraData.debitAccountID != 0);
+            } else
+                assert(false);
+        }
     }
 
     explicit TxInUndoDeserializer(Coin* coin) : txout(coin) {}
