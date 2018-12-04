@@ -1162,25 +1162,36 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     } else if (nHeight <= consensusParams.BtchdNoPledgeHeight) {
         // No pledge
         reward.miner0 = nSubsidy + nFees;
+    } else if (nHeight < consensusParams.BHDIP1010Height) {
+        // Normal mining. Not have pledge rent
+        //
+        // Y is 95% reward, N is 30% reward.
+        // -------- Old ------------ => ------------ New ------------
+        // Y[95%->miner, 5%->fund]   =>    Y[95%->miner, 5%->fund] pass
+        // Y[95%->miner, 5%->fund]   =>    N[30%->miner, 70%->fund] pass (impossible case)
+        // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
+        // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
+        CAmount minerPledgeAmount, minerPledgeAmountAtOldConsensus, totalBalance;
+        minerPledgeAmount = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams, &minerPledgeAmountAtOldConsensus);
+        totalBalance = view.GetAccountBalance(minerAccountID);
+        if (totalBalance >= minerPledgeAmount) {
+            reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
+            if (nHeight < consensusParams.BtchdV2EndForkHeight && totalBalance < minerPledgeAmountAtOldConsensus) {
+                // Old consensus => fund
+                reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
+            }
+        } else {
+            reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
+        }
+        reward.miner0 = nSubsidy + nFees - reward.fund - reward.miner1;
     } else {
         // Normal mining
         if (nSubsidy > 0) {
-            // Y is 95% reward, N is 30% reward.
-            // -------- Old ------------ => ------------ New ------------
-            // Y[95%->miner, 5%->fund]   =>    Y[95%->miner, 5%->fund] pass
-            // Y[95%->miner, 5%->fund]   =>    N[30%->miner, 70%->fund] pass (impossible case)
-            // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
-            // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
-            CAmount nMinerPledge, nMinerPledgeOldConsensus;
             CAmount totalBalance = 0, lockInRentCreditBalance = 0, rentDebitBalance = 0;
-            nMinerPledge = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams, &nMinerPledgeOldConsensus);
+            CAmount minerPledgeAmount = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams);
             totalBalance = view.GetAccountBalance(minerAccountID, nullptr, &lockInRentCreditBalance, &rentDebitBalance);
-            if (totalBalance - lockInRentCreditBalance + rentDebitBalance >= nMinerPledge) {
+            if (totalBalance - lockInRentCreditBalance + rentDebitBalance >= minerPledgeAmount) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
-                if (nHeight < consensusParams.BtchdV2EndForkHeight && totalBalance < nMinerPledgeOldConsensus) {
-                    // Old consensus => fund
-                    reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
-                }
             } else {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
             }
