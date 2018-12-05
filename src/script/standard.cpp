@@ -363,44 +363,6 @@ bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
 
-namespace {
-
-std::vector<unsigned char> ToByteVector(uint32_t in) {
-    return { (unsigned char)((in >> 0)&0xff), (unsigned char)((in >> 8)&0xff), (unsigned char)((in >> 16)&0xff), (unsigned char)((in >> 24)&0xff) };
-}
-
-}
-
-CScript GetScriptBindIdForDestination(const CTxDestination& dest, const uint64_t &plotterId)
-{
-    CScript script;
-
-    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
-    if (scriptID != nullptr) {
-        script << OP_RETURN;
-        script << ToByteVector(OPRETURN_PROTOCOLID_BINDID);
-        script << ToByteVector(*scriptID);
-        script << CScriptNum((int64_t)plotterId);
-    }
-
-    return script;
-}
-
-CScript GetScriptRentForDestination(const CTxDestination& dest)
-{
-    CScript script;
-
-    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
-    if (scriptID != nullptr) {
-        script << OP_RETURN;
-        script << ToByteVector(OPRETURN_PROTOCOLID_RENT);
-        script << ToByteVector(*scriptID);
-    }
-
-    assert(script.empty() || script.size() == 27);
-    return script;
-}
-
 CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey) {
     CTxDestination dest;
     if (ExtractDestination(scriptPubKey, dest)) {
@@ -425,4 +387,81 @@ CAccountID GetAccountIDByAddress(const std::string &address) {
     } else {
         return 0;
     }
+}
+
+namespace {
+
+std::vector<unsigned char> ToByteVector(DatacarrierProtocol protocol) {
+    unsigned int in = (unsigned int) protocol;
+    return { (unsigned char)((in >> 0)&0xff), (unsigned char)((in >> 8)&0xff), (unsigned char)((in >> 16)&0xff), (unsigned char)((in >> 24)&0xff) };
+}
+
+}
+
+CScript GetBindIdScriptForDestination(const CTxDestination& dest, const uint64_t &plotterId) {
+    CScript script;
+
+    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+    if (scriptID != nullptr) {
+        script << OP_RETURN;
+        script << ToByteVector(OPRETURN_PROTOCOLID_BINDID);
+        script << ToByteVector(*scriptID);
+        script << CScriptNum((int64_t)plotterId);
+    }
+
+    return script;
+}
+
+CScript GetPledgeRentScriptForDestination(const CTxDestination& dest) {
+    CScript script;
+
+    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+    if (scriptID != nullptr) {
+        script << OP_RETURN;
+        script << ToByteVector(OPRETURN_PROTOCOLID_PLEDGERENT);
+        script << ToByteVector(*scriptID);
+    }
+
+    assert(script.empty() || script.size() == 27);
+    return script;
+}
+
+bool ExtractDatacarrierScript(const CScript& scriptPubKey, DatacarrierPayload &data, CScriptID *scriptID) {
+    // OP_RETURN 0x04 <Protocol> <CustomData>
+    if (scriptPubKey.size() < 6 || scriptPubKey[0] != OP_RETURN || scriptPubKey[1] != 0x04)
+        return false;
+    CScript::const_iterator pc = scriptPubKey.begin() + 1;
+    opcodetype opcode;
+
+    // Get data protocol
+    unsigned int protocol;
+    {
+        std::vector<unsigned char> protocolBytes;
+        if (!scriptPubKey.GetOp(pc, opcode, protocolBytes) || opcode != 0x04 || opcode != protocolBytes.size())
+            return false;
+        protocol = (protocolBytes[0] << 0) | (protocolBytes[1] << 8) | (protocolBytes[2] << 16) | (protocolBytes[3] << 24);
+    }
+
+    if (protocol == OPRETURN_PROTOCOLID_BINDID) {
+
+    } else if (protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
+        if (scriptPubKey.size() != 27)
+            return false;
+
+        std::vector<unsigned char> destBytes;
+        if (!scriptPubKey.GetOp(pc, opcode, destBytes) || opcode != 0x14 || opcode != destBytes.size())
+            return false;
+
+        CTxDestination dest = CScriptID(uint160(destBytes));
+        CAccountID debitAccountID = GetAccountIDByTxDestination(dest);
+        if (debitAccountID == 0)
+            return false;
+
+        data.protocol = (DatacarrierProtocol) protocol;
+        data.debitAccountID = debitAccountID;
+        if (scriptID != nullptr) *scriptID = *(boost::get<CScriptID>(&dest));
+        return true;
+    }
+
+    return false;
 }

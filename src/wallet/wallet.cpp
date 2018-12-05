@@ -2346,6 +2346,7 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
                         if (pcoin->tx->vout[i].scriptPubKey == primaryScriptPubKey)
                             continue;
                     } else if (coinControl->payPolicy == PAYPOLICY_MOVETO) {
+                        // destChangeScriptPubKey is move to target destination
                         if (pcoin->tx->vout[i].scriptPubKey == destChangeScriptPubKey)
                             continue;
                     }
@@ -2857,9 +2858,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 nValue = 0;
                 for (const COutput& out : vAvailableCoins)
                 {
-                    if (!out.fSpendable)
-                        continue;
-                    nValue += out.tx->tx->vout[out.i].nValue;
+                    if (out.fSpendable)
+                        nValue += out.tx->tx->vout[out.i].nValue;
                 }
                 const CRecipient &recipient = vecSend[0];
                 if (nValue < recipient.nAmount)
@@ -2876,7 +2876,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 // coin control: send change to custom address
                 if (!boost::get<CNoDestination>(&coin_control.destChange)) {
                     scriptChange = GetScriptForDestination(coin_control.destChange);
-                } else { // no coin control: send change to newly generated address
+                } else { // no coin control: send change to primary address
                     scriptChange = GetScriptForDestination(GetPrimaryDestination());
                 }
             }
@@ -2932,8 +2932,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     }
                     txNew.vout.push_back(txout);
                 }
-                if (!coin_control.carrierData.empty())
-                    txNew.vout.push_back(CTxOut(0, coin_control.carrierData));
+                if (coin_control.carrierData && !coin_control.carrierData->empty())
+                    txNew.vout.push_back(CTxOut(0, *coin_control.carrierData));
 
                 // Choose coins to use
                 if (pick_new_inputs) {
@@ -3478,7 +3478,7 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
 
         auto it = setKeyPool.begin();
         nIndex = *it;
-        //setKeyPool.erase(it); // BitcoinHD Note Do not remove for BitcoinHD
+        //setKeyPool.erase(it); // BitcoinHD Note: Do not remove for BitcoinHD
         if (!walletdb.ReadPool(nIndex, keypool)) {
             throw std::runtime_error(std::string(__func__) + ": read failed");
         }
@@ -3490,7 +3490,7 @@ void CWallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRe
         }
 
         assert(keypool.vchPubKey.IsValid());
-        //m_pool_key_to_index.erase(keypool.vchPubKey.GetID()); // BitcoinHD Note Do not remove for BitcoinHD
+        //m_pool_key_to_index.erase(keypool.vchPubKey.GetID()); // BitcoinHD Note: Do not remove for BitcoinHD
         LogPrintf("keypool reserve %d\n", nIndex);
     }
 }
@@ -3521,7 +3521,7 @@ void CWallet::ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey)
 
 bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
 {
-    internal = false; // BitcoinHD Note Always get external public key
+    internal = false; // BitcoinHD Note: Always get external public key
 
     CKeyPool keypool;
     {
@@ -3741,7 +3741,7 @@ std::vector<CTxDestination> CWallet::GetExternalAddresses(int64_t fromIndex, int
 
 bool CReserveKey::GetReservedKey(CPubKey& pubkey, bool internal)
 {
-    internal = false; // BitcoinHD Note Always get external public key
+    internal = false; // BitcoinHD Note: Always get external public key
 
     if (nIndex == -1)
     {
@@ -3779,7 +3779,7 @@ void CReserveKey::ReturnKey()
 
 void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
 {
-    // BitcoinHD Note Do not remove for BitcoinHD
+    // BitcoinHD Note: Do not remove for BitcoinHD
     /*
     AssertLockHeld(cs_wallet);
     bool internal = setInternalKeyPool.count(keypool_id);

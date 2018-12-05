@@ -105,10 +105,15 @@ public:
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016;
 
-        consensus.BIP16Height = 0; // Always enforce P2SH BIP16
+        consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
+
+        consensus.BHDIP004ForkBeginHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
+        consensus.BHDIP004ForkEndHeight = 99000;
+        consensus.BHDIP006Height = 128800; // BHDIP006. Active about on Wed, 02 Jan 2019 09:00:00 GMT
+        consensus.BHDIP006BindIdActiveHeight = 130816; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 09:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -128,11 +133,6 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x7af7b16776f8e91f5dcafae8405ea3ccdb0b8db06d85b64549ca61eca4990f35"); // 113900
-
-        // BitcoinHD new consensus upgrade bug.
-        // 96264 is invalid block
-        consensus.BtchdV2BeginForkHeight = 96264;
-        consensus.BtchdV2EndForkHeight = 99000;
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -350,7 +350,32 @@ public:
                 { 113400, uint256S("0x62e472da5d5857f1f1cf2f23269b1796efa9611e44d323b46ffc6280e1a4963b") },
                 { 113600, uint256S("0x3433898f22bacb95ae21fa6c68561bb1c4d14c055f434ecfa029b7598ef53871") },
                 { 113800, uint256S("0xf1a58e7e268e5399dd450e38b67ce0e8ffe046950270028a373a24a43ebae922") },
-                { 113900, uint256S("0x7af7b16776f8e91f5dcafae8405ea3ccdb0b8db06d85b64549ca61eca4990f35") }
+                { 114000, uint256S("0xfe881b2ea8b7481e5233c80fc2d8394d7a5c29484275dd93bce8d0d375f458cf") },
+                { 114200, uint256S("0xb02e086b57dcbf91c8f7f7b832c358141ffc464ca84e86992c6468a8e2d94049") },
+                { 114400, uint256S("0x62bc98ac04ce8f89417d239b8b868b5957ffb595ccb0acf36bdb87cb5e1a2f66") },
+                { 114600, uint256S("0x0089fc038331a49adaf19b6b93d0d3e90951cbe11b713f5a9903b92aee4f57fe") },
+                { 114800, uint256S("0x28087fb7f79207ec757639846460ed28945338617fe21e922e762fad3d50765c") },
+                { 115000, uint256S("0x5f002fde0487f97652407b5976f309b7de0f95ddfc336a20e5896cdd7fe4906b") },
+                { 115200, uint256S("0xcac0f40310f4b72158c0754facbc3de791533bb31011b5bde327699eefa702be") },
+                { 115400, uint256S("0x1235fb53cda9ca0eca8f8f4daa5ee6ba8367415b466d17e9fac83242cd89e5f8") },
+                { 115600, uint256S("0xebb41351c4e9bd67885be2750134d1736019b1a0d24db6df84b8b3c6a7b6d330") },
+                { 115800, uint256S("0x381685232cf8d38f17356f9eb787b54e766c1789f16a074f444dec9298a8645d") },
+                { 116000, uint256S("0x5ea5ea3fe879a01ec7f2625cf68b1b703d2d7fcc7dbc9206b34b651ad6533f16") },
+                { 116200, uint256S("0x7d59bb1ed0d6ec26fef9ae2bb0fddc51b5e454471755b4100696260321eec1ce") },
+                { 116400, uint256S("0x8923470aaf84450efccd758b2d3133cc599cbaa6bb339c61b5b11619f492a65c") },
+                { 116600, uint256S("0xb9ade3594e87552d958a8cc27ffb09dd4fa4500556b02c2c2f4211156f505425") },
+                { 116800, uint256S("0x9a18c1ad86e1fc4705500beb918356dceb16b8d5ddb96d9fb52e9c8fbae3f69c") },
+                { 117000, uint256S("0x83d9faee9a07dfaefcf28c36f6c5532598dc48bdda52617696c4a5455904bcab") },
+                { 117200, uint256S("0xef7ec1c484fb3c7486aadb179cdb1ea8a49bb1cd111d6095149d08c00cf9d069") },
+                { 117400, uint256S("0xbdbbf082cc1780245fcc4bd89b86d376740a746f362d7b43bf4a5b1531333ae1") },
+                { 117600, uint256S("0xa08e09b1a9113ec128b535f1d800114bd63310546de5956c89cb92f775701915") },
+                { 117800, uint256S("0x27d81118e2a1aca36fb4f3d1991706f05932a170d3b9040774a4ca997c43fb2c") },
+                { 118000, uint256S("0xf640f20483939c0ca4bfea2c42bd11fb6c071e40dd415ed9895ea220c2a19e1c") },
+                { 118200, uint256S("0xf1c969f10a65a55fad05462dcd129c3efdec3b3753d13f7169dea945a58b60f5") },
+                { 118400, uint256S("0x4b9fada830fa13cec1a3c4f665b6aecb90e3dd46ae86dc48aea6775931905267") },
+                { 118600, uint256S("0x9e9438d6677feb2d62e6d03816c34434efdc76b09f63f3cb488d66f01a121b8c") },
+                { 118800, uint256S("0x7897e7e0c77d191a95a6af219cbd118d7029ff70a5c23afde72f2518c26d404c") },
+                { 119000, uint256S("0x05c1edc9af0474d10c04457c7bb54f75a4d5e9e7432dabdef4ddd5581e9478db") },
             }
         };
 
@@ -389,10 +414,15 @@ public:
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016;
 
-        consensus.BIP16Height = 0; // Always enforce P2SH BIP16
+        consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
+
+        consensus.BHDIP004ForkBeginHeight = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
+        consensus.BHDIP004ForkEndHeight = 21000;
+        consensus.BHDIP006Height = 44300; // BHDIP006. Active about on Wed, 02 Jan 2019 04:00:00 GMT
+        consensus.BHDIP006BindIdActiveHeight = 46316; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 04:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -412,10 +442,6 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
-
-        // BitcoinHD new consensus upgrade bug.
-        consensus.BtchdV2BeginForkHeight = 12400;
-        consensus.BtchdV2EndForkHeight = 21000;
 
         pchMessageStart[0] = 0x1e;
         pchMessageStart[1] = 0x12;
@@ -598,10 +624,15 @@ public:
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144;
 
-        consensus.BIP16Height = 0; // Always enforce P2SH BIP16
+        consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
+
+        consensus.BHDIP004ForkBeginHeight = 0;
+        consensus.BHDIP004ForkEndHeight = 0;
+        consensus.BHDIP006Height = consensus.BtchdNoPledgeHeight + 200;
+        consensus.BHDIP006BindIdActiveHeight = consensus.BtchdNoPledgeHeight + 300;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
@@ -618,10 +649,6 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
-
-        // BitcoinHD new consensus upgrade bug.
-        consensus.BtchdV2BeginForkHeight = 0;
-        consensus.BtchdV2EndForkHeight = 0;
 
         pchMessageStart[0] = 0xe6;
         pchMessageStart[1] = 0xbb;

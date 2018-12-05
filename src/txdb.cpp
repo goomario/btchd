@@ -260,7 +260,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                 if (it->second.coin.refOut.accountID != 0)
                     batch.Erase(AccountCoinRefEntry(&it->second.coin.refOut.accountID, &it->first));
                 // Rent
-                if (it->second.coin.extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+                if (it->second.coin.extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
                     batch.Erase(AccountCoinRentCreditRefEntry(&it->second.coin.refOut.accountID, &it->first));
                     batch.Erase(AccountCoinRentDebitRefEntry(&it->second.coin.extraData.debitAccountID, &it->first));
                 }
@@ -269,7 +269,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                 if (it->second.coin.refOut.accountID != 0)
                     batch.Write(AccountCoinRefEntry(&it->second.coin.refOut.accountID, &it->first), VARINT(it->second.coin.out.nValue));
                 // Rent
-                if (it->second.coin.extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+                if (it->second.coin.extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
                     batch.Write(AccountCoinRentCreditRefEntry(&it->second.coin.refOut.accountID, &it->first), VARINT(it->second.coin.out.nValue));
                     batch.Write(AccountCoinRentDebitRefEntry(&it->second.coin.extraData.debitAccountID, &it->first), VARINT(it->second.coin.out.nValue));
                 }
@@ -310,7 +310,7 @@ size_t CCoinsViewDB::EstimateSize() const
 }
 
 CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const {
+        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const {
     CAmount availableBalance = 0;
     if (pLockInBindIdBalance != nullptr) *pLockInBindIdBalance = 0;
 
@@ -346,9 +346,9 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     }
     assert(availableBalance >= 0);
 
-    // Rent credit
-    if (pLockInRentCreditBalance != nullptr) {
-        *pLockInRentCreditBalance = 0;
+    // The pledge rent credit
+    if (pLockInPledgeRentCreditBalance != nullptr) {
+        *pLockInPledgeRentCreditBalance = 0;
 
         // Read from database
         {
@@ -359,7 +359,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             while (pcursor->Valid()) {
                 if (pcursor->GetKey(entry) && entry.key == DB_COIN_RENTCREDIT && entry.accountID == accountID) {
                     if (pcursor->GetValue(VARINT(value)))
-                        *pLockInRentCreditBalance += value;
+                        *pLockInPledgeRentCreditBalance += value;
                 } else {
                     break;
                 }
@@ -369,23 +369,24 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Apply modified coin
         for (CCoinsMap::const_iterator it = mapModifiedCoins.cbegin(); it != mapModifiedCoins.cend(); it++) {
-            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOut.accountID == accountID && it->second.coin.extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOut.accountID == accountID &&
+                    it->second.coin.extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
-                        *pLockInRentCreditBalance -= it->second.coin.refOut.value;
+                        *pLockInPledgeRentCreditBalance -= it->second.coin.refOut.value;
                 } else {
                     assert(it->second.coin.refOut.value == it->second.coin.out.nValue);
                     if (!db.Exists(CoinEntry(&it->first)))
-                        *pLockInRentCreditBalance += it->second.coin.refOut.value;
+                        *pLockInPledgeRentCreditBalance += it->second.coin.refOut.value;
                 }
             }
         }
-        assert(*pLockInRentCreditBalance >= 0);
+        assert(*pLockInPledgeRentCreditBalance >= 0);
     }
 
-    // Rent debit
-    if (pRentDebitBalance != nullptr) {
-        *pRentDebitBalance = 0;
+    // The pledge rent debit
+    if (pPledgeRentDebitBalance != nullptr) {
+        *pPledgeRentDebitBalance = 0;
 
         // Read from database
         {
@@ -396,7 +397,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             while (pcursor->Valid()) {
                 if (pcursor->GetKey(entry) && entry.key == DB_COIN_RENTDEBIT && entry.accountID == accountID) {
                     if (pcursor->GetValue(VARINT(value)))
-                        *pRentDebitBalance += value;
+                        *pPledgeRentDebitBalance += value;
                 } else {
                     break;
                 }
@@ -406,18 +407,19 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Apply modified coin
         for (CCoinsMap::const_iterator it = mapModifiedCoins.cbegin(); it != mapModifiedCoins.cend(); it++) {
-            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.extraData.protocolId == OPRETURN_PROTOCOLID_RENT && it->second.coin.extraData.debitAccountID == accountID) {
+            if ((it->second.flags & CCoinsCacheEntry::DIRTY) &&it->second.coin.extraData.debitAccountID == accountID &&
+                    it->second.coin.extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
-                        *pRentDebitBalance -= it->second.coin.refOut.value;
+                        *pPledgeRentDebitBalance -= it->second.coin.refOut.value;
                 } else {
                     assert(it->second.coin.refOut.value == it->second.coin.out.nValue);
                     if (!db.Exists(CoinEntry(&it->first)))
-                        *pRentDebitBalance += it->second.coin.refOut.value;
+                        *pPledgeRentDebitBalance += it->second.coin.refOut.value;
                 }
             }
         }
-        assert(*pRentDebitBalance >= 0);
+        assert(*pPledgeRentDebitBalance >= 0);
     }
 
     return availableBalance;

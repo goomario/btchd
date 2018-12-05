@@ -1162,7 +1162,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     } else if (nHeight <= consensusParams.BtchdNoPledgeHeight) {
         // No pledge
         reward.miner0 = nSubsidy + nFees;
-    } else if (nHeight < consensusParams.BHDIP1010Height) {
+    } else if (nHeight < consensusParams.BHDIP006Height) {
         // Normal mining. Not have pledge rent
         //
         // Y is 95% reward, N is 30% reward.
@@ -1171,12 +1171,12 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         // Y[95%->miner, 5%->fund]   =>    N[30%->miner, 70%->fund] pass (impossible case)
         // N[30%->miner, 70%->fund]  =>    N[30%->miner, 70%->fund] pass
         // N[30%->miner, 70%->fund]  =>    Y[25%->miner[0], 70%->miner[1](fundOld), 5%->fund] (-_-!)
-        CAmount minerPledgeAmount, minerPledgeAmountAtOldConsensus, totalBalance;
+        CAmount minerPledgeAmount, minerPledgeAmountAtOldConsensus, accountBalance;
         minerPledgeAmount = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams, &minerPledgeAmountAtOldConsensus);
-        totalBalance = view.GetAccountBalance(minerAccountID);
-        if (totalBalance >= minerPledgeAmount) {
+        accountBalance = view.GetAccountBalance(minerAccountID);
+        if (accountBalance >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
-            if (nHeight < consensusParams.BtchdV2EndForkHeight && totalBalance < minerPledgeAmountAtOldConsensus) {
+            if (nHeight < consensusParams.BHDIP004ForkEndHeight && accountBalance < minerPledgeAmountAtOldConsensus) {
                 // Old consensus => fund
                 reward.miner1 = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
             }
@@ -1187,10 +1187,10 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     } else {
         // Normal mining
         if (nSubsidy > 0) {
-            CAmount totalBalance = 0, lockInRentCreditBalance = 0, rentDebitBalance = 0;
+            CAmount totalBalance = 0, lockInPledgeRentCreditBalance = 0, pledgeRentDebitBalance = 0;
             CAmount minerPledgeAmount = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams);
-            totalBalance = view.GetAccountBalance(minerAccountID, nullptr, &lockInRentCreditBalance, &rentDebitBalance);
-            if (totalBalance - lockInRentCreditBalance + rentDebitBalance >= minerPledgeAmount) {
+            totalBalance = view.GetAccountBalance(minerAccountID, nullptr, &lockInPledgeRentCreditBalance, &pledgeRentDebitBalance);
+            if (totalBalance - lockInPledgeRentCreditBalance + pledgeRentDebitBalance >= minerPledgeAmount) {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercent) / 100;
             } else {
                 reward.fund = (nSubsidy * consensusParams.BtchdFundRoyaltyPercentOnLowPledge) / 100;
@@ -2112,7 +2112,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
     } else {
         // Old block: 0x20000000
-        if (pindex->nHeight >= chainparams.GetConsensus().BtchdV2EndForkHeight)
+        if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004ForkEndHeight)
             return state.DoS(100,
                                  error("ConnectBlock(): Depreacted block version %08x",
                                        pindex->nVersion),
@@ -2143,7 +2143,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
             // Check output amount
             if (block.vtx[0]->vout[1].nValue < fund) {
-                if (pindex->nHeight >= chainparams.GetConsensus().BtchdV2BeginForkHeight) {
+                if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004ForkBeginHeight) {
                     // bug, accept corruption pay for fund
                     //LogPrintf("ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n",
                     //    pindex->GetBlockHash().ToString(), pindex->nHeight);

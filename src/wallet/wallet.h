@@ -101,9 +101,9 @@ enum WalletFeature
 
 /** Pay policy */
 enum PayPolicy : int {
-    PAYPOLICY_FROM_ANY = 0,             //! Pay from any address
+    PAYPOLICY_FROM_ANY = 0,             //! Pay from any address, but exclude lock UTXO
     PAYPOLICY_FROM_PRIMARY_ONLY,        //! Pay from primary address only
-    PAYPOLICY_FROM_PRIMARY_EXCLUDE,     //! Pay from any address but exclude primary address
+    PAYPOLICY_FROM_PRIMARY_EXCLUDE,     //! Pay from any address, but exclude primary address
     PAYPOLICY_MOVETO,                   //! Move coin to address
 };
 

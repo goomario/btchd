@@ -758,14 +758,16 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
-    CAmount totalBalance = 0, lockInBindIdBalance = 0, lockInRentCreditBalance = 0, rentDebitBalance = 0;
-    totalBalance = pcoinsTip->GetAccountBalance(accountID, &lockInBindIdBalance, &lockInRentCreditBalance, &rentDebitBalance);
+    CAmount totalBalance = 0, lockInBindIdBalance = 0, lockInPledgeRentCreditBalance = 0, pledgeRentDebitBalance = 0;
+    totalBalance = pcoinsTip->GetAccountBalance(accountID, &lockInBindIdBalance, &lockInPledgeRentCreditBalance, &pledgeRentDebitBalance);
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("availableBalance", ValueFromAmount(totalBalance - lockInBindIdBalance - lockInRentCreditBalance));
+    result.pushKV("balance", ValueFromAmount(totalBalance - lockInPledgeRentCreditBalance + pledgeRentDebitBalance));
+    result.pushKV("totalBalance", ValueFromAmount(totalBalance));
+    result.pushKV("availableBalance", ValueFromAmount(totalBalance - lockInBindIdBalance - lockInPledgeRentCreditBalance));
     result.pushKV("lockInBindIdBalance", ValueFromAmount(lockInBindIdBalance));
-    result.pushKV("lockInRentCreditBalance", ValueFromAmount(lockInRentCreditBalance));
-    result.pushKV("rentDebitBalance", ValueFromAmount(rentDebitBalance));
+    result.pushKV("lockInPledgeRentCreditBalance", ValueFromAmount(lockInPledgeRentCreditBalance));
+    result.pushKV("pledgeRentDebitBalance", ValueFromAmount(pledgeRentDebitBalance));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
     if (nHeight < Params().GetConsensus().BtchdNoPledgeHeight + 1) {
@@ -893,7 +895,11 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
     if (!request.params[1].isNull()) {
         if (!request.params[1].isStr())
             throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
-        nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
+        try {
+            nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
+        } catch(...) {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
+        }
     }
 
     bool fVerbose = true;
@@ -923,9 +929,14 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
+    uint64_t nPlotterId;
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
-    uint64_t nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+    try {
+        nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+    } catch(...) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
+    }
 
     bool fVerbose = true;
     if (!request.params[1].isNull()) {

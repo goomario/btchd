@@ -25,7 +25,7 @@ class TxInUndoSerializer
 public:
     template<typename Stream>
     void Serialize(Stream &s) const {
-        unsigned int nCode = (txout->extraData.protocolId == 0 ? 0 : 0x80000000) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00);
+        unsigned int nCode = (txout->extraData.protocol != OPRETURN_PROTOCOLID_NULL ? 0x80000000 : 0) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00);
         ::Serialize(s, VARINT(nCode));
         if (txout->nHeight > 0) {
             // Required to maintain compatibility with older undo format.
@@ -33,10 +33,10 @@ public:
         }
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
         if (nCode & 0x80000000) {
-            ::Serialize(s, VARINT(txout->extraData.protocolId));
-            if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_BINDID) {
+            ::Serialize(s, VARINT((unsigned int&)txout->extraData.protocol));
+            if (txout->extraData.protocol == OPRETURN_PROTOCOLID_BINDID) {
                 ::Serialize(s, VARINT(txout->extraData.plotterId));
-            } else if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+            } else if (txout->extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
                 assert(txout->extraData.debitAccountID != 0);
                 ::Serialize(s, VARINT(txout->extraData.debitAccountID));
             } else
@@ -67,10 +67,10 @@ public:
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
         if (nCode & 0x80000000) {
-            ::Unserialize(s, VARINT(txout->extraData.protocolId));
-            if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_BINDID) {
+            ::Unserialize(s, VARINT((unsigned int&)txout->extraData.protocol));
+            if (txout->extraData.protocol == OPRETURN_PROTOCOLID_BINDID) {
                 ::Unserialize(s, VARINT(txout->extraData.plotterId));
-            } else if (txout->extraData.protocolId == OPRETURN_PROTOCOLID_RENT) {
+            } else if (txout->extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
                 ::Unserialize(s, VARINT(txout->extraData.debitAccountID));
                 assert(txout->extraData.debitAccountID != 0);
             } else

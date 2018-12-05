@@ -21,20 +21,6 @@
 #include <unordered_map>
 
 /**
- * Coin extra data
- */
-struct CoinExtraData {
-    //! See OPRETURN_PROTOCOLID_*
-    uint32_t protocolId;
-    union {
-        //! Bind plotterId
-        uint64_t plotterId;
-        //! Debit account ID
-        CAccountID debitAccountID;
-    };
-};
-
-/**
  * A UTXO entry.
  *
  * Serialized format:
@@ -55,7 +41,7 @@ public:
     uint32_t nHeight : 30;
 
     //! relevant extra data
-    CoinExtraData extraData;
+    DatacarrierPayload extraData;
 
     //! Memory Only. ref from out
     struct {
@@ -83,14 +69,14 @@ public:
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
-        uint32_t code = (extraData.protocolId == 0 ? 0 : 0x80000000) | (nHeight << 1) | (fCoinBase ? 1 : 0);
+        uint32_t code = (extraData.protocol != OPRETURN_PROTOCOLID_NULL ? 0x80000000 : 0) | (nHeight << 1) | (fCoinBase ? 1 : 0);
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
         if (code & 0x80000000) {
-            ::Serialize(s, VARINT(extraData.protocolId));
-            if (extraData.protocolId == OPRETURN_PROTOCOLID_BINDID)
+            ::Serialize(s, VARINT((unsigned int&)extraData.protocol));
+            if (extraData.protocol == OPRETURN_PROTOCOLID_BINDID)
                 ::Serialize(s, VARINT(extraData.plotterId));
-            else if (extraData.protocolId == OPRETURN_PROTOCOLID_RENT)
+            else if (extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT)
                 ::Serialize(s, VARINT(extraData.debitAccountID));
             else
                 assert(false);
@@ -105,10 +91,10 @@ public:
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
         if (code & 0x80000000) {
-            ::Unserialize(s, VARINT(extraData.protocolId));
-            if (extraData.protocolId == OPRETURN_PROTOCOLID_BINDID)
+            ::Unserialize(s, VARINT((unsigned int&)extraData.protocol));
+            if (extraData.protocol == OPRETURN_PROTOCOLID_BINDID)
                 ::Unserialize(s, VARINT(extraData.plotterId));
-            else if (extraData.protocolId == OPRETURN_PROTOCOLID_RENT)
+            else if (extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT)
                 ::Unserialize(s, VARINT(extraData.debitAccountID));
             else
                 assert(false);
@@ -228,7 +214,7 @@ public:
 
     //! Get balance. Return all available balance
     virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const;
+        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const;
 };
 
 
@@ -249,7 +235,7 @@ public:
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-       CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const override;
+       CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const override;
 };
 
 
@@ -285,7 +271,7 @@ public:
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInRentCreditBalance, CAmount *pRentDebitBalance) const override;
+        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -351,9 +337,11 @@ public:
     //! Check whether all prevouts of the transaction are present in the UTXO set represented by this view
     bool HaveInputs(const CTransaction& tx) const;
 
-    //! Get account balance
+    /**
+     * Scan UTXO for the account. Return total balance.
+     */
     CAmount GetAccountBalance(const CAccountID &accountID, 
-        CAmount *pLockInBindIdBalance = nullptr, CAmount *pLockInRentCreditBalance = nullptr, CAmount *pRentDebitBalance = nullptr) const;
+        CAmount *pLockInBindIdBalance = nullptr, CAmount *pLockInPledgeRentCreditBalance = nullptr, CAmount *pPledgeRentDebitBalance = nullptr) const;
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;
@@ -373,7 +361,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool 
 // lookups to database, so it should be used with care.
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
 
-// Get transaction extra data.
-bool GetTransactionExtraData(const CTransaction& tx, int nHeight, CoinExtraData &extraData, CScriptID *pAssocScriptID = nullptr);
+// Extract transaction data carrier.
+bool ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, DatacarrierPayload &extraData, CScriptID *scriptID = nullptr);
 
 #endif // BITCOIN_COINS_H

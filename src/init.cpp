@@ -1513,11 +1513,11 @@ bool AppInitMain()
                     }
                     assert(chainActive.Tip() != nullptr);
                     // Reconsider block
-                    if (chainActive.Height() >= chainparams.GetConsensus().BHDIP1010Height - 1 &&
-                            chainActive.Height() < chainparams.GetConsensus().BHDIP1010Height + (int)chainparams.GetConsensus().nMinerConfirmationWindow) {
+                    if (chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1 &&
+                            chainActive.Height() < chainparams.GetConsensus().BHDIP006Height + (int)chainparams.GetConsensus().nMinerConfirmationWindow) {
                         {
                             LOCK(cs_main);
-                            ResetBlockFailureFlags(chainActive[chainparams.GetConsensus().BHDIP1010Height - 1]);
+                            ResetBlockFailureFlags(chainActive[chainparams.GetConsensus().BHDIP006Height - 1]);
                         }
 
                         CValidationState state;
