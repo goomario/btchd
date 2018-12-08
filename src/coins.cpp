@@ -15,16 +15,16 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
-CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const {
-    if (pLockInBindIdBalance != nullptr) *pLockInBindIdBalance = 0;
-    if (pLockInPledgeRentCreditBalance != nullptr) *pLockInPledgeRentCreditBalance = 0;
-    if (pPledgeRentDebitBalance != nullptr) *pPledgeRentDebitBalance = 0;
+CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+{
+    if (pBindPlotterBalance != nullptr) *pBindPlotterBalance = 0;
+    if (pPledgeCreditBalance != nullptr) *pPledgeCreditBalance = 0;
+    if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
     return 0;
 }
 
-bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
-{
+bool CCoinsView::HaveCoin(const COutPoint &outpoint) const {
     Coin coin;
     return GetCoin(outpoint, coin);
 }
@@ -38,9 +38,10 @@ void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const {
-    return base->GetBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInPledgeRentCreditBalance, pPledgeRentDebitBalance);
+CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+{
+    return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
 }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
@@ -94,16 +95,16 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
         fresh = !(it->second.flags & CCoinsCacheEntry::DIRTY);
     }
     it->second.coin = std::move(coin);
-    it->second.coin.refOut.accountID = GetAccountIDByScriptPubKey(it->second.coin.out.scriptPubKey);
-    it->second.coin.refOut.value = it->second.coin.out.nValue;
+    it->second.coin.refOutAccountID = GetAccountIDByScriptPubKey(it->second.coin.out.scriptPubKey);
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 }
 
 void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool check) {
     // Parse special transaction
-    DatacarrierPayload extraData;
-    bool fHaveExtraData = ExtractTransactionDatacarrier(tx, nHeight, extraData);
+    CDatacarrierPayloadRef extraData;
+    if (nHeight >= Params().GetConsensus().BHDIP006Height) // Make sure BHDIP006 before transaction except in UTXO
+        extraData = ExtractTransactionDatacarrier(tx);
 
     // Add coin
     bool fCoinbase = tx.IsCoinBase();
@@ -112,8 +113,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        if (i == 0 && fHaveExtraData) {
-            assert(extraData.protocol != OPRETURN_PROTOCOLID_NULL);
+        if (i == 0 && extraData != nullptr && (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGE)) {
             Coin coin(tx.vout[i], nHeight, fCoinbase);
             coin.extraData = extraData;
             cache.AddCoin(COutPoint(txid, i), std::move(coin), overwrite);
@@ -229,35 +229,47 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     return true;
 }
 
-CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const {
+CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+{
     // Invalid account ID
     if (accountID == 0) {
-        if (pLockInBindIdBalance != nullptr) *pLockInBindIdBalance = 0;
-        if (pLockInPledgeRentCreditBalance != nullptr) *pLockInPledgeRentCreditBalance = 0;
-        if (pPledgeRentDebitBalance != nullptr) *pPledgeRentDebitBalance = 0;
+        if (pBindPlotterBalance != nullptr) *pBindPlotterBalance = 0;
+        if (pPledgeCreditBalance != nullptr) *pPledgeCreditBalance = 0;
+        if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
         return 0;
     }
 
+    // Merge modified coin
+    assert(&mapParentModifiedCoins != &cacheCoins);
     if (cacheCoins.empty()) {
-        return base->GetBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInPledgeRentCreditBalance, pPledgeRentDebitBalance);
-    } else if (mapModifiedCoins.empty()) {
-        return base->GetBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInPledgeRentCreditBalance, pPledgeRentDebitBalance);
+        return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+    } else if (mapParentModifiedCoins.empty()) {
+        return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
     } else {
-        assert(&mapModifiedCoins != &cacheCoins);
-
         CCoinsMap tempUsCoinsMap;
         // Copy current CCoinsMap
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
-            if (it->second.coin.refOut.accountID == accountID)
-                tempUsCoinsMap[it->first] = it->second;
+            if (it->second.coin.refOutAccountID != accountID &&
+                (it->second.coin.extraData == nullptr ||
+                    it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
+                    it->second.coin.extraData->pledge.debitAccountID != accountID)) {
+                continue;
+            }
+            tempUsCoinsMap[it->first] = it->second;
         }
         if (tempUsCoinsMap.empty()) {
-            return base->GetBalance(accountID, mapModifiedCoins, pLockInBindIdBalance, pLockInPledgeRentCreditBalance, pPledgeRentDebitBalance);
+            return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
         } else {
-            // Merge CCoinsMap. See CCoinsViewCache::BatchWrite()
-            for (CCoinsMap::const_iterator it = mapModifiedCoins.cbegin(); it != mapModifiedCoins.cend(); it++) {
-                if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || it->second.coin.refOut.accountID != accountID) {
+            // See CCoinsViewCache::BatchWrite()
+            for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+                if (!(it->second.flags & CCoinsCacheEntry::DIRTY)) {
+                    continue;
+                }
+                if (it->second.coin.refOutAccountID != accountID &&
+                    (it->second.coin.extraData == nullptr ||
+                        it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
+                        it->second.coin.extraData->pledge.debitAccountID != accountID)) {
                     continue;
                 }
                 CCoinsMap::iterator itUs = tempUsCoinsMap.find(it->first);
@@ -282,14 +294,16 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     }
                 }
             }
-            return base->GetBalance(accountID, tempUsCoinsMap, pLockInBindIdBalance, pLockInPledgeRentCreditBalance, pPledgeRentDebitBalance);
+            return base->GetBalance(accountID, tempUsCoinsMap, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
         }
     }
 }
 
-CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const {
+CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID,
+    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+{
     // Merge with base cache coins and calculate balance
-    return base->GetBalance(accountID, cacheCoins, pLockInBindIdBalance, pLockInPledgeRentCreditBalance, pPledgeRentDebitBalance);
+    return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
 }
 
 bool CCoinsViewCache::Flush() {
@@ -348,16 +362,4 @@ const Coin& AccessByTxid(const CCoinsViewCache& view, const uint256& txid)
         ++iter.n;
     }
     return coinEmpty;
-}
-
-bool ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, DatacarrierPayload &extraData, CScriptID *scriptID)
-{
-    if (tx.IsCoinBase() || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable() || nHeight < Params().GetConsensus().BHDIP006Height)
-        return false;
-
-    if (!ExtractDatacarrierScript(tx.vout.back().scriptPubKey, extraData, scriptID))
-        return false;
-    if (extraData.protocol != OPRETURN_PROTOCOLID_BINDID && extraData.protocol != OPRETURN_PROTOCOLID_PLEDGERENT)
-        return false;
-    return true;
 }

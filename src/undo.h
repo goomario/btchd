@@ -9,6 +9,7 @@
 #include <compressor.h>
 #include <consensus/consensus.h>
 #include <primitives/transaction.h>
+#include <pubkey.h>
 #include <serialize.h>
 
 /** Undo information for a CTxIn
@@ -25,7 +26,7 @@ class TxInUndoSerializer
 public:
     template<typename Stream>
     void Serialize(Stream &s) const {
-        unsigned int nCode = (txout->extraData.protocol != OPRETURN_PROTOCOLID_NULL ? 0x80000000 : 0) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00);
+        unsigned int nCode = (txout->extraData ? 0x80000000 : 0) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00);
         ::Serialize(s, VARINT(nCode));
         if (txout->nHeight > 0) {
             // Required to maintain compatibility with older undo format.
@@ -33,12 +34,12 @@ public:
         }
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
         if (nCode & 0x80000000) {
-            ::Serialize(s, VARINT((unsigned int&)txout->extraData.protocol));
-            if (txout->extraData.protocol == OPRETURN_PROTOCOLID_BINDID) {
-                ::Serialize(s, VARINT(txout->extraData.plotterId));
-            } else if (txout->extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
-                assert(txout->extraData.debitAccountID != 0);
-                ::Serialize(s, VARINT(txout->extraData.debitAccountID));
+            ::Serialize(s, VARINT((unsigned int&)txout->extraData->type));
+            if (txout->extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                ::Serialize(s, VARINT(txout->extraData->bindPlotter.id));
+            } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                CScriptID scriptID(uint160({txout->extraData->pledge.debitScriptID, txout->extraData->pledge.debitScriptID + CScriptID::WIDTH}));
+                ::Serialize(s, REF(scriptID));
             } else
                 assert(false);
         }
@@ -67,15 +68,25 @@ public:
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
         if (nCode & 0x80000000) {
-            ::Unserialize(s, VARINT((unsigned int&)txout->extraData.protocol));
-            if (txout->extraData.protocol == OPRETURN_PROTOCOLID_BINDID) {
-                ::Unserialize(s, VARINT(txout->extraData.plotterId));
-            } else if (txout->extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
-                ::Unserialize(s, VARINT(txout->extraData.debitAccountID));
-                assert(txout->extraData.debitAccountID != 0);
+            unsigned int extraDataType;
+            ::Unserialize(s, VARINT(extraDataType));
+            if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
+                txout->extraData = std::make_shared<DatacarrierPayload>();
+                txout->extraData->type = (DatacarrierType) extraDataType;
+                ::Unserialize(s, VARINT(txout->extraData->bindPlotter.id));
+            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
+                CScriptID scriptID;
+                ::Unserialize(s, REF(scriptID));
+
+                txout->extraData = std::make_shared<DatacarrierPayload>();
+                txout->extraData->type = (DatacarrierType) extraDataType;
+                txout->extraData->pledge.debitAccountID = GetAccountIDByScriptID(scriptID);
+                memcpy(txout->extraData->pledge.debitScriptID, scriptID.begin(), sizeof(txout->extraData->pledge.debitScriptID));
             } else
                 assert(false);
         }
+
+        txout->refOutAccountID = GetAccountIDByScriptPubKey(txout->out.scriptPubKey);
     }
 
     explicit TxInUndoDeserializer(Coin* coin) : txout(coin) {}

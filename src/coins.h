@@ -34,6 +34,9 @@ public:
     //! unspent transaction output
     CTxOut out;
 
+    //! memory only. Ref from out
+    CAccountID refOutAccountID;
+
     //! whether containing transaction was a coinbase
     unsigned int fCoinBase : 1;
 
@@ -41,26 +44,20 @@ public:
     uint32_t nHeight : 30;
 
     //! relevant extra data
-    DatacarrierPayload extraData;
-
-    //! Memory Only. ref from out
-    struct {
-        CAccountID accountID;
-        CAmount value;
-    } refOut;
+    CDatacarrierPayloadRef extraData;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
-    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), fCoinBase(fCoinBaseIn), nHeight(nHeightIn), refOut({0,0}) { memset(&extraData, 0, sizeof(extraData)); }
-    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), fCoinBase(fCoinBaseIn), nHeight(nHeightIn), refOut({0,0}) { memset(&extraData, 0, sizeof(extraData)); }
+    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
+    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
 
     void Clear() {
-        out.SetNull();
+        out.scriptPubKey.clear();
         fCoinBase = false;
         nHeight = 0;
     }
 
     //! empty constructor
-    Coin() : fCoinBase(false), nHeight(0), refOut({0,0}) { memset(&extraData, 0, sizeof(extraData)); }
+    Coin() : refOutAccountID(0), fCoinBase(false), nHeight(0) {}
 
     bool IsCoinBase() const {
         return fCoinBase;
@@ -69,16 +66,17 @@ public:
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
-        uint32_t code = (extraData.protocol != OPRETURN_PROTOCOLID_NULL ? 0x80000000 : 0) | (nHeight << 1) | (fCoinBase ? 1 : 0);
+        uint32_t code = (extraData ? 0x80000000 : 0) | (nHeight << 1) | (fCoinBase ? 1 : 0);
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
         if (code & 0x80000000) {
-            ::Serialize(s, VARINT((unsigned int&)extraData.protocol));
-            if (extraData.protocol == OPRETURN_PROTOCOLID_BINDID)
-                ::Serialize(s, VARINT(extraData.plotterId));
-            else if (extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT)
-                ::Serialize(s, VARINT(extraData.debitAccountID));
-            else
+            ::Serialize(s, VARINT((unsigned int&)extraData->type));
+            if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                ::Serialize(s, VARINT(extraData->bindPlotter.id));
+            } else if (extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                CScriptID scriptID(uint160({extraData->pledge.debitScriptID, extraData->pledge.debitScriptID + CScriptID::WIDTH}));
+                ::Serialize(s, REF(scriptID));
+            } else
                 assert(false);
         }
     }
@@ -91,25 +89,33 @@ public:
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
         if (code & 0x80000000) {
-            ::Unserialize(s, VARINT((unsigned int&)extraData.protocol));
-            if (extraData.protocol == OPRETURN_PROTOCOLID_BINDID)
-                ::Unserialize(s, VARINT(extraData.plotterId));
-            else if (extraData.protocol == OPRETURN_PROTOCOLID_PLEDGERENT)
-                ::Unserialize(s, VARINT(extraData.debitAccountID));
-            else
+            unsigned int extraDataType;
+            ::Unserialize(s, VARINT(extraDataType));
+            if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
+                extraData = std::make_shared<DatacarrierPayload>();
+                extraData->type = (DatacarrierType) extraDataType;
+                ::Unserialize(s, VARINT(extraData->bindPlotter.id));
+            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
+                CScriptID scriptID;
+                ::Unserialize(s, REF(scriptID));
+
+                extraData = std::make_shared<DatacarrierPayload>();
+                extraData->type = (DatacarrierType)extraDataType;
+                extraData->pledge.debitAccountID = GetAccountIDByScriptID(scriptID);
+                memcpy(extraData->pledge.debitScriptID, scriptID.begin(), CScriptID::WIDTH);
+            } else
                 assert(false);
         }
 
-        refOut.accountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
-        refOut.value = out.nValue;
+        refOutAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
     }
 
     bool IsSpent() const {
-        return out.IsNull();
+        return out.scriptPubKey.empty();
     }
 
     size_t DynamicMemoryUsage() const {
-        return memusage::DynamicUsage(out.scriptPubKey) + 28;
+        return memusage::DynamicUsage(out.scriptPubKey);
     }
 };
 
@@ -213,8 +219,8 @@ public:
     virtual size_t EstimateSize() const { return 0; }
 
     //! Get balance. Return all available balance
-    virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const;
+    virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+        CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const;
 };
 
 
@@ -234,8 +240,8 @@ public:
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-       CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const override;
+    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+       CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
 };
 
 
@@ -270,8 +276,8 @@ public:
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapModifiedCoins,
-        CAmount *pLockInBindIdBalance, CAmount *pLockInPledgeRentCreditBalance, CAmount *pPledgeRentDebitBalance) const override;
+    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+        CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -341,7 +347,7 @@ public:
      * Scan UTXO for the account. Return total balance.
      */
     CAmount GetAccountBalance(const CAccountID &accountID, 
-        CAmount *pLockInBindIdBalance = nullptr, CAmount *pLockInPledgeRentCreditBalance = nullptr, CAmount *pPledgeRentDebitBalance = nullptr) const;
+        CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeCreditBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;
@@ -360,8 +366,5 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool 
 // which is not found in the cache, it can cause up to MAX_OUTPUTS_PER_BLOCK
 // lookups to database, so it should be used with care.
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
-
-// Extract transaction data carrier.
-bool ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, DatacarrierPayload &extraData, CScriptID *scriptID = nullptr);
 
 #endif // BITCOIN_COINS_H

@@ -673,9 +673,13 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         if (!CheckSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
 
+        int nSpendHeight = GetSpendHeight(view);
         CAmount nFees = 0;
-        if (!Consensus::CheckTxInputs(tx, state, view, GetSpendHeight(view), nFees)) {
+        if (!Consensus::CheckTxInputs(tx, state, view, nSpendHeight, nFees)) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
+        }
+        if (!Consensus::CheckTxUniform(tx, state, view, nSpendHeight, chainparams.GetConsensus())) {
+            return error("%s: Consensus::CheckTxUniform: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
         // Check for non-standard pay-to-script-hash in inputs
@@ -1991,6 +1995,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (!MoneyRange(nFees)) {
                 return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
+            }
+            if (!Consensus::CheckTxUniform(tx, state, tempView, pindex->nHeight, chainparams.GetConsensus())) {
+                return error("%s: Consensus::CheckTxUniform: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
 
             // Check that transaction is BIP68 final

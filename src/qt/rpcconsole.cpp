@@ -890,9 +890,9 @@ void RPCConsole::updatePledge()
         // Primary address total balance
         CAmount balance;
         {
-            CAmount lockInPledgeRentCreditBalance = 0, pledgeRentDebitBalance = 0;
-            balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &lockInPledgeRentCreditBalance, &pledgeRentDebitBalance);
-            balance = balance - lockInPledgeRentCreditBalance + pledgeRentDebitBalance;
+            CAmount pledgeCreditBalance = 0, pledgeDebitBalance = 0;
+            balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &pledgeCreditBalance, &pledgeDebitBalance);
+            balance = balance - pledgeCreditBalance + pledgeDebitBalance;
         }
         ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 

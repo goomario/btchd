@@ -363,6 +363,10 @@ bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
 
+CAccountID GetAccountIDByScriptID(const CScriptID &scriptID) {
+    return scriptID.GetUint64(0);
+}
+
 CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey) {
     CTxDestination dest;
     if (ExtractDestination(scriptPubKey, dest)) {
@@ -374,10 +378,11 @@ CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey) {
 
 CAccountID GetAccountIDByTxDestination(const CTxDestination &dest) {
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
-    if (scriptID != nullptr)
-        return scriptID->GetUint64(0);
-
-    return 0;
+    if (scriptID != nullptr) {
+        return GetAccountIDByScriptID(*scriptID);
+    } else {
+        return 0;
+    }
 }
 
 CAccountID GetAccountIDByAddress(const std::string &address) {
@@ -391,20 +396,20 @@ CAccountID GetAccountIDByAddress(const std::string &address) {
 
 namespace {
 
-std::vector<unsigned char> ToByteVector(DatacarrierProtocol protocol) {
+std::vector<unsigned char> ToByteVector(DatacarrierType protocol) {
     unsigned int in = (unsigned int) protocol;
     return { (unsigned char)((in >> 0)&0xff), (unsigned char)((in >> 8)&0xff), (unsigned char)((in >> 16)&0xff), (unsigned char)((in >> 24)&0xff) };
 }
 
 }
 
-CScript GetBindIdScriptForDestination(const CTxDestination& dest, const uint64_t &plotterId) {
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId) {
     CScript script;
 
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
     if (scriptID != nullptr) {
         script << OP_RETURN;
-        script << ToByteVector(OPRETURN_PROTOCOLID_BINDID);
+        script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
         script << ToByteVector(*scriptID);
         script << CScriptNum((int64_t)plotterId);
     }
@@ -412,13 +417,13 @@ CScript GetBindIdScriptForDestination(const CTxDestination& dest, const uint64_t
     return script;
 }
 
-CScript GetPledgeRentScriptForDestination(const CTxDestination& dest) {
+CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     CScript script;
 
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
     if (scriptID != nullptr) {
         script << OP_RETURN;
-        script << ToByteVector(OPRETURN_PROTOCOLID_PLEDGERENT);
+        script << ToByteVector(DATACARRIER_TYPE_PLEDGE);
         script << ToByteVector(*scriptID);
     }
 
@@ -426,42 +431,48 @@ CScript GetPledgeRentScriptForDestination(const CTxDestination& dest) {
     return script;
 }
 
-bool ExtractDatacarrierScript(const CScript& scriptPubKey, DatacarrierPayload &data, CScriptID *scriptID) {
-    // OP_RETURN 0x04 <Protocol> <CustomData>
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
+    if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout[0].scriptPubKey.IsUnspendable())
+        return nullptr;
+
+    // OP_RETURN 0x04 <Protocol> <...>
+    const CScript &scriptPubKey = tx.vout.back().scriptPubKey;
     if (scriptPubKey.size() < 6 || scriptPubKey[0] != OP_RETURN || scriptPubKey[1] != 0x04)
-        return false;
+        return nullptr;
     CScript::const_iterator pc = scriptPubKey.begin() + 1;
     opcodetype opcode;
 
-    // Get data protocol
-    unsigned int protocol;
-    {
-        std::vector<unsigned char> protocolBytes;
-        if (!scriptPubKey.GetOp(pc, opcode, protocolBytes) || opcode != 0x04 || opcode != protocolBytes.size())
-            return false;
-        protocol = (protocolBytes[0] << 0) | (protocolBytes[1] << 8) | (protocolBytes[2] << 16) | (protocolBytes[3] << 24);
-    }
+    // Get data type
+    std::vector<unsigned char> typeBytes;
+    if (!scriptPubKey.GetOp(pc, opcode, typeBytes) || opcode != 0x04)
+        return nullptr;
+    unsigned int type = (typeBytes[0] << 0) | (typeBytes[1] << 8) | (typeBytes[2] << 16) | (typeBytes[3] << 24);
 
-    if (protocol == OPRETURN_PROTOCOLID_BINDID) {
+    if (type == DATACARRIER_TYPE_BINDPLOTTER) {
+        // Bind plotter transaction
+        if (tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
+            return nullptr;
+    } else if (type == DATACARRIER_TYPE_PLEDGE) {
+        // Plege transaction
+        if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGERENT_MIN_AMOUNT || scriptPubKey.size() != 27)
+            return nullptr;
+        if (tx.vout.size() == 3 && tx.vout[0].scriptPubKey != tx.vout[1].scriptPubKey)
+            return nullptr;
 
-    } else if (protocol == OPRETURN_PROTOCOLID_PLEDGERENT) {
-        if (scriptPubKey.size() != 27)
-            return false;
-
-        std::vector<unsigned char> destBytes;
-        if (!scriptPubKey.GetOp(pc, opcode, destBytes) || opcode != 0x14 || opcode != destBytes.size())
-            return false;
-
-        CTxDestination dest = CScriptID(uint160(destBytes));
-        CAccountID debitAccountID = GetAccountIDByTxDestination(dest);
+        // Debit account
+        std::vector<unsigned char> debitDestBytes;
+        if (!scriptPubKey.GetOp(pc, opcode, debitDestBytes) || opcode != CScriptID::WIDTH)
+            return nullptr;
+        CAccountID debitAccountID = GetAccountIDByScriptID(CScriptID(uint160(debitDestBytes)));
         if (debitAccountID == 0)
-            return false;
+            return nullptr;
 
-        data.protocol = (DatacarrierProtocol) protocol;
-        data.debitAccountID = debitAccountID;
-        if (scriptID != nullptr) *scriptID = *(boost::get<CScriptID>(&dest));
-        return true;
+        CDatacarrierPayloadRef payload = std::make_shared<DatacarrierPayload>();
+        payload->type = (DatacarrierType) type;
+        payload->pledge.debitAccountID = debitAccountID;
+        memcpy(payload->pledge.debitScriptID, &debitDestBytes[0], CScriptID::WIDTH);
+        return payload;
     }
 
-    return false;
+    return nullptr;
 }

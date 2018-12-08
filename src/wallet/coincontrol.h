@@ -38,8 +38,6 @@ public:
     FeeEstimateMode m_fee_mode;
     //! Pay policy
     PayPolicy payPolicy;
-    //! Add carrier data to transaction if set
-    boost::optional<CScript> carrierData;
 
     CCoinControl()
     {
@@ -59,7 +57,6 @@ public:
         signalRbf = fWalletRbf;
         m_fee_mode = FeeEstimateMode::UNSET;
         payPolicy = PAYPOLICY_FROM_ANY;
-        carrierData.reset();
     }
 
     bool HasSelected() const

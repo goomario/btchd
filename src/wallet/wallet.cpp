@@ -1079,6 +1079,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
 {
     const CTransaction& tx = *ptx;
     {
+        AssertLockHeld(cs_main);
         AssertLockHeld(cs_wallet);
 
         if (pIndex != nullptr) {
@@ -1096,37 +1097,31 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
 
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
-        if (fExisted || IsMine(tx) || IsFromMe(tx))
-        {
-            /* Check if any keys in the wallet keypool that were supposed to be unused
-             * have appeared in a new transaction. If so, remove those keys from the keypool.
-             * This can happen when restoring an old wallet backup that does not contain
-             * the mostly recently created transactions from newer versions of the wallet.
-             */
-            /*
-            // loop though all outputs
-            for (const CTxOut& txout: tx.vout) {
-                // extract addresses and check if they match with an unused keypool key
-                std::vector<CKeyID> vAffected;
-                CAffectedKeysVisitor(*this, vAffected).Process(txout.scriptPubKey);
-                for (const CKeyID &keyid : vAffected) {
-                    std::map<CKeyID, int64_t>::const_iterator mi = m_pool_key_to_index.find(keyid);
-                    if (mi != m_pool_key_to_index.end()) {
-                        LogPrintf("%s: Detected a used keypool key, mark all keypool key up to this key as used\n", __func__);
-                        MarkReserveKeysAsUsed(mi->second);
 
-                        if (!TopUpKeyPool()) {
-                            LogPrintf("%s: Topping up keypool failed (locked wallet)\n", __func__);
-                        }
-                    }
-                }
-            }*/
+        // Pledge to me
+        bool fRelevantToMe = false;
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
+        if (payload != nullptr && payload->type == DATACARRIER_TYPE_PLEDGE) {
+            CScriptID debitScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}));
+            fRelevantToMe = ::IsMine(*this, CTxDestination(debitScriptID)) != 0;
+        }
 
+        if (fExisted || fRelevantToMe || IsMine(tx) || IsFromMe(tx)) {
             CWalletTx wtx(this, ptx);
 
             // Get merkle branch if transaction was found in a block
             if (pIndex != nullptr)
                 wtx.SetMerkleBranch(pIndex, posInBlock);
+
+            // Process datacarrier
+            if (payload != nullptr && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                wtx.mapValue["lock"] = "bindplotter";
+            } else if (payload != nullptr && payload->type == DATACARRIER_TYPE_PLEDGE) {
+                wtx.mapValue["lock"] = "pledge";
+
+                CTxDestination debitDest(CScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH})));
+                wtx.mapValue["to"] = EncodeDestination(debitDest);
+            }
 
             return AddToWallet(wtx, false);
         }
@@ -1416,7 +1411,7 @@ bool CWallet::IsChange(const CTxOut& txout) const
             return true;
 
         LOCK(cs_wallet);
-        if (!mapAddressBook.count(address))
+        if (!mapAddressBook.count(address) || address == GetPrimaryDestination())
             return true;
     }
     return false;
@@ -2323,6 +2318,11 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
                 safeTx = false;
             }
 
+            // Lock coin in some special transaction
+            if (pcoin->mapValue.count("lock")) {
+                safeTx = false;
+            }
+
             if (fOnlySafe && !safeTx) {
                 continue;
             }
@@ -2695,7 +2695,7 @@ bool CWallet::SignTransaction(CMutableTransaction &tx)
     return true;
 }
 
-bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl)
+bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl &coinControl, int32_t nTxVersion)
 {
     std::vector<CRecipient> vecSend;
 
@@ -2718,7 +2718,7 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nC
 
     CReserveKey reservekey(this);
     CWalletTx wtx;
-    if (!CreateTransaction(vecSend, wtx, reservekey, nFeeRet, nChangePosInOut, strFailReason, coinControl, false)) {
+    if (!CreateTransaction(vecSend, wtx, reservekey, nFeeRet, nChangePosInOut, strFailReason, coinControl, false, nTxVersion)) {
         return false;
     }
 
@@ -2778,8 +2778,10 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet,
-                                int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign)
+                                int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, int32_t nTxVersion)
 {
+    assert(nTxVersion == 0 || nTxVersion == CTransaction::CURRENT_VERSION || nTxVersion == CTransaction::UNIFORM_VERSION);
+
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
     unsigned int nSubtractFeeFromAmount = 0;
@@ -2804,6 +2806,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
     wtxNew.fTimeReceivedIsTxTime = true;
     wtxNew.BindWallet(this);
     CMutableTransaction txNew;
+    if (nTxVersion)
+        txNew.nVersion = nTxVersion;
 
     // Discourage fee sniping.
     //
@@ -2932,8 +2936,6 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     }
                     txNew.vout.push_back(txout);
                 }
-                if (coin_control.carrierData && !coin_control.carrierData->empty())
-                    txNew.vout.push_back(CTxOut(0, *coin_control.carrierData));
 
                 // Choose coins to use
                 if (pick_new_inputs) {
@@ -2992,8 +2994,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 // behavior."
                 const uint32_t nSequence = coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1);
                 for (const auto& coin : setCoins)
-                    txNew.vin.push_back(CTxIn(coin.outpoint,CScript(),
-                                              nSequence));
+                    txNew.vin.push_back(CTxIn(coin.outpoint, CScript(), nSequence));
 
                 // Fill in dummy signatures for fee calculation.
                 if (!DummySignTx(txNew, setCoins)) {

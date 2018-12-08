@@ -12,6 +12,7 @@
 #include <boost/variant.hpp>
 
 #include <stdint.h>
+#include <memory>
 
 static const bool DEFAULT_ACCEPT_DATACARRIER = true;
 
@@ -185,6 +186,9 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+/** Utility function to get account id with given CScriptID. */
+CAccountID GetAccountIDByScriptID(const CScriptID &scriptID);
+
 /** Utility function to get account id with given scriptPubKey. */
 CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey);
 
@@ -194,37 +198,41 @@ CAccountID GetAccountIDByTxDestination(const CTxDestination &dest);
 /** Utility function to get account id with given address. */
 CAccountID GetAccountIDByAddress(const std::string &address);
 
-/** opreturn protocol ID */
-enum DatacarrierProtocol : unsigned int {
-    OPRETURN_PROTOCOLID_NULL = 0,
-    //! Bind plotter Id
-    OPRETURN_PROTOCOLID_BINDID = 0x00000100,
-    //! Pledge rent
-    OPRETURN_PROTOCOLID_PLEDGERENT = 0x00000200,
-    //! Text data
-    OPRETURN_PROTOCOLID_TEXT = 0x00000300,
+/** opreturn protocol */
+enum DatacarrierType : unsigned int {
+    DATACARRIER_TYPE_BINDPLOTTER = 0x00000100,
+    DATACARRIER_TYPE_PLEDGE = 0x00000200,
+    DATACARRIER_TYPE_TEXT = 0x00000300,
 };
 
 /**
  * Datacarrier payload
  */
 struct DatacarrierPayload {
-    DatacarrierProtocol protocol;
+    DatacarrierType type;
     union {
-        //! Bind plotterId
-        uint64_t plotterId;
-        //! Debit account ID
-        CAccountID debitAccountID;
+        //! Bind plotter
+        struct { uint64_t id; } bindPlotter;
+        //! Pledge rent
+        struct { unsigned char debitScriptID[CScriptID::WIDTH]; CAccountID debitAccountID; } pledge;
     };
 };
 
-/** Generate a bind id script. */
-CScript GetBindIdScriptForDestination(const CTxDestination& dest, const uint64_t &plotterId);
+typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
+
+/** The bind plotter lock amount */
+static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
+
+/** The minimal pledge rent amount */
+static const CAmount PROTOCOL_PLEDGERENT_MIN_AMOUNT = 1 * COIN;
+
+/** Generate a bind plotter script. */
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId);
 
 /** Generate a rent script. */
-CScript GetPledgeRentScriptForDestination(const CTxDestination& dest);
+CScript GetPledgeScriptForDestination(const CTxDestination& dest);
 
-/** Parse a Datacarrier scriptPubKey. */
-bool ExtractDatacarrierScript(const CScript& scriptPubKey, DatacarrierPayload &data, CScriptID *scriptID = nullptr);
+/** Parse a datacarrier transaction. */
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

@@ -5,8 +5,10 @@
 #include <consensus/tx_verify.h>
 
 #include <consensus/consensus.h>
+#include <consensus/params.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
+#include <script/script.h>
 #include <consensus/validation.h>
 
 // TODO remove the following dependencies
@@ -246,5 +248,24 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     txfee = txfee_aux;
+    return true;
+}
+
+bool Consensus::CheckTxUniform(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, const Consensus::Params& params)
+{
+    if (tx.nVersion != CTransaction::UNIFORM_VERSION || nSpendHeight < params.BHDIP006Height)
+        return true;
+    if (tx.vin.empty() || tx.vout.size() < 2)
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputoutput-invaliduniform");
+
+    const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
+    for (unsigned int i = 1; i < tx.vin.size(); ++i) {
+        const Coin& coin = inputs.AccessCoin(tx.vin[i].prevout);
+        if (coin.out.scriptPubKey != scriptPubKey)
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputdest-invaliduniform");
+    }
+    if (tx.vout[0].scriptPubKey != scriptPubKey)
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-outputdest-invaliduniform");
+
     return true;
 }

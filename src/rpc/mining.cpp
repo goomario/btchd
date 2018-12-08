@@ -758,16 +758,22 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
-    CAmount totalBalance = 0, lockInBindIdBalance = 0, lockInPledgeRentCreditBalance = 0, pledgeRentDebitBalance = 0;
-    totalBalance = pcoinsTip->GetAccountBalance(accountID, &lockInBindIdBalance, &lockInPledgeRentCreditBalance, &pledgeRentDebitBalance);
+    CAmount totalBalance = 0, bindPlotterBalance = 0, pledgeCreditBalance = 0, pledgeDebitBalance = 0;
+    totalBalance = pcoinsTip->GetAccountBalance(accountID, &bindPlotterBalance, &pledgeCreditBalance, &pledgeDebitBalance);
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("balance", ValueFromAmount(totalBalance - lockInPledgeRentCreditBalance + pledgeRentDebitBalance));
-    result.pushKV("totalBalance", ValueFromAmount(totalBalance));
-    result.pushKV("availableBalance", ValueFromAmount(totalBalance - lockInBindIdBalance - lockInPledgeRentCreditBalance));
-    result.pushKV("lockInBindIdBalance", ValueFromAmount(lockInBindIdBalance));
-    result.pushKV("lockInPledgeRentCreditBalance", ValueFromAmount(lockInPledgeRentCreditBalance));
-    result.pushKV("pledgeRentDebitBalance", ValueFromAmount(pledgeRentDebitBalance));
+    //! This balance belong to your
+    result.pushKV("balance", ValueFromAmount(totalBalance));
+    //! This balance available spend
+    result.pushKV("availableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeCreditBalance));
+    //! This balance available for mining pledge
+    result.pushKV("miningPledgeBalance", ValueFromAmount(totalBalance - pledgeCreditBalance + pledgeDebitBalance));
+    //! This balance freeze in bind plotter
+    result.pushKV("freezeInBindPlotterBalance", ValueFromAmount(bindPlotterBalance));
+    //! This balance freeze in pledge credit
+    result.pushKV("freezeInPledgeCreditBalance", ValueFromAmount(pledgeCreditBalance));
+    //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
+    result.pushKV("pledgeDebitBalance", ValueFromAmount(pledgeDebitBalance));
     result.pushKV("height", nHeight);
     result.pushKV("address", address);
     if (nHeight < Params().GetConsensus().BtchdNoPledgeHeight + 1) {
