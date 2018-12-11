@@ -34,6 +34,7 @@ public:
         Confirming,         /**< Confirmed, but waiting for the recommended number of confirmations **/
         Conflicted,         /**< Conflicts with other transaction or mempool **/
         Abandoned,          /**< Abandoned from the wallet **/
+        Inactived,          /**< Transaction inactived **/
         /// Generated (mined) transactions
         Immature,           /**< Mined but waiting for maturity */
         MaturesWarning,     /**< Transaction will likely not mature because no nodes have confirmed */
@@ -79,7 +80,13 @@ public:
         SendToOther,
         RecvWithAddress,
         RecvFromOther,
-        SendToSelf
+        SendToSelf,
+        BindPlotter,
+        UnbindPlotter,
+        SendPledge,
+        RecvPledge,
+        SelfPledge,
+        WithdrawPledge,
     };
 
     /** Number of confirmation recommended for accepting a transaction */

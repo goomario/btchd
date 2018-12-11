@@ -335,6 +335,13 @@ QString TransactionTableModel::formatTxStatus(const TransactionRecord *wtx) cons
     case TransactionStatus::NotAccepted:
         status = tr("Generated but not accepted");
         break;
+    case TransactionStatus::Inactived:
+        if (wtx->type == TransactionRecord::BindPlotter) {
+            status = tr("This bind plotter has inactived");
+        } else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge) {
+            status = tr("This pledge has withdraw");
+        }
+        break;
     }
 
     return status;
@@ -382,6 +389,18 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("Payment to yourself");
     case TransactionRecord::Generated:
         return tr("Mined");
+    case TransactionRecord::BindPlotter:
+        return tr("Binded plotter");
+    case TransactionRecord::UnbindPlotter:
+        return tr("Unbinded plotter");
+    case TransactionRecord::SendPledge:
+        return tr("Sent pledge to");
+    case TransactionRecord::RecvPledge:
+        return tr("Received pledge with");
+    case TransactionRecord::SelfPledge:
+        return tr("Self pledge");
+    case TransactionRecord::WithdrawPledge:
+        return tr("Withdrawn pledge");
     default:
         return QString();
     }
@@ -399,6 +418,18 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
     case TransactionRecord::SendToAddress:
     case TransactionRecord::SendToOther:
         return QIcon(":/icons/tx_output");
+    case TransactionRecord::BindPlotter:
+        return QIcon(":/icons/tx_bindplotter");
+    case TransactionRecord::UnbindPlotter:
+        return QIcon(":/icons/tx_unbindplotter");
+    case TransactionRecord::RecvPledge:
+        return QIcon(":/icons/tx_pledge_in");
+    case TransactionRecord::SendPledge:
+        return QIcon(":/icons/tx_pledge_out");
+    case TransactionRecord::SelfPledge:
+        return QIcon(":/icons/tx_pledge_inout");
+    case TransactionRecord::WithdrawPledge:
+        return QIcon(":/icons/tx_pledge_withdraw");
     default:
         return QIcon(":/icons/tx_inout");
     }
@@ -419,6 +450,12 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     case TransactionRecord::RecvWithAddress:
     case TransactionRecord::SendToAddress:
     case TransactionRecord::Generated:
+    case TransactionRecord::BindPlotter:
+    case TransactionRecord::UnbindPlotter:
+    case TransactionRecord::SendPledge:
+    case TransactionRecord::RecvPledge:
+    case TransactionRecord::SelfPledge:
+    case TransactionRecord::WithdrawPledge:
         return lookupAddress(wtx->address, tooltip) + watchAddress;
     case TransactionRecord::SendToOther:
         return QString::fromStdString(wtx->address) + watchAddress;
@@ -443,6 +480,11 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
         } break;
     case TransactionRecord::SendToSelf:
         return COLOR_BAREADDRESS;
+    case TransactionRecord::BindPlotter:
+    case TransactionRecord::SendPledge:
+    case TransactionRecord::RecvPledge:
+    case TransactionRecord::SelfPledge:
+        return COLOR_BLACK;
     default:
         break;
     }
@@ -496,6 +538,13 @@ QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx)
     case TransactionStatus::MaturesWarning:
     case TransactionStatus::NotAccepted:
         return QIcon(":/icons/transaction_0");
+    case TransactionStatus::Inactived:
+        if (wtx->type == TransactionRecord::BindPlotter)
+            return QIcon(":/icons/tx_unbindplotter");
+        else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge)
+            return QIcon(":/icons/tx_pledge_withdraw");
+        else
+            return COLOR_BLACK;
     default:
         return COLOR_BLACK;
     }
@@ -512,8 +561,11 @@ QVariant TransactionTableModel::txWatchonlyDecoration(const TransactionRecord *w
 QString TransactionTableModel::formatTooltip(const TransactionRecord *rec) const
 {
     QString tooltip = formatTxStatus(rec) + QString("\n") + formatTxType(rec);
-    if(rec->type==TransactionRecord::RecvFromOther || rec->type==TransactionRecord::SendToOther ||
-       rec->type==TransactionRecord::SendToAddress || rec->type==TransactionRecord::RecvWithAddress)
+    if (rec->type==TransactionRecord::RecvFromOther || rec->type==TransactionRecord::SendToOther ||
+        rec->type==TransactionRecord::SendToAddress || rec->type==TransactionRecord::RecvWithAddress ||
+        rec->type == TransactionRecord::BindPlotter || rec->type == TransactionRecord::UnbindPlotter ||
+        rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge ||
+        rec->type == TransactionRecord::SelfPledge || rec->type == TransactionRecord::WithdrawPledge)
     {
         tooltip += QString(" ") + formatTxToAddress(rec, true);
     }
@@ -594,6 +646,11 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         {
             return COLOR_NEGATIVE;
         }
+        // Inactive tx
+        if(rec->status.status == TransactionStatus::Inactived)
+        {
+            return COLOR_TX_STATUS_OFFLINE;
+        }
         if(index.column() == ToAddress)
         {
             return addressColor(rec);
@@ -650,6 +707,16 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return details;
         }
     case ConfirmedRole:
+        if (rec->status.status == TransactionStatus::Inactived) {
+            if (rec->type == TransactionRecord::BindPlotter)
+            {
+                return tr("Unbinded plotter");
+            }
+            else if (rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge)
+            {
+                return tr("Withdrawn pledge");
+            }
+        }
         return rec->status.countsForBalance;
     case FormattedAmountRole:
         // Used for copy/export, so don't include separators

@@ -898,7 +898,7 @@ void RPCConsole::updatePledge()
 
         // Primary address capacity and pledge
         CAmount nPledgeAmount = GetMinerPledge(accountID, chainActive.Height(), 0, Params().GetConsensus());
-        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BtchdPledgeAmountPerTB * 1024));
+        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
         ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
 
@@ -908,7 +908,7 @@ void RPCConsole::updatePledge()
             std::set<uint64_t> existPlotterId;
             const int nEndHeight = chainActive.Height();
             const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
-                                              Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+                                              Params().GetConsensus().BHDIP001StartMingingHeight + 1);
             for (int index = nEndHeight; index >= nBeginHeight; index--) {
                 CBlockIndex *pblockIndex = chainActive[index];
                 if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())

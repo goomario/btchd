@@ -81,8 +81,8 @@ public:
     CMainParams() {
         strNetworkID = "main";
 
-        consensus.BtchdFundAddress = "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE";
-        consensus.BtchdFundAddressPool = {
+        consensus.BHDFundAddress = "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE";
+        consensus.BHDFundAddressPool = {
             "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y", //!< 0x20000000, Deprecated!. Last use on v1.1.0.1-30849da
             "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000004
             "39Vb1GNSurGoHcQ4aTKrTYC1oNmPppGea3",
@@ -91,13 +91,13 @@ public:
             "3MxgS9jRcGLihAtb9goAyD1QC8AfRNFE1F",
             "3A4uNFxQf6Jo8b6QpBVnNcjDRqDchgpGbR",
         };
-        assert(consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
+        assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.BtchdFundPreMingingHeight = 84000 + 1; // 21M * 10% = 2.1M, 2.1M/25=84000, + 1 to deprecated test data
-        consensus.BtchdFundRoyaltyPercent = 5; // 5%
-        consensus.BtchdFundRoyaltyPercentOnLowPledge = 70; // 70%
-        consensus.BtchdNoPledgeHeight = consensus.BtchdFundPreMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
-        consensus.BtchdPledgeAmountPerTB = 3 * COIN;
+        consensus.BHDIP001StartMingingHeight = 84000 + 1; // 21M * 10% = 2.1M, 2.1M/25=84000, + 1 to deprecated test data
+        consensus.BHDIP001FundRoyaltyPercent = 5; // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BHDIP001NoPledgeHeight = consensus.BHDIP001StartMingingHeight + 8640; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.fPocAllowMinDifficultyBlocks = false;
@@ -110,10 +110,10 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP004ForkBeginHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
-        consensus.BHDIP004ForkEndHeight = 99000;
+        consensus.BHDIP004ActiveHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
+        consensus.BHDIP004InActiveHeight = 99000;
         consensus.BHDIP006Height = 128800; // BHDIP006. Active about on Wed, 02 Jan 2019 09:00:00 GMT
-        consensus.BHDIP006BindIdActiveHeight = 130816; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 09:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = 130816; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 09:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -398,15 +398,15 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
 
-        consensus.BtchdFundAddress = "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw";
-        consensus.BtchdFundAddressPool = { "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw" };
-        assert(consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
+        consensus.BHDFundAddress = "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw";
+        consensus.BHDFundAddressPool = { "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw" };
+        assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.BtchdFundPreMingingHeight = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
-        consensus.BtchdFundRoyaltyPercent = 5; // 5%
-        consensus.BtchdFundRoyaltyPercentOnLowPledge = 70; // 70%
-        consensus.BtchdNoPledgeHeight = consensus.BtchdFundPreMingingHeight + 4000;
-        consensus.BtchdPledgeAmountPerTB = 3 * COIN;
+        consensus.BHDIP001StartMingingHeight = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
+        consensus.BHDIP001FundRoyaltyPercent = 5; // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BHDIP001NoPledgeHeight = consensus.BHDIP001StartMingingHeight + 4000;
+        consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
         consensus.fPocAllowMinDifficultyBlocks = false;
@@ -419,10 +419,10 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP004ForkBeginHeight = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
-        consensus.BHDIP004ForkEndHeight = 21000;
+        consensus.BHDIP004ActiveHeight = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
+        consensus.BHDIP004InActiveHeight = 21000;
         consensus.BHDIP006Height = 44300; // BHDIP006. Active about on Wed, 02 Jan 2019 04:00:00 GMT
-        consensus.BHDIP006BindIdActiveHeight = 46316; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 04:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = 46316; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 04:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -608,15 +608,15 @@ public:
     CRegTestParams() {
         strNetworkID = "regtest";
 
-        consensus.BtchdFundAddress = "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy"; // pubkey 03eab29d59f6d14053c6e98f6d3d7e7db9cc17c619a513b9c00aa416fbdada73f1
-        consensus.BtchdFundAddressPool = { "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy" };
-        assert(consensus.BtchdFundAddressPool.find(consensus.BtchdFundAddress) != consensus.BtchdFundAddressPool.end());
+        consensus.BHDFundAddress = "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy"; // pubkey 03eab29d59f6d14053c6e98f6d3d7e7db9cc17c619a513b9c00aa416fbdada73f1
+        consensus.BHDFundAddressPool = { "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy" };
+        assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.BtchdFundPreMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
-        consensus.BtchdFundRoyaltyPercent = 5; // 5%
-        consensus.BtchdFundRoyaltyPercentOnLowPledge = 70; // 70%
-        consensus.BtchdNoPledgeHeight = consensus.BtchdFundPreMingingHeight + 10;
-        consensus.BtchdPledgeAmountPerTB = 3 * COIN;
+        consensus.BHDIP001StartMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
+        consensus.BHDIP001FundRoyaltyPercent = 5; // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BHDIP001NoPledgeHeight = consensus.BHDIP001StartMingingHeight + 10;
+        consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 300;
         consensus.fPocAllowMinDifficultyBlocks = true;
@@ -629,10 +629,10 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP004ForkBeginHeight = 0;
-        consensus.BHDIP004ForkEndHeight = 0;
-        consensus.BHDIP006Height = consensus.BtchdNoPledgeHeight + 200;
-        consensus.BHDIP006BindIdActiveHeight = consensus.BtchdNoPledgeHeight + 300;
+        consensus.BHDIP004ActiveHeight = 0;
+        consensus.BHDIP004InActiveHeight = 0;
+        consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200;
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP001NoPledgeHeight + 300;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

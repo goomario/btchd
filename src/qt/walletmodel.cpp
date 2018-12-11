@@ -41,7 +41,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     QObject(parent), wallet(_wallet), optionsModel(_optionsModel), addressTableModel(0),
     transactionTableModel(0),
     recentRequestsTableModel(0),
-    cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0),
+    cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0), cachedLockedBalance(0), cachedPledgeDebitBalance(0),
     cachedEncryptionStatus(Unencrypted),
     cachedNumBlocks(0)
 {
@@ -85,6 +85,16 @@ CAmount WalletModel::getImmatureBalance() const
     return wallet->GetImmatureBalance();
 }
 
+CAmount WalletModel::getLockedBalance() const
+{
+    return wallet->GetLockedBalance();
+}
+
+CAmount WalletModel::getPledgeDebitBalance() const
+{
+    return wallet->GetPledgeDebitBalance();
+}
+
 bool WalletModel::haveWatchOnly() const
 {
     return fHaveWatchOnly;
@@ -103,6 +113,16 @@ CAmount WalletModel::getWatchUnconfirmedBalance() const
 CAmount WalletModel::getWatchImmatureBalance() const
 {
     return wallet->GetImmatureWatchOnlyBalance();
+}
+
+CAmount WalletModel::getWatchLockedBalance() const
+{
+    return wallet->GetLockedWatchOnlyBalance();
+}
+
+CAmount WalletModel::getWatchPledgeDebitBalance() const
+{
+    return wallet->GetPledgeDebitWatchOnlyBalance();
 }
 
 void WalletModel::updateStatus()
@@ -151,27 +171,40 @@ void WalletModel::checkBalanceChanged()
     CAmount newBalance = getBalance();
     CAmount newUnconfirmedBalance = getUnconfirmedBalance();
     CAmount newImmatureBalance = getImmatureBalance();
+    CAmount newLockedBalance = getLockedBalance();
+    CAmount newPledgeDebitBalance = getPledgeDebitBalance();
     CAmount newWatchOnlyBalance = 0;
     CAmount newWatchUnconfBalance = 0;
     CAmount newWatchImmatureBalance = 0;
+    CAmount newWatchLockedBalance = 0;
+    CAmount newWatchPledgeDebitBalance = 0;
     if (haveWatchOnly())
     {
         newWatchOnlyBalance = getWatchBalance();
         newWatchUnconfBalance = getWatchUnconfirmedBalance();
         newWatchImmatureBalance = getWatchImmatureBalance();
+        newWatchLockedBalance = getWatchLockedBalance();
+        newWatchPledgeDebitBalance = getWatchPledgeDebitBalance();
     }
 
-    if(cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance || cachedImmatureBalance != newImmatureBalance ||
-        cachedWatchOnlyBalance != newWatchOnlyBalance || cachedWatchUnconfBalance != newWatchUnconfBalance || cachedWatchImmatureBalance != newWatchImmatureBalance)
+    if(cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance ||
+        cachedImmatureBalance != newImmatureBalance || cachedLockedBalance != newLockedBalance ||
+        cachedWatchOnlyBalance != newWatchOnlyBalance || cachedWatchUnconfBalance != newWatchUnconfBalance ||
+        cachedWatchImmatureBalance != newWatchImmatureBalance || cachedWatchLockedBalance != newWatchLockedBalance ||
+        cachedPledgeDebitBalance != newPledgeDebitBalance || cachedWatchPledgeDebitBalance != newWatchPledgeDebitBalance)
     {
         cachedBalance = newBalance;
         cachedUnconfirmedBalance = newUnconfirmedBalance;
         cachedImmatureBalance = newImmatureBalance;
+        cachedLockedBalance = newLockedBalance;
+        cachedPledgeDebitBalance = newPledgeDebitBalance;
         cachedWatchOnlyBalance = newWatchOnlyBalance;
         cachedWatchUnconfBalance = newWatchUnconfBalance;
         cachedWatchImmatureBalance = newWatchImmatureBalance;
-        Q_EMIT balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance,
-                            newWatchOnlyBalance, newWatchUnconfBalance, newWatchImmatureBalance);
+        cachedWatchLockedBalance = newWatchLockedBalance;
+        cachedWatchPledgeDebitBalance = newWatchPledgeDebitBalance;
+        Q_EMIT balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance, newLockedBalance, newPledgeDebitBalance,
+                            newWatchOnlyBalance, newWatchUnconfBalance, newWatchImmatureBalance, newWatchLockedBalance, newWatchPledgeDebitBalance);
     }
 }
 
@@ -593,7 +626,7 @@ void WalletModel::getOutputs(const std::vector<COutPoint>& vOutpoints, std::vect
         if (it == wallet->mapWallet.end()) continue;
         int nDepth = it->second.GetDepthInMainChain();
         if (nDepth < 0) continue;
-        COutput out(&it->second, outpoint.n, nDepth, true /* spendable */, true /* solvable */, true /* safe */);
+        COutput out(&it->second, outpoint.n, nDepth, true /* spendable */, true /* solvable */, true /* safe */, (outpoint.n == 0 && it->second.mapValue.count("lock")) /* lock */);
         vOutputs.push_back(out);
     }
 }
@@ -733,6 +766,126 @@ bool WalletModel::bumpFee(uint256 hash)
             QString::fromStdString(errors[0])+")");
          return false;
     }
+    return true;
+}
+
+bool WalletModel::transactionCanBeUnlock(uint256 hash, DatacarrierType type) const {
+    LOCK2(cs_main, wallet->cs_wallet);
+
+    const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
+    if (coin.IsSpent() || coin.extraData == nullptr || coin.extraData->type != type)
+        return false;
+
+    return (wallet->IsMine(coin.out) & ISMINE_SPENDABLE) != 0;
+}
+
+bool WalletModel::unlockTransaction(uint256 hash) {
+    LOCK2(cs_main, wallet->cs_wallet);
+
+    // Coin
+    const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
+    if (coin.IsSpent() || coin.extraData == nullptr || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGE))
+        return false;
+
+    CCoinControl coin_control;
+    coin_control.signalRbf = true;
+
+    // Create transaction
+    CMutableTransaction txNew;
+    txNew.nLockTime = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
+    txNew.vin.push_back(CTxIn(COutPoint(hash, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
+    CTxDestination lockedDest;
+    if (!ExtractDestination(coin.out.scriptPubKey, lockedDest))
+        return false;
+    txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(lockedDest)));
+    CAmount nFeeOut = 0;
+    int changePosition = -1;
+    std::string strFailReason;
+    if (!wallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control)) {
+        if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            QMessageBox::critical(0, tr("Unbind plotter error"), QString::fromStdString(strFailReason));
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+            QMessageBox::critical(0, tr("Withdraw pledge error"), QString::fromStdString(strFailReason));
+        }
+        return false;
+    }
+
+    // Sign transaction
+    WalletModel::UnlockContext ctx(requestUnlock());
+    if(!ctx.isValid())
+        return false;
+    if (!wallet->SignTransaction(txNew)) {
+        if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            QMessageBox::critical(0, tr("Unbind plotter error"), tr("Can't sign transaction."));
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+            QMessageBox::critical(0, tr("Withdraw pledge error"), tr("Can't sign transaction."));
+        }
+        return false;
+    }
+
+    // Make sure
+    QMessageBox::StandardButton retval = QMessageBox::NoButton;
+    if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+        QString questionString = tr("Are you sure you want to unbind plotter?");
+        questionString.append("<br />");
+        questionString.append("<table style=\"text-align: left;\">");
+        questionString.append("<tr><td>").append(tr("Binded address:")).append("</td><td>").
+            append(QString::fromStdString(EncodeDestination(lockedDest)));
+        if (wallet->mapAddressBook.count(lockedDest) && !wallet->mapAddressBook[lockedDest].name.empty())
+            questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
+        questionString.append("</td></tr>");
+        questionString.append("<tr><td>").append(tr("Plotter ID:")).append("</td><td>").
+            append(QString::number(coin.extraData->bindPlotter.id)).append("</td></tr>");
+        questionString.append("<tr><td>").append(tr("Transaction fee:")).append("</td><td>").
+            append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
+        questionString.append("</table>");
+
+        SendConfirmationDialog confirmationDialog(tr("Unbind plotter"), questionString);
+        confirmationDialog.exec();
+        retval = (QMessageBox::StandardButton)confirmationDialog.result();
+    } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+        QString questionString = tr("Are you sure you want to withdraw pledge?");
+        questionString.append("<br />");
+        questionString.append("<table style=\"text-align: left;\">");
+        questionString.append("<tr><td>").append(tr("From address:")).append("</td><td>").
+            append(QString::fromStdString(EncodeDestination(lockedDest)));
+        if (wallet->mapAddressBook.count(lockedDest) && !wallet->mapAddressBook[lockedDest].name.empty())
+            questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
+        questionString.append("</td></tr>");
+        {
+            CTxDestination dest = CScriptID(uint160({coin.extraData->pledge.debitScriptID, coin.extraData->pledge.debitScriptID + CScriptID::WIDTH}));
+            questionString.append("<tr><td>").append(tr("To address:")).append("</td><td>").append(QString::fromStdString(EncodeDestination(dest)));
+            if (wallet->mapAddressBook.count(dest) && !wallet->mapAddressBook[dest].name.empty())
+                questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[dest].name)).append(")");
+            questionString.append("</td></tr>");
+        }
+        questionString.append("<tr><td>").append(tr("Amount:")).append("</td><td>").
+            append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), coin.out.nValue)).append("</td></tr>");
+        questionString.append("<tr><td>").append(tr("Transaction fee:")).append("</td><td>").
+            append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
+        questionString.append("</table>");
+
+        SendConfirmationDialog confirmationDialog(tr("Withdraw pledge"), questionString);
+        confirmationDialog.exec();
+        retval = (QMessageBox::StandardButton)confirmationDialog.result();
+    }
+    if (retval != QMessageBox::Yes)
+        return false;
+
+    // Send transaction
+    CWalletTx wtxNew;
+    wtxNew.SetTx(MakeTransactionRef(std::move(txNew)));
+    CReserveKey reservekey(wallet);
+    CValidationState state;
+    if (!wallet->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
+        if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            QMessageBox::critical(0, tr("Unbind plotter error"), tr("Could not commit transaction") + ":" + QString::fromStdString(state.GetRejectReason()));
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+            QMessageBox::critical(0, tr("Withdraw pledge error"), tr("Could not commit transaction") + ":" + QString::fromStdString(state.GetRejectReason()));
+        }
+        return false;
+    }
+
     return true;
 }
 

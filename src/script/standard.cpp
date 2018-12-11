@@ -447,14 +447,13 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
     if (!scriptPubKey.GetOp(pc, opcode, typeBytes) || opcode != 0x04)
         return nullptr;
     unsigned int type = (typeBytes[0] << 0) | (typeBytes[1] << 8) | (typeBytes[2] << 16) | (typeBytes[3] << 24);
-
     if (type == DATACARRIER_TYPE_BINDPLOTTER) {
         // Bind plotter transaction
         if (tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
             return nullptr;
     } else if (type == DATACARRIER_TYPE_PLEDGE) {
         // Plege transaction
-        if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGERENT_MIN_AMOUNT || scriptPubKey.size() != 27)
+        if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGERENT_AMOUNT_MIN || scriptPubKey.size() != 27)
             return nullptr;
         if (tx.vout.size() == 3 && tx.vout[0].scriptPubKey != tx.vout[1].scriptPubKey)
             return nullptr;

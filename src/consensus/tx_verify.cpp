@@ -207,7 +207,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
-bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee)
+bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -247,25 +247,21 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
     }
 
-    txfee = txfee_aux;
-    return true;
-}
+    // Check uniform transaction
+    if (tx.nVersion == CTransaction::UNIFORM_VERSION && nSpendHeight >= params.BHDIP006Height) {
+        if (tx.vin.empty() || tx.vout.empty())
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputoutput-invaliduniform");
 
-bool Consensus::CheckTxUniform(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, const Consensus::Params& params)
-{
-    if (tx.nVersion != CTransaction::UNIFORM_VERSION || nSpendHeight < params.BHDIP006Height)
-        return true;
-    if (tx.vin.empty() || tx.vout.size() < 2)
-        return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputoutput-invaliduniform");
-
-    const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
-    for (unsigned int i = 1; i < tx.vin.size(); ++i) {
-        const Coin& coin = inputs.AccessCoin(tx.vin[i].prevout);
-        if (coin.out.scriptPubKey != scriptPubKey)
-            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputdest-invaliduniform");
+        const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
+        for (unsigned int i = 1; i < tx.vin.size(); ++i) {
+            const Coin& coin = inputs.AccessCoin(tx.vin[i].prevout);
+            if (coin.out.scriptPubKey != scriptPubKey)
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputdest-invaliduniform");
+        }
+        if (!tx.vout.empty() && tx.vout[0].scriptPubKey != scriptPubKey)
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-outputdest-invaliduniform");
     }
-    if (tx.vout[0].scriptPubKey != scriptPubKey)
-        return state.DoS(100, false, REJECT_INVALID, "bad-txns-outputdest-invaliduniform");
 
+    txfee = txfee_aux;
     return true;
 }

@@ -10,15 +10,11 @@
 #include <dbwrapper.h>
 #include <chain.h>
 
-#include <map>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 class CBlockIndex;
-class CChainParams;
-class CCoinsViewDBCursor;
 class uint256;
 
 //! No need to periodic flush if at least this much space still available.
@@ -79,7 +75,9 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
-    CCoinsViewCursor *Cursor() const override;
+    CCoinsViewCursorRef Cursor() const override;
+    CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();
@@ -87,28 +85,6 @@ public:
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
-};
-
-/** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
-class CCoinsViewDBCursor: public CCoinsViewCursor
-{
-public:
-    ~CCoinsViewDBCursor() {}
-
-    bool GetKey(COutPoint &key) const override;
-    bool GetValue(Coin &coin) const override;
-    unsigned int GetValueSize() const override;
-
-    bool Valid() const override;
-    void Next() override;
-
-private:
-    CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn):
-        CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {}
-    std::unique_ptr<CDBIterator> pcursor;
-    std::pair<char, COutPoint> keyTmp;
-
-    friend class CCoinsViewDB;
 };
 
 /** Access to the block database (blocks/index/) */

@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <memory>
 #include <unordered_map>
 
 /**
@@ -52,8 +53,6 @@ public:
 
     void Clear() {
         out.scriptPubKey.clear();
-        fCoinBase = false;
-        nHeight = 0;
     }
 
     //! empty constructor
@@ -182,6 +181,7 @@ private:
 
 /** Cursor for iterating over CoinsView state */
 typedef CCoinsDataCursor<COutPoint,Coin> CCoinsViewCursor;
+typedef std::shared_ptr<CCoinsViewCursor> CCoinsViewCursorRef;
 
 /** Abstract view on the open txout dataset. */
 class CCoinsView
@@ -210,7 +210,10 @@ public:
     virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
 
     //! Get a cursor to iterate over the whole state
-    virtual CCoinsViewCursor *Cursor() const;
+    virtual CCoinsViewCursorRef Cursor() const;
+
+    virtual CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const;
+    virtual CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
     virtual ~CCoinsView() {}
@@ -238,7 +241,9 @@ public:
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
-    CCoinsViewCursor *Cursor() const override;
+    CCoinsViewCursorRef Cursor() const override;
+    CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
        CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
@@ -273,7 +278,13 @@ public:
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
-    CCoinsViewCursor* Cursor() const override {
+    CCoinsViewCursorRef Cursor() const override {
+        throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
+    }
+    CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override {
+        throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
+    }
+    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,

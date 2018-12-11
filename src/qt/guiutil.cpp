@@ -110,7 +110,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
     // We don't want translators to use own addresses in translations
     // and this is the only place, where this address is supplied.
     widget->setPlaceholderText(QObject::tr("Enter a BitcoinHD address (e.g. %1)").arg(
-        QString::fromStdString(Params().GetConsensus().BtchdFundAddress)));
+        QString::fromStdString(Params().GetConsensus().BHDFundAddress)));
 #endif
     widget->setValidator(new BitcoinAddressEntryValidator(parent));
     widget->setCheckValidator(new BitcoinAddressCheckValidator(parent));

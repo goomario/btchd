@@ -22,9 +22,11 @@
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
 #include <rpc/server.h>
+#include <txdb.h>
 #include <txmempool.h>
 #include <util.h>
 #include <utilstrencodings.h>
+#include <validation.h>
 #include <validationinterface.h>
 #include <warnings.h>
 
@@ -70,7 +72,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
         pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
         pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
-        if (nHeight <= Params().GetConsensus().BtchdFundPreMingingHeight) {
+        if (nHeight <= Params().GetConsensus().BHDIP001StartMingingHeight) {
             // Update nBaseTarget because nTime has changed
             LOCK(cs_main);
             pblock->nTime = chainActive.Tip()->nTime + 1;
@@ -455,7 +457,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         fLastTemplateSupportsSegwit = fSupportsSegwit;
 
         // Create new block
-        CScript scriptDummy = GetScriptForDestination(DecodeDestination(Params().GetConsensus().BtchdFundAddress));
+        CScript scriptDummy = GetScriptForDestination(DecodeDestination(Params().GetConsensus().BHDFundAddress));
         pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, fSupportsSegwit);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
@@ -719,7 +721,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     // Calc
     int nHeight = chainActive.Height() + 1; // For next block
     int nEndHeight = nHeight - 1;
-    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BHDIP001StartMingingHeight + 1);
     if (nEndHeight >= nBeginHeight) {
         uint64_t nAvgBaseTarget = 0;
         // Current account
@@ -766,31 +768,29 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     result.pushKV("balance", ValueFromAmount(totalBalance));
     //! This balance available spend
     result.pushKV("availableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeCreditBalance));
-    //! This balance available for mining pledge
-    result.pushKV("miningPledgeBalance", ValueFromAmount(totalBalance - pledgeCreditBalance + pledgeDebitBalance));
     //! This balance freeze in bind plotter
     result.pushKV("freezeInBindPlotterBalance", ValueFromAmount(bindPlotterBalance));
     //! This balance freeze in pledge credit
     result.pushKV("freezeInPledgeCreditBalance", ValueFromAmount(pledgeCreditBalance));
     //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
     result.pushKV("pledgeDebitBalance", ValueFromAmount(pledgeDebitBalance));
-    result.pushKV("height", nHeight);
-    result.pushKV("address", address);
-    if (nHeight < Params().GetConsensus().BtchdNoPledgeHeight + 1) {
-        result.pushKV("start", Params().GetConsensus().BtchdNoPledgeHeight + 1);
+    //! This balance include pledge debit and avaliable balance. For mining pledge
+    result.pushKV("availablePledgeBalance", ValueFromAmount(totalBalance - pledgeCreditBalance + pledgeDebitBalance));
+    if (nHeight < Params().GetConsensus().BHDIP001NoPledgeHeight + 1) {
+        result.pushKV("start", Params().GetConsensus().BHDIP001NoPledgeHeight + 1);
     }
     if (nTotalForgeCount == 0) {
-        result.pushKV("capacity", "0 TB");
         result.pushKV("pledge", ValueFromAmount(0));
         result.pushKV("maxAdditionalPledge", ValueFromAmount(0));
+        result.pushKV("capacity", "0 TB");
     } else {
         assert(nEndHeight >= nBeginHeight);
         int64_t nCapacityTB;
 
         // Miner
         nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
         result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
 
         // Bind plotter
         CAmount maxAdditionalPledge = 0;
@@ -802,7 +802,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
 
                 UniValue item(UniValue::VOBJ);
                 item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+                item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
                 {
                     UniValue lastBlock(UniValue::VOBJ);
                     lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
@@ -814,9 +814,9 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                     nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
                     UniValue objAdditional(UniValue::VOBJ);
                     objAdditional.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                    objAdditional.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+                    objAdditional.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
                     item.pushKV("additional", objAdditional);
-                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB);
+                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB);
                 }
 
                 // Multi mining
@@ -844,7 +844,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                             }
                             nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
                             item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+                            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
                         }
                         {
                             UniValue lastBlock(UniValue::VOBJ);
@@ -864,12 +864,14 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
             for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
                 if (it->second.forgeCountAdditional > 0) {
                     nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB);
+                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB);
                 }
             }
             result.pushKV("maxAdditionalPledge", ValueFromAmount(maxAdditionalPledge));
         }
     }
+    result.pushKV("height", nHeight);
+    result.pushKV("address", address);
 
     return result;
 }
@@ -888,8 +890,8 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "The mortage information of address\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getpledgeofaddress", Params().GetConsensus().BtchdFundAddress + " \"0\" true")
-            + HelpExampleRpc("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", \"0\", true")
+            + HelpExampleCli("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"0\" true")
+            + HelpExampleRpc("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"0\", true")
             );
 
     LOCK(cs_main);
@@ -959,7 +961,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     int nHeight = chainActive.Height() + 1;
     int nEndHeight = nHeight - 1;
-    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BtchdFundPreMingingHeight + 1);
+    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BHDIP001StartMingingHeight + 1);
     if (nEndHeight >= nBeginHeight) {
         uint64_t nAvgBaseTarget = 0;
         for (int index = nEndHeight; index >= nBeginHeight; index--) {
@@ -984,11 +986,12 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     UniValue result(UniValue::VOBJ);
     result.pushKV("plotterId", std::to_string(nPlotterId));
     if (nTotalForgeCount == 0) {
+        result.pushKV("pledge", ValueFromAmount(0));
         result.pushKV("capacity", "0 TB");
     } else {
         nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
         result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
     }
 
     if (fVerbose) {
@@ -1009,7 +1012,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
             UniValue item(UniValue::VOBJ);
             nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
             item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BtchdPledgeAmountPerTB * nCapacityTB));
+            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
             {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
@@ -1022,6 +1025,119 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     }
 
     return result;
+}
+
+static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
+    assert(pcursor != nullptr);
+    UniValue ret(UniValue::VARR);
+    for (; pcursor->Valid(); pcursor->Next()) {
+        COutPoint key;
+        Coin coin;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            assert(key.n == 0);
+            assert(!coin.IsSpent());
+            assert(coin.extraData != nullptr && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
+            UniValue item(UniValue::VOBJ);
+            {
+                CTxDestination fromDest;
+                ExtractDestination(coin.out.scriptPubKey, fromDest);
+                item.push_back(Pair("from", EncodeDestination(fromDest)));
+            }
+            {
+                CScriptID toScriptID(uint160({coin.extraData->pledge.debitScriptID, coin.extraData->pledge.debitScriptID + CScriptID::WIDTH}));
+                item.push_back(Pair("to", EncodeDestination(CTxDestination(toScriptID))));
+            }
+            item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
+            item.push_back(Pair("txid", key.hash.GetHex()));
+            item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
+            item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
+            item.push_back(Pair("height", (int)coin.nHeight));
+
+            ret.push_back(item);
+        } else {
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
+        }
+    }
+
+    return ret;
+}
+
+UniValue listpledgescreditofaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "listpledgescreditofaddress address\n"
+            "\nReturns up to pledge credit coins.\n"
+            "\nArguments:\n"
+            "1. address             (string, required) The BitcoinHD address\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
+            "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
+            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
+            "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
+            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"height\": xxx,                       (numeric) The block height.\n"
+            "  }\n"
+            "]\n"
+
+            "\nExamples:\n"
+            "\nList the pledge credit coins from UTXOs\n"
+            + HelpExampleCli("listpledgescreditofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("listpledgescreditofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+        );
+
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
+    if (accountID == 0)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
+   
+    LOCK(cs_main);
+
+    FlushStateToDisk();
+    return ListPledges(pcoinsdbview->PledgeCreditCursor(accountID));
+}
+
+UniValue listpledgesdebitofaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "listpledgesdebitofaddress address\n"
+            "\nReturns up to pledge debit coins.\n"
+            "\nArguments:\n"
+            "1. address             (string, required) The BitcoinHD address\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
+            "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
+            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
+            "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
+            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"height\": xxx,                       (numeric) The block height.\n"
+            "  }\n"
+            "]\n"
+
+            "\nExamples:\n"
+            "\nList the pledge debit coins from UTXOs\n"
+            + HelpExampleCli("listpledgesdebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("listpledgesdebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+        );
+
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
+    if (accountID == 0)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
+
+    LOCK(cs_main);
+
+    FlushStateToDisk();
+    return ListPledges(pcoinsdbview->PledgeDebitCursor(accountID));
 }
 
 UniValue estimatefee(const JSONRPCRequest& request)
@@ -1240,8 +1356,8 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
             "Balance\n"
             "\n"
             "\nExample:\n"
-            + HelpExampleCli("getbalanceofheight", Params().GetConsensus().BtchdFundAddress + " 9000")
-            + HelpExampleRpc("getbalanceofheight", std::string("\"") + Params().GetConsensus().BtchdFundAddress + "\", 9000")
+            + HelpExampleCli("getbalanceofheight", Params().GetConsensus().BHDFundAddress + " 9000")
+            + HelpExampleRpc("getbalanceofheight", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", 9000")
             );
 
     LOCK(cs_main);
@@ -1260,20 +1376,22 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "mining",             "getmininginfo",          &getmininginfo,          {} },
-    { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
-    { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
-    { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "getpledgeofaddress",     &getpledgeofaddress,     {"address", "plotterId", "verbose"} },
-    { "mining",             "getplottermininginfo",   &getplottermininginfo,   {"plotterId", "verbose"} },
+    { "mining",             "getmininginfo",                &getmininginfo,                 {} },
+    { "mining",             "prioritisetransaction",        &prioritisetransaction,         {"txid","dummy","fee_delta"} },
+    { "mining",             "getblocktemplate",             &getblocktemplate,              {"template_request"} },
+    { "mining",             "submitblock",                  &submitblock,                   {"hexdata","dummy"} },
+    { "mining",             "getpledgeofaddress",           &getpledgeofaddress,            {"address", "plotterId", "verbose"} },
+    { "mining",             "getplottermininginfo",         &getplottermininginfo,          {"plotterId", "verbose"} },
+    { "mining",             "listpledgescreditofaddress",   &listpledgescreditofaddress,    {"address"} },
+    { "mining",             "listpledgesdebitofaddress",    &listpledgesdebitofaddress,     {"address"} },
 
-    { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
+    { "generating",         "generatetoaddress",            &generatetoaddress,             {"nblocks","address","maxtries"} },
 
-    { "util",               "estimatefee",            &estimatefee,            {"nblocks"} },
-    { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
-    { "util",               "getbalanceofheight",     &getbalanceofheight,     {"address", "height"} },
+    { "util",               "estimatefee",                  &estimatefee,                   {"nblocks"} },
+    { "util",               "estimatesmartfee",             &estimatesmartfee,              {"conf_target", "estimate_mode"} },
+    { "util",               "getbalanceofheight",           &getbalanceofheight,            {"address", "height"} },
 
-    { "hidden",             "estimaterawfee",         &estimaterawfee,         {"conf_target", "threshold"} },
+    { "hidden",             "estimaterawfee",               &estimaterawfee,                {"conf_target", "threshold"} },
 };
 
 void RegisterMiningRPCCommands(CRPCTable &t)

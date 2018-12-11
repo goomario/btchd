@@ -51,21 +51,22 @@ struct BIP9Deployment {
  */
 struct Params {
     /** BitcoinHD Fund address */
-    std::string BtchdFundAddress;
-    std::set<std::string> BtchdFundAddressPool;
+    std::string BHDFundAddress;
+    std::set<std::string> BHDFundAddressPool;
     /** BitcoinHD fund pre-mining height */
-    int BtchdFundPreMingingHeight;
+    int BHDIP001StartMingingHeight;
     /** BitcoinHD fund royalty percent */
-    int BtchdFundRoyaltyPercent;
+    int BHDIP001FundRoyaltyPercent;
     /** BitcoinHD fund royalty percent on low pledge */
-    int BtchdFundRoyaltyPercentOnLowPledge;
+    int BHDIP001FundRoyaltyPercentOnLowPledge;
     /** BitcoinHD miner no pledge height before */
-    int BtchdNoPledgeHeight;
+    int BHDIP001NoPledgeHeight;
     /** BitcoinHD miner pledge amount per TB */
-    CAmount BtchdPledgeAmountPerTB;
+    CAmount BHDIP001PledgeAmountPerTB;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
     /** Block height and hash at which BIP34 becomes active */
@@ -75,14 +76,14 @@ struct Params {
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
 
-    /** Some block error, fork begin height */
-    int BHDIP004ForkBeginHeight;
-    /** Some block error, fork end height */
-    int BHDIP004ForkEndHeight;
+    /** Block height at which BHDIP004 becomes active. Some block error, fork begin height */
+    int BHDIP004ActiveHeight;
+    /** Block height at which BHDIP004 becomes inactive */
+    int BHDIP004InActiveHeight;
     /** Block height at which BHDIP006 becomes active */
     int BHDIP006Height;
-    /** Block height at which BHDIP007 becomes active */
-    int BHDIP006BindIdActiveHeight;
+    /** Block height at which BHDIP006 bind plotter becomes active */
+    int BHDIP006BindPlotterActiveHeight;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
@@ -92,6 +93,7 @@ struct Params {
     uint32_t nRuleChangeActivationThreshold;
     uint32_t nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
+
     /** Proof of Capacity parameters */
     bool fPocAllowMinDifficultyBlocks;
     int64_t nPowTargetSpacing;

@@ -261,8 +261,8 @@ UniValue setaccount(const JSONRPCRequest& request)
             "1. \"address\"         (string, required) The BitcoinHD address to be associated with an account.\n"
             "2. \"account\"         (string, required) The account to assign the address to.\n"
             "\nExamples:\n"
-            + HelpExampleCli("setaccount", "\"" + Params().GetConsensus().BtchdFundAddress + "\" \"tabby\"")
-            + HelpExampleRpc("setaccount", "\"" + Params().GetConsensus().BtchdFundAddress + "\", \"tabby\"")
+            + HelpExampleCli("setaccount", "\"" + Params().GetConsensus().BHDFundAddress + "\" \"tabby\"")
+            + HelpExampleRpc("setaccount", "\"" + Params().GetConsensus().BHDFundAddress + "\", \"tabby\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
@@ -310,8 +310,8 @@ UniValue getaccount(const JSONRPCRequest& request)
             "\nResult:\n"
             "\"accountname\"        (string) the account address\n"
             "\nExamples:\n"
-            + HelpExampleCli("getaccount", "\"" + Params().GetConsensus().BtchdFundAddress + "\"")
-            + HelpExampleRpc("getaccount", "\"" + Params().GetConsensus().BtchdFundAddress + "\"")
+            + HelpExampleCli("getaccount", "\"" + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("getaccount", "\"" + Params().GetConsensus().BHDFundAddress + "\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
@@ -403,8 +403,8 @@ UniValue setprimaryaddress(const JSONRPCRequest& request)
             "\nResult:\n"
             "\"address\"    (string) The primary BitcoinHD address\n"
             "\nExamples:\n"
-            + HelpExampleCli("setprimaryaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\"")
-            + HelpExampleRpc("setprimaryaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\"")
+            + HelpExampleCli("setprimaryaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("setprimaryaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
@@ -425,8 +425,7 @@ UniValue setprimaryaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_MISC_ERROR, "setprimaryaddress can only be used with own address");
 }
 
-CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control,
-    int nChangePosRet = -1)
+CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
 {
     CAmount curBalance = pwallet->GetBalance();
 
@@ -448,9 +447,8 @@ CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmoun
     CReserveKey reservekey(pwallet);
     CAmount nFeeRequired = 0;
     std::string strError;
-    std::vector<CRecipient> vecSend;
-    CRecipient recipient = {scriptPubKey, nValue, fSubtractFeeFromAmount};
-    vecSend.push_back(recipient);
+    std::vector<CRecipient> vecSend = { {scriptPubKey, nValue, fSubtractFeeFromAmount} };
+    int nChangePosRet = -1;
     if (!pwallet->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
         if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
@@ -502,10 +500,10 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
-            + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\" 0.1")
-            + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\" 0.1 \"donation\" \"seans outpost\"")
-            + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\" 0.1 \"\" \"\" true")
-            + HelpExampleRpc("sendtoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\", 0.1, \"donation\", \"seans outpost\"")
+            + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1")
+            + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"donation\" \"seans outpost\"")
+            + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"\" \"\" true")
+            + HelpExampleRpc("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\", 0.1, \"donation\", \"seans outpost\"")
         );
 
     ObserveSafeMode();
@@ -2980,7 +2978,7 @@ UniValue listunspent(const JSONRPCRequest& request)
     std::vector<COutput> vecOutputs;
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    pwallet->AvailableCoins(vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
+    pwallet->AvailableCoins(vecOutputs, !include_unsafe, true, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
     for (const COutput& out : vecOutputs) {
         CTxDestination address;
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
@@ -3566,10 +3564,10 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
-            + HelpExampleCli("sendpledgetoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\" 0.1")
-            + HelpExampleCli("sendpledgetoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\" 0.1 \"donation\" \"seans outpost\"")
-            + HelpExampleCli("sendpledgetoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\" 0.1 \"\" \"\" true")
-            + HelpExampleRpc("sendpledgetoaddress", "\"" + Params().GetConsensus().BtchdFundAddress + "\", 0.1, \"donation\", \"seans outpost\"")
+            + HelpExampleCli("sendpledgetoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1")
+            + HelpExampleCli("sendpledgetoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"donation\" \"seans outpost\"")
+            + HelpExampleCli("sendpledgetoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"\" \"\" true")
+            + HelpExampleRpc("sendpledgetoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\", 0.1, \"donation\", \"seans outpost\"")
         );
 
     ObserveSafeMode();
@@ -3587,7 +3585,9 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     // Amount
     CAmount nAmount = AmountFromValue(request.params[1]);
     if (nAmount <= 0)
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount for send");
+    else if (nAmount < PROTOCOL_PLEDGERENT_AMOUNT_MIN)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Small amount for pledge");
 
     // Wallet comments
     CWalletTx wtx;
@@ -3625,7 +3625,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
 
     CTxDestination primaryDest = pwallet->GetPrimaryDestination();
     if (!IsValidDestination(primaryDest))
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid primary address");
+        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid primary address");
 
     EnsureWalletIsUnlocked(pwallet);
 
@@ -3727,11 +3727,16 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     txNew.vin.push_back(CTxIn(COutPoint(txid, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
         const Coin &coin = pcoinsTip->AccessCoin(COutPoint(txid, 0));
-        if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_PLEDGE)
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not pledge rent");
+        if (coin.IsSpent() || coin.extraData == nullptr || coin.extraData->type != DATACARRIER_TYPE_PLEDGE)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not pledge");
+        if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge not mine");
+        
+        CTxDestination dest;
+        if (!ExtractDestination(coin.out.scriptPubKey, dest))
+            throw JSONRPCError(RPC_WALLET_ERROR, "The pledge transaction coin destination cannot extract");
 
-        CScriptID debitScriptID(uint160({coin.extraData->pledge.debitScriptID, coin.extraData->pledge.debitScriptID + CScriptID::WIDTH}));
-        txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(CTxDestination(debitScriptID))));
+        txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
     }
     CAmount nFeeOut = 0;
     int changePosition = -1;
@@ -3743,6 +3748,9 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     EnsureWalletIsUnlocked(pwallet);
     if (!pwallet->SignTransaction(txNew))
         throw JSONRPCError(RPC_WALLET_ERROR, "Cannot sign transaction");
+
+    if (pwallet->mapWallet.count(txNew.GetHash()))
+        throw JSONRPCError(RPC_WALLET_ERROR, "The withdraw transaction is exist");
 
     // Send transaction
     wtxNew.SetTx(MakeTransactionRef(std::move(txNew)));
@@ -3781,11 +3789,13 @@ UniValue listpledges(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"valid\": valid,                      (string) The pledge valid.\n"
+            "    \"fromWatchonly\": watchonly,          (string) The pledge from watchonly address.\n"
+            "    \"toWatchonly\": watchonly,            (string) The pledge to watchonly address.\n"
             "  }\n"
             "]\n"
 
             "\nExamples:\n"
-            "\nList the pledge transactions in the UTXO\n"
+            "\nList the pledge transactions from UTXOs\n"
             + HelpExampleCli("listpledges", "10 0")
             + HelpExampleRpc("listpledges", "10,0")
         );
@@ -3813,7 +3823,7 @@ UniValue listpledges(const JSONRPCRequest& request)
     if (nCount < 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative count");
     if (nFrom < 0)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative from");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative skip");
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
@@ -3827,8 +3837,10 @@ UniValue listpledges(const JSONRPCRequest& request)
         CTxDestination toDest;
         std::string category;
         bool fValid;
+        bool fFromWatchonly;
+        bool fToWatchonly;
     } TxPledge;
-    std::map<int64_t, TxPledge> mapTxPlede;
+    std::map<int64_t, TxPledge> mapTxPledge;
     for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         if (wtx.IsCoinBase() || !wtx.IsInMainChain() || !CheckFinalTx(*wtx.tx) )
@@ -3855,24 +3867,31 @@ UniValue listpledges(const JSONRPCRequest& request)
         CTxDestination fromDest, toDest;
         ExtractDestination(wtx.tx->vout[0].scriptPubKey, fromDest);
         toDest = CScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}));
-        bool fSendIsmine = (IsMine(*pwallet, fromDest) & filter) != 0;
-        bool fReceiveIsmine = (IsMine(*pwallet, toDest) & filter) != 0;
+        isminetype sendIsmine = ::IsMine(*pwallet, fromDest);
+        isminetype receiveIsmine = ::IsMine(*pwallet, toDest);
+        bool fSendIsmine = (sendIsmine & filter) != 0;
+        bool fReceiveIsmine = (receiveIsmine & filter) != 0;
         if (!fSendIsmine && !fReceiveIsmine)
             continue;
 
-        TxPledge &txPledgeRent = mapTxPlede[wtx.nTimeReceived];
+        TxPledge &txPledgeRent = mapTxPledge[wtx.nTimeReceived];
         txPledgeRent.txid = wtx.GetHash();
         txPledgeRent.fromDest = fromDest;
         txPledgeRent.toDest = toDest;
         txPledgeRent.category = (fSendIsmine && fReceiveIsmine) ? "self" : (fSendIsmine ? "send" : "receive");
         txPledgeRent.fValid = fValid;
+        txPledgeRent.fFromWatchonly = (sendIsmine & ISMINE_WATCH_ONLY) != 0;
+        txPledgeRent.fToWatchonly = (receiveIsmine & ISMINE_WATCH_ONLY) != 0;
     }
-    if (nFrom >= (int)mapTxPlede.size())
+    if (nFrom >= (int)mapTxPledge.size())
         return ret;
 
-    for (auto it = mapTxPlede.rbegin(); it != mapTxPlede.rend(); it++) {
+    for (auto it = mapTxPledge.rbegin(); it != mapTxPledge.rend(); it++) {
         if (--nFrom >= 0)
             continue;
+        if (--nCount < 0)
+            break;
+
         const CWalletTx& wtx = pwallet->mapWallet[it->second.txid];
 
         UniValue item(UniValue::VOBJ);
@@ -3887,10 +3906,11 @@ UniValue listpledges(const JSONRPCRequest& request)
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
         }
         item.push_back(Pair("valid", it->second.fValid));
+        if (filter & ISMINE_WATCH_ONLY) {
+            item.push_back(Pair("fromWatchonly", it->second.fFromWatchonly));
+            item.push_back(Pair("toWatchonly", it->second.fToWatchonly));
+        }
         ret.push_back(item);
-
-        if (--nCount <= 0)
-            break;
     }
 
     return ret;
@@ -3972,8 +3992,8 @@ static const CRPCCommand commands[] =
 
     { "wallet",             "getpledge",                &getpledge,                {"plotterId","verbose"} },
     { "wallet",             "sendpledgetoaddress",      &sendpledgetoaddress,      {"address","amount","comment","comment_to","subtractfeefromamount","replaceable","conf_target","estimate_mode"} },
-    { "wallet",             "withdrawpledge",       &withdrawpledge,       {"txid","comment","comment_to","replaceable","conf_target","estimate_mode"} },
-    { "wallet",             "listpledges",          &listpledges,          {"count","skip","include_watchonly","include_invalid"} },
+    { "wallet",             "withdrawpledge",           &withdrawpledge,           {"txid","comment","comment_to","replaceable","conf_target","estimate_mode"} },
+    { "wallet",             "listpledges",              &listpledges,              {"count","skip","include_watchonly","include_invalid"} },
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
 };

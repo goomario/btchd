@@ -135,7 +135,8 @@ struct PledgeCreditEntry {
     CAccountID creditAccountID;
     COutPoint outpoint;
     char key;
-    PledgeCreditEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) : creditAccountID(accountIDIn), outpoint(outpointIn), key(DB_COIN_PLEDGECREDIT) {}
+    PledgeCreditEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) :
+        creditAccountID(accountIDIn), outpoint(outpointIn), key(DB_COIN_PLEDGECREDIT) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -158,7 +159,8 @@ struct PledgeDebitRefEntry {
     CAccountID* debitAccountID;
     COutPoint* outpoint;
     char key;
-    PledgeDebitRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) : debitAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_COIN_PLEDGEDEBIT) {}
+    PledgeDebitRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        debitAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_COIN_PLEDGEDEBIT) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -181,7 +183,8 @@ struct PledgeDebitEntry {
     CAccountID debitAccountID;
     COutPoint outpoint;
     char key;
-    PledgeDebitEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) : debitAccountID(accountIDIn), outpoint(outpointIn), key(DB_COIN_PLEDGEDEBIT) {}
+    PledgeDebitEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) :
+        debitAccountID(accountIDIn), outpoint(outpointIn), key(DB_COIN_PLEDGEDEBIT) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -259,7 +262,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                 if (it->second.coin.refOutAccountID != 0)
                     batch.Erase(AccountCoinRefEntry(&it->second.coin.refOutAccountID, &it->first));
                 if (it->second.coin.extraData != nullptr) {
-                    // Rent
+                    // Pledge revelant
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
                         batch.Erase(PledgeCreditRefEntry(&it->second.coin.refOutAccountID, &it->first));
                         batch.Erase(PledgeDebitRefEntry(&it->second.coin.extraData->pledge.debitAccountID, &it->first));
@@ -270,7 +273,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                 if (it->second.coin.refOutAccountID != 0)
                     batch.Write(AccountCoinRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
                 if (it->second.coin.extraData != nullptr) {
-                    // Rent
+                    // Pledge revelant
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
                         batch.Write(PledgeCreditRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
                         batch.Write(PledgeDebitRefEntry(&it->second.coin.extraData->pledge.debitAccountID, &it->first), VARINT(it->second.coin.out.nValue));
@@ -307,9 +310,163 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
 
 }
 
+CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
+    /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
+    class CCoinsViewDBCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn) : CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {
+            /* It seems that there are no "const iterators" for LevelDB.  Since we
+               only need read operations on it, use a const-cast to get around
+               that restriction.  */
+            pcursor->Seek(DB_COIN);
+            // Cache key of first record
+            if (pcursor->Valid()) {
+                CoinEntry entry(&keyTmp.second);
+                pcursor->GetKey(entry);
+                keyTmp.first = entry.key;
+            }
+            else {
+                keyTmp.first = 0; // Make sure Valid() and GetKey() return false
+            }
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (keyTmp.first == DB_COIN) {
+                key = keyTmp.second;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcursor->GetValue(coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return keyTmp.first == DB_COIN; }
+        void Next() override {
+            pcursor->Next();
+            CoinEntry entry(&keyTmp.second);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry)) {
+                keyTmp.first = 0; // Invalidate cached key after last record so that Valid() and GetKey() return false
+            }
+            else {
+                keyTmp.first = entry.key;
+            }
+        }
+
+    private:
+        std::unique_ptr<CDBIterator> pcursor;
+        std::pair<char, COutPoint> keyTmp;
+    };
+
+    return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
+}
+
+CCoinsViewCursorRef CCoinsViewDB::PledgeCreditCursor(const CAccountID &accountID) const {
+    class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBPledgeCreditCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
+            if (accountID != 0) {
+                pcursor->Seek(PledgeCreditRefEntry(&accountID, &outpoint));
+                // Test key of first record
+                TestKey();
+            }
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (accountID != 0) {
+                key = outpoint;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcoinviewdb->GetCoin(outpoint, coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return accountID != 0; }
+        void Next() override {
+            pcursor->Next();
+            TestKey();
+        }
+
+    private:
+        void TestKey() {
+            CAccountID tempAccountID;
+            PledgeCreditRefEntry entry(&tempAccountID, &outpoint);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGECREDIT || tempAccountID != accountID) {
+                accountID = 0;
+            }
+        }
+
+        const CCoinsViewDB* pcoinviewdb;
+        std::unique_ptr<CDBIterator> pcursor;
+        CAccountID accountID;
+        COutPoint outpoint;
+    };
+
+    return std::make_shared<CCoinsViewDBPledgeCreditCursor>(this, db.NewIterator(), GetBestBlock(), accountID);
+}
+
+CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID) const {
+    class CCoinsViewDBPledgeDebitCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBPledgeDebitCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
+            if (accountID != 0) {
+                pcursor->Seek(PledgeDebitRefEntry(&accountID, &outpoint));
+                // Test key of first record
+                TestKey();
+            }
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (accountID != 0) {
+                key = outpoint;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcoinviewdb->GetCoin(outpoint, coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return accountID != 0; }
+        void Next() override {
+            pcursor->Next();
+            TestKey();
+        }
+
+    private:
+        void TestKey() {
+            CAccountID tempAccountID;
+            PledgeDebitRefEntry entry(&tempAccountID, &outpoint);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGEDEBIT || tempAccountID != accountID) {
+                accountID = 0;
+            }
+        }
+
+        const CCoinsViewDB* pcoinviewdb;
+        std::unique_ptr<CDBIterator> pcursor;
+        CAccountID accountID;
+        COutPoint outpoint;
+    };
+
+    return std::make_shared<CCoinsViewDBPledgeDebitCursor>(this, db.NewIterator(), GetBestBlock(), accountID);
+}
+
 size_t CCoinsViewDB::EstimateSize() const
 {
-    return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
+    return db.EstimateSize(DB_COIN, (char)(DB_COIN+1)) +
+        db.EstimateSize(DB_ACCOUNT_COIN, (char)(DB_ACCOUNT_COIN + 1)) +
+        db.EstimateSize(DB_COIN_PLEDGECREDIT, (char)(DB_COIN_PLEDGECREDIT + 1)) +
+        db.EstimateSize(DB_COIN_PLEDGEDEBIT, (char)(DB_COIN_PLEDGEDEBIT + 1));
 }
 
 CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
@@ -452,60 +609,6 @@ bool CBlockTreeDB::ReadReindexing(bool &fReindexing) {
 
 bool CBlockTreeDB::ReadLastBlockFile(int &nFile) {
     return Read(DB_LAST_BLOCK, nFile);
-}
-
-CCoinsViewCursor *CCoinsViewDB::Cursor() const
-{
-    CCoinsViewDBCursor *i = new CCoinsViewDBCursor(const_cast<CDBWrapper&>(db).NewIterator(), GetBestBlock());
-    /* It seems that there are no "const iterators" for LevelDB.  Since we
-       only need read operations on it, use a const-cast to get around
-       that restriction.  */
-    i->pcursor->Seek(DB_COIN);
-    // Cache key of first record
-    if (i->pcursor->Valid()) {
-        CoinEntry entry(&i->keyTmp.second);
-        i->pcursor->GetKey(entry);
-        i->keyTmp.first = entry.key;
-    } else {
-        i->keyTmp.first = 0; // Make sure Valid() and GetKey() return false
-    }
-    return i;
-}
-
-bool CCoinsViewDBCursor::GetKey(COutPoint &key) const
-{
-    // Return cached key
-    if (keyTmp.first == DB_COIN) {
-        key = keyTmp.second;
-        return true;
-    }
-    return false;
-}
-
-bool CCoinsViewDBCursor::GetValue(Coin &coin) const
-{
-    return pcursor->GetValue(coin);
-}
-
-unsigned int CCoinsViewDBCursor::GetValueSize() const
-{
-    return pcursor->GetValueSize();
-}
-
-bool CCoinsViewDBCursor::Valid() const
-{
-    return keyTmp.first == DB_COIN;
-}
-
-void CCoinsViewDBCursor::Next()
-{
-    pcursor->Next();
-    CoinEntry entry(&keyTmp.second);
-    if (!pcursor->Valid() || !pcursor->GetKey(entry)) {
-        keyTmp.first = 0; // Invalidate cached key after last record so that Valid() and GetKey() return false
-    } else {
-        keyTmp.first = entry.key;
-    }
 }
 
 bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo) {

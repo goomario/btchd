@@ -89,7 +89,7 @@ struct CompareValueOnly
 
 std::string COutput::ToString() const
 {
-    return strprintf("COutput(%s, %d, %d) [%s]", tx->GetHash().ToString(), i, nDepth, FormatMoney(tx->tx->vout[i].nValue));
+    return strprintf("COutput(%s, %d, %d) [%s]%s", tx->GetHash().ToString(), i, nDepth, FormatMoney(tx->tx->vout[i].nValue), (fLock ? " lock" : ""));
 }
 
 class CAffectedKeysVisitor : public boost::static_visitor<void> {
@@ -1016,7 +1016,54 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
         }
     }
 
-    //// debug print
+    // Update transaction datacarrier
+    {
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx);
+        if (payload == nullptr) {
+            // Check special tx
+            if (wtx.tx->vin.size() == 1 && wtx.tx->vin[0].prevout.n == 0) {
+                std::map<uint256, CWalletTx>::iterator itWalletTx = mapWallet.find(wtx.tx->vin[0].prevout.hash);
+                if (itWalletTx != mapWallet.end() && itWalletTx->second.mapValue.count("type")) {
+                    CWalletTx &relevantWalletTx = itWalletTx->second;
+                    const std::string &type = relevantWalletTx.mapValue["type"];
+                    if (type == "bindplotter") {
+                        fUpdated = true;
+                        wtx.mapValue["type"] = "unbindplotter";
+                        wtx.mapValue["plotter_id"] = relevantWalletTx.mapValue["plotter_id"];
+                        wtx.mapValue["from"] = relevantWalletTx.mapValue["from"];
+                        wtx.mapValue["relevant_txid"] = relevantWalletTx.tx->GetHash().ToString();
+                    } else if (type == "pledge") {
+                        fUpdated = true;
+                        wtx.mapValue["type"] = "withdrawpledge";
+                        wtx.mapValue["from"] = relevantWalletTx.mapValue["from"];
+                        wtx.mapValue["to"] = relevantWalletTx.mapValue["to"];
+                        wtx.mapValue["relevant_txid"] = relevantWalletTx.tx->GetHash().ToString();
+                    }
+                }
+            }
+        } else if (payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            fUpdated = true;
+            wtx.mapValue["lock"] = "";
+            wtx.mapValue["type"] = "bindplotter";
+            wtx.mapValue["plotter_id"] = std::to_string(payload->bindPlotter.id);
+
+            CTxDestination address;
+            ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
+            wtx.mapValue["from"] = EncodeDestination(address);
+        } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
+            fUpdated = true;
+            wtx.mapValue["lock"] = "";
+            wtx.mapValue["type"] = "pledge";
+            
+            CTxDestination address;
+            ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
+            wtx.mapValue["from"] = EncodeDestination(address);
+
+            wtx.mapValue["to"] = EncodeDestination(CTxDestination(CScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}))));
+        }
+    }
+
+    // Debug print
     LogPrintf("AddToWallet %s  %s%s\n", wtxIn.GetHash().ToString(), (fInsertedNew ? "new" : ""), (fUpdated ? "update" : ""));
 
     // Write to disk
@@ -1097,31 +1144,30 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
 
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
-
-        // Pledge to me
-        bool fRelevantToMe = false;
-        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
-        if (payload != nullptr && payload->type == DATACARRIER_TYPE_PLEDGE) {
-            CScriptID debitScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}));
-            fRelevantToMe = ::IsMine(*this, CTxDestination(debitScriptID)) != 0;
+        bool fRelevantToMe = fExisted || IsMine(tx) || IsFromMe(tx);
+        if (!fRelevantToMe) {
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
+            if (payload == nullptr) {
+                // Withdraw pledge
+                if (tx.vin.size() == 1 && tx.vin[0].prevout.n == 0) {
+                    std::map<uint256, CWalletTx>::iterator itWalletTx = mapWallet.find(tx.vin[0].prevout.hash);
+                    if (itWalletTx != mapWallet.end() && itWalletTx->second.mapValue.count("type")) {
+                        const std::string &type = itWalletTx->second.mapValue["type"];
+                        fRelevantToMe = (type == "bindplotter" || type == "pledge");
+                    }
+                }
+            } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
+                // Pledge to me
+                CScriptID debitScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}));
+                fRelevantToMe = ::IsMine(*this, CTxDestination(debitScriptID)) != 0;
+            }
         }
-
-        if (fExisted || fRelevantToMe || IsMine(tx) || IsFromMe(tx)) {
+        if (fRelevantToMe) {
             CWalletTx wtx(this, ptx);
 
             // Get merkle branch if transaction was found in a block
             if (pIndex != nullptr)
                 wtx.SetMerkleBranch(pIndex, posInBlock);
-
-            // Process datacarrier
-            if (payload != nullptr && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                wtx.mapValue["lock"] = "bindplotter";
-            } else if (payload != nullptr && payload->type == DATACARRIER_TYPE_PLEDGE) {
-                wtx.mapValue["lock"] = "pledge";
-
-                CTxDestination debitDest(CScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH})));
-                wtx.mapValue["to"] = EncodeDestination(debitDest);
-            }
 
             return AddToWallet(wtx, false);
         }
@@ -1932,11 +1978,12 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache) const
     if (fUseCache && fAvailableCreditCached)
         return nAvailableCreditCached;
 
+    bool fLock = mapValue.count("lock") != 0;
     CAmount nCredit = 0;
     uint256 hashTx = GetHash();
     for (unsigned int i = 0; i < tx->vout.size(); i++)
     {
-        if (!pwallet->IsSpent(hashTx, i))
+        if (!pwallet->IsSpent(hashTx, i) && (i != 0 || !fLock))
         {
             const CTxOut &txout = tx->vout[i];
             nCredit += pwallet->GetCredit(txout, ISMINE_SPENDABLE);
@@ -1948,6 +1995,41 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache) const
     nAvailableCreditCached = nCredit;
     fAvailableCreditCached = true;
     return nCredit;
+}
+
+CAmount CWalletTx::GetLockedCredit(bool fUseCache) const
+{
+    if (pwallet == nullptr || IsCoinBase())
+        return 0;
+
+    if (fUseCache && fLockedCreditCached)
+        return nLockedCreditCached;
+
+    if (mapValue.count("lock") && !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_SPENDABLE))
+        nLockedCreditCached = tx->vout[0].nValue;
+    else
+        nLockedCreditCached = 0;
+    fLockedCreditCached = true;
+    return nLockedCreditCached;
+}
+
+CAmount CWalletTx::GetPledgeDebit(bool fUseCache) const
+{
+    if (pwallet == nullptr || IsCoinBase())
+        return 0;
+
+    if (fUseCache && fPledgeDebitCached)
+        return nPledgeDebitCached;
+
+    auto itType = mapValue.find("type");
+    auto itTo = mapValue.find("to");
+    if (itType != mapValue.end() && itTo != mapValue.end() && itType->second == "pledge" &&
+            !pwallet->IsSpent(GetHash(), 0) && (::IsMine(*pwallet, DecodeDestination(itTo->second))&ISMINE_SPENDABLE))
+        nPledgeDebitCached = tx->vout[0].nValue;
+    else
+        nPledgeDebitCached = 0;
+    fPledgeDebitCached = true;
+    return nPledgeDebitCached;
 }
 
 CAmount CWalletTx::GetImmatureWatchOnlyCredit(const bool fUseCache) const
@@ -1976,10 +2058,11 @@ CAmount CWalletTx::GetAvailableWatchOnlyCredit(const bool fUseCache) const
     if (fUseCache && fAvailableWatchCreditCached)
         return nAvailableWatchCreditCached;
 
+    bool fLock = mapValue.count("lock") != 0;
     CAmount nCredit = 0;
     for (unsigned int i = 0; i < tx->vout.size(); i++)
     {
-        if (!pwallet->IsSpent(GetHash(), i))
+        if (!pwallet->IsSpent(GetHash(), i) && (i != 0 || !fLock))
         {
             const CTxOut &txout = tx->vout[i];
             nCredit += pwallet->GetCredit(txout, ISMINE_WATCH_ONLY);
@@ -1991,6 +2074,41 @@ CAmount CWalletTx::GetAvailableWatchOnlyCredit(const bool fUseCache) const
     nAvailableWatchCreditCached = nCredit;
     fAvailableWatchCreditCached = true;
     return nCredit;
+}
+
+CAmount CWalletTx::GetLockedWatchOnlyCredit(const bool fUseCache) const
+{
+    if (pwallet == nullptr || IsCoinBase())
+        return 0;
+
+    if (fUseCache && fLockedWatchCreditCached)
+        return nLockedWatchCreditCached;
+
+    if (mapValue.count("lock") && !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_WATCH_ONLY))
+        nLockedWatchCreditCached = tx->vout[0].nValue;
+    else
+        nLockedWatchCreditCached = 0;
+    fLockedWatchCreditCached = true;
+    return nLockedWatchCreditCached;
+}
+
+CAmount CWalletTx::GetPledgeWatchOnlyDebit(bool fUseCache) const
+{
+    if (pwallet == nullptr || IsCoinBase())
+        return 0;
+
+    if (fUseCache && fPledgeWatchDebitCached)
+        return nPledgeWatchDebitCached;
+
+    auto itType = mapValue.find("type");
+    auto itTo = mapValue.find("to");
+    if (itType != mapValue.end() && itTo != mapValue.end() && itType->second == "pledge" &&
+            !pwallet->IsSpent(GetHash(), 0) && (::IsMine(*pwallet, DecodeDestination(itTo->second))&ISMINE_WATCH_ONLY))
+        nPledgeWatchDebitCached = tx->vout[0].nValue;
+    else
+        nPledgeWatchDebitCached = 0;
+    fPledgeWatchDebitCached = true;
+    return nPledgeWatchDebitCached;
 }
 
 CAmount CWalletTx::GetChange() const
@@ -2151,6 +2269,38 @@ CAmount CWallet::GetImmatureBalance() const
     return nTotal;
 }
 
+CAmount CWallet::GetLockedBalance() const
+{
+    CAmount nTotal = 0;
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const CWalletTx* pcoin = &entry.second;
+            if (pcoin->GetDepthInMainChain() >= 0 || pcoin->InMempool())
+                nTotal += pcoin->GetLockedCredit();
+        }
+    }
+
+    return nTotal;
+}
+
+CAmount CWallet::GetPledgeDebitBalance() const
+{
+    CAmount nTotal = 0;
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const CWalletTx* pcoin = &entry.second;
+            if (pcoin->IsTrusted())
+                nTotal += pcoin->GetPledgeDebit();
+        }
+    }
+
+    return nTotal;
+}
+
 CAmount CWallet::GetWatchOnlyBalance() const
 {
     CAmount nTotal = 0;
@@ -2193,6 +2343,37 @@ CAmount CWallet::GetImmatureWatchOnlyBalance() const
             nTotal += pcoin->GetImmatureWatchOnlyCredit();
         }
     }
+    return nTotal;
+}
+
+CAmount CWallet::GetLockedWatchOnlyBalance() const
+{
+    CAmount nTotal = 0;
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const CWalletTx* pcoin = &entry.second;
+            if (pcoin->GetDepthInMainChain() >= 0 || pcoin->InMempool())
+                nTotal += pcoin->GetLockedWatchOnlyCredit();
+        }
+    }
+    return nTotal;
+}
+
+CAmount CWallet::GetPledgeDebitWatchOnlyBalance() const
+{
+    CAmount nTotal = 0;
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const CWalletTx* pcoin = &entry.second;
+            if (pcoin->IsTrusted())
+                nTotal += pcoin->GetPledgeWatchOnlyDebit();
+        }
+    }
+
     return nTotal;
 }
 
@@ -2245,7 +2426,7 @@ CAmount CWallet::GetAvailableBalance(const CCoinControl* coinControl) const
 
     CAmount balance = 0;
     std::vector<COutput> vCoins;
-    AvailableCoins(vCoins, true, coinControl);
+    AvailableCoins(vCoins, true, false, coinControl);
     for (const COutput& out : vCoins) {
         if (out.fSpendable) {
             balance += out.tx->tx->vout[out.i].nValue;
@@ -2254,7 +2435,7 @@ CAmount CWallet::GetAvailableBalance(const CCoinControl* coinControl) const
     return balance;
 }
 
-void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const CCoinControl *coinControl, const CAmount &nMinimumAmount, const CAmount &nMaximumAmount, const CAmount &nMinimumSumAmount, const uint64_t nMaximumCount, const int nMinDepth, const int nMaxDepth) const
+void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, bool fIncludeLock, const CCoinControl *coinControl, const CAmount &nMinimumAmount, const CAmount &nMaximumAmount, const CAmount &nMinimumSumAmount, const uint64_t nMaximumCount, const int nMinDepth, const int nMaxDepth) const
 {
     vCoins.clear();
 
@@ -2318,11 +2499,6 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
                 safeTx = false;
             }
 
-            // Lock coin in some special transaction
-            if (pcoin->mapValue.count("lock")) {
-                safeTx = false;
-            }
-
             if (fOnlySafe && !safeTx) {
                 continue;
             }
@@ -2330,8 +2506,13 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
             if (nDepth < nMinDepth || nDepth > nMaxDepth)
                 continue;
 
+            bool fLock = pcoin->mapValue.count("lock") != 0;
             for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
                 if (pcoin->tx->vout[i].nValue < nMinimumAmount || pcoin->tx->vout[i].nValue > nMaximumAmount)
+                    continue;
+
+                // Lock coin cannot select on safe model
+                if (!fIncludeLock && i == 0 && fLock)
                     continue;
 
                 if (coinControl) {
@@ -2367,7 +2548,7 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
                 bool fSpendableIn = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (coinControl && coinControl->fAllowWatchOnly && (mine & ISMINE_WATCH_SOLVABLE) != ISMINE_NO);
                 bool fSolvableIn = (mine & (ISMINE_SPENDABLE | ISMINE_WATCH_SOLVABLE)) != ISMINE_NO;
 
-                vCoins.push_back(COutput(pcoin, i, nDepth, fSpendableIn, fSolvableIn, safeTx));
+                vCoins.push_back(COutput(pcoin, i, nDepth, fSpendableIn, fSolvableIn, safeTx, (i == 0 && fLock)));
 
                 // Checks the sum amount of all UTXO's.
                 if (nMinimumSumAmount != MAX_MONEY) {
@@ -2424,7 +2605,8 @@ std::map<CTxDestination, std::vector<COutput>> CWallet::ListCoins() const
                 CTxDestination address;
                 if (ExtractDestination(FindNonChangeParentOutput(*it->second.tx, output.n).scriptPubKey, address)) {
                     result[address].emplace_back(
-                        &it->second, output.n, depth, true /* spendable */, true /* solvable */, false /* safe */);
+                        &it->second, output.n, depth, true /* spendable */, true /* solvable */, false /* safe */,
+                        (output.n == 0 && it->second.mapValue.count("lock")) /* lock */);
                 }
             }
         }
@@ -2848,7 +3030,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
         LOCK2(cs_main, cs_wallet);
         {
             std::vector<COutput> vAvailableCoins;
-            AvailableCoins(vAvailableCoins, true, &coin_control);
+            AvailableCoins(vAvailableCoins, true, false, &coin_control);
 
             // Create change script that will be used if we need change
             // TODO: pass in scriptChange instead of reservekey so

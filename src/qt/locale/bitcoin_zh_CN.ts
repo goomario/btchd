@@ -1335,6 +1335,22 @@
         <translation>尚未成熟的挖矿收入余额</translation>
     </message>
     <message>
+        <source>Locked:</source>
+        <translation>锁定的余额：</translation>
+    </message>
+    <message>
+        <source>Total of balance that have to be locked (for bind plotter and pledge credit), and do not yet count toward the spendable balance</source>
+        <translation>因绑定算力和抵押租借而被锁定的总额，未计入当前余额</translation>
+    </message>
+    <message>
+        <source>Pledge debit:</source>
+        <translation>借到的抵押额：</translation>
+    </message>
+    <message>
+        <source>Total of balance that have to be pledge debit, but unspendable</source>
+        <translation>借到的抵押总额，你不能花费他</translation>
+    </message>
+    <message>
         <source>Balances</source>
         <translation>余额</translation>
     </message>
@@ -1369,6 +1385,14 @@
     <message>
         <source>Current total balance in watch-only addresses</source>
         <translation>观察地址(watch-only address)中的当前总余额</translation>
+    </message>
+    <message>
+        <source>Locked (for bind plotter and pledge credit) balance to watch-only addresses</source>
+        <translation>观察地址(watch-only address)的因绑定算力和抵押租借而锁定的总额</translation>
+    </message>
+    <message>
+        <source>Pledge debit to watch-only addresses</source>
+        <translation>观察地址(watch-only address)借到的抵押总额</translation>
     </message>
 </context>
 <context>
@@ -2837,6 +2861,22 @@
         <source>false</source>
         <translation>否</translation>
     </message>
+    <message>
+        <source>Plotter ID</source>
+        <translation>算力ID</translation>
+    </message>
+    <message>
+        <source>Unbinded Plotter ID</source>
+        <translation>已解绑ID</translation>
+    </message>
+    <message>
+        <source>Withdrawn</source>
+        <translation>已赎回</translation>
+    </message>
+    <message>
+        <source>Relevant transaction ID</source>
+        <translation>关联的交易ID</translation>
+    </message>
 </context>
 <context>
     <name>TransactionDescDialog</name>
@@ -3013,6 +3053,38 @@
         <translation>挖矿所得</translation>
     </message>
     <message>
+        <source>Binded plotter</source>
+        <translation>绑定算力</translation>
+    </message>
+    <message>
+        <source>Unbinded plotter</source>
+        <translation>解绑算力</translation>
+    </message>
+    <message>
+        <source>This bind plotter has inactived</source>
+        <translation>此绑定已无效</translation>
+    </message>
+    <message>
+        <source>Sent pledge to</source>
+        <translation>借出抵押</translation>
+    </message>
+    <message>
+        <source>Received pledge with</source>
+        <translation>借入抵押</translation>
+    </message>
+    <message>
+        <source>This pledge has withdraw</source>
+        <translation>此抵押已被赎回</translation>
+    </message>
+    <message>
+        <source>Self pledge</source>
+        <translation>抵押给自己</translation>
+    </message>
+    <message>
+        <source>Withdrawn pledge</source>
+        <translation>赎回抵押</translation>
+    </message>
+    <message>
         <source>Other</source>
         <translation>其它</translation>
     </message>
@@ -3031,6 +3103,14 @@
     <message>
         <source>Increase transaction fee</source>
         <translation>增加交易费</translation>
+    </message>
+    <message>
+        <source>Unbind plotter</source>
+        <translation>解绑算力</translation>
+    </message>
+    <message>
+        <source>Withdraw pledge</source>
+        <translation>赎回抵押</translation>
     </message>
     <message>
         <source>Copy address</source>
@@ -3180,6 +3260,54 @@
     <message>
         <source>Could not commit transaction</source>
         <translation>无法提交交易</translation>
+    </message>
+    <message>
+        <source>Unbind plotter</source>
+        <translation>解绑算力</translation>
+    </message>
+    <message>
+        <source>Withdraw pledge</source>
+        <translation>赎回抵押</translation>
+    </message>
+    <message>
+        <source>Unbind plotter error</source>
+        <translation>解绑算力失败</translation>
+    </message>
+    <message>
+        <source>Withdraw pledge error</source>
+        <translation>赎回抵押失败</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to unbind plotter?</source>
+        <translation>你是否确认解绑算力?</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to withdraw pledge?</source>
+        <translation>你是否确认赎回抵押?</translation>
+    </message>
+    <message>
+        <source>Transaction fee:</source>
+        <translation>交易费：</translation>
+    </message>
+    <message>
+        <source>Binded address:</source>
+        <translation>绑定的地址：</translation>
+    </message>
+    <message>
+        <source>Plotter ID:</source>
+        <translation>算力ID：</translation>
+    </message>
+    <message>
+        <source>From address:</source>
+        <translation>来自：</translation>
+    </message>
+    <message>
+        <source>To address:</source>
+        <translation>到：</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>总额：</translation>
     </message>
 </context>
 <context>

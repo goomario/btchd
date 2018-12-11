@@ -200,9 +200,16 @@ CAccountID GetAccountIDByAddress(const std::string &address);
 
 /** opreturn protocol */
 enum DatacarrierType : unsigned int {
-    DATACARRIER_TYPE_BINDPLOTTER = 0x00000100,
-    DATACARRIER_TYPE_PLEDGE = 0x00000200,
-    DATACARRIER_TYPE_TEXT = 0x00000300,
+    // Range
+    DATACARRIER_TYPE_MIN = 0x0000000f,
+    DATACARRIER_TYPE_MAX = 0x10000000,
+
+    // Type of consensus relevant
+    DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
+    DATACARRIER_TYPE_PLEDGE      = 0x00000011,
+
+    // Others
+    DATACARRIER_TYPE_TEXT        = 0x00000012,
 };
 
 /**
@@ -224,12 +231,12 @@ typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
 
 /** The minimal pledge rent amount */
-static const CAmount PROTOCOL_PLEDGERENT_MIN_AMOUNT = 1 * COIN;
+static const CAmount PROTOCOL_PLEDGERENT_AMOUNT_MIN = 1 * COIN;
 
 /** Generate a bind plotter script. */
 CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId);
 
-/** Generate a rent script. */
+/** Generate a pledge script. */
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);
 
 /** Parse a datacarrier transaction. */

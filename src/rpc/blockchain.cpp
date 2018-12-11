@@ -97,7 +97,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
-        if (blockindex->nHeight > Params().GetConsensus().BtchdFundPreMingingHeight)
+        if (blockindex->nHeight > Params().GetConsensus().BHDIP001StartMingingHeight)
             result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
@@ -149,7 +149,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
-        if (blockindex->nHeight > Params().GetConsensus().BtchdFundPreMingingHeight)
+        if (blockindex->nHeight > Params().GetConsensus().BHDIP001StartMingingHeight)
             result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
@@ -842,7 +842,7 @@ static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash,
 //! Calculate statistics about the unspent transaction output set
 static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
 {
-    std::unique_ptr<CCoinsViewCursor> pcursor(view->Cursor());
+    CCoinsViewCursorRef pcursor = view->Cursor();
     assert(pcursor);
 
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
@@ -854,7 +854,7 @@ static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
     ss << stats.hashBlock;
     uint256 prevkey;
     std::map<uint32_t, Coin> outputs;
-    while (pcursor->Valid()) {
+    for (; pcursor->Valid(); pcursor->Next()) {
         boost::this_thread::interruption_point();
         COutPoint key;
         Coin coin;
@@ -868,7 +868,6 @@ static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
         } else {
             return error("%s: unable to read value", __func__);
         }
-        pcursor->Next();
     }
     if (!outputs.empty()) {
         ApplyStats(stats, ss, prevkey, outputs);
@@ -1642,7 +1641,7 @@ UniValue createcheckpoint(const JSONRPCRequest& request)
 
     std::string strCheckpoints;
     char buffer[128];
-    for (int nHeight = 200 * ((paramConsensus.BtchdFundPreMingingHeight + 1) / 200); nHeight < chainActive.Height(); nHeight += 200) {
+    for (int nHeight = 200 * ((paramConsensus.BHDIP001StartMingingHeight + 1) / 200); nHeight < chainActive.Height(); nHeight += 200) {
         sprintf(buffer, "{ %6d, uint256S(\"0x%s\") },\n", nHeight, chainActive[nHeight]->phashBlock->ToString().c_str());
         strCheckpoints += buffer;
     }

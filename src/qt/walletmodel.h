@@ -134,10 +134,14 @@ public:
     CAmount getBalance(const CCoinControl *coinControl = nullptr) const;
     CAmount getUnconfirmedBalance() const;
     CAmount getImmatureBalance() const;
+    CAmount getLockedBalance() const;
+    CAmount getPledgeDebitBalance() const;
     bool haveWatchOnly() const;
     CAmount getWatchBalance() const;
     CAmount getWatchUnconfirmedBalance() const;
     CAmount getWatchImmatureBalance() const;
+    CAmount getWatchLockedBalance() const;
+    CAmount getWatchPledgeDebitBalance() const;
     EncryptionStatus getEncryptionStatus() const;
 
     // Get wallet
@@ -215,6 +219,9 @@ public:
     bool transactionCanBeBumped(uint256 hash) const;
     bool bumpFee(uint256 hash);
 
+    bool transactionCanBeUnlock(uint256 hash, DatacarrierType type) const;
+    bool unlockTransaction(uint256 hash);
+
     static bool isWalletEnabled();
 
     bool hdEnabled() const;
@@ -240,9 +247,13 @@ private:
     CAmount cachedBalance;
     CAmount cachedUnconfirmedBalance;
     CAmount cachedImmatureBalance;
+    CAmount cachedLockedBalance;
+    CAmount cachedPledgeDebitBalance;
     CAmount cachedWatchOnlyBalance;
     CAmount cachedWatchUnconfBalance;
     CAmount cachedWatchImmatureBalance;
+    CAmount cachedWatchLockedBalance;
+    CAmount cachedWatchPledgeDebitBalance;
     EncryptionStatus cachedEncryptionStatus;
     int cachedNumBlocks;
 
@@ -255,7 +266,9 @@ private:
 Q_SIGNALS:
     // Signal that balance in wallet changed
     void balanceChanged(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                        const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance);
+                        const CAmount& lockedBalance, const CAmount& pledgeDebitBalance,
+                        const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
+                        const CAmount& watchLockedBalance, const CAmount& walletPledgeDebitBalance);
 
     // Encryption status of wallet changed
     void encryptionStatusChanged(int status);

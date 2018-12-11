@@ -360,7 +360,7 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache)
 {
     // Fund
-    if (prevBlockIndex.nHeight + 1 <= params.BtchdFundPreMingingHeight)
+    if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
         return 0;
 
     // Regtest
@@ -385,12 +385,12 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
 {
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight <= params.BtchdFundPreMingingHeight) {
+    if (nHeight <= params.BHDIP001StartMingingHeight) {
         // genesis block & god mode block
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BtchdFundPreMingingHeight + 4) {
+    } else if (nHeight < params.BHDIP001StartMingingHeight + 4) {
         return INITIAL_BASE_TARGET;
-    } else if (nHeight < params.BtchdFundPreMingingHeight + 2700) {
+    } else if (nHeight < params.BHDIP001StartMingingHeight + 2700) {
         // [N-1,N-2,N-3,N-4]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
@@ -425,7 +425,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
         return newBaseTarget;
     } else {
-        const int N = nHeight < params.BHDIP1010Height ? 25 : (24 * 3600 / params.nPowTargetSpacing);
+        const int N = nHeight < params.BHDIP006Height ? 25 : (24 * 3600 / params.nPowTargetSpacing);
         // [X-1,X-2,...,X-N]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
