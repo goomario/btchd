@@ -68,12 +68,17 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
         ui->sendButton->setIcon(_platformStyle->SingleColorIcon(":/icons/send"));
     }
 
-    GUIUtil::setupAddressWidget(ui->lineEditCoinControlChange, this);
-
+    // Operate method
+    ui->operateMethodComboBox->addItem(tr("Pay to"), (int)PayOperateMethod::Pay);
+    ui->operateMethodComboBox->addItem(tr("Send pledge to"), (int)PayOperateMethod::SendPledge);
+    ui->operateMethodComboBox->addItem(tr("Bind plotter ID to"), (int)PayOperateMethod::BindPlotter);
     addEntry();
+
+    GUIUtil::setupAddressWidget(ui->lineEditCoinControlChange, this);
 
     connect(ui->addButton, SIGNAL(clicked()), this, SLOT(addEntry()));
     connect(ui->clearButton, SIGNAL(clicked()), this, SLOT(clear()));
+    connect(ui->operateMethodComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onOperateMethodComboBoxChanged(int)));
 
     // Coin Control
     connect(ui->pushButtonCoinControl, SIGNAL(clicked()), this, SLOT(coinControlButtonClicked()));
@@ -150,11 +155,11 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         }
 
         setBalance(_model->getBalance(), _model->getUnconfirmedBalance(), _model->getImmatureBalance(),
-                   _model->getLockedBalance(), _model->getPledgeDebitBalance(),
+                   _model->getPledgeCreditBalance(), _model->getPledgeDebitBalance(), _model->getLockedBalance(), 
                    _model->getWatchBalance(), _model->getWatchUnconfirmedBalance(), _model->getWatchImmatureBalance(),
-                   _model->getWatchLockedBalance(), _model->getWatchPledgeDebitBalance());
-        connect(_model, SIGNAL(balanceChanged(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)),
-            this, SLOT(setBalance(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)));
+                   _model->getWatchPledgeCreditBalance(), _model->getWatchPledgeDebitBalance(), _model->getWatchLockedBalance());
+        connect(_model, SIGNAL(balanceChanged(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)),
+            this, SLOT(setBalance(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)));
         connect(_model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
         updateDisplayUnit();
 
@@ -199,6 +204,8 @@ void SendCoinsDialog::setModel(WalletModel *_model)
             ui->confTargetSelector->setCurrentIndex(getIndexForConfTarget(model->getDefaultConfirmTarget()));
         else
             ui->confTargetSelector->setCurrentIndex(getIndexForConfTarget(settings.value("nConfTarget").toInt()));
+
+        ui->operateMethodComboBox->setCurrentIndex(0);
     }
 }
 
@@ -214,11 +221,47 @@ SendCoinsDialog::~SendCoinsDialog()
     delete ui;
 }
 
+void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
+{
+    if(!model || !model->getOptionsModel())
+        return;
+
+    if (index >= 0) {
+        int opMethodValue = ui->operateMethodComboBox->itemData(index).toInt();
+        switch ((PayOperateMethod)opMethodValue)
+        {
+        case PayOperateMethod::SendPledge:
+            ui->clearButton->setVisible(false);
+            ui->addButton->setVisible(false);
+            ui->frameCoinControl->setVisible(false);
+            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+            break;
+        case PayOperateMethod::BindPlotter:
+            ui->clearButton->setVisible(false);
+            ui->addButton->setVisible(false);
+            ui->frameCoinControl->setVisible(false);
+            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+            break;
+        default: // Normal pay
+            ui->clearButton->setVisible(true);
+            ui->addButton->setVisible(true);
+            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_ANY;
+            ui->frameCoinControl->setVisible(model->getOptionsModel()->getCoinControlFeatures());
+            break;
+        }
+
+        clear();
+        setBalance(model->getBalance(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+}
+
 void SendCoinsDialog::on_sendButton_clicked()
 {
     if(!model || !model->getOptionsModel())
         return;
 
+    PayOperateMethod operateMethod = getPayOperateMethod();
     QList<SendCoinsRecipient> recipients;
     bool valid = true;
 
@@ -238,7 +281,7 @@ void SendCoinsDialog::on_sendButton_clicked()
         }
     }
 
-    if(!valid || recipients.isEmpty())
+    if(!valid || recipients.isEmpty() || (operateMethod != PayOperateMethod::Pay && recipients.size() != 1))
     {
         return;
     }
@@ -258,12 +301,20 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     // Always use a CCoinControl instance, use the CoinControlDialog instance if CoinControl has been enabled
     CCoinControl ctrl;
-    if (model->getOptionsModel()->getCoinControlFeatures())
-        ctrl = *CoinControlDialog::coinControl();
+    switch (operateMethod)
+    {
+    case PayOperateMethod::SendPledge:
+        ctrl.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+        break;
+    default:
+        if (model->getOptionsModel()->getCoinControlFeatures())
+            ctrl = *CoinControlDialog::coinControl();
+        break;
+    }
 
     updateCoinControlState(ctrl);
 
-    prepareStatus = model->prepareTransaction(currentTransaction, ctrl);
+    prepareStatus = model->prepareTransaction(currentTransaction, ctrl, operateMethod);
 
     // process prepareStatus and on error generate message shown to user
     processSendCoinsReturn(prepareStatus,
@@ -400,7 +451,7 @@ void SendCoinsDialog::accept()
 
 SendCoinsEntry *SendCoinsDialog::addEntry()
 {
-    SendCoinsEntry *entry = new SendCoinsEntry(platformStyle, this);
+    SendCoinsEntry *entry = new SendCoinsEntry(getPayOperateMethod(), platformStyle, this);
     entry->setModel(model);
     ui->entries->addWidget(entry);
     connect(entry, SIGNAL(removeEntry(SendCoinsEntry*)), this, SLOT(removeEntry(SendCoinsEntry*)));
@@ -509,29 +560,35 @@ bool SendCoinsDialog::handlePaymentRequest(const SendCoinsRecipient &rv)
 }
 
 void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                                 const CAmount& lockedBalance, const CAmount& pledgeDebitBalance,
-                                 const CAmount& watchBalance, const CAmount& watchUnconfirmedBalance, const CAmount& watchImmatureBalance,
-                                 const CAmount& watchLockedBalance, const CAmount& watchPledgeDebitBalance)
+                                 const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                                 const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
+                                 const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
 {
     Q_UNUSED(unconfirmedBalance);
     Q_UNUSED(immatureBalance);
-    Q_UNUSED(lockedBalance);
+    Q_UNUSED(pledgeCreditBalance);
     Q_UNUSED(pledgeDebitBalance);
+    Q_UNUSED(lockedBalance);
     Q_UNUSED(watchBalance);
-    Q_UNUSED(watchUnconfirmedBalance);
+    Q_UNUSED(watchUnconfBalance);
     Q_UNUSED(watchImmatureBalance);
-    Q_UNUSED(watchLockedBalance);
+    Q_UNUSED(watchPledgeCreditBalance);
     Q_UNUSED(watchPledgeDebitBalance);
+    Q_UNUSED(watchLockedBalance);
 
     if(model && model->getOptionsModel())
     {
-        ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balance));
+        if (getPayOperateMethod() != PayOperateMethod::Pay) {
+            ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), model->getBalance(CoinControlDialog::coinControl())));
+        } else {
+            ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balance));
+        }
     }
 }
 
 void SendCoinsDialog::updateDisplayUnit()
 {
-    setBalance(model->getBalance(), 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    setBalance(model->getBalance(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     ui->customFee->setDisplayUnit(model->getOptionsModel()->getDisplayUnit());
     updateMinFeeLabel();
     updateSmartFeeLabel();
@@ -713,6 +770,11 @@ void SendCoinsDialog::updateSmartFeeLabel()
     }
 
     updateFeeMinimizedLabel();
+}
+
+PayOperateMethod SendCoinsDialog::getPayOperateMethod()
+{
+    return (PayOperateMethod) ui->operateMethodComboBox->itemData(ui->operateMethodComboBox->currentIndex()).toInt();
 }
 
 // Coin Control: copy label "Quantity" to clipboard

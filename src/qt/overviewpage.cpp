@@ -116,10 +116,14 @@ OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) 
     currentBalance(-1),
     currentUnconfirmedBalance(-1),
     currentImmatureBalance(-1),
+    currentPledgeCreditBalance(-1),
+    currentPledgeDebitBalance(-1),
     currentLockedBalance(-1),
-    currentWatchOnlyBalance(-1),
+    currentWatchBalance(-1),
     currentWatchUnconfBalance(-1),
     currentWatchImmatureBalance(-1),
+    currentWatchPledgeCreditBalance(-1),
+    currentWatchPledgeDebitBalance(-1),
     currentWatchLockedBalance(-1),
     txdelegate(new TxViewDelegate(platformStyle, this))
 {
@@ -162,53 +166,62 @@ OverviewPage::~OverviewPage()
 }
 
 void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-    const CAmount& lockedBalance, const CAmount& plegdeDebitBalance,
-    const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-    const CAmount& watchLockedBalance, const CAmount& watchPledgeDebitBalance)
+                              const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                              const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
+                              const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
 {
     int unit = walletModel->getOptionsModel()->getDisplayUnit();
     currentBalance = balance;
     currentUnconfirmedBalance = unconfirmedBalance;
     currentImmatureBalance = immatureBalance;
+    currentPledgeCreditBalance = pledgeCreditBalance;
+    currentPledgeDebitBalance = pledgeDebitBalance;
     currentLockedBalance = lockedBalance;
-    currentPledgeDebitBalance = plegdeDebitBalance;
-    currentWatchOnlyBalance = watchOnlyBalance;
+    currentWatchBalance = watchBalance;
     currentWatchUnconfBalance = watchUnconfBalance;
     currentWatchImmatureBalance = watchImmatureBalance;
-    currentWatchLockedBalance = watchLockedBalance;
+    currentWatchPledgeCreditBalance = watchPledgeCreditBalance;
     currentWatchPledgeDebitBalance = watchPledgeDebitBalance;
+    currentWatchLockedBalance = watchLockedBalance;
     ui->labelBalance->setText(BitcoinUnits::formatWithUnit(unit, balance, false, BitcoinUnits::separatorAlways));
     ui->labelUnconfirmed->setText(BitcoinUnits::formatWithUnit(unit, unconfirmedBalance, false, BitcoinUnits::separatorAlways));
     ui->labelImmature->setText(BitcoinUnits::formatWithUnit(unit, immatureBalance, false, BitcoinUnits::separatorAlways));
     ui->labelLocked->setText(BitcoinUnits::formatWithUnit(unit, lockedBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelPledgeDebit->setText(BitcoinUnits::formatWithUnit(unit, plegdeDebitBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelTotal->setText(BitcoinUnits::formatWithUnit(unit, balance + unconfirmedBalance + immatureBalance + plegdeDebitBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelWatchAvailable->setText(BitcoinUnits::formatWithUnit(unit, watchOnlyBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelPledgeCredit->setText(BitcoinUnits::formatWithUnit(unit, pledgeCreditBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelPledgeDebit->setText(BitcoinUnits::formatWithUnit(unit, pledgeDebitBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelTotal->setText(BitcoinUnits::formatWithUnit(unit, balance + unconfirmedBalance + immatureBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelWatchAvailable->setText(BitcoinUnits::formatWithUnit(unit, watchBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchPending->setText(BitcoinUnits::formatWithUnit(unit, watchUnconfBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchImmature->setText(BitcoinUnits::formatWithUnit(unit, watchImmatureBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelWatchLocked->setText(BitcoinUnits::formatWithUnit(unit, watchLockedBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelWatchPledgeCredit->setText(BitcoinUnits::formatWithUnit(unit, watchPledgeCreditBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchPledgeDebit->setText(BitcoinUnits::formatWithUnit(unit, watchPledgeDebitBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelWatchTotal->setText(BitcoinUnits::formatWithUnit(unit, watchOnlyBalance + watchUnconfBalance + watchImmatureBalance + watchPledgeDebitBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelWatchLocked->setText(BitcoinUnits::formatWithUnit(unit, watchLockedBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelWatchTotal->setText(BitcoinUnits::formatWithUnit(unit, watchBalance + watchUnconfBalance + watchImmatureBalance, false, BitcoinUnits::separatorAlways));
 
     // only show immature/locked (newly mined) balance if it's non-zero, so as not to complicate things
     // for the non-mining users
     bool showImmature = immatureBalance != 0;
     bool showWatchOnlyImmature = watchImmatureBalance != 0;
+    bool showPledgeCredit = pledgeCreditBalance != 0;
+    bool showWatchOnlyPledgeCredit = watchPledgeCreditBalance != 0;
+    bool showPledgeDebit = pledgeDebitBalance != 0;
+    bool showWatchOnlyPledgeDebit = watchPledgeDebitBalance != 0;
     bool showLocked = lockedBalance != 0;
     bool showWatchOnlyLocked = watchLockedBalance != 0;
-    bool showPledgeDebit = plegdeDebitBalance != 0;
-    bool showWatchOnlyPledgeDebit = watchPledgeDebitBalance != 0;
 
     // for symmetry reasons also show immature label when the watch-only one is shown
     ui->labelImmature->setVisible(showImmature || showWatchOnlyImmature);
     ui->labelImmatureText->setVisible(showImmature || showWatchOnlyImmature);
-    ui->labelLocked->setVisible(showLocked || showWatchOnlyLocked);
-    ui->labelLockedText->setVisible(showLocked || showWatchOnlyLocked);
+    ui->labelPledgeCredit->setVisible(showPledgeCredit || showWatchOnlyPledgeCredit);
+    ui->labelPledgeCreditText->setVisible(showPledgeCredit || showWatchOnlyPledgeCredit);
     ui->labelPledgeDebit->setVisible(showPledgeDebit || showWatchOnlyPledgeDebit);
     ui->labelPledgeDebitText->setVisible(showPledgeDebit || showWatchOnlyPledgeDebit);
+    ui->labelLocked->setVisible(showLocked || showWatchOnlyLocked);
+    ui->labelLockedText->setVisible(showLocked || showWatchOnlyLocked);
     ui->labelWatchImmature->setVisible(showWatchOnlyImmature); // show watch-only immature balance
+    ui->labelWatchPledgeCredit->setVisible(showWatchOnlyPledgeCredit); // show watch-only pledge credit balance
+    ui->labelWatchPledgeDebit->setVisible(showWatchOnlyPledgeDebit); // show watch-only pledge debit balance
     ui->labelWatchLocked->setVisible(showWatchOnlyLocked); // show watch-only locked balance
-    ui->labelWatchPledgeDebit->setVisible(showWatchOnlyPledgeDebit); // show watch-only locked balance
 }
 
 // show/hide watch-only labels
@@ -224,8 +237,9 @@ void OverviewPage::updateWatchOnlyLabels(bool showWatchOnly)
     if (!showWatchOnly)
     {
         ui->labelWatchImmature->hide();
-        ui->labelWatchLocked->hide();
+        ui->labelWatchPledgeCredit->hide();
         ui->labelWatchPledgeDebit->hide();
+        ui->labelWatchLocked->hide();
     }
 }
 
@@ -259,11 +273,11 @@ void OverviewPage::setWalletModel(WalletModel *model)
 
         // Keep up to date with wallet
         setBalance(model->getBalance(), model->getUnconfirmedBalance(), model->getImmatureBalance(),
-                   model->getLockedBalance(), model->getPledgeDebitBalance(),
+                   model->getPledgeCreditBalance(), model->getPledgeDebitBalance(), model->getLockedBalance(),
                    model->getWatchBalance(), model->getWatchUnconfirmedBalance(), model->getWatchImmatureBalance(),
-                   model->getWatchLockedBalance(), model->getWatchPledgeDebitBalance());
-        connect(model, SIGNAL(balanceChanged(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)),
-            this, SLOT(setBalance(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)));
+                   model->getWatchPledgeCreditBalance(), model->getWatchPledgeDebitBalance(), model->getWatchLockedBalance());
+        connect(model, SIGNAL(balanceChanged(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)),
+            this, SLOT(setBalance(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)));
 
         connect(model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
 
@@ -281,9 +295,9 @@ void OverviewPage::updateDisplayUnit()
     {
         if(currentBalance != -1)
             setBalance(currentBalance, currentUnconfirmedBalance, currentImmatureBalance,
-                       currentLockedBalance, currentPledgeDebitBalance,
-                       currentWatchOnlyBalance, currentWatchUnconfBalance, currentWatchImmatureBalance,
-                       currentWatchLockedBalance, currentWatchPledgeDebitBalance);
+                       currentPledgeCreditBalance, currentPledgeDebitBalance, currentLockedBalance,
+                       currentWatchBalance, currentWatchUnconfBalance, currentWatchImmatureBalance,
+                       currentWatchPledgeCreditBalance, currentWatchPledgeDebitBalance, currentWatchLockedBalance);
 
         // Update txdelegate->unit with the current unit
         txdelegate->unit = walletModel->getOptionsModel()->getDisplayUnit();

@@ -1054,7 +1054,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "pledge";
-            
+
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
@@ -1896,24 +1896,24 @@ CAmount CWalletTx::GetDebit(const isminefilter& filter) const
     CAmount debit = 0;
     if(filter & ISMINE_SPENDABLE)
     {
-        if (fDebitCached)
-            debit += nDebitCached;
+        if (debitCached.first)
+            debit += debitCached.second;
         else
         {
-            nDebitCached = pwallet->GetDebit(*tx, ISMINE_SPENDABLE);
-            fDebitCached = true;
-            debit += nDebitCached;
+            debitCached.second = pwallet->GetDebit(*tx, ISMINE_SPENDABLE);
+            debitCached.first = true;
+            debit += debitCached.second;
         }
     }
     if(filter & ISMINE_WATCH_ONLY)
     {
-        if(fWatchDebitCached)
-            debit += nWatchDebitCached;
+        if(watchOnlyDebitCached.first)
+            debit += watchOnlyDebitCached.second;
         else
         {
-            nWatchDebitCached = pwallet->GetDebit(*tx, ISMINE_WATCH_ONLY);
-            fWatchDebitCached = true;
-            debit += nWatchDebitCached;
+            watchOnlyDebitCached.second = pwallet->GetDebit(*tx, ISMINE_WATCH_ONLY);
+            watchOnlyDebitCached.first = true;
+            debit += watchOnlyDebitCached.second;
         }
     }
     return debit;
@@ -1929,24 +1929,24 @@ CAmount CWalletTx::GetCredit(const isminefilter& filter) const
     if (filter & ISMINE_SPENDABLE)
     {
         // GetBalance can assume transactions in mapWallet won't change
-        if (fCreditCached)
-            credit += nCreditCached;
+        if (creditCached.first)
+            credit += creditCached.second;
         else
         {
-            nCreditCached = pwallet->GetCredit(*tx, ISMINE_SPENDABLE);
-            fCreditCached = true;
-            credit += nCreditCached;
+            creditCached.second = pwallet->GetCredit(*tx, ISMINE_SPENDABLE);
+            creditCached.first = true;
+            credit += creditCached.second;
         }
     }
     if (filter & ISMINE_WATCH_ONLY)
     {
-        if (fWatchCreditCached)
-            credit += nWatchCreditCached;
+        if (watchOnlyCreditCached.first)
+            credit += watchOnlyCreditCached.second;
         else
         {
-            nWatchCreditCached = pwallet->GetCredit(*tx, ISMINE_WATCH_ONLY);
-            fWatchCreditCached = true;
-            credit += nWatchCreditCached;
+            watchOnlyCreditCached.second = pwallet->GetCredit(*tx, ISMINE_WATCH_ONLY);
+            watchOnlyCreditCached.first = true;
+            credit += watchOnlyCreditCached.second;
         }
     }
     return credit;
@@ -1956,11 +1956,11 @@ CAmount CWalletTx::GetImmatureCredit(bool fUseCache) const
 {
     if (IsCoinBase() && GetBlocksToMaturity() > 0 && IsInMainChain())
     {
-        if (fUseCache && fImmatureCreditCached)
-            return nImmatureCreditCached;
-        nImmatureCreditCached = pwallet->GetCredit(*tx, ISMINE_SPENDABLE);
-        fImmatureCreditCached = true;
-        return nImmatureCreditCached;
+        if (fUseCache && immatureCreditCached.first)
+            return immatureCreditCached.second;
+        immatureCreditCached.second = pwallet->GetCredit(*tx, ISMINE_SPENDABLE);
+        immatureCreditCached.first = true;
+        return immatureCreditCached.second;
     }
 
     return 0;
@@ -1975,8 +1975,8 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache) const
     if (IsCoinBase() && GetBlocksToMaturity() > 0)
         return 0;
 
-    if (fUseCache && fAvailableCreditCached)
-        return nAvailableCreditCached;
+    if (fUseCache && availableCreditCached.first)
+        return availableCreditCached.second;
 
     bool fLock = mapValue.count("lock") != 0;
     CAmount nCredit = 0;
@@ -1992,25 +1992,28 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache) const
         }
     }
 
-    nAvailableCreditCached = nCredit;
-    fAvailableCreditCached = true;
+    availableCreditCached.second = nCredit;
+    availableCreditCached.first = true;
     return nCredit;
 }
 
-CAmount CWalletTx::GetLockedCredit(bool fUseCache) const
+CAmount CWalletTx::GetPledgeCredit(bool fUseCache) const
 {
     if (pwallet == nullptr || IsCoinBase())
         return 0;
 
-    if (fUseCache && fLockedCreditCached)
-        return nLockedCreditCached;
+    if (fUseCache && pledgeCreditCached.first)
+        return pledgeCreditCached.second;
 
-    if (mapValue.count("lock") && !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_SPENDABLE))
-        nLockedCreditCached = tx->vout[0].nValue;
+    auto itType = mapValue.find("type");
+    auto itTo = mapValue.find("to");
+    if (itType != mapValue.end() && itTo != mapValue.end() && itType->second == "pledge" &&
+            !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_SPENDABLE))
+        pledgeCreditCached.second = tx->vout[0].nValue;
     else
-        nLockedCreditCached = 0;
-    fLockedCreditCached = true;
-    return nLockedCreditCached;
+        pledgeCreditCached.second = 0;
+    pledgeCreditCached.first = true;
+    return pledgeCreditCached.second;
 }
 
 CAmount CWalletTx::GetPledgeDebit(bool fUseCache) const
@@ -2018,35 +2021,53 @@ CAmount CWalletTx::GetPledgeDebit(bool fUseCache) const
     if (pwallet == nullptr || IsCoinBase())
         return 0;
 
-    if (fUseCache && fPledgeDebitCached)
-        return nPledgeDebitCached;
+    if (fUseCache && pledgeDebitCached.first)
+        return pledgeDebitCached.second;
 
     auto itType = mapValue.find("type");
     auto itTo = mapValue.find("to");
     if (itType != mapValue.end() && itTo != mapValue.end() && itType->second == "pledge" &&
             !pwallet->IsSpent(GetHash(), 0) && (::IsMine(*pwallet, DecodeDestination(itTo->second))&ISMINE_SPENDABLE))
-        nPledgeDebitCached = tx->vout[0].nValue;
+        pledgeDebitCached.second = tx->vout[0].nValue;
     else
-        nPledgeDebitCached = 0;
-    fPledgeDebitCached = true;
-    return nPledgeDebitCached;
+        pledgeDebitCached.second = 0;
+    pledgeDebitCached.first = true;
+    return pledgeDebitCached.second;
 }
 
-CAmount CWalletTx::GetImmatureWatchOnlyCredit(const bool fUseCache) const
+CAmount CWalletTx::GetLockedCredit(bool fUseCache) const
+{
+    if (pwallet == nullptr || IsCoinBase())
+        return 0;
+
+    if (fUseCache && lockedCreditCached.first)
+        return lockedCreditCached.second;
+
+    auto itType = mapValue.find("type");
+    if (itType != mapValue.end() && itType->second == "bindplotter" &&
+            !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_SPENDABLE))
+        lockedCreditCached.second = tx->vout[0].nValue;
+    else
+        lockedCreditCached.second = 0;
+    lockedCreditCached.first = true;
+    return lockedCreditCached.second;
+}
+
+CAmount CWalletTx::GetWatchOnlyImmatureCredit(const bool fUseCache) const
 {
     if (IsCoinBase() && GetBlocksToMaturity() > 0 && IsInMainChain())
     {
-        if (fUseCache && fImmatureWatchCreditCached)
-            return nImmatureWatchCreditCached;
-        nImmatureWatchCreditCached = pwallet->GetCredit(*tx, ISMINE_WATCH_ONLY);
-        fImmatureWatchCreditCached = true;
-        return nImmatureWatchCreditCached;
+        if (fUseCache && watchOnlyImmatureCreditCached.first)
+            return watchOnlyImmatureCreditCached.second;
+        watchOnlyImmatureCreditCached.second = pwallet->GetCredit(*tx, ISMINE_WATCH_ONLY);
+        watchOnlyImmatureCreditCached.first = true;
+        return watchOnlyImmatureCreditCached.second;
     }
 
     return 0;
 }
 
-CAmount CWalletTx::GetAvailableWatchOnlyCredit(const bool fUseCache) const
+CAmount CWalletTx::GetWatchOnlyAvailableCredit(const bool fUseCache) const
 {
     if (pwallet == nullptr)
         return 0;
@@ -2055,8 +2076,8 @@ CAmount CWalletTx::GetAvailableWatchOnlyCredit(const bool fUseCache) const
     if (IsCoinBase() && GetBlocksToMaturity() > 0)
         return 0;
 
-    if (fUseCache && fAvailableWatchCreditCached)
-        return nAvailableWatchCreditCached;
+    if (fUseCache && watchOnlyAvailableCreditCached.first)
+        return watchOnlyAvailableCreditCached.second;
 
     bool fLock = mapValue.count("lock") != 0;
     CAmount nCredit = 0;
@@ -2071,53 +2092,74 @@ CAmount CWalletTx::GetAvailableWatchOnlyCredit(const bool fUseCache) const
         }
     }
 
-    nAvailableWatchCreditCached = nCredit;
-    fAvailableWatchCreditCached = true;
+    watchOnlyAvailableCreditCached.second = nCredit;
+    watchOnlyAvailableCreditCached.first = true;
     return nCredit;
 }
 
-CAmount CWalletTx::GetLockedWatchOnlyCredit(const bool fUseCache) const
+CAmount CWalletTx::GetWatchOnlyPledgeCredit(bool fUseCache) const
 {
     if (pwallet == nullptr || IsCoinBase())
         return 0;
 
-    if (fUseCache && fLockedWatchCreditCached)
-        return nLockedWatchCreditCached;
+    if (fUseCache && watchOnlyPledgeCreditCached.first)
+        return watchOnlyPledgeCreditCached.second;
 
-    if (mapValue.count("lock") && !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_WATCH_ONLY))
-        nLockedWatchCreditCached = tx->vout[0].nValue;
+    auto itType = mapValue.find("type");
+    auto itTo = mapValue.find("to");
+    if (itType != mapValue.end() && itTo != mapValue.end() && itType->second == "pledge" &&
+            !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_WATCH_ONLY))
+        watchOnlyPledgeCreditCached.second = tx->vout[0].nValue;
     else
-        nLockedWatchCreditCached = 0;
-    fLockedWatchCreditCached = true;
-    return nLockedWatchCreditCached;
+        watchOnlyPledgeCreditCached.second = 0;
+    watchOnlyPledgeCreditCached.first = true;
+    return watchOnlyPledgeCreditCached.second;
 }
 
-CAmount CWalletTx::GetPledgeWatchOnlyDebit(bool fUseCache) const
+CAmount CWalletTx::GetWatchOnlyPledgeDebit(bool fUseCache) const
 {
     if (pwallet == nullptr || IsCoinBase())
         return 0;
 
-    if (fUseCache && fPledgeWatchDebitCached)
-        return nPledgeWatchDebitCached;
+    if (fUseCache && watchOnlyPledgeDebitCached.first)
+        return watchOnlyPledgeDebitCached.second;
 
     auto itType = mapValue.find("type");
     auto itTo = mapValue.find("to");
     if (itType != mapValue.end() && itTo != mapValue.end() && itType->second == "pledge" &&
             !pwallet->IsSpent(GetHash(), 0) && (::IsMine(*pwallet, DecodeDestination(itTo->second))&ISMINE_WATCH_ONLY))
-        nPledgeWatchDebitCached = tx->vout[0].nValue;
+        watchOnlyPledgeDebitCached.second = tx->vout[0].nValue;
     else
-        nPledgeWatchDebitCached = 0;
-    fPledgeWatchDebitCached = true;
-    return nPledgeWatchDebitCached;
+        watchOnlyPledgeDebitCached.second = 0;
+    watchOnlyPledgeDebitCached.first = true;
+    return watchOnlyPledgeDebitCached.second;
+}
+
+CAmount CWalletTx::GetWatchOnlyLockedCredit(bool fUseCache) const
+{
+    if (pwallet == nullptr || IsCoinBase())
+        return 0;
+
+    if (fUseCache && watchOnlyLockedCreditCached.first)
+        return watchOnlyLockedCreditCached.second;
+
+    auto itType = mapValue.find("type");
+    if (itType != mapValue.end() && itType->second == "bindplotter" &&
+            !pwallet->IsSpent(GetHash(), 0) && (pwallet->IsMine(tx->vout[0])&ISMINE_WATCH_ONLY))
+        watchOnlyLockedCreditCached.second = tx->vout[0].nValue;
+    else
+        watchOnlyLockedCreditCached.second = 0;
+    watchOnlyLockedCreditCached.first = true;
+    return watchOnlyLockedCreditCached.second;
 }
 
 CAmount CWalletTx::GetChange() const
 {
-    if (fChangeCached)
-        return nChangeCached;
-    nChangeCached = pwallet->GetChange(*tx);
-    fChangeCached = true;
-    return nChangeCached;
+    if (changeCached.first)
+        return changeCached.second;
+    changeCached.second = pwallet->GetChange(*tx);
+    changeCached.first = true;
+    return changeCached.second;
 }
 
 bool CWalletTx::InMempool() const
@@ -2269,7 +2311,7 @@ CAmount CWallet::GetImmatureBalance() const
     return nTotal;
 }
 
-CAmount CWallet::GetLockedBalance() const
+CAmount CWallet::GetPledgeCreditBalance() const
 {
     CAmount nTotal = 0;
     {
@@ -2277,8 +2319,8 @@ CAmount CWallet::GetLockedBalance() const
         for (const auto& entry : mapWallet)
         {
             const CWalletTx* pcoin = &entry.second;
-            if (pcoin->GetDepthInMainChain() >= 0 || pcoin->InMempool())
-                nTotal += pcoin->GetLockedCredit();
+            if (pcoin->IsTrusted())
+                nTotal += pcoin->GetPledgeCredit();
         }
     }
 
@@ -2301,6 +2343,22 @@ CAmount CWallet::GetPledgeDebitBalance() const
     return nTotal;
 }
 
+CAmount CWallet::GetLockedBalance() const
+{
+    CAmount nTotal = 0;
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const CWalletTx* pcoin = &entry.second;
+            if (pcoin->GetDepthInMainChain() >= 0 || pcoin->InMempool())
+                nTotal += pcoin->GetLockedCredit();
+        }
+    }
+
+    return nTotal;
+}
+
 CAmount CWallet::GetWatchOnlyBalance() const
 {
     CAmount nTotal = 0;
@@ -2310,7 +2368,7 @@ CAmount CWallet::GetWatchOnlyBalance() const
         {
             const CWalletTx* pcoin = &entry.second;
             if (pcoin->IsTrusted())
-                nTotal += pcoin->GetAvailableWatchOnlyCredit();
+                nTotal += pcoin->GetWatchOnlyAvailableCredit();
         }
     }
 
@@ -2326,7 +2384,7 @@ CAmount CWallet::GetUnconfirmedWatchOnlyBalance() const
         {
             const CWalletTx* pcoin = &entry.second;
             if (!pcoin->IsTrusted() && pcoin->GetDepthInMainChain() == 0 && pcoin->InMempool())
-                nTotal += pcoin->GetAvailableWatchOnlyCredit();
+                nTotal += pcoin->GetWatchOnlyAvailableCredit();
         }
     }
     return nTotal;
@@ -2340,13 +2398,13 @@ CAmount CWallet::GetImmatureWatchOnlyBalance() const
         for (const auto& entry : mapWallet)
         {
             const CWalletTx* pcoin = &entry.second;
-            nTotal += pcoin->GetImmatureWatchOnlyCredit();
+            nTotal += pcoin->GetWatchOnlyImmatureCredit();
         }
     }
     return nTotal;
 }
 
-CAmount CWallet::GetLockedWatchOnlyBalance() const
+CAmount CWallet::GetPledgeCreditWatchOnlyBalance() const
 {
     CAmount nTotal = 0;
     {
@@ -2354,10 +2412,11 @@ CAmount CWallet::GetLockedWatchOnlyBalance() const
         for (const auto& entry : mapWallet)
         {
             const CWalletTx* pcoin = &entry.second;
-            if (pcoin->GetDepthInMainChain() >= 0 || pcoin->InMempool())
-                nTotal += pcoin->GetLockedWatchOnlyCredit();
+            if (pcoin->IsTrusted())
+                nTotal += pcoin->GetWatchOnlyPledgeCredit();
         }
     }
+
     return nTotal;
 }
 
@@ -2370,10 +2429,25 @@ CAmount CWallet::GetPledgeDebitWatchOnlyBalance() const
         {
             const CWalletTx* pcoin = &entry.second;
             if (pcoin->IsTrusted())
-                nTotal += pcoin->GetPledgeWatchOnlyDebit();
+                nTotal += pcoin->GetWatchOnlyPledgeDebit();
         }
     }
 
+    return nTotal;
+}
+
+CAmount CWallet::GetLockedWatchOnlyBalance() const
+{
+    CAmount nTotal = 0;
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const CWalletTx* pcoin = &entry.second;
+            if (pcoin->GetDepthInMainChain() >= 0 || pcoin->InMempool())
+                nTotal += pcoin->GetWatchOnlyLockedCredit();
+        }
+    }
     return nTotal;
 }
 

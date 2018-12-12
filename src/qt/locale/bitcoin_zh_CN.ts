@@ -119,6 +119,18 @@
         <translation>总额</translation>
     </message>
     <message>
+        <source>Pledge credit</source>
+        <translation>借出总额</translation>
+    </message>
+    <message>
+        <source>Pledge debit</source>
+        <translation>借入总额</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>锁定总额</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(无标签)</translation>
     </message>
@@ -1339,16 +1351,24 @@
         <translation>锁定的余额：</translation>
     </message>
     <message>
-        <source>Total of balance that have to be locked (for bind plotter and pledge credit), and do not yet count toward the spendable balance</source>
-        <translation>因绑定算力和抵押租借而被锁定的总额，未计入当前余额</translation>
+        <source>Total of balance that have to be locked (for bind plotter), and do not yet count toward the spendable balance</source>
+        <translation>因绑定算力而被锁定的总额，未计入当前余额</translation>
+    </message>
+    <message>
+        <source>Pledge credit:</source>
+        <translation>借出的抵押额：</translation>
+    </message>
+    <message>
+        <source>Total of balance that have to be pledge credit, and do not yet count toward the spendable balance</source>
+        <translation>借出的抵押总额，未计入当前余额</translation>
     </message>
     <message>
         <source>Pledge debit:</source>
-        <translation>借到的抵押额：</translation>
+        <translation>借入的抵押额：</translation>
     </message>
     <message>
-        <source>Total of balance that have to be pledge debit, but unspendable</source>
-        <translation>借到的抵押总额，你不能花费他</translation>
+        <source>Total of balance that have to be pledge debit, and do not yet count toward the spendable balance</source>
+        <translation>借到的抵押总额，未计入当前余额</translation>
     </message>
     <message>
         <source>Balances</source>
@@ -1387,12 +1407,16 @@
         <translation>观察地址(watch-only address)中的当前总余额</translation>
     </message>
     <message>
-        <source>Locked (for bind plotter and pledge credit) balance to watch-only addresses</source>
-        <translation>观察地址(watch-only address)的因绑定算力和抵押租借而锁定的总额</translation>
+        <source>Locked (for bind plotter) balance to watch-only addresses</source>
+        <translation>观察地址(watch-only address)的因绑定算力而锁定的总额</translation>
+    </message>
+    <message>
+        <source>Pledge credit to watch-only addresses</source>
+        <translation>观察地址(watch-only address)借出的抵押总额</translation>
     </message>
     <message>
         <source>Pledge debit to watch-only addresses</source>
-        <translation>观察地址(watch-only address)借到的抵押总额</translation>
+        <translation>观察地址(watch-only address)借入的抵押总额</translation>
     </message>
 </context>
 <context>
@@ -2422,6 +2446,18 @@
         <source>(no label)</source>
         <translation>(无标签)</translation>
     </message>
+    <message>
+        <source>Pay to</source>
+        <translation>支付到</translation>
+    </message>
+    <message>
+        <source>Send pledge to</source>
+        <translation>发送抵押到</translation>
+    </message>
+    <message>
+        <source>Bind plotter ID to</source>
+        <translation>绑定算力到</translation>
+    </message>
 </context>
 <context>
     <name>SendCoinsEntry</name>
@@ -2432,6 +2468,10 @@
     <message>
         <source>Pay &amp;To:</source>
         <translation>付给(&amp;T)：</translation>
+    </message>
+    <message>
+        <source>Pledge &amp;To:</source>
+        <translation>租借给(&amp;T)：</translation>
     </message>
     <message>
         <source>&amp;Label:</source>

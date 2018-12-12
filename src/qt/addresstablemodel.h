@@ -30,8 +30,11 @@ public:
     enum ColumnIndex {
         Status = 0,  /**< Status */
         Label = 1,   /**< User specified label */
-        Address = 2, /**< Bitcoin address */
-        Amount = 3,  /**< Bitcoin amount */
+        Address = 2, /**< BitcoinHD address */
+        Amount = 3,  /**< BitcoinHD amount */
+        PledgeCreditAmount = 4, /**< BitcoinHD locked in pledge credit amount */
+        PledgeDebitAmount = 5,  /**< BitcoinHD pledge debit amount */
+        LockedAmount = 6,       /**< BitcoinHD locked in bind plotter amount */
     };
 
     enum RoleIndex {

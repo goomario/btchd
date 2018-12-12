@@ -1139,6 +1139,9 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
+      <widget class="QComboBox" name="operateMethodComboBox"/>
+     </item>
+     <item>
       <widget class="QPushButton" name="sendButton">
        <property name="minimumSize">
         <size>

@@ -41,7 +41,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     QObject(parent), wallet(_wallet), optionsModel(_optionsModel), addressTableModel(0),
     transactionTableModel(0),
     recentRequestsTableModel(0),
-    cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0), cachedLockedBalance(0), cachedPledgeDebitBalance(0),
+    cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0), cachedPledgeCreditBalance(0), cachedPledgeDebitBalance(0), cachedLockedBalance(0),
     cachedEncryptionStatus(Unencrypted),
     cachedNumBlocks(0)
 {
@@ -85,14 +85,19 @@ CAmount WalletModel::getImmatureBalance() const
     return wallet->GetImmatureBalance();
 }
 
-CAmount WalletModel::getLockedBalance() const
+CAmount WalletModel::getPledgeCreditBalance() const
 {
-    return wallet->GetLockedBalance();
+    return wallet->GetPledgeCreditBalance();
 }
 
 CAmount WalletModel::getPledgeDebitBalance() const
 {
     return wallet->GetPledgeDebitBalance();
+}
+
+CAmount WalletModel::getLockedBalance() const
+{
+    return wallet->GetLockedBalance();
 }
 
 bool WalletModel::haveWatchOnly() const
@@ -115,14 +120,19 @@ CAmount WalletModel::getWatchImmatureBalance() const
     return wallet->GetImmatureWatchOnlyBalance();
 }
 
-CAmount WalletModel::getWatchLockedBalance() const
+CAmount WalletModel::getWatchPledgeCreditBalance() const
 {
-    return wallet->GetLockedWatchOnlyBalance();
+    return wallet->GetPledgeCreditWatchOnlyBalance();
 }
 
 CAmount WalletModel::getWatchPledgeDebitBalance() const
 {
     return wallet->GetPledgeDebitWatchOnlyBalance();
+}
+
+CAmount WalletModel::getWatchLockedBalance() const
+{
+    return wallet->GetLockedWatchOnlyBalance();
 }
 
 void WalletModel::updateStatus()
@@ -171,40 +181,44 @@ void WalletModel::checkBalanceChanged()
     CAmount newBalance = getBalance();
     CAmount newUnconfirmedBalance = getUnconfirmedBalance();
     CAmount newImmatureBalance = getImmatureBalance();
-    CAmount newLockedBalance = getLockedBalance();
+    CAmount newPledgeCreditBalance = getPledgeCreditBalance();
     CAmount newPledgeDebitBalance = getPledgeDebitBalance();
-    CAmount newWatchOnlyBalance = 0;
+    CAmount newLockedBalance = getLockedBalance();
+    CAmount newWatchBalance = 0;
     CAmount newWatchUnconfBalance = 0;
     CAmount newWatchImmatureBalance = 0;
-    CAmount newWatchLockedBalance = 0;
+    CAmount newWatchPledgeCreditBalance = 0;
     CAmount newWatchPledgeDebitBalance = 0;
+    CAmount newWatchLockedBalance = 0;
     if (haveWatchOnly())
     {
-        newWatchOnlyBalance = getWatchBalance();
+        newWatchBalance = getWatchBalance();
         newWatchUnconfBalance = getWatchUnconfirmedBalance();
         newWatchImmatureBalance = getWatchImmatureBalance();
-        newWatchLockedBalance = getWatchLockedBalance();
+        newWatchPledgeCreditBalance = getWatchPledgeCreditBalance();
         newWatchPledgeDebitBalance = getWatchPledgeDebitBalance();
+        newWatchLockedBalance = getWatchLockedBalance();
     }
 
-    if(cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance ||
-        cachedImmatureBalance != newImmatureBalance || cachedLockedBalance != newLockedBalance ||
-        cachedWatchOnlyBalance != newWatchOnlyBalance || cachedWatchUnconfBalance != newWatchUnconfBalance ||
-        cachedWatchImmatureBalance != newWatchImmatureBalance || cachedWatchLockedBalance != newWatchLockedBalance ||
-        cachedPledgeDebitBalance != newPledgeDebitBalance || cachedWatchPledgeDebitBalance != newWatchPledgeDebitBalance)
+    if(cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance || cachedImmatureBalance != newImmatureBalance ||
+        cachedPledgeCreditBalance != newPledgeCreditBalance || cachedPledgeDebitBalance != newPledgeDebitBalance || cachedLockedBalance != newLockedBalance ||
+        cachedWatchBalance != newWatchBalance || cachedWatchUnconfBalance != newWatchUnconfBalance || cachedWatchImmatureBalance != newWatchImmatureBalance ||
+        cachedWatchPledgeCreditBalance != newWatchPledgeCreditBalance || cachedWatchPledgeDebitBalance != newWatchPledgeDebitBalance || cachedWatchLockedBalance != newWatchLockedBalance)
     {
         cachedBalance = newBalance;
         cachedUnconfirmedBalance = newUnconfirmedBalance;
         cachedImmatureBalance = newImmatureBalance;
-        cachedLockedBalance = newLockedBalance;
+        cachedPledgeCreditBalance = newPledgeCreditBalance;
         cachedPledgeDebitBalance = newPledgeDebitBalance;
-        cachedWatchOnlyBalance = newWatchOnlyBalance;
+        cachedLockedBalance = newLockedBalance;
+        cachedWatchBalance = newWatchBalance;
         cachedWatchUnconfBalance = newWatchUnconfBalance;
         cachedWatchImmatureBalance = newWatchImmatureBalance;
-        cachedWatchLockedBalance = newWatchLockedBalance;
+        cachedWatchPledgeCreditBalance = newWatchPledgeCreditBalance;
         cachedWatchPledgeDebitBalance = newWatchPledgeDebitBalance;
-        Q_EMIT balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance, newLockedBalance, newPledgeDebitBalance,
-                            newWatchOnlyBalance, newWatchUnconfBalance, newWatchImmatureBalance, newWatchLockedBalance, newWatchPledgeDebitBalance);
+        cachedWatchLockedBalance = newWatchLockedBalance;
+        Q_EMIT balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance, newPledgeCreditBalance, newPledgeDebitBalance, newLockedBalance,
+            newWatchBalance, newWatchUnconfBalance, newWatchImmatureBalance, newWatchPledgeCreditBalance, newWatchPledgeDebitBalance, newWatchLockedBalance);
     }
 }
 
@@ -232,7 +246,7 @@ bool WalletModel::validateAddress(const QString &address)
     return IsValidDestinationString(address.toStdString());
 }
 
-WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl)
+WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl, PayOperateMethod payOperateMethod)
 {
     CAmount total = 0;
     bool fSubtractFeeFromAmount = false;
@@ -243,55 +257,86 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     {
         return OK;
     }
+    if(payOperateMethod != PayOperateMethod::Pay && (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
+        coinControl.payPolicy != PAYPOLICY_FROM_PRIMARY_ONLY))
+    {
+        return InvalidAddress;
+    }
 
     QSet<QString> setAddress; // Used to detect duplicates
     int nAddresses = 0;
 
     // Pre-check input data for validity
-    for (const SendCoinsRecipient &rcp : recipients)
-    {
-        if (rcp.fSubtractFeeFromAmount)
-            fSubtractFeeFromAmount = true;
-
-        if (rcp.paymentRequest.IsInitialized())
-        {   // PaymentRequest...
-            CAmount subtotal = 0;
-            const payments::PaymentDetails& details = rcp.paymentRequest.getDetails();
-            for (int i = 0; i < details.outputs_size(); i++)
-            {
-                const payments::Output& out = details.outputs(i);
-                if (out.amount() <= 0) continue;
-                subtotal += out.amount();
-                const unsigned char* scriptStr = (const unsigned char*)out.script().data();
-                CScript scriptPubKey(scriptStr, scriptStr+out.script().size());
-                CAmount nAmount = out.amount();
-                CRecipient recipient = {scriptPubKey, nAmount, rcp.fSubtractFeeFromAmount};
-                vecSend.push_back(recipient);
-            }
-            if (subtotal <= 0)
-            {
-                return InvalidAmount;
-            }
-            total += subtotal;
+    if (payOperateMethod == PayOperateMethod::SendPledge) {
+        // Pledge
+        LOCK2(cs_main, wallet->cs_wallet);
+        const SendCoinsRecipient &rcp = recipients[0];
+        if(!validateAddress(rcp.address))
+        {
+            return InvalidAddress;
         }
-        else
-        {   // User-entered bitcoin address / amount:
-            if(!validateAddress(rcp.address))
-            {
-                return InvalidAddress;
-            }
-            if(rcp.amount <= 0)
-            {
-                return InvalidAmount;
-            }
-            setAddress.insert(rcp.address);
-            ++nAddresses;
+        if(rcp.amount <= 0)
+        {
+            return InvalidAmount;
+        }
+        setAddress.insert(rcp.address);
+        ++nAddresses;
 
-            CScript scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
-            CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
-            vecSend.push_back(recipient);
+        //! Real output to self
+        CTxDestination primaryDest = wallet->GetPrimaryDestination();
+        if (!IsValidDestination(primaryDest))
+            return InvalidAddress;
+        vecSend.push_back((CRecipient){GetScriptForDestination(wallet->GetPrimaryDestination()), rcp.amount, rcp.fSubtractFeeFromAmount});
+        //! Tx datacarrier
+        vecSend.push_back((CRecipient){GetPledgeScriptForDestination(DecodeDestination(rcp.address.toStdString())), 0, false});
 
-            total += rcp.amount;
+        total += rcp.amount;
+    } else {
+        for (const SendCoinsRecipient &rcp : recipients)
+        {
+            if (rcp.fSubtractFeeFromAmount)
+                fSubtractFeeFromAmount = true;
+
+            if (rcp.paymentRequest.IsInitialized())
+            {   // PaymentRequest...
+                CAmount subtotal = 0;
+                const payments::PaymentDetails& details = rcp.paymentRequest.getDetails();
+                for (int i = 0; i < details.outputs_size(); i++)
+                {
+                    const payments::Output& out = details.outputs(i);
+                    if (out.amount() <= 0) continue;
+                    subtotal += out.amount();
+                    const unsigned char* scriptStr = (const unsigned char*)out.script().data();
+                    CScript scriptPubKey(scriptStr, scriptStr+out.script().size());
+                    CAmount nAmount = out.amount();
+                    CRecipient recipient = {scriptPubKey, nAmount, rcp.fSubtractFeeFromAmount};
+                    vecSend.push_back(recipient);
+                }
+                if (subtotal <= 0)
+                {
+                    return InvalidAmount;
+                }
+                total += subtotal;
+            }
+            else
+            {   // User-entered bitcoin address / amount:
+                if(!validateAddress(rcp.address))
+                {
+                    return InvalidAddress;
+                }
+                if(rcp.amount <= 0)
+                {
+                    return InvalidAmount;
+                }
+                setAddress.insert(rcp.address);
+                ++nAddresses;
+
+                CScript scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
+                CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
+                vecSend.push_back(recipient);
+
+                total += rcp.amount;
+            }
         }
     }
     if(setAddress.size() != nAddresses)
@@ -312,12 +357,13 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         transaction.newPossibleKeyChange(wallet);
 
         CAmount nFeeRequired = 0;
-        int nChangePosRet = -1;
+        int nChangePosRet = (payOperateMethod != PayOperateMethod::Pay ? 1 : -1);
+        int nTxVersion = (payOperateMethod != PayOperateMethod::Pay ? CTransaction::UNIFORM_VERSION : CTransaction::CURRENT_VERSION);
         std::string strFailReason;
 
         CWalletTx *newTx = transaction.getTransaction();
         CReserveKey *keyChange = transaction.getPossibleKeyChange();
-        bool fCreated = wallet->CreateTransaction(vecSend, *newTx, *keyChange, nFeeRequired, nChangePosRet, strFailReason, coinControl);
+        bool fCreated = wallet->CreateTransaction(vecSend, *newTx, *keyChange, nFeeRequired, nChangePosRet, strFailReason, coinControl, true, nTxVersion);
         transaction.setTransactionFee(nFeeRequired);
         if (fSubtractFeeFromAmount && fCreated)
             transaction.reassignAmounts(nChangePosRet);
@@ -776,7 +822,23 @@ bool WalletModel::transactionCanBeUnlock(uint256 hash, DatacarrierType type) con
     if (coin.IsSpent() || coin.extraData == nullptr || coin.extraData->type != type)
         return false;
 
-    return (wallet->IsMine(coin.out) & ISMINE_SPENDABLE) != 0;
+    if (!(wallet->IsMine(coin.out) & ISMINE_SPENDABLE))
+        return false;
+
+    // Exist in mempool
+    const std::string txid = hash.GetHex();
+    for (auto it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); it++) {
+        auto itType = it->second.mapValue.find("type");
+        auto itTx = it->second.mapValue.find("relevant_txid");
+        if (itType != it->second.mapValue.end() && itTx != it->second.mapValue.end() &&
+            (itType->second == "unbindplotter" || itType->second == "withdrawpledge") &&
+            itTx->second == txid && it->second.InMempool() && !it->second.isAbandoned())
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool WalletModel::unlockTransaction(uint256 hash) {

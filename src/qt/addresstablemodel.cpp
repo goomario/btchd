@@ -34,10 +34,15 @@ struct AddressTableEntry
     QString label;
     QString address;
     bool fPrimary;
+    CAmount amount;
+    CAmount pledgeCreditAmount;
+    CAmount pledgeDebitAmount;
+    CAmount lockedAmount;
 
     AddressTableEntry() {}
-    AddressTableEntry(Type _type, const QString &_label, const QString &_address, bool _fPrimary):
-        type(_type), label(_label), address(_address), fPrimary(_fPrimary) {}
+    AddressTableEntry(Type _type, const QString &_label, const QString &_address):
+        type(_type), label(_label), address(_address), fPrimary(false),
+        amount(0), pledgeCreditAmount(0), pledgeDebitAmount(0), lockedAmount(0) {}
 };
 
 struct AddressTableEntryLessThan
@@ -95,10 +100,11 @@ public:
                 AddressTableEntry::Type addressType = translateTransactionType(
                         QString::fromStdString(item.second.purpose), fMine);
                 const std::string& strName = item.second.name;
-                cachedAddressTable.append(AddressTableEntry(addressType,
+                AddressTableEntry entry(AddressTableEntry(addressType,
                                   QString::fromStdString(strName),
-                                  QString::fromStdString(EncodeDestination(address)),
-                                  wallet->IsPrimaryDestination(address)));
+                                  QString::fromStdString(EncodeDestination(address))));
+                entry.fPrimary = wallet->IsPrimaryDestination(address);
+                cachedAddressTable.append(entry);
             }
         }
         // qLowerBound() and qUpperBound() require our cachedAddressTable list to be sorted in asc order
@@ -129,12 +135,12 @@ public:
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
             {
-                bool fPrimary = false;
+                AddressTableEntry entry(newEntryType, label, address);
                 if (isMine) {
                     LOCK(wallet->cs_wallet);
-                    fPrimary = wallet->IsPrimaryDestination(DecodeDestination(address.toStdString()));
+                    entry.fPrimary = wallet->IsPrimaryDestination(DecodeDestination(address.toStdString()));
                 }
-                cachedAddressTable.insert(lowerIndex, AddressTableEntry(newEntryType, label, address, fPrimary));
+                cachedAddressTable.insert(lowerIndex, entry);
             }
             parent->endInsertRows();
             break;
@@ -186,7 +192,7 @@ AddressTableModel::AddressTableModel(const PlatformStyle *_platformStyle, CWalle
     wallet(_wallet),
     priv(0)
 {
-    columns << "" << tr("Label") << tr("Address") << tr("Amount");
+    columns << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Pledge credit") << tr("Pledge debit") << tr("Locked");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -221,7 +227,7 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         {
         case Status:
             if (!rec->fPrimary)
-                return " ";
+                return "\0";
             break; 
         case Label:
             if(rec->label.isEmpty() && role == Qt::DisplayRole)
@@ -236,14 +242,24 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
             return rec->address;
         case Amount:
             {
-                LOCK(cs_main);
                 CAccountID accountID = GetAccountIDByAddress(rec->address.toStdString());
-                if (accountID == 0) {
-                    return tr("N/A");
+                if (accountID != 0) {
+                    LOCK(cs_main);
+                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->lockedAmount, &rec->pledgeCreditAmount, &rec->pledgeDebitAmount);
+                } else {
+                    rec->amount = 0;
+                    rec->pledgeCreditAmount = 0;
+                    rec->pledgeDebitAmount = 0;
+                    rec->lockedAmount = 0;
                 }
-                CAmount balance = pcoinsTip->GetAccountBalance(accountID);
-                return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorNever);
             }
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount, false, BitcoinUnits::separatorNever);
+        case PledgeCreditAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeCreditAmount, false, BitcoinUnits::separatorNever);
+        case PledgeDebitAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever);
+        case LockedAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->lockedAmount, false, BitcoinUnits::separatorNever);
         }
     }
     else if (role == Qt::FontRole)
@@ -397,7 +413,7 @@ void AddressTableModel::updateBalance()
 {
     if (priv->size() > 0) {
         priv->refreshAddressTable();
-        Q_EMIT dataChanged(index(0, (int)ColumnIndex::Amount), index(priv->size() - 1, (int)ColumnIndex::Amount));
+        Q_EMIT dataChanged(index(0, (int)ColumnIndex::Amount), index(priv->size() - 1, columnCount(QModelIndex()) - 1));
     }
 }
 
@@ -405,7 +421,7 @@ void AddressTableModel::reload()
 {
     if (priv->size() > 0) {
         priv->refreshAddressTable();
-        Q_EMIT dataChanged(index(0, 0), index(priv->size() - 1, (int)ColumnIndex::Amount));
+        Q_EMIT dataChanged(index(0, 0), index(priv->size() - 1, columnCount(QModelIndex()) - 1));
     }
 }
 
@@ -467,13 +483,13 @@ bool AddressTableModel::removeRows(int row, int count, const QModelIndex &parent
 {
     Q_UNUSED(parent);
     AddressTableEntry *rec = priv->index(row);
-    if(count != 1 || !rec || rec->type == AddressTableEntry::Receiving)
+    if(count != 1 || !rec)
     {
         // Can only remove one row at a time, and cannot remove rows not in model.
-        // Also refuse to remove receiving addresses.
         return false;
     }
     {
+        // Refuse to remove primary addresse. See CWallet::DelAddressBook()
         LOCK(wallet->cs_wallet);
         wallet->DelAddressBook(DecodeDestination(rec->address.toStdString()));
     }

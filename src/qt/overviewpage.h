@@ -39,9 +39,9 @@ public:
 
 public Q_SLOTS:
     void setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                    const CAmount& lockedBalance, const CAmount& plegdeDebitBalance,
-                    const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                    const CAmount& watchLockedBalance, const CAmount& watchPledgeDebitBalance);
+                    const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                    const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
+                    const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
 
 Q_SIGNALS:
     void transactionClicked(const QModelIndex &index);
@@ -54,13 +54,15 @@ private:
     CAmount currentBalance;
     CAmount currentUnconfirmedBalance;
     CAmount currentImmatureBalance;
-    CAmount currentLockedBalance;
+    CAmount currentPledgeCreditBalance;
     CAmount currentPledgeDebitBalance;
-    CAmount currentWatchOnlyBalance;
+    CAmount currentLockedBalance;
+    CAmount currentWatchBalance;
     CAmount currentWatchUnconfBalance;
     CAmount currentWatchImmatureBalance;
-    CAmount currentWatchLockedBalance;
+    CAmount currentWatchPledgeCreditBalance;
     CAmount currentWatchPledgeDebitBalance;
+    CAmount currentWatchLockedBalance;
 
     TxViewDelegate *txdelegate;
     std::unique_ptr<TransactionFilterProxy> filter;

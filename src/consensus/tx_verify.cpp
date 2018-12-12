@@ -233,6 +233,10 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         if (!MoneyRange(coin.out.nValue) || !MoneyRange(nValueIn)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
         }
+
+        // Check special coin spend
+        if (coin.extraData != nullptr && (tx.vin.size() != 1 || tx.vout.size() != 1 || coin.out.scriptPubKey != tx.vout[0].scriptPubKey))
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-spend-special-coin");
     }
 
     const CAmount value_out = tx.GetValueOut();
@@ -252,13 +256,14 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         if (tx.vin.empty() || tx.vout.empty())
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputoutput-invaliduniform");
 
+        // Inputs[i] == Outputs[i]
         const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
         for (unsigned int i = 1; i < tx.vin.size(); ++i) {
             const Coin& coin = inputs.AccessCoin(tx.vin[i].prevout);
             if (coin.out.scriptPubKey != scriptPubKey)
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputdest-invaliduniform");
         }
-        if (!tx.vout.empty() && tx.vout[0].scriptPubKey != scriptPubKey)
+        if (tx.vout[0].scriptPubKey != scriptPubKey)
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-outputdest-invaliduniform");
     }
 

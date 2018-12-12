@@ -36,6 +36,13 @@ QT_BEGIN_NAMESPACE
 class QTimer;
 QT_END_NAMESPACE
 
+/** Pay operate method */
+enum class PayOperateMethod {
+    Pay,
+    SendPledge,
+    BindPlotter,
+};
+
 class SendCoinsRecipient
 {
 public:
@@ -134,14 +141,16 @@ public:
     CAmount getBalance(const CCoinControl *coinControl = nullptr) const;
     CAmount getUnconfirmedBalance() const;
     CAmount getImmatureBalance() const;
-    CAmount getLockedBalance() const;
+    CAmount getPledgeCreditBalance() const;
     CAmount getPledgeDebitBalance() const;
+    CAmount getLockedBalance() const;
     bool haveWatchOnly() const;
     CAmount getWatchBalance() const;
     CAmount getWatchUnconfirmedBalance() const;
     CAmount getWatchImmatureBalance() const;
-    CAmount getWatchLockedBalance() const;
+    CAmount getWatchPledgeCreditBalance() const;
     CAmount getWatchPledgeDebitBalance() const;
+    CAmount getWatchLockedBalance() const;
     EncryptionStatus getEncryptionStatus() const;
 
     // Get wallet
@@ -163,7 +172,7 @@ public:
     };
 
     // prepare transaction for getting txfee before sending coins
-    SendCoinsReturn prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl);
+    SendCoinsReturn prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl, PayOperateMethod payOperateMethod = PayOperateMethod::Pay);
 
     // Send coins to a list of recipients
     SendCoinsReturn sendCoins(WalletModelTransaction &transaction);
@@ -247,13 +256,15 @@ private:
     CAmount cachedBalance;
     CAmount cachedUnconfirmedBalance;
     CAmount cachedImmatureBalance;
-    CAmount cachedLockedBalance;
+    CAmount cachedPledgeCreditBalance;
     CAmount cachedPledgeDebitBalance;
-    CAmount cachedWatchOnlyBalance;
+    CAmount cachedLockedBalance;
+    CAmount cachedWatchBalance;
     CAmount cachedWatchUnconfBalance;
     CAmount cachedWatchImmatureBalance;
-    CAmount cachedWatchLockedBalance;
+    CAmount cachedWatchPledgeCreditBalance;
     CAmount cachedWatchPledgeDebitBalance;
+    CAmount cachedWatchLockedBalance;
     EncryptionStatus cachedEncryptionStatus;
     int cachedNumBlocks;
 
@@ -266,9 +277,9 @@ private:
 Q_SIGNALS:
     // Signal that balance in wallet changed
     void balanceChanged(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                        const CAmount& lockedBalance, const CAmount& pledgeDebitBalance,
-                        const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                        const CAmount& watchLockedBalance, const CAmount& walletPledgeDebitBalance);
+                        const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                        const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
+                        const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
 
     // Encryption status of wallet changed
     void encryptionStatusChanged(int status);

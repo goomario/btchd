@@ -87,12 +87,10 @@ TransactionView::TransactionView(const PlatformStyle *platformStyle, QWidget *pa
     typeWidget->addItem(tr("Received with"), TransactionFilterProxy::TYPE(TransactionRecord::RecvWithAddress) |
         TransactionFilterProxy::TYPE(TransactionRecord::RecvFromOther) |
         TransactionFilterProxy::TYPE(TransactionRecord::RecvPledge) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge) |
-        TransactionFilterProxy::TYPE(TransactionRecord::WithdrawPledge));
+        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
     typeWidget->addItem(tr("Sent to"), TransactionFilterProxy::TYPE(TransactionRecord::SendToAddress) |
         TransactionFilterProxy::TYPE(TransactionRecord::SendToOther) |
         TransactionFilterProxy::TYPE(TransactionRecord::BindPlotter) |
-        TransactionFilterProxy::TYPE(TransactionRecord::UnbindPlotter) |
         TransactionFilterProxy::TYPE(TransactionRecord::SendPledge) |
         TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
     typeWidget->addItem(tr("To yourself"), TransactionFilterProxy::TYPE(TransactionRecord::SendToSelf) |
@@ -103,7 +101,9 @@ TransactionView::TransactionView(const PlatformStyle *platformStyle, QWidget *pa
         TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
     typeWidget->addItem(tr("Received pledge with"), TransactionFilterProxy::TYPE(TransactionRecord::RecvPledge) |
         TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
-    typeWidget->addItem(tr("Other"), TransactionFilterProxy::TYPE(TransactionRecord::Other));
+    typeWidget->addItem(tr("Other"), TransactionFilterProxy::TYPE(TransactionRecord::Other) |
+        TransactionFilterProxy::TYPE(TransactionRecord::UnbindPlotter) |
+        TransactionFilterProxy::TYPE(TransactionRecord::WithdrawPledge));
 
     hlayout->addWidget(typeWidget);
 

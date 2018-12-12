@@ -339,33 +339,16 @@ public:
     int64_t nOrderPos; //!< position in ordered transaction list
 
     // memory only
-    mutable bool fDebitCached;
-    mutable bool fCreditCached;
-    mutable bool fLockedCreditCached;
-    mutable bool fPledgeDebitCached;
-    mutable bool fImmatureCreditCached;
-    mutable bool fAvailableCreditCached;
-    mutable bool fWatchDebitCached;
-    mutable bool fWatchCreditCached;
-    mutable bool fLockedWatchCreditCached;
-    mutable bool fPledgeWatchDebitCached;
-    mutable bool fImmatureWatchCreditCached;
-    mutable bool fAvailableWatchCreditCached;
-    mutable bool fChangeCached;
+    typedef std::pair<bool,CAmount> CacheableAmount;
+    mutable CacheableAmount debitCached, watchOnlyDebitCached;
+    mutable CacheableAmount creditCached, watchOnlyCreditCached;
+    mutable CacheableAmount immatureCreditCached, watchOnlyImmatureCreditCached;
+    mutable CacheableAmount availableCreditCached, watchOnlyAvailableCreditCached;
+    mutable CacheableAmount pledgeCreditCached, watchOnlyPledgeCreditCached;
+    mutable CacheableAmount pledgeDebitCached, watchOnlyPledgeDebitCached;
+    mutable CacheableAmount lockedCreditCached, watchOnlyLockedCreditCached;
+    mutable CacheableAmount changeCached;
     mutable bool fInMempool;
-    mutable CAmount nDebitCached;
-    mutable CAmount nCreditCached;
-    mutable CAmount nLockedCreditCached;
-    mutable CAmount nPledgeDebitCached;
-    mutable CAmount nImmatureCreditCached;
-    mutable CAmount nAvailableCreditCached;
-    mutable CAmount nWatchDebitCached;
-    mutable CAmount nWatchCreditCached;
-    mutable CAmount nLockedWatchCreditCached;
-    mutable CAmount nPledgeWatchDebitCached;
-    mutable CAmount nImmatureWatchCreditCached;
-    mutable CAmount nAvailableWatchCreditCached;
-    mutable CAmount nChangeCached;
 
     CWalletTx()
     {
@@ -387,33 +370,15 @@ public:
         nTimeSmart = 0;
         fFromMe = false;
         strFromAccount.clear();
-        fDebitCached = false;
-        fCreditCached = false;
-        fLockedCreditCached = false;
-        fPledgeDebitCached = false;
-        fImmatureCreditCached = false;
-        fAvailableCreditCached = false;
-        fWatchDebitCached = false;
-        fWatchCreditCached = false;
-        fLockedWatchCreditCached = false;
-        fPledgeWatchDebitCached = false;
-        fImmatureWatchCreditCached = false;
-        fAvailableWatchCreditCached = false;
-        fChangeCached = false;
+        debitCached.first = watchOnlyDebitCached.first = false;
+        creditCached.first = watchOnlyCreditCached.first = false;
+        immatureCreditCached.first = watchOnlyImmatureCreditCached.first = false;
+        availableCreditCached.first = watchOnlyAvailableCreditCached.first = false;
+        pledgeCreditCached.first = watchOnlyPledgeCreditCached.first = false;
+        pledgeDebitCached.first = watchOnlyPledgeDebitCached.first = false;
+        lockedCreditCached.first = watchOnlyLockedCreditCached.first = false;
+        changeCached.first = false;
         fInMempool = false;
-        nDebitCached = 0;
-        nCreditCached = 0;
-        nLockedCreditCached = 0;
-        nPledgeDebitCached = 0;
-        nImmatureCreditCached = 0;
-        nAvailableCreditCached = 0;
-        nWatchDebitCached = 0;
-        nWatchCreditCached = 0;
-        nAvailableWatchCreditCached = 0;
-        nLockedWatchCreditCached = 0;
-        nPledgeWatchDebitCached = 0;
-        nImmatureWatchCreditCached = 0;
-        nChangeCached = 0;
         nOrderPos = -1;
     }
 
@@ -463,19 +428,14 @@ public:
     //! make sure balances are recalculated
     void MarkDirty()
     {
-        fCreditCached = false;
-        fAvailableCreditCached = false;
-        fImmatureCreditCached = false;
-        fLockedCreditCached = false;
-        fPledgeDebitCached = false;
-        fWatchDebitCached = false;
-        fWatchCreditCached = false;
-        fAvailableWatchCreditCached = false;
-        fImmatureWatchCreditCached = false;
-        fLockedWatchCreditCached = false;
-        fPledgeWatchDebitCached = false;
-        fDebitCached = false;
-        fChangeCached = false;
+        debitCached.first = watchOnlyDebitCached.first = false;
+        creditCached.first = watchOnlyCreditCached.first = false;
+        immatureCreditCached.first = watchOnlyImmatureCreditCached.first = false;
+        availableCreditCached.first = watchOnlyAvailableCreditCached.first = false;
+        pledgeCreditCached.first = watchOnlyPledgeCreditCached.first = false;
+        pledgeDebitCached.first = watchOnlyPledgeDebitCached.first = false;
+        lockedCreditCached.first = watchOnlyLockedCreditCached.first = false;
+        changeCached.first = false;
     }
 
     void BindWallet(CWallet *pwalletIn)
@@ -488,13 +448,15 @@ public:
     CAmount GetDebit(const isminefilter& filter) const;
     CAmount GetCredit(const isminefilter& filter) const;
     CAmount GetImmatureCredit(bool fUseCache=true) const;
-    CAmount GetLockedCredit(bool fUseCache=true) const;
-    CAmount GetPledgeDebit(bool fUseCache=true) const;
     CAmount GetAvailableCredit(bool fUseCache=true) const;
-    CAmount GetImmatureWatchOnlyCredit(const bool fUseCache=true) const;
-    CAmount GetAvailableWatchOnlyCredit(const bool fUseCache=true) const;
-    CAmount GetLockedWatchOnlyCredit(const bool fUseCache=true) const;
-    CAmount GetPledgeWatchOnlyDebit(const bool fUseCache=true) const;
+    CAmount GetPledgeCredit(bool fUseCache=true) const;
+    CAmount GetPledgeDebit(bool fUseCache=true) const;
+    CAmount GetLockedCredit(bool fUseCache=true) const;
+    CAmount GetWatchOnlyImmatureCredit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyAvailableCredit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyPledgeCredit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyPledgeDebit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyLockedCredit(const bool fUseCache=true) const;
     CAmount GetChange() const;
 
     void GetAmounts(std::list<COutputEntry>& listReceived,
@@ -1006,13 +968,15 @@ public:
     CAmount GetBalance() const;
     CAmount GetUnconfirmedBalance() const;
     CAmount GetImmatureBalance() const;
-    CAmount GetLockedBalance() const;
+    CAmount GetPledgeCreditBalance() const;
     CAmount GetPledgeDebitBalance() const;
+    CAmount GetLockedBalance() const;
     CAmount GetWatchOnlyBalance() const;
     CAmount GetUnconfirmedWatchOnlyBalance() const;
     CAmount GetImmatureWatchOnlyBalance() const;
-    CAmount GetLockedWatchOnlyBalance() const;
+    CAmount GetPledgeCreditWatchOnlyBalance() const;
     CAmount GetPledgeDebitWatchOnlyBalance() const;
+    CAmount GetLockedWatchOnlyBalance() const;
     CAmount GetLegacyBalance(const isminefilter& filter, int minDepth, const std::string* account) const;
     CAmount GetAvailableBalance(const CCoinControl* coinControl = nullptr) const;
 
