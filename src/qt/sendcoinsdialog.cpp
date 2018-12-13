@@ -364,7 +364,22 @@ void SendCoinsDialog::on_sendButton_clicked()
         formatted.append(recipientElement);
     }
 
-    QString questionString = tr("Are you sure you want to send?");
+    QString titleString, questionString;
+    switch (operateMethod)
+    {
+    case PayOperateMethod::SendPledge:
+        titleString = tr("Confirm send pledge coins");
+        questionString = tr("Are you sure you want to send pledge?");
+        break;
+    case PayOperateMethod::BindPlotter:
+        titleString = tr("Confirm bind plotter ID");
+        questionString = tr("Are you sure you want to bind plotter ID?");
+        break;
+    default:
+        titleString = tr("Confirm send coins");
+        questionString = tr("Are you sure you want to send?");
+        break;
+    }
     questionString.append("<br /><br />%1");
 
     if(txFee > 0)
@@ -402,7 +417,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     questionString.append("</span>");
 
 
-    SendConfirmationDialog confirmationDialog(tr("Confirm send coins"),
+    SendConfirmationDialog confirmationDialog(titleString,
         questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
     confirmationDialog.exec();
     QMessageBox::StandardButton retval = (QMessageBox::StandardButton)confirmationDialog.result();

@@ -766,12 +766,12 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     UniValue result(UniValue::VOBJ);
     //! This balance belong to your
     result.pushKV("balance", ValueFromAmount(totalBalance));
+    //! This balance freeze in bind plotter and pledge credit
+    result.pushKV("lockedBalance", ValueFromAmount(bindPlotterBalance + pledgeCreditBalance));
     //! This balance available spend
     result.pushKV("availableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeCreditBalance));
-    //! This balance freeze in bind plotter
-    result.pushKV("freezeInBindPlotterBalance", ValueFromAmount(bindPlotterBalance));
     //! This balance freeze in pledge credit
-    result.pushKV("freezeInPledgeCreditBalance", ValueFromAmount(pledgeCreditBalance));
+    result.pushKV("pledgeCreditBalance", ValueFromAmount(pledgeCreditBalance));
     //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
     result.pushKV("pledgeDebitBalance", ValueFromAmount(pledgeDebitBalance));
     //! This balance include pledge debit and avaliable balance. For mining pledge
@@ -1044,8 +1044,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
                 item.push_back(Pair("from", EncodeDestination(fromDest)));
             }
             {
-                CScriptID toScriptID(uint160({coin.extraData->pledge.debitScriptID, coin.extraData->pledge.debitScriptID + CScriptID::WIDTH}));
-                item.push_back(Pair("to", EncodeDestination(CTxDestination(toScriptID))));
+                item.push_back(Pair("to", EncodeDestination(PledgePayload::As(coin.extraData)->scriptID)));
             }
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("txid", key.hash.GetHex()));

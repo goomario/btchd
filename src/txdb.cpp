@@ -265,7 +265,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     // Pledge revelant
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
                         batch.Erase(PledgeCreditRefEntry(&it->second.coin.refOutAccountID, &it->first));
-                        batch.Erase(PledgeDebitRefEntry(&it->second.coin.extraData->pledge.debitAccountID, &it->first));
+                        batch.Erase(PledgeDebitRefEntry(&PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first));
                     }
                 }
             } else {
@@ -276,7 +276,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     // Pledge revelant
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
                         batch.Write(PledgeCreditRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
-                        batch.Write(PledgeDebitRefEntry(&it->second.coin.extraData->pledge.debitAccountID, &it->first), VARINT(it->second.coin.out.nValue));
+                        batch.Write(PledgeDebitRefEntry(&PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first), VARINT(it->second.coin.out.nValue));
                     }
                 }
             }
@@ -572,7 +572,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         // Apply modified coin
         for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.extraData != nullptr &&
-                    it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE && it->second.coin.extraData->pledge.debitAccountID == accountID) {
+                    it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE && PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() == accountID) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
                         *pPledgeDebitBalance -= it->second.coin.out.nValue;

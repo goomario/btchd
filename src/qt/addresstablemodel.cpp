@@ -37,12 +37,12 @@ struct AddressTableEntry
     CAmount amount;
     CAmount pledgeCreditAmount;
     CAmount pledgeDebitAmount;
-    CAmount lockedAmount;
+    CAmount bindPlotterAmount;
 
     AddressTableEntry() {}
     AddressTableEntry(Type _type, const QString &_label, const QString &_address):
         type(_type), label(_label), address(_address), fPrimary(false),
-        amount(0), pledgeCreditAmount(0), pledgeDebitAmount(0), lockedAmount(0) {}
+        amount(0), pledgeCreditAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0) {}
 };
 
 struct AddressTableEntryLessThan
@@ -192,7 +192,7 @@ AddressTableModel::AddressTableModel(const PlatformStyle *_platformStyle, CWalle
     wallet(_wallet),
     priv(0)
 {
-    columns << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Pledge credit") << tr("Pledge debit") << tr("Locked");
+    columns << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Locked") << tr("Pledge credit") << tr("Pledge debit");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -245,21 +245,21 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
                 CAccountID accountID = GetAccountIDByAddress(rec->address.toStdString());
                 if (accountID != 0) {
                     LOCK(cs_main);
-                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->lockedAmount, &rec->pledgeCreditAmount, &rec->pledgeDebitAmount);
+                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->bindPlotterAmount, &rec->pledgeCreditAmount, &rec->pledgeDebitAmount);
                 } else {
                     rec->amount = 0;
                     rec->pledgeCreditAmount = 0;
                     rec->pledgeDebitAmount = 0;
-                    rec->lockedAmount = 0;
+                    rec->bindPlotterAmount = 0;
                 }
             }
             return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount, false, BitcoinUnits::separatorNever);
+        case LockedAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeCreditAmount, false, BitcoinUnits::separatorNever);
         case PledgeCreditAmount:
             return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeCreditAmount, false, BitcoinUnits::separatorNever);
         case PledgeDebitAmount:
             return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever);
-        case LockedAmount:
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->lockedAmount, false, BitcoinUnits::separatorNever);
         }
     }
     else if (role == Qt::FontRole)

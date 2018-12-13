@@ -235,7 +235,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         }
 
         // Check special coin spend
-        if (coin.extraData != nullptr && (tx.vin.size() != 1 || tx.vout.size() != 1 || coin.out.scriptPubKey != tx.vout[0].scriptPubKey))
+        if (coin.extraData != nullptr && (tx.nVersion != CTransaction::UNIFORM_VERSION ||
+                tx.vin.size() != 1 || tx.vout.size() != 1 || coin.out.scriptPubKey != tx.vout[0].scriptPubKey))
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-spend-special-coin");
     }
 

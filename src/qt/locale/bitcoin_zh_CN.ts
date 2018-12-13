@@ -2458,6 +2458,22 @@
         <source>Bind plotter ID to</source>
         <translation>绑定算力到</translation>
     </message>
+    <message>
+        <source>Confirm send pledge coins</source>
+        <translation>确认租借抵押</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to send pledge?</source>
+        <translation>您确定要租借抵押吗？</translation>
+    </message>
+    <message>
+        <source>Confirm bind plotter ID</source>
+        <translation>确认绑定算力</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to bind plotter ID?</source>
+        <translation>您确定要绑定算力吗？</translation>
+    </message>
 </context>
 <context>
     <name>SendCoinsEntry</name>
@@ -2471,7 +2487,7 @@
     </message>
     <message>
         <source>Pledge &amp;To:</source>
-        <translation>租借给(&amp;T)：</translation>
+        <translation>借给(&amp;T)：</translation>
     </message>
     <message>
         <source>&amp;Label:</source>

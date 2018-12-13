@@ -2742,6 +2742,9 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
             "  \"balance\": xxxxxxx,              (numeric) the total confirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"unconfirmed_balance\": xxx,      (numeric) the total unconfirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"immature_balance\": xxxxxx,      (numeric) the total immature balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"pledgecredit_balance\": xxxxxx,  (numeric) the total pledge credit balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"pledgedebit_balance\": xxxxxx,   (numeric) the total pledge debit balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"locked_balance\": xxxxxx,        (numeric) the total locked balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"txcount\": xxxxxxx,              (numeric) the total number of transactions in the wallet\n"
             "  \"keypoololdest\": xxxxxx,         (numeric) the timestamp (seconds since Unix epoch) of the oldest pre-generated key in the key pool\n"
             "  \"keypoolsize\": xxxx,             (numeric) how many new keys are pre-generated (only counts external keys)\n"
@@ -2769,8 +2772,11 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
     obj.push_back(Pair("walletname", pwallet->GetName()));
     obj.push_back(Pair("walletversion", pwallet->GetVersion()));
     obj.push_back(Pair("balance",       ValueFromAmount(pwallet->GetBalance())));
-    obj.push_back(Pair("unconfirmed_balance", ValueFromAmount(pwallet->GetUnconfirmedBalance())));
-    obj.push_back(Pair("immature_balance",    ValueFromAmount(pwallet->GetImmatureBalance())));
+    obj.push_back(Pair("unconfirmed_balance",  ValueFromAmount(pwallet->GetUnconfirmedBalance())));
+    obj.push_back(Pair("immature_balance",     ValueFromAmount(pwallet->GetImmatureBalance())));
+    obj.push_back(Pair("pledgecredit_balance", ValueFromAmount(pwallet->GetPledgeCreditBalance())));
+    obj.push_back(Pair("pledgedebit_balance",  ValueFromAmount(pwallet->GetPledgeDebitBalance())));
+    obj.push_back(Pair("locked_balance",       ValueFromAmount(pwallet->GetLockedBalance())));
     obj.push_back(Pair("txcount",       (int)pwallet->mapWallet.size()));
     obj.push_back(Pair("keypoololdest", pwallet->GetOldestKeyPoolTime()));
     obj.push_back(Pair("keypoolsize", (int64_t)kpExternalSize));
@@ -3741,7 +3747,7 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     CAmount nFeeOut = 0;
     int changePosition = -1;
     std::string strFailReason;
-    if (!pwallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control))
+    if (!pwallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control, CTransaction::UNIFORM_VERSION))
         throw JSONRPCError(RPC_WALLET_ERROR, strFailReason);
 
     // Sign transaction
@@ -3783,7 +3789,7 @@ UniValue listpledges(const JSONRPCRequest& request)
             "  {\n"
             "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
             "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
-            "    \"category\":\"send|receive|self\",    (string) The pledge transaction category.\n"
+            "    \"category\":\"credit|debit|self\",    (string) The pledge transaction category.\n"
             "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
@@ -3840,7 +3846,7 @@ UniValue listpledges(const JSONRPCRequest& request)
         bool fFromWatchonly;
         bool fToWatchonly;
     } TxPledge;
-    std::map<int64_t, TxPledge> mapTxPledge;
+    std::multimap<int64_t, TxPledge> mapTxPledge;
     for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         if (wtx.IsCoinBase() || !wtx.IsInMainChain() || !CheckFinalTx(*wtx.tx) )
@@ -3866,7 +3872,7 @@ UniValue listpledges(const JSONRPCRequest& request)
 
         CTxDestination fromDest, toDest;
         ExtractDestination(wtx.tx->vout[0].scriptPubKey, fromDest);
-        toDest = CScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}));
+        toDest = PledgePayload::As(payload)->scriptID;
         isminetype sendIsmine = ::IsMine(*pwallet, fromDest);
         isminetype receiveIsmine = ::IsMine(*pwallet, toDest);
         bool fSendIsmine = (sendIsmine & filter) != 0;
@@ -3874,14 +3880,15 @@ UniValue listpledges(const JSONRPCRequest& request)
         if (!fSendIsmine && !fReceiveIsmine)
             continue;
 
-        TxPledge &txPledgeRent = mapTxPledge[wtx.nTimeReceived];
+        TxPledge txPledgeRent;
         txPledgeRent.txid = wtx.GetHash();
         txPledgeRent.fromDest = fromDest;
         txPledgeRent.toDest = toDest;
-        txPledgeRent.category = (fSendIsmine && fReceiveIsmine) ? "self" : (fSendIsmine ? "send" : "receive");
+        txPledgeRent.category = (fSendIsmine && fReceiveIsmine) ? "self" : (fSendIsmine ? "credit" : "debit");
         txPledgeRent.fValid = fValid;
         txPledgeRent.fFromWatchonly = (sendIsmine & ISMINE_WATCH_ONLY) != 0;
         txPledgeRent.fToWatchonly = (receiveIsmine & ISMINE_WATCH_ONLY) != 0;
+        mapTxPledge.insert(std::pair<int64_t, TxPledge>(wtx.nTimeReceived, txPledgeRent));
     }
     if (nFrom >= (int)mapTxPledge.size())
         return ret;

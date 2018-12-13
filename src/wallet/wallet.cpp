@@ -1021,7 +1021,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx);
         if (payload == nullptr) {
             // Check special tx
-            if (wtx.tx->vin.size() == 1 && wtx.tx->vin[0].prevout.n == 0) {
+            if (wtx.tx->nVersion == CTransaction::UNIFORM_VERSION && wtx.tx->vin.size() == 1 && wtx.tx->vin[0].prevout.n == 0) {
                 std::map<uint256, CWalletTx>::iterator itWalletTx = mapWallet.find(wtx.tx->vin[0].prevout.hash);
                 if (itWalletTx != mapWallet.end() && itWalletTx->second.mapValue.count("type")) {
                     CWalletTx &relevantWalletTx = itWalletTx->second;
@@ -1045,7 +1045,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "bindplotter";
-            wtx.mapValue["plotter_id"] = std::to_string(payload->bindPlotter.id);
+            wtx.mapValue["plotter_id"] = std::to_string(BindPlotterPayload::As(payload)->id);
 
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
@@ -1059,7 +1059,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
 
-            wtx.mapValue["to"] = EncodeDestination(CTxDestination(CScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}))));
+            wtx.mapValue["to"] = EncodeDestination(PledgePayload::As(payload)->scriptID);
         }
     }
 
@@ -1145,7 +1145,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
         bool fRelevantToMe = fExisted || IsMine(tx) || IsFromMe(tx);
-        if (!fRelevantToMe) {
+        if (!fRelevantToMe && tx.nVersion == CTransaction::UNIFORM_VERSION) {
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
             if (payload == nullptr) {
                 // Withdraw pledge
@@ -1158,8 +1158,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
                 }
             } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
                 // Pledge to me
-                CScriptID debitScriptID(uint160({payload->pledge.debitScriptID, payload->pledge.debitScriptID + CScriptID::WIDTH}));
-                fRelevantToMe = ::IsMine(*this, CTxDestination(debitScriptID)) != 0;
+                fRelevantToMe = ::IsMine(*this, PledgePayload::As(payload)->scriptID) != 0;
             }
         }
         if (fRelevantToMe) {
@@ -4577,7 +4576,7 @@ bool CWalletTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& 
     // because we think that the transaction they just generated's change is
     // unavailable as we're not yet aware its in mempool.
     bool ret = ::AcceptToMemoryPool(mempool, state, tx, nullptr /* pfMissingInputs */,
-                                nullptr /* plTxnReplaced */, false /* bypass_limits */, nAbsurdFee);
+                                    nullptr /* plTxnReplaced */, false /* bypass_limits */, nAbsurdFee);
     fInMempool = ret;
     return ret;
 }

@@ -431,6 +431,12 @@ CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     return script;
 }
 
+const CAccountID& PledgePayload::GetDebitAccountID() const {
+    // For performance
+    const uint64_t *ptr = (const uint64_t *) scriptID.begin();
+    return ptr[0];
+}
+
 CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
     if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout[0].scriptPubKey.IsUnspendable())
         return nullptr;
@@ -462,14 +468,11 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
         std::vector<unsigned char> debitDestBytes;
         if (!scriptPubKey.GetOp(pc, opcode, debitDestBytes) || opcode != CScriptID::WIDTH)
             return nullptr;
-        CAccountID debitAccountID = GetAccountIDByScriptID(CScriptID(uint160(debitDestBytes)));
-        if (debitAccountID == 0)
+        std::shared_ptr<PledgePayload> payload = std::make_shared<PledgePayload>();
+        payload->scriptID = uint160(debitDestBytes);
+        if (payload->GetDebitAccountID() == 0)
             return nullptr;
 
-        CDatacarrierPayloadRef payload = std::make_shared<DatacarrierPayload>();
-        payload->type = (DatacarrierType) type;
-        payload->pledge.debitAccountID = debitAccountID;
-        memcpy(payload->pledge.debitScriptID, &debitDestBytes[0], CScriptID::WIDTH);
         return payload;
     }
 

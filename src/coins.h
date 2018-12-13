@@ -68,13 +68,13 @@ public:
         uint32_t code = (extraData ? 0x80000000 : 0) | (nHeight << 1) | (fCoinBase ? 1 : 0);
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
+
         if (code & 0x80000000) {
             ::Serialize(s, VARINT((unsigned int&)extraData->type));
             if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                ::Serialize(s, VARINT(extraData->bindPlotter.id));
+                ::Serialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
             } else if (extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                CScriptID scriptID(uint160({extraData->pledge.debitScriptID, extraData->pledge.debitScriptID + CScriptID::WIDTH}));
-                ::Serialize(s, REF(scriptID));
+                ::Serialize(s, REF(PledgePayload::As(extraData)->scriptID));
             } else
                 assert(false);
         }
@@ -87,21 +87,16 @@ public:
         nHeight = (code&0x7fffffff) >> 1;
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
+
         if (code & 0x80000000) {
             unsigned int extraDataType;
             ::Unserialize(s, VARINT(extraDataType));
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
-                extraData = std::make_shared<DatacarrierPayload>();
-                extraData->type = (DatacarrierType) extraDataType;
-                ::Unserialize(s, VARINT(extraData->bindPlotter.id));
+                extraData = std::make_shared<BindPlotterPayload>();
+                ::Unserialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
             } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
-                CScriptID scriptID;
-                ::Unserialize(s, REF(scriptID));
-
-                extraData = std::make_shared<DatacarrierPayload>();
-                extraData->type = (DatacarrierType)extraDataType;
-                extraData->pledge.debitAccountID = GetAccountIDByScriptID(scriptID);
-                memcpy(extraData->pledge.debitScriptID, scriptID.begin(), CScriptID::WIDTH);
+                extraData = std::make_shared<PledgePayload>();
+                ::Unserialize(s, REF(PledgePayload::As(extraData)->scriptID));
             } else
                 assert(false);
         }

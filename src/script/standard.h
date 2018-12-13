@@ -207,25 +207,60 @@ enum DatacarrierType : unsigned int {
     // Type of consensus relevant
     DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
     DATACARRIER_TYPE_PLEDGE      = 0x00000011,
+    DATACARRIER_TYPE_CONTRACT    = 0x00000012,
 
     // Others
-    DATACARRIER_TYPE_TEXT        = 0x00000012,
+    DATACARRIER_TYPE_TEXT        = 0x00000013,
 };
 
 /**
  * Datacarrier payload
  */
-struct DatacarrierPayload {
-    DatacarrierType type;
-    union {
-        //! Bind plotter
-        struct { uint64_t id; } bindPlotter;
-        //! Pledge rent
-        struct { unsigned char debitScriptID[CScriptID::WIDTH]; CAccountID debitAccountID; } pledge;
-    };
+class DatacarrierPayload
+{
+public:
+    DatacarrierPayload(DatacarrierType typeIn) : type(typeIn) {}
+    virtual ~DatacarrierPayload() {}
+    const DatacarrierType type;
+};
+typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
+
+// For bind plotter tx
+class BindPlotterPayload : public DatacarrierPayload
+{
+public:
+    // Checkable cast for CDatacarrierPayloadRef
+    static BindPlotterPayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_BINDPLOTTER);
+        return (BindPlotterPayload*) ref.get();
+    }
+    static const BindPlotterPayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_BINDPLOTTER);
+        return (const BindPlotterPayload*) ref.get();
+    }
+
+    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0) {}
+    uint64_t id;
 };
 
-typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
+// For pledge tx
+class PledgePayload : public DatacarrierPayload
+{
+public:
+    // Checkable cast for CDatacarrierPayloadRef
+    static PledgePayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
+        return (PledgePayload*) ref.get();
+    }
+    static const PledgePayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
+        return (const PledgePayload*) ref.get();
+    }
+
+    PledgePayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGE) {}
+    const CAccountID& GetDebitAccountID() const;
+    CScriptID scriptID;
+};
 
 /** The bind plotter lock amount */
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;

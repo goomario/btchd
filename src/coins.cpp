@@ -256,7 +256,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
             if (it->second.coin.refOutAccountID != accountID &&
                 (it->second.coin.extraData == nullptr ||
                     it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
-                    it->second.coin.extraData->pledge.debitAccountID != accountID)) {
+                    PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                 continue;
             }
             tempUsCoinsMap[it->first] = it->second;
@@ -272,7 +272,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                 if (it->second.coin.refOutAccountID != accountID &&
                     (it->second.coin.extraData == nullptr ||
                         it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
-                        it->second.coin.extraData->pledge.debitAccountID != accountID)) {
+                        PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                     continue;
                 }
                 CCoinsMap::iterator itUs = tempUsCoinsMap.find(it->first);

@@ -22,8 +22,16 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod payOperateMethod, const Platform
 {
     ui->setupUi(this);
 
-    if (payOperateMethod == PayOperateMethod::SendPledge)
+    if (payOperateMethod == PayOperateMethod::SendPledge) {
         ui->payToLabel->setText("Pledge &To:");
+    } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
+        ui->payToLabel->setText("Bind &To:");
+        ui->payAmount->setValue(PROTOCOL_BINDPLOTTER_AMOUNT);
+        ui->payAmount->setEnabled(false);
+        ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
+        ui->useAvailableBalanceButton->setVisible(false);
+    }
 
     ui->addressBookButton->setIcon(platformStyle->SingleColorIcon(":/icons/address-book"));
     ui->pasteButton->setIcon(platformStyle->SingleColorIcon(":/icons/editpaste"));

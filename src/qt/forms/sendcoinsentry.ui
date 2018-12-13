@@ -38,6 +38,12 @@
     </property>
     <item row="0" column="0">
      <widget class="QLabel" name="payToLabel">
+      <property name="minimumSize">
+       <size>
+        <width>70</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Pay &amp;To:</string>
       </property>
@@ -1250,6 +1256,7 @@
     </item>
    </layout>
   </widget>
+  <widget class="QFrame" name="SendCoins_BindPlotterId"/>
  </widget>
  <customwidgets>
   <customwidget>
