@@ -35,14 +35,14 @@ struct AddressTableEntry
     QString address;
     bool fPrimary;
     CAmount amount;
-    CAmount pledgeCreditAmount;
+    CAmount pledgeLoanAmount;
     CAmount pledgeDebitAmount;
     CAmount bindPlotterAmount;
 
     AddressTableEntry() {}
     AddressTableEntry(Type _type, const QString &_label, const QString &_address):
         type(_type), label(_label), address(_address), fPrimary(false),
-        amount(0), pledgeCreditAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0) {}
+        amount(0), pledgeLoanAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0) {}
 };
 
 struct AddressTableEntryLessThan
@@ -192,7 +192,7 @@ AddressTableModel::AddressTableModel(const PlatformStyle *_platformStyle, CWalle
     wallet(_wallet),
     priv(0)
 {
-    columns << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Locked") << tr("Pledge credit") << tr("Pledge debit");
+    columns << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Loan") << tr("Debit") << tr("Locked");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -226,8 +226,8 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         switch(index.column())
         {
         case Status:
-            if (!rec->fPrimary)
-                return "\0";
+            if (role == Qt::EditRole && rec->fPrimary)
+                return tr("Primary address");
             break; 
         case Label:
             if(rec->label.isEmpty() && role == Qt::DisplayRole)
@@ -245,21 +245,21 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
                 CAccountID accountID = GetAccountIDByAddress(rec->address.toStdString());
                 if (accountID != 0) {
                     LOCK(cs_main);
-                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->bindPlotterAmount, &rec->pledgeCreditAmount, &rec->pledgeDebitAmount);
+                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->bindPlotterAmount, &rec->pledgeLoanAmount, &rec->pledgeDebitAmount);
                 } else {
                     rec->amount = 0;
-                    rec->pledgeCreditAmount = 0;
+                    rec->pledgeLoanAmount = 0;
                     rec->pledgeDebitAmount = 0;
                     rec->bindPlotterAmount = 0;
                 }
             }
             return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount, false, BitcoinUnits::separatorNever);
-        case LockedAmount:
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeCreditAmount, false, BitcoinUnits::separatorNever);
-        case PledgeCreditAmount:
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeCreditAmount, false, BitcoinUnits::separatorNever);
-        case PledgeDebitAmount:
+        case LoanAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever);
+        case DebitAmount:
             return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever);
+        case LockedAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever);
         }
     }
     else if (role == Qt::FontRole)
@@ -293,11 +293,24 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
     }
     else if (role == Qt::ToolTipRole)
     {
-        if (index.column() == Status)
+        switch (index.column())
         {
-            if (rec->fPrimary) {
+        case Status:
+        case Address:
+            if (rec->fPrimary)
                 return tr("Primary address");
-            }
+            break;
+        case Amount:
+        case LoanAmount:
+        case DebitAmount:
+        case LockedAmount:
+            return QString(tr("Total: %1\nAvaiable: %2\nLoan: %3\nDebit: %4\nAvaiable pledge: %5\nLocked: %6"))
+                    .arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->bindPlotterAmount - rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->pledgeLoanAmount +rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever));
         }
     }
     return QVariant();
@@ -488,10 +501,13 @@ bool AddressTableModel::removeRows(int row, int count, const QModelIndex &parent
         // Can only remove one row at a time, and cannot remove rows not in model.
         return false;
     }
+
     {
+        LOCK2(cs_main, wallet->cs_wallet);
         // Refuse to remove primary addresse. See CWallet::DelAddressBook()
-        LOCK(wallet->cs_wallet);
         wallet->DelAddressBook(DecodeDestination(rec->address.toStdString()));
+        // Remove from watch-only
+        wallet->RemoveWatchOnlyIfExist(DecodeDestination(rec->address.toStdString()));
     }
     return true;
 }

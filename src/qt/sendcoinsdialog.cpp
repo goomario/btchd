@@ -575,19 +575,19 @@ bool SendCoinsDialog::handlePaymentRequest(const SendCoinsRecipient &rv)
 }
 
 void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                                 const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                                 const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
                                  const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                                 const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
+                                 const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
 {
     Q_UNUSED(unconfirmedBalance);
     Q_UNUSED(immatureBalance);
-    Q_UNUSED(pledgeCreditBalance);
+    Q_UNUSED(pledgeLoanBalance);
     Q_UNUSED(pledgeDebitBalance);
     Q_UNUSED(lockedBalance);
     Q_UNUSED(watchBalance);
     Q_UNUSED(watchUnconfBalance);
     Q_UNUSED(watchImmatureBalance);
-    Q_UNUSED(watchPledgeCreditBalance);
+    Q_UNUSED(watchPledgeLoanBalance);
     Q_UNUSED(watchPledgeDebitBalance);
     Q_UNUSED(watchLockedBalance);
 

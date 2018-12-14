@@ -209,14 +209,14 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
 
     if (!hashBlock.IsNull()) {
         entry.pushKV("blockhash", hashBlock.GetHex());
+    }
 
-        if (tx.nVersion == CTransaction::UNIFORM_VERSION) {
-            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
-            if (payload != nullptr) {
-                UniValue extra(UniValue::VOBJ);;
-                DatacarrierPayloadToUniv(*payload, tx.vout[0], extra);
-                entry.push_back(Pair("extra", extra));
-            }
+    if (tx.nVersion == CTransaction::UNIFORM_VERSION) {
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
+        if (payload) {
+            UniValue extra(UniValue::VOBJ);;
+            DatacarrierPayloadToUniv(*payload, tx.vout[0], extra);
+            entry.push_back(Pair("extra", extra));
         }
     }
 
@@ -240,7 +240,7 @@ void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& t
         CTxDestination relevantDest;
         ExtractDestination(txOut.scriptPubKey, relevantDest);
 
-        out.push_back(Pair("type", "pledgecredit"));
+        out.push_back(Pair("type", "pledge"));
         out.push_back(Pair("from", EncodeDestination(relevantDest)));
         out.push_back(Pair("to", EncodeDestination(ptr->scriptID)));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));

@@ -265,8 +265,8 @@ public:
 /** The bind plotter lock amount */
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
 
-/** The minimal pledge rent amount */
-static const CAmount PROTOCOL_PLEDGERENT_AMOUNT_MIN = 1 * COIN;
+/** The minimal pledge loan amount */
+static const CAmount PROTOCOL_PLEDGE_AMOUNT_MIN = 1 * COIN;
 
 /** Generate a bind plotter script. */
 CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId);

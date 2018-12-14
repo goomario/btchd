@@ -84,7 +84,7 @@ public:
     size_t EstimateSize() const override;
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
 };
 
 /** Access to the block database (blocks/index/) */

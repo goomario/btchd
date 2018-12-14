@@ -41,7 +41,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     QObject(parent), wallet(_wallet), optionsModel(_optionsModel), addressTableModel(0),
     transactionTableModel(0),
     recentRequestsTableModel(0),
-    cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0), cachedPledgeCreditBalance(0), cachedPledgeDebitBalance(0), cachedLockedBalance(0),
+    cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0), cachedPledgeLoanBalance(0), cachedPledgeDebitBalance(0), cachedLockedBalance(0),
     cachedEncryptionStatus(Unencrypted),
     cachedNumBlocks(0)
 {
@@ -87,7 +87,7 @@ CAmount WalletModel::getImmatureBalance() const
 
 CAmount WalletModel::getPledgeCreditBalance() const
 {
-    return wallet->GetPledgeCreditBalance();
+    return wallet->GetPledgeLoanBalance();
 }
 
 CAmount WalletModel::getPledgeDebitBalance() const
@@ -122,7 +122,7 @@ CAmount WalletModel::getWatchImmatureBalance() const
 
 CAmount WalletModel::getWatchPledgeCreditBalance() const
 {
-    return wallet->GetPledgeCreditWatchOnlyBalance();
+    return wallet->GetPledgeLoanWatchOnlyBalance();
 }
 
 CAmount WalletModel::getWatchPledgeDebitBalance() const
@@ -200,22 +200,22 @@ void WalletModel::checkBalanceChanged()
         newWatchLockedBalance = getWatchLockedBalance();
     }
 
-    if(cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance || cachedImmatureBalance != newImmatureBalance ||
-        cachedPledgeCreditBalance != newPledgeCreditBalance || cachedPledgeDebitBalance != newPledgeDebitBalance || cachedLockedBalance != newLockedBalance ||
+    if (cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance || cachedImmatureBalance != newImmatureBalance ||
+        cachedPledgeLoanBalance != newPledgeCreditBalance || cachedPledgeDebitBalance != newPledgeDebitBalance || cachedLockedBalance != newLockedBalance ||
         cachedWatchBalance != newWatchBalance || cachedWatchUnconfBalance != newWatchUnconfBalance || cachedWatchImmatureBalance != newWatchImmatureBalance ||
-        cachedWatchPledgeCreditBalance != newWatchPledgeCreditBalance || cachedWatchPledgeDebitBalance != newWatchPledgeDebitBalance ||
+        cachedWatchPledgeLoanBalance != newWatchPledgeCreditBalance || cachedWatchPledgeDebitBalance != newWatchPledgeDebitBalance ||
         cachedWatchLockedBalance != newWatchLockedBalance)
     {
         cachedBalance = newBalance;
         cachedUnconfirmedBalance = newUnconfirmedBalance;
         cachedImmatureBalance = newImmatureBalance;
-        cachedPledgeCreditBalance = newPledgeCreditBalance;
+        cachedPledgeLoanBalance = newPledgeCreditBalance;
         cachedPledgeDebitBalance = newPledgeDebitBalance;
         cachedLockedBalance = newLockedBalance;
         cachedWatchBalance = newWatchBalance;
         cachedWatchUnconfBalance = newWatchUnconfBalance;
         cachedWatchImmatureBalance = newWatchImmatureBalance;
-        cachedWatchPledgeCreditBalance = newWatchPledgeCreditBalance;
+        cachedWatchPledgeLoanBalance = newWatchPledgeCreditBalance;
         cachedWatchPledgeDebitBalance = newWatchPledgeDebitBalance;
         cachedWatchLockedBalance = newWatchLockedBalance;
         Q_EMIT balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance,
@@ -317,7 +317,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         const SendCoinsRecipient &rcp = recipients[0];
         if (!validateAddress(rcp.address))
             return InvalidAddress;
-        if (rcp.amount < PROTOCOL_PLEDGERENT_AMOUNT_MIN)
+        if (rcp.amount < PROTOCOL_PLEDGE_AMOUNT_MIN)
             return InvalidAmount;
         setAddress.insert(rcp.address);
         ++nAddresses;
@@ -376,7 +376,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
 
         // Check pledge amount
-        if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGERENT_AMOUNT_MIN)
+        if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGE_AMOUNT_MIN)
             return InvalidAmount;
 
         // reject absurdly high fee. (This can never happen because the
@@ -819,7 +819,7 @@ bool WalletModel::transactionCanBeUnlock(uint256 hash, DatacarrierType type) con
     LOCK2(cs_main, wallet->cs_wallet);
 
     const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
-    if (coin.IsSpent() || coin.extraData == nullptr || coin.extraData->type != type)
+    if (coin.IsSpent() || !coin.extraData || coin.extraData->type != type)
         return false;
 
     if (!(wallet->IsMine(coin.out) & ISMINE_SPENDABLE))
@@ -846,7 +846,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
 
     // Coin
     const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
-    if (coin.IsSpent() || coin.extraData == nullptr || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGE))
+    if (coin.IsSpent() || !coin.extraData || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGE))
         return false;
 
     CCoinControl coin_control;
@@ -854,6 +854,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
 
     // Create transaction
     CMutableTransaction txNew;
+    txNew.nVersion = CTransaction::UNIFORM_VERSION;
     txNew.nLockTime = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
     txNew.vin.push_back(CTxIn(COutPoint(hash, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     CTxDestination lockedDest;
@@ -864,7 +865,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     CAmount nFeeOut = 0;
     int changePosition = -1;
     std::string strFailReason;
-    if (!wallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control, CTransaction::UNIFORM_VERSION)) {
+    if (!wallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control)) {
         if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
             QMessageBox::critical(0, tr("Unbind plotter error"), QString::fromStdString(strFailReason));
         } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {

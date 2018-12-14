@@ -2742,7 +2742,7 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
             "  \"balance\": xxxxxxx,              (numeric) the total confirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"unconfirmed_balance\": xxx,      (numeric) the total unconfirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"immature_balance\": xxxxxx,      (numeric) the total immature balance of the wallet in " + CURRENCY_UNIT + "\n"
-            "  \"pledgecredit_balance\": xxxxxx,  (numeric) the total pledge credit balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"pledgeload_balance\": xxxxxx,    (numeric) the total pledge loan balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"pledgedebit_balance\": xxxxxx,   (numeric) the total pledge debit balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"locked_balance\": xxxxxx,        (numeric) the total locked balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"txcount\": xxxxxxx,              (numeric) the total number of transactions in the wallet\n"
@@ -2772,11 +2772,11 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
     obj.push_back(Pair("walletname", pwallet->GetName()));
     obj.push_back(Pair("walletversion", pwallet->GetVersion()));
     obj.push_back(Pair("balance",       ValueFromAmount(pwallet->GetBalance())));
-    obj.push_back(Pair("unconfirmed_balance",  ValueFromAmount(pwallet->GetUnconfirmedBalance())));
-    obj.push_back(Pair("immature_balance",     ValueFromAmount(pwallet->GetImmatureBalance())));
-    obj.push_back(Pair("pledgecredit_balance", ValueFromAmount(pwallet->GetPledgeCreditBalance())));
-    obj.push_back(Pair("pledgedebit_balance",  ValueFromAmount(pwallet->GetPledgeDebitBalance())));
-    obj.push_back(Pair("locked_balance",       ValueFromAmount(pwallet->GetLockedBalance())));
+    obj.push_back(Pair("unconfirmed_balance", ValueFromAmount(pwallet->GetUnconfirmedBalance())));
+    obj.push_back(Pair("immature_balance",    ValueFromAmount(pwallet->GetImmatureBalance())));
+    obj.push_back(Pair("pledgeload_balance",  ValueFromAmount(pwallet->GetPledgeLoanBalance())));
+    obj.push_back(Pair("pledgedebit_balance", ValueFromAmount(pwallet->GetPledgeDebitBalance())));
+    obj.push_back(Pair("locked_balance",      ValueFromAmount(pwallet->GetLockedBalance())));
     obj.push_back(Pair("txcount",       (int)pwallet->mapWallet.size()));
     obj.push_back(Pair("keypoololdest", pwallet->GetOldestKeyPoolTime()));
     obj.push_back(Pair("keypoolsize", (int64_t)kpExternalSize));
@@ -3549,7 +3549,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 8)
         throw std::runtime_error(
             "sendpledgetoaddress \"address\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\")\n"
-            "\nSend an amount for pledge rent credit to a given address.\n"
+            "\nSend an amount for pledge loan to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"address\"            (string, required) The BitcoinHD address to send to.\n"
@@ -3592,8 +3592,8 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     CAmount nAmount = AmountFromValue(request.params[1]);
     if (nAmount <= 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount for send");
-    else if (nAmount < PROTOCOL_PLEDGERENT_AMOUNT_MIN)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Small amount for pledge");
+    else if (nAmount <= PROTOCOL_PLEDGE_AMOUNT_MIN)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require big then %s", FormatMoney(PROTOCOL_PLEDGE_AMOUNT_MIN)));
 
     // Wallet comments
     CWalletTx wtx;
@@ -3626,7 +3626,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
 
     // Check active state
     if (chainActive.Height() + 1 < Params().GetConsensus().BHDIP006Height) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge credit service inactive (Will active on " + std::to_string(Params().GetConsensus().BHDIP006Height) + ")");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The pledge loan inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
 
     CTxDestination primaryDest = pwallet->GetPrimaryDestination();
@@ -3653,6 +3653,10 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     if (!pwallet->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, CTransaction::UNIFORM_VERSION)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
+    if (nAmount - nFeeRequired < PROTOCOL_PLEDGE_AMOUNT_MIN)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Error: This pledge amount %s (requires fee of at least %s) small then %s",
+            FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_PLEDGE_AMOUNT_MIN)));
+
     CValidationState state;
     if (!pwallet->CommitTransaction(wtx, reservekey, g_connman.get(), state)) {
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", state.GetRejectReason());
@@ -3672,7 +3676,7 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 6)
         throw std::runtime_error(
             "withdrawpledge \"txid\" ( \"comment\" \"comment_to\" replaceable conf_target \"estimate_mode\")\n"
-            "\nWithdraw an pledge for a given txid.\n"
+            "\nWithdraw an pledge loan for a given txid.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"txid\"               (string, required) The pledge transaction id\n"
@@ -3729,25 +3733,26 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
 
     // Create transaction
     CMutableTransaction txNew;
+    txNew.nVersion = CTransaction::UNIFORM_VERSION;
     txNew.nLockTime = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
     txNew.vin.push_back(CTxIn(COutPoint(txid, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
         const Coin &coin = pcoinsTip->AccessCoin(COutPoint(txid, 0));
-        if (coin.IsSpent() || coin.extraData == nullptr || coin.extraData->type != DATACARRIER_TYPE_PLEDGE)
+        if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_PLEDGE)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not pledge");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge not mine");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge loan not mine");
         
         CTxDestination dest;
         if (!ExtractDestination(coin.out.scriptPubKey, dest))
-            throw JSONRPCError(RPC_WALLET_ERROR, "The pledge transaction coin destination cannot extract");
+            throw JSONRPCError(RPC_WALLET_ERROR, "The pledge loan transaction coin destination cannot extract");
 
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
     }
     CAmount nFeeOut = 0;
     int changePosition = -1;
     std::string strFailReason;
-    if (!pwallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control, CTransaction::UNIFORM_VERSION))
+    if (!pwallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control))
         throw JSONRPCError(RPC_WALLET_ERROR, strFailReason);
 
     // Sign transaction
@@ -3789,7 +3794,7 @@ UniValue listpledges(const JSONRPCRequest& request)
             "  {\n"
             "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
             "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
-            "    \"category\":\"credit|debit|self\",    (string) The pledge transaction category.\n"
+            "    \"category\":\"loan|debit|self\",    (string) The pledge transaction category.\n"
             "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
@@ -3855,7 +3860,7 @@ UniValue listpledges(const JSONRPCRequest& request)
         CDatacarrierPayloadRef payload;
         // Read coin from cache
         const Coin &coin = pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0));
-        if (coin.extraData == nullptr) {
+        if (!coin.extraData) {
             // Coin not found from cache, read from tx
             if (fIncludeInvalid)
                 payload = ExtractTransactionDatacarrier(*wtx.tx);
@@ -3863,10 +3868,10 @@ UniValue listpledges(const JSONRPCRequest& request)
             // In cache
             payload = coin.extraData;
         }
-        if (payload == nullptr || payload->type != DATACARRIER_TYPE_PLEDGE)
+        if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
             continue;
 
-        bool fValid = (!coin.IsSpent() && coin.extraData != nullptr && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
+        bool fValid = (!coin.IsSpent() && coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
         if (!fIncludeInvalid && !fValid)
             continue;
 
@@ -3884,7 +3889,7 @@ UniValue listpledges(const JSONRPCRequest& request)
         txPledgeRent.txid = wtx.GetHash();
         txPledgeRent.fromDest = fromDest;
         txPledgeRent.toDest = toDest;
-        txPledgeRent.category = (fSendIsmine && fReceiveIsmine) ? "self" : (fSendIsmine ? "credit" : "debit");
+        txPledgeRent.category = (fSendIsmine && fReceiveIsmine) ? "self" : (fSendIsmine ? "loan" : "debit");
         txPledgeRent.fValid = fValid;
         txPledgeRent.fFromWatchonly = (sendIsmine & ISMINE_WATCH_ONLY) != 0;
         txPledgeRent.fToWatchonly = (receiveIsmine & ISMINE_WATCH_ONLY) != 0;

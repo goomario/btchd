@@ -218,7 +218,7 @@ public:
 
     //! Get balance. Return all available balance
     virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const;
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const;
 };
 
 
@@ -241,7 +241,7 @@ public:
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-       CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
+       CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
 };
 
 
@@ -283,7 +283,7 @@ public:
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const override;
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -353,7 +353,7 @@ public:
      * Scan UTXO for the account. Return total balance.
      */
     CAmount GetAccountBalance(const CAccountID &accountID, 
-        CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeCreditBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
+        CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;

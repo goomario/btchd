@@ -344,7 +344,7 @@ public:
     mutable CacheableAmount creditCached, watchOnlyCreditCached;
     mutable CacheableAmount immatureCreditCached, watchOnlyImmatureCreditCached;
     mutable CacheableAmount availableCreditCached, watchOnlyAvailableCreditCached;
-    mutable CacheableAmount pledgeCreditCached, watchOnlyPledgeCreditCached;
+    mutable CacheableAmount pledgeLoanCached, watchOnlyPledgeLoanCached;
     mutable CacheableAmount pledgeDebitCached, watchOnlyPledgeDebitCached;
     mutable CacheableAmount lockedCreditCached, watchOnlyLockedCreditCached;
     mutable CacheableAmount changeCached;
@@ -374,7 +374,7 @@ public:
         creditCached.first = watchOnlyCreditCached.first = false;
         immatureCreditCached.first = watchOnlyImmatureCreditCached.first = false;
         availableCreditCached.first = watchOnlyAvailableCreditCached.first = false;
-        pledgeCreditCached.first = watchOnlyPledgeCreditCached.first = false;
+        pledgeLoanCached.first = watchOnlyPledgeLoanCached.first = false;
         pledgeDebitCached.first = watchOnlyPledgeDebitCached.first = false;
         lockedCreditCached.first = watchOnlyLockedCreditCached.first = false;
         changeCached.first = false;
@@ -432,7 +432,7 @@ public:
         creditCached.first = watchOnlyCreditCached.first = false;
         immatureCreditCached.first = watchOnlyImmatureCreditCached.first = false;
         availableCreditCached.first = watchOnlyAvailableCreditCached.first = false;
-        pledgeCreditCached.first = watchOnlyPledgeCreditCached.first = false;
+        pledgeLoanCached.first = watchOnlyPledgeLoanCached.first = false;
         pledgeDebitCached.first = watchOnlyPledgeDebitCached.first = false;
         lockedCreditCached.first = watchOnlyLockedCreditCached.first = false;
         changeCached.first = false;
@@ -449,12 +449,12 @@ public:
     CAmount GetCredit(const isminefilter& filter) const;
     CAmount GetImmatureCredit(bool fUseCache=true) const;
     CAmount GetAvailableCredit(bool fUseCache=true) const;
-    CAmount GetPledgeCredit(bool fUseCache=true) const;
+    CAmount GetPledgeLoan(bool fUseCache=true) const;
     CAmount GetPledgeDebit(bool fUseCache=true) const;
     CAmount GetLockedCredit(bool fUseCache=true) const;
     CAmount GetWatchOnlyImmatureCredit(const bool fUseCache=true) const;
     CAmount GetWatchOnlyAvailableCredit(const bool fUseCache=true) const;
-    CAmount GetWatchOnlyPledgeCredit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyPledgeLoan(const bool fUseCache=true) const;
     CAmount GetWatchOnlyPledgeDebit(const bool fUseCache=true) const;
     CAmount GetWatchOnlyLockedCredit(const bool fUseCache=true) const;
     CAmount GetChange() const;
@@ -536,7 +536,7 @@ public:
     bool fSafe;
 
     /**
-     * Whether this output lock in bind plotter or pledge credit
+     * Whether this output lock in bind plotter or pledge loan
      */
     bool fLock;
 
@@ -924,6 +924,8 @@ public:
     bool RemoveWatchOnly(const CScript &dest) override;
     //! Adds a watch-only address to the store, without saving it to disk (used by LoadWallet)
     bool LoadWatchOnly(const CScript &dest);
+    //! Remove watch-only address if exist, will update transactions
+    bool RemoveWatchOnlyIfExist(const CTxDestination &dest);
 
     //! Holds a timestamp at which point the wallet is scheduled (externally) to be relocked. Caller must arrange for actual relocking to occur via Lock().
     int64_t nRelockTime;
@@ -968,13 +970,13 @@ public:
     CAmount GetBalance() const;
     CAmount GetUnconfirmedBalance() const;
     CAmount GetImmatureBalance() const;
-    CAmount GetPledgeCreditBalance() const;
+    CAmount GetPledgeLoanBalance() const;
     CAmount GetPledgeDebitBalance() const;
     CAmount GetLockedBalance() const;
     CAmount GetWatchOnlyBalance() const;
     CAmount GetUnconfirmedWatchOnlyBalance() const;
     CAmount GetImmatureWatchOnlyBalance() const;
-    CAmount GetPledgeCreditWatchOnlyBalance() const;
+    CAmount GetPledgeLoanWatchOnlyBalance() const;
     CAmount GetPledgeDebitWatchOnlyBalance() const;
     CAmount GetLockedWatchOnlyBalance() const;
     CAmount GetLegacyBalance(const isminefilter& filter, int minDepth, const std::string* account) const;
@@ -986,7 +988,7 @@ public:
      * Insert additional inputs into the transaction by
      * calling CreateTransaction();
      */
-    bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl &coinControl, int32_t nTxVersion = 0);
+    bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl &coinControl);
     bool SignTransaction(CMutableTransaction& tx);
 
     /**

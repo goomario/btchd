@@ -256,13 +256,13 @@ private:
     CAmount cachedBalance;
     CAmount cachedUnconfirmedBalance;
     CAmount cachedImmatureBalance;
-    CAmount cachedPledgeCreditBalance;
+    CAmount cachedPledgeLoanBalance;
     CAmount cachedPledgeDebitBalance;
     CAmount cachedLockedBalance;
     CAmount cachedWatchBalance;
     CAmount cachedWatchUnconfBalance;
     CAmount cachedWatchImmatureBalance;
-    CAmount cachedWatchPledgeCreditBalance;
+    CAmount cachedWatchPledgeLoanBalance;
     CAmount cachedWatchPledgeDebitBalance;
     CAmount cachedWatchLockedBalance;
     EncryptionStatus cachedEncryptionStatus;
@@ -277,9 +277,9 @@ private:
 Q_SIGNALS:
     // Signal that balance in wallet changed
     void balanceChanged(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                        const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                        const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
                         const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                        const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
+                        const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
 
     // Encryption status of wallet changed
     void encryptionStatusChanged(int status);

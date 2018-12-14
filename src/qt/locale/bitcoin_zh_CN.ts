@@ -119,11 +119,11 @@
         <translation>总额</translation>
     </message>
     <message>
-        <source>Pledge credit</source>
+        <source>Loan</source>
         <translation>借出总额</translation>
     </message>
     <message>
-        <source>Pledge debit</source>
+        <source>Debit</source>
         <translation>借入总额</translation>
     </message>
     <message>
@@ -137,6 +137,10 @@
     <message>
         <source>Primary address</source>
         <translation>首选地址</translation>
+    </message>
+    <message>
+        <source>Total: %1\nAvaiable: %2\nLoan: %3\nDebit: %4\nAvaiable pledge: %5\nLocked: %6</source>
+        <translation>总额: %1\n可用总额: %2\n借出抵押: %3\n借入抵押: %4\n可用于挖矿的抵押额: %5\n锁定的总额: %6</translation>
     </message>
 </context>
 <context>
@@ -1351,15 +1355,15 @@
         <translation>锁定的余额：</translation>
     </message>
     <message>
-        <source>Total of balance that have to be locked (for bind plotter), and do not yet count toward the spendable balance</source>
-        <translation>因绑定算力而被锁定的总额，未计入当前余额</translation>
+        <source>Total of balance that have to be locked (for bind plotter and pledge loan), and do not yet count toward the spendable balance</source>
+        <translation>被锁定的总额(绑定算力和抵押租出)，未计入当前余额</translation>
     </message>
     <message>
-        <source>Pledge credit:</source>
+        <source>Pledge loan:</source>
         <translation>借出的抵押额：</translation>
     </message>
     <message>
-        <source>Total of balance that have to be pledge credit, and do not yet count toward the spendable balance</source>
+        <source>Total of balance that have to be pledge loan, and do not yet count toward the spendable balance</source>
         <translation>借出的抵押总额，未计入当前余额</translation>
     </message>
     <message>
@@ -1407,11 +1411,11 @@
         <translation>观察地址(watch-only address)中的当前总余额</translation>
     </message>
     <message>
-        <source>Locked (for bind plotter) balance to watch-only addresses</source>
-        <translation>观察地址(watch-only address)的因绑定算力而锁定的总额</translation>
+        <source>Locked (for bind plotter and pledge loan) balance to watch-only addresses</source>
+        <translation>观察地址(watch-only address)锁定的总额(绑定算力和抵押租出)</translation>
     </message>
     <message>
-        <source>Pledge credit to watch-only addresses</source>
+        <source>Pledge loan to watch-only addresses</source>
         <translation>观察地址(watch-only address)借出的抵押总额</translation>
     </message>
     <message>

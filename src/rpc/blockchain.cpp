@@ -1041,7 +1041,7 @@ UniValue gettxout(const JSONRPCRequest& request)
     ret.push_back(Pair("scriptPubKey", o));
     ret.push_back(Pair("coinbase", (bool)coin.fCoinBase));
 
-    if (coin.extraData != nullptr) {
+    if (coin.extraData) {
         UniValue extra(UniValue::VOBJ);;
         DatacarrierPayloadToUniv(*coin.extraData, coin.out, extra);
         ret.push_back(Pair("extra", extra));

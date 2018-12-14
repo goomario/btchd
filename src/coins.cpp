@@ -18,10 +18,10 @@ CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeCreditCursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeDebitCursor(const CAccountID &accountID) const { return nullptr; }
 CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+    CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
     if (pBindPlotterBalance != nullptr) *pBindPlotterBalance = 0;
-    if (pPledgeCreditBalance != nullptr) *pPledgeCreditBalance = 0;
+    if (pPledgeLoanBalance != nullptr) *pPledgeLoanBalance = 0;
     if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
     return 0;
 }
@@ -43,9 +43,9 @@ CCoinsViewCursorRef CCoinsViewBacked::PledgeCreditCursor(const CAccountID &accou
 CCoinsViewCursorRef CCoinsViewBacked::PledgeDebitCursor(const CAccountID &accountID) const { return base->PledgeDebitCursor(accountID); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+    CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
-    return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+    return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
@@ -116,7 +116,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        if (i == 0 && extraData != nullptr && (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGE)) {
+        if (i == 0 && extraData && (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGE)) {
             Coin coin(tx.vout[i], nHeight, fCoinbase);
             coin.extraData = extraData;
             cache.AddCoin(COutPoint(txid, i), std::move(coin), overwrite);
@@ -233,12 +233,12 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
 }
 
 CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+    CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
     // Invalid account ID
     if (accountID == 0) {
         if (pBindPlotterBalance != nullptr) *pBindPlotterBalance = 0;
-        if (pPledgeCreditBalance != nullptr) *pPledgeCreditBalance = 0;
+        if (pPledgeLoanBalance != nullptr) *pPledgeLoanBalance = 0;
         if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
         return 0;
     }
@@ -246,15 +246,15 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
     // Merge modified coin
     assert(&mapParentModifiedCoins != &cacheCoins);
     if (cacheCoins.empty()) {
-        return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+        return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
     } else if (mapParentModifiedCoins.empty()) {
-        return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+        return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
     } else {
         CCoinsMap tempUsCoinsMap;
         // Copy current CCoinsMap
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
             if (it->second.coin.refOutAccountID != accountID &&
-                (it->second.coin.extraData == nullptr ||
+                (!it->second.coin.extraData ||
                     it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
                     PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                 continue;
@@ -262,7 +262,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
             tempUsCoinsMap[it->first] = it->second;
         }
         if (tempUsCoinsMap.empty()) {
-            return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+            return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
         } else {
             // See CCoinsViewCache::BatchWrite()
             for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
@@ -270,7 +270,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     continue;
                 }
                 if (it->second.coin.refOutAccountID != accountID &&
-                    (it->second.coin.extraData == nullptr ||
+                    (!it->second.coin.extraData ||
                         it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
                         PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                     continue;
@@ -297,16 +297,16 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     }
                 }
             }
-            return base->GetBalance(accountID, tempUsCoinsMap, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+            return base->GetBalance(accountID, tempUsCoinsMap, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
         }
     }
 }
 
 CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID,
-    CAmount *pBindPlotterBalance, CAmount *pPledgeCreditBalance, CAmount *pPledgeDebitBalance) const
+    CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
     // Merge with base cache coins and calculate balance
-    return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeCreditBalance, pPledgeDebitBalance);
+    return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 
 bool CCoinsViewCache::Flush() {

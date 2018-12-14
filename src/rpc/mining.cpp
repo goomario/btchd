@@ -760,22 +760,22 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
-    CAmount totalBalance = 0, bindPlotterBalance = 0, pledgeCreditBalance = 0, pledgeDebitBalance = 0;
-    totalBalance = pcoinsTip->GetAccountBalance(accountID, &bindPlotterBalance, &pledgeCreditBalance, &pledgeDebitBalance);
+    CAmount totalBalance = 0, bindPlotterBalance = 0, pledgeLoanBalance = 0, pledgeDebitBalance = 0;
+    totalBalance = pcoinsTip->GetAccountBalance(accountID, &bindPlotterBalance, &pledgeLoanBalance, &pledgeDebitBalance);
 
     UniValue result(UniValue::VOBJ);
     //! This balance belong to your
     result.pushKV("balance", ValueFromAmount(totalBalance));
-    //! This balance freeze in bind plotter and pledge credit
-    result.pushKV("lockedBalance", ValueFromAmount(bindPlotterBalance + pledgeCreditBalance));
+    //! This balance freeze in bind plotter and pledge loan
+    result.pushKV("lockedBalance", ValueFromAmount(bindPlotterBalance + pledgeLoanBalance));
     //! This balance available spend
-    result.pushKV("availableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeCreditBalance));
-    //! This balance freeze in pledge credit
-    result.pushKV("pledgeCreditBalance", ValueFromAmount(pledgeCreditBalance));
+    result.pushKV("availableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeLoanBalance));
+    //! This balance freeze in pledge loan
+    result.pushKV("pledgeLoanBalance", ValueFromAmount(pledgeLoanBalance));
     //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
     result.pushKV("pledgeDebitBalance", ValueFromAmount(pledgeDebitBalance));
     //! This balance include pledge debit and avaliable balance. For mining pledge
-    result.pushKV("availablePledgeBalance", ValueFromAmount(totalBalance - pledgeCreditBalance + pledgeDebitBalance));
+    result.pushKV("availablePledgeBalance", ValueFromAmount(totalBalance - pledgeLoanBalance + pledgeDebitBalance));
     if (nHeight < Params().GetConsensus().BHDIP001NoPledgeHeight + 1) {
         result.pushKV("start", Params().GetConsensus().BHDIP001NoPledgeHeight + 1);
     }
@@ -1036,7 +1036,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
             assert(key.n == 0);
             assert(!coin.IsSpent());
-            assert(coin.extraData != nullptr && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
+            assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
             UniValue item(UniValue::VOBJ);
             {
                 CTxDestination fromDest;
@@ -1061,12 +1061,12 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
     return ret;
 }
 
-UniValue listpledgescreditofaddress(const JSONRPCRequest& request)
+UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "listpledgescreditofaddress address\n"
-            "\nReturns up to pledge credit coins.\n"
+            "listpledgeloanofaddress address\n"
+            "\nReturns up to pledge loan coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
             "\nResult:\n"
@@ -1083,9 +1083,9 @@ UniValue listpledgescreditofaddress(const JSONRPCRequest& request)
             "]\n"
 
             "\nExamples:\n"
-            "\nList the pledge credit coins from UTXOs\n"
-            + HelpExampleCli("listpledgescreditofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
-            + HelpExampleRpc("listpledgescreditofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            "\nList the pledge loan coins from UTXOs\n"
+            + HelpExampleCli("listpledgeloanofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("listpledgeloanofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );
 
     if (!request.params[0].isStr())
@@ -1100,11 +1100,11 @@ UniValue listpledgescreditofaddress(const JSONRPCRequest& request)
     return ListPledges(pcoinsdbview->PledgeCreditCursor(accountID));
 }
 
-UniValue listpledgesdebitofaddress(const JSONRPCRequest& request)
+UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "listpledgesdebitofaddress address\n"
+            "listpledgedebitofaddress address\n"
             "\nReturns up to pledge debit coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
@@ -1123,8 +1123,8 @@ UniValue listpledgesdebitofaddress(const JSONRPCRequest& request)
 
             "\nExamples:\n"
             "\nList the pledge debit coins from UTXOs\n"
-            + HelpExampleCli("listpledgesdebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
-            + HelpExampleRpc("listpledgesdebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleCli("listpledgedebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("listpledgedebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );
 
     if (!request.params[0].isStr())
@@ -1375,22 +1375,22 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "mining",             "getmininginfo",                &getmininginfo,                 {} },
-    { "mining",             "prioritisetransaction",        &prioritisetransaction,         {"txid","dummy","fee_delta"} },
-    { "mining",             "getblocktemplate",             &getblocktemplate,              {"template_request"} },
-    { "mining",             "submitblock",                  &submitblock,                   {"hexdata","dummy"} },
-    { "mining",             "getpledgeofaddress",           &getpledgeofaddress,            {"address", "plotterId", "verbose"} },
-    { "mining",             "getplottermininginfo",         &getplottermininginfo,          {"plotterId", "verbose"} },
-    { "mining",             "listpledgescreditofaddress",   &listpledgescreditofaddress,    {"address"} },
-    { "mining",             "listpledgesdebitofaddress",    &listpledgesdebitofaddress,     {"address"} },
+    { "mining",             "getmininginfo",                &getmininginfo,             {} },
+    { "mining",             "prioritisetransaction",        &prioritisetransaction,     {"txid","dummy","fee_delta"} },
+    { "mining",             "getblocktemplate",             &getblocktemplate,          {"template_request"} },
+    { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
+    { "mining",             "getpledgeofaddress",           &getpledgeofaddress,        {"address", "plotterId", "verbose"} },
+    { "mining",             "getplottermininginfo",         &getplottermininginfo,      {"plotterId", "verbose"} },
+    { "mining",             "listpledgeloanofaddress",      &listpledgeloanofaddress,   {"address"} },
+    { "mining",             "listpledgedebitofaddress",     &listpledgedebitofaddress,  {"address"} },
 
-    { "generating",         "generatetoaddress",            &generatetoaddress,             {"nblocks","address","maxtries"} },
+    { "generating",         "generatetoaddress",            &generatetoaddress,         {"nblocks","address","maxtries"} },
 
-    { "util",               "estimatefee",                  &estimatefee,                   {"nblocks"} },
-    { "util",               "estimatesmartfee",             &estimatesmartfee,              {"conf_target", "estimate_mode"} },
-    { "util",               "getbalanceofheight",           &getbalanceofheight,            {"address", "height"} },
+    { "util",               "estimatefee",                  &estimatefee,               {"nblocks"} },
+    { "util",               "estimatesmartfee",             &estimatesmartfee,          {"conf_target", "estimate_mode"} },
+    { "util",               "getbalanceofheight",           &getbalanceofheight,        {"address", "height"} },
 
-    { "hidden",             "estimaterawfee",               &estimaterawfee,                {"conf_target", "threshold"} },
+    { "hidden",             "estimaterawfee",               &estimaterawfee,            {"conf_target", "threshold"} },
 };
 
 void RegisterMiningRPCCommands(CRPCTable &t)

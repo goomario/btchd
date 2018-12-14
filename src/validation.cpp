@@ -1187,10 +1187,10 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     } else {
         // Normal mining
         if (nSubsidy > 0) {
-            CAmount minerPledgeAmount = 0, totalBalance = 0, pledgeCreditBalance = 0, pledgeDebitBalance = 0;
+            CAmount minerPledgeAmount = 0, totalBalance = 0, pledgeLoanBalance = 0, pledgeDebitBalance = 0;
             minerPledgeAmount = GetMinerPledge(minerAccountID, nHeight - 1, nPlotterId, consensusParams);
-            totalBalance = view.GetAccountBalance(minerAccountID, nullptr, &pledgeCreditBalance, &pledgeDebitBalance);
-            if (totalBalance - pledgeCreditBalance + pledgeDebitBalance >= minerPledgeAmount) {
+            totalBalance = view.GetAccountBalance(minerAccountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
+            if (totalBalance - pledgeLoanBalance + pledgeDebitBalance >= minerPledgeAmount) {
                 reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
             } else {
                 reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;

@@ -166,34 +166,34 @@ OverviewPage::~OverviewPage()
 }
 
 void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                              const CAmount& pledgeCreditBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                              const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
                               const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                              const CAmount& watchPledgeCreditBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
+                              const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
 {
     int unit = walletModel->getOptionsModel()->getDisplayUnit();
     currentBalance = balance;
     currentUnconfirmedBalance = unconfirmedBalance;
     currentImmatureBalance = immatureBalance;
-    currentPledgeCreditBalance = pledgeCreditBalance;
+    currentPledgeCreditBalance = pledgeLoanBalance;
     currentPledgeDebitBalance = pledgeDebitBalance;
     currentLockedBalance = lockedBalance;
     currentWatchBalance = watchBalance;
     currentWatchUnconfBalance = watchUnconfBalance;
     currentWatchImmatureBalance = watchImmatureBalance;
-    currentWatchPledgeCreditBalance = watchPledgeCreditBalance;
+    currentWatchPledgeCreditBalance = watchPledgeLoanBalance;
     currentWatchPledgeDebitBalance = watchPledgeDebitBalance;
     currentWatchLockedBalance = watchLockedBalance;
     ui->labelBalance->setText(BitcoinUnits::formatWithUnit(unit, balance, false, BitcoinUnits::separatorAlways));
     ui->labelUnconfirmed->setText(BitcoinUnits::formatWithUnit(unit, unconfirmedBalance, false, BitcoinUnits::separatorAlways));
     ui->labelImmature->setText(BitcoinUnits::formatWithUnit(unit, immatureBalance, false, BitcoinUnits::separatorAlways));
     ui->labelLocked->setText(BitcoinUnits::formatWithUnit(unit, lockedBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelPledgeCredit->setText(BitcoinUnits::formatWithUnit(unit, pledgeCreditBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelPledgeLoan->setText(BitcoinUnits::formatWithUnit(unit, pledgeLoanBalance, false, BitcoinUnits::separatorAlways));
     ui->labelPledgeDebit->setText(BitcoinUnits::formatWithUnit(unit, pledgeDebitBalance, false, BitcoinUnits::separatorAlways));
     ui->labelTotal->setText(BitcoinUnits::formatWithUnit(unit, balance + unconfirmedBalance + immatureBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchAvailable->setText(BitcoinUnits::formatWithUnit(unit, watchBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchPending->setText(BitcoinUnits::formatWithUnit(unit, watchUnconfBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchImmature->setText(BitcoinUnits::formatWithUnit(unit, watchImmatureBalance, false, BitcoinUnits::separatorAlways));
-    ui->labelWatchPledgeCredit->setText(BitcoinUnits::formatWithUnit(unit, watchPledgeCreditBalance, false, BitcoinUnits::separatorAlways));
+    ui->labelWatchPledgeCredit->setText(BitcoinUnits::formatWithUnit(unit, watchPledgeLoanBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchPledgeDebit->setText(BitcoinUnits::formatWithUnit(unit, watchPledgeDebitBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchLocked->setText(BitcoinUnits::formatWithUnit(unit, watchLockedBalance, false, BitcoinUnits::separatorAlways));
     ui->labelWatchTotal->setText(BitcoinUnits::formatWithUnit(unit, watchBalance + watchUnconfBalance + watchImmatureBalance, false, BitcoinUnits::separatorAlways));
@@ -202,8 +202,8 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
     // for the non-mining users
     bool showImmature = immatureBalance != 0;
     bool showWatchOnlyImmature = watchImmatureBalance != 0;
-    bool showPledgeCredit = pledgeCreditBalance != 0;
-    bool showWatchOnlyPledgeCredit = watchPledgeCreditBalance != 0;
+    bool showPledgeCredit = pledgeLoanBalance != 0;
+    bool showWatchOnlyPledgeCredit = watchPledgeLoanBalance != 0;
     bool showPledgeDebit = pledgeDebitBalance != 0;
     bool showWatchOnlyPledgeDebit = watchPledgeDebitBalance != 0;
     bool showLocked = lockedBalance != 0;
@@ -212,14 +212,14 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
     // for symmetry reasons also show immature label when the watch-only one is shown
     ui->labelImmature->setVisible(showImmature || showWatchOnlyImmature);
     ui->labelImmatureText->setVisible(showImmature || showWatchOnlyImmature);
-    ui->labelPledgeCredit->setVisible(showPledgeCredit || showWatchOnlyPledgeCredit);
-    ui->labelPledgeCreditText->setVisible(showPledgeCredit || showWatchOnlyPledgeCredit);
+    ui->labelPledgeLoan->setVisible(showPledgeCredit || showWatchOnlyPledgeCredit);
+    ui->labelPledgeLoanText->setVisible(showPledgeCredit || showWatchOnlyPledgeCredit);
     ui->labelPledgeDebit->setVisible(showPledgeDebit || showWatchOnlyPledgeDebit);
     ui->labelPledgeDebitText->setVisible(showPledgeDebit || showWatchOnlyPledgeDebit);
     ui->labelLocked->setVisible(showLocked || showWatchOnlyLocked);
     ui->labelLockedText->setVisible(showLocked || showWatchOnlyLocked);
     ui->labelWatchImmature->setVisible(showWatchOnlyImmature); // show watch-only immature balance
-    ui->labelWatchPledgeCredit->setVisible(showWatchOnlyPledgeCredit); // show watch-only pledge credit balance
+    ui->labelWatchPledgeCredit->setVisible(showWatchOnlyPledgeCredit); // show watch-only pledge loan balance
     ui->labelWatchPledgeDebit->setVisible(showWatchOnlyPledgeDebit); // show watch-only pledge debit balance
     ui->labelWatchLocked->setVisible(showWatchOnlyLocked); // show watch-only locked balance
 }
