@@ -1074,7 +1074,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "bindplotter";
-            wtx.mapValue["plotter_id"] = std::to_string(BindPlotterPayload::As(payload)->id);
+            wtx.mapValue["plotter_id"] = std::to_string(BindPlotterPayload::As(payload)->GetId());
 
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
@@ -2549,7 +2549,7 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, bool 
         LOCK2(cs_main, cs_wallet);
 
         const CScript primaryScriptPubKey = GetScriptForDestination(GetPrimaryDestination());
-        const CScript destChangeScriptPubKey = coinControl ? GetScriptForDestination(coinControl->destChange) : CScript();
+        const CScript destChangeScriptPubKey = (coinControl && IsValidDestination(coinControl->destChange)) ? GetScriptForDestination(coinControl->destChange) : CScript();
         CAmount nTotal = 0;
 
         for (const auto& entry : mapWallet)
@@ -2631,6 +2631,9 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, bool 
                             continue;
                     } else if (coinControl->payPolicy == PAYPOLICY_FROM_PRIMARY_EXCLUDE) {
                         if (pcoin->tx->vout[i].scriptPubKey == primaryScriptPubKey)
+                            continue;
+                    } else if (coinControl->payPolicy == PAYPOLICY_FROM_CHANGE_ONLY) {
+                        if (pcoin->tx->vout[i].scriptPubKey != destChangeScriptPubKey)
                             continue;
                     } else if (coinControl->payPolicy == PAYPOLICY_MOVETO) {
                         // destChangeScriptPubKey is move to target destination

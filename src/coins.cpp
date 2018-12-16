@@ -15,6 +15,7 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeCreditCursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeDebitCursor(const CAccountID &accountID) const { return nullptr; }
 CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
@@ -39,6 +40,7 @@ std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetH
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursorRef CCoinsViewBacked::Cursor() const { return base->Cursor(); }
+CCoinsViewCursorRef CCoinsViewBacked::BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const { return base->BindPlotterCursor(accountID, plotterId); }
 CCoinsViewCursorRef CCoinsViewBacked::PledgeCreditCursor(const CAccountID &accountID) const { return base->PledgeCreditCursor(accountID); }
 CCoinsViewCursorRef CCoinsViewBacked::PledgeDebitCursor(const CAccountID &accountID) const { return base->PledgeDebitCursor(accountID); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }

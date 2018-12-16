@@ -1217,8 +1217,8 @@ CAmount GetMinerPledge(const CAccountID &minerAccountID, int nHeight, const uint
     for (int index = nHeight; index >= nBeginHeight; index--) {
         CBlockIndex *pblockIndex = chainActive[index];
 
-        // 1. Multi plotter ID generate to same wallet (like pool)
-        // 2. Same plotter ID generate to multi wallets (for decrease pledge)
+        // 1. Multi plotter generate to same wallet (like pool)
+        // 2. Same plotter generate to multi wallets (for decrease pledge)
         if (pblockIndex->minerAccountID == minerAccountID || pblockIndex->nPlotterId == nPlotterId) {
             nTotalForgeCount++;
 

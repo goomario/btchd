@@ -240,6 +240,7 @@ public:
     }
 
     BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0) {}
+    const uint64_t& GetId() const { return id; }
     uint64_t id;
 };
 
@@ -269,7 +270,7 @@ static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
 static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 
 /** Generate a bind plotter script. */
-CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId);
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase);
 
 /** Generate a pledge script. */
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);

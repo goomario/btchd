@@ -194,15 +194,19 @@ bool SendCoinsEntry::validate()
     }
 
     // Special tx amount
-    if (payOperateMethod == PayOperateMethod::SendPledge && ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+    if (payOperateMethod == PayOperateMethod::SendPledge)
     {
-        ui->payAmount->setValid(false);
-        retval = false;
+        if (ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN) {
+            ui->payAmount->setValid(false);
+            retval = false;
+        }
     }
-    else if (payOperateMethod == PayOperateMethod::BindPlotter && ui->payAmount->value() != PROTOCOL_BINDPLOTTER_AMOUNT)
+    else if (payOperateMethod == PayOperateMethod::BindPlotter)
     {
-        ui->payAmount->setValid(false);
-        retval = false;
+        if (ui->payAmount->value() != PROTOCOL_BINDPLOTTER_AMOUNT) {
+            ui->payAmount->setValid(false);
+            retval = false;
+        }
     }
 
     return retval;
@@ -217,6 +221,7 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     // Normal payment
     recipient.address = ui->payTo->text();
     recipient.label = ui->addAsLabel->text();
+    recipient.plotterPassphrase = ui->plotterPassphrase->text();
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);
@@ -228,7 +233,8 @@ QWidget *SendCoinsEntry::setupTabChain(QWidget *prev)
 {
     QWidget::setTabOrder(prev, ui->payTo);
     QWidget::setTabOrder(ui->payTo, ui->addAsLabel);
-    QWidget *w = ui->payAmount->setupTabChain(ui->addAsLabel);
+    QWidget::setTabOrder(ui->addAsLabel, ui->plotterPassphrase);
+    QWidget *w = ui->payAmount->setupTabChain(ui->plotterPassphrase);
     QWidget::setTabOrder(w, ui->checkboxSubtractFeeFromAmount);
     QWidget::setTabOrder(ui->checkboxSubtractFeeFromAmount, ui->addressBookButton);
     QWidget::setTabOrder(ui->addressBookButton, ui->pasteButton);
@@ -267,9 +273,12 @@ void SendCoinsEntry::setValue(const SendCoinsRecipient &value)
         ui->messageLabel->setVisible(!recipient.message.isEmpty());
 
         ui->addAsLabel->clear();
+        ui->plotterPassphrase->clear();
         ui->payTo->setText(recipient.address); // this may set a label from addressbook
         if (!recipient.label.isEmpty()) // if a label had been set from the addressbook, don't overwrite with an empty label
             ui->addAsLabel->setText(recipient.label);
+        if (!recipient.plotterPassphrase.isEmpty())
+            ui->plotterPassphrase->setText(recipient.plotterPassphrase);
         ui->payAmount->setValue(recipient.amount);
     }
 }

@@ -701,6 +701,90 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
+UniValue listbindplotterofaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
+        throw std::runtime_error(
+            "listbindplotterofaddress address plotterId\n"
+            "\nReturns up to binded plotter of address.\n"
+            "\nArguments:\n"
+            "1. address             (string, required) The BitcoinHD address\n"
+            "2. plotterId           (string, optional) The filter plotter ID. If 0 or not set then output all binded plotter ID\n"
+            "3. count               (numeric, optional) The result of count binded to list. If not set then output all binded plotter ID\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
+            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"plotter_id\": plotter_id,            (string) The binded plotter ID.\n"
+            "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
+            "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
+            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"height\": xxx,                       (numeric) The block height.\n"
+            "  }\n"
+            "]\n"
+
+            "\nExamples:\n"
+            "\nList binded plotter of address\n"
+            + HelpExampleCli("listbindplotterofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"0\" 10")
+            + HelpExampleRpc("listbindplotterofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"0\" 10")
+        );
+
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
+    if (accountID == 0)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
+    uint64_t plotterId = 0;
+    if (request.params.size() >= 2) {
+        if (!request.params[1].isStr())
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
+        try {
+            plotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
+        } catch(...) {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
+        }
+    }
+    int count = std::numeric_limits<int>::max();
+    if (request.params.size() >= 3)
+        count = request.params[2].get_int();
+
+    LOCK(cs_main);
+
+    UniValue ret(UniValue::VARR);
+
+    FlushStateToDisk();
+    for (CCoinsViewCursorRef pcursor = pcoinsdbview->BindPlotterCursor(accountID, plotterId); pcursor->Valid(); pcursor->Next()) {
+        if (--count < 0)
+            break;
+
+        COutPoint key;
+        Coin coin;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            assert(key.n == 0);
+            assert(!coin.IsSpent());
+            assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+            UniValue item(UniValue::VOBJ);
+            {
+                CTxDestination fromDest;
+                ExtractDestination(coin.out.scriptPubKey, fromDest);
+                item.push_back(Pair("address", EncodeDestination(fromDest)));
+            }
+            item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
+            item.push_back(Pair("plotter_id", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
+            item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
+            item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
+            item.push_back(Pair("height", (int)coin.nHeight));
+
+            ret.push_back(item);
+        } else {
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
+        }
+    }
+
+    return ret;
+}
+
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
 {
     CAccountID accountID = GetAccountIDByAddress(address);
@@ -732,7 +816,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
             if (pblockIndex->minerAccountID == accountID) {
                 nTotalForgeCount++;
 
-                // Bind plotter ID to miner
+                // Bind plotter to miner
                 auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
                 if (itPlotter == mapBindPlotter.end()) {
                     mapBindPlotter.insert(std::make_pair(pblockIndex->nPlotterId, PlotterItem{index, 1, 0, {}}));
@@ -899,14 +983,14 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
 
-    uint64_t nPlotterId = 0;
+    uint64_t plotterId = 0;
     if (!request.params[1].isNull()) {
         if (!request.params[1].isStr())
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
         try {
-            nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
+            plotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
         } catch(...) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
         }
     }
 
@@ -915,7 +999,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
         fVerbose = request.params[2].isNum() ? (request.params[2].get_int() != 0) : request.params[2].get_bool();
     }
 
-    return GetPledge(request.params[0].get_str(), nPlotterId, fVerbose);
+    return GetPledge(request.params[0].get_str(), plotterId, fVerbose);
 }
 
 UniValue getplottermininginfo(const JSONRPCRequest& request)
@@ -923,12 +1007,12 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             "getplottermininginfo plotterId height\n"
-            "Get mining information of plotter ID.\n"
+            "Get mining information of plotter.\n"
             "\nArguments:\n"
-            "1. plotterId       (string, required) Plotter ID\n"
+            "1. plotterId       (string, required) Plotter\n"
             "2. verbose         (bool, optional, default=true) If true, return detail plotter mining information\n"
             "\nResult:\n"
-            "The mining information of plotter ID\n"
+            "The mining information of plotter\n"
             "\n"
             "\nExample:\n"
             + HelpExampleCli("getplottermininginfo", "\"1234567890\" true")
@@ -939,11 +1023,11 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     uint64_t nPlotterId;
     if (!request.params[0].isStr())
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
     try {
         nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
     } catch(...) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter Id");
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
     }
 
     bool fVerbose = true;
@@ -1093,7 +1177,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
     CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
     if (accountID == 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
-   
+
     LOCK(cs_main);
 
     FlushStateToDisk();
@@ -1379,6 +1463,7 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",        &prioritisetransaction,     {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",             &getblocktemplate,          {"template_request"} },
     { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
+    { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,  {"address", "plotterId", "count"} },
     { "mining",             "getpledgeofaddress",           &getpledgeofaddress,        {"address", "plotterId", "verbose"} },
     { "mining",             "getplottermininginfo",         &getplottermininginfo,      {"plotterId", "verbose"} },
     { "mining",             "listpledgeloanofaddress",      &listpledgeloanofaddress,   {"address"} },

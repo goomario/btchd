@@ -37,8 +37,9 @@ static const char DB_REINDEX_FLAG = 'R';
 static const char DB_LAST_BLOCK = 'l';
 
 static const char DB_ACCOUNT_COIN = 'T';
-static const char DB_COIN_PLEDGECREDIT = 'E';
+static const char DB_COIN_PLEDGELOAN = 'E';
 static const char DB_COIN_PLEDGEDEBIT = 'e';
+static const char DB_COIN_BINDPLOTTER = 'P';
 
 namespace {
 
@@ -62,34 +63,12 @@ struct CoinEntry {
     }
 };
 
-struct AccountCoinRefEntry {
-    CAccountID* accountID;
-    COutPoint* outpoint;
-    char key;
-    AccountCoinRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) : accountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_ACCOUNT_COIN) {}
-
-    template<typename Stream>
-    void Serialize(Stream &s) const {
-        s << key;
-        s << VARINT(*accountID);
-        s << outpoint->hash;
-        s << VARINT(outpoint->n);
-    }
-
-    template<typename Stream>
-    void Unserialize(Stream& s) {
-        s >> key;
-        s >> VARINT(*accountID);
-        s >> outpoint->hash;
-        s >> VARINT(outpoint->n);
-    }
-};
-
 struct AccountCoinEntry {
     CAccountID accountID;
     COutPoint outpoint;
     char key;
-    AccountCoinEntry(const CAccountID &accountIdIn, const COutPoint &outpointIn) : accountID(accountIdIn), outpoint(outpointIn), key(DB_ACCOUNT_COIN) {}
+    AccountCoinEntry(const CAccountID &accountIdIn, const COutPoint &outpointIn) :
+        accountID(accountIdIn), outpoint(outpointIn), key(DB_ACCOUNT_COIN) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -108,16 +87,17 @@ struct AccountCoinEntry {
     }
 };
 
-struct PledgeCreditRefEntry {
-    CAccountID* creditAccountID;
+struct AccountCoinRefEntry {
+    CAccountID* accountID;
     COutPoint* outpoint;
     char key;
-    PledgeCreditRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) : creditAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_COIN_PLEDGECREDIT) {}
+    AccountCoinRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        accountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_ACCOUNT_COIN) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(*creditAccountID);
+        s << VARINT(*accountID);
         s << outpoint->hash;
         s << VARINT(outpoint->n);
     }
@@ -125,18 +105,72 @@ struct PledgeCreditRefEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(*creditAccountID);
+        s >> VARINT(*accountID);
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
 };
 
-struct PledgeCreditEntry {
+struct BindPlotterEntry {
+    CAccountID accountID;
+    uint64_t plotterId;
+    COutPoint outpoint;
+    char key;
+    BindPlotterEntry(const CAccountID &accountIDIn, const uint64_t &plotterIdIn, const COutPoint &outpointIn) :
+        accountID(accountIDIn), plotterId(plotterIdIn), outpoint(outpointIn), key(DB_COIN_BINDPLOTTER) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(accountID);
+        s << VARINT(plotterId);
+        s << outpoint.hash;
+        s << VARINT(outpoint.n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(accountID);
+        s >> VARINT(plotterId);
+        s >> outpoint.hash;
+        s >> VARINT(outpoint.n);
+    }
+};
+
+struct BindPlotterRefEntry {
+    CAccountID* accountID;
+    uint64_t* plotterId;
+    COutPoint* outpoint;
+    char key;
+    BindPlotterRefEntry(const CAccountID* ptr1, const uint64_t* ptr2, const COutPoint* ptr3) :
+        accountID(const_cast<CAccountID*>(ptr1)), plotterId(const_cast<uint64_t*>(ptr2)), outpoint(const_cast<COutPoint*>(ptr3)), key(DB_COIN_BINDPLOTTER) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(*accountID);
+        s << VARINT(*plotterId);
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(*accountID);
+        s >> VARINT(*plotterId);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
+    }
+};
+
+struct PledgeLoanEntry {
     CAccountID creditAccountID;
     COutPoint outpoint;
     char key;
-    PledgeCreditEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) :
-        creditAccountID(accountIDIn), outpoint(outpointIn), key(DB_COIN_PLEDGECREDIT) {}
+    PledgeLoanEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) :
+        creditAccountID(accountIDIn), outpoint(outpointIn), key(DB_COIN_PLEDGELOAN) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -155,17 +189,17 @@ struct PledgeCreditEntry {
     }
 };
 
-struct PledgeDebitRefEntry {
-    CAccountID* debitAccountID;
+struct PledgeLoanRefEntry {
+    CAccountID* creditAccountID;
     COutPoint* outpoint;
     char key;
-    PledgeDebitRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
-        debitAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_COIN_PLEDGEDEBIT) {}
+    PledgeLoanRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        creditAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_COIN_PLEDGELOAN) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(*debitAccountID);
+        s << VARINT(*creditAccountID);
         s << outpoint->hash;
         s << VARINT(outpoint->n);
     }
@@ -173,7 +207,7 @@ struct PledgeDebitRefEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(*debitAccountID);
+        s >> VARINT(*creditAccountID);
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
@@ -200,6 +234,30 @@ struct PledgeDebitEntry {
         s >> VARINT(debitAccountID);
         s >> outpoint.hash;
         s >> VARINT(outpoint.n);
+    }
+};
+
+struct PledgeDebitRefEntry {
+    CAccountID* debitAccountID;
+    COutPoint* outpoint;
+    char key;
+    PledgeDebitRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        debitAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)), key(DB_COIN_PLEDGEDEBIT) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(*debitAccountID);
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(*debitAccountID);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
     }
 };
 
@@ -264,8 +322,11 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     batch.Erase(AccountCoinRefEntry(&it->second.coin.refOutAccountID, &it->first));
 
                 if (it->second.coin.extraData) {
-                    if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                        batch.Erase(PledgeCreditRefEntry(&it->second.coin.refOutAccountID, &it->first));
+                    if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                        batch.Erase(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->GetId(), &it->first));
+                    }
+                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                        batch.Erase(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first));
                         batch.Erase(PledgeDebitRefEntry(&PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first));
                     }
                 }
@@ -276,8 +337,11 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     batch.Write(AccountCoinRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
 
                 if (it->second.coin.extraData) {
-                    if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                        batch.Write(PledgeCreditRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
+                    if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                        batch.Write(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->GetId(), &it->first), VARINT(0));
+                    }
+                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                        batch.Write(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
                         batch.Write(PledgeDebitRefEntry(&PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first), VARINT(it->second.coin.out.nValue));
                     }
                 }
@@ -365,14 +429,14 @@ CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
     return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
 }
 
-CCoinsViewCursorRef CCoinsViewDB::PledgeCreditCursor(const CAccountID &accountID) const {
-    class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
+CCoinsViewCursorRef CCoinsViewDB::BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const {
+    class CCoinsViewDBBindPlotterCursor : public CCoinsViewCursor
     {
     public:
-        CCoinsViewDBPledgeCreditCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
-            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
+        CCoinsViewDBBindPlotterCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn, const uint64_t& plotterIdIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), plotterId(plotterIdIn), outpoint(uint256(), 0) {
             if (accountID != 0) {
-                pcursor->Seek(PledgeCreditRefEntry(&accountID, &outpoint));
+                pcursor->Seek(BindPlotterRefEntry(&accountID, &plotterId, &outpoint));
                 // Test key of first record
                 TestKey();
             }
@@ -399,8 +463,60 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeCreditCursor(const CAccountID &accountID
     private:
         void TestKey() {
             CAccountID tempAccountID;
-            PledgeCreditRefEntry entry(&tempAccountID, &outpoint);
-            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGECREDIT || tempAccountID != accountID) {
+            CAccountID tempPlotterId;
+            BindPlotterRefEntry entry(&tempAccountID, &tempPlotterId, &outpoint);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_BINDPLOTTER ||
+                    tempAccountID != accountID || (plotterId != 0 && plotterId != tempPlotterId)) {
+                accountID = 0;
+            }
+        }
+
+        const CCoinsViewDB* pcoinviewdb;
+        std::unique_ptr<CDBIterator> pcursor;
+        CAccountID accountID;
+        uint64_t plotterId;
+        COutPoint outpoint;
+    };
+
+    return std::make_shared<CCoinsViewDBBindPlotterCursor>(this, db.NewIterator(), GetBestBlock(), accountID, plotterId);
+}
+
+CCoinsViewCursorRef CCoinsViewDB::PledgeCreditCursor(const CAccountID &accountID) const {
+    class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBPledgeCreditCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
+            if (accountID != 0) {
+                pcursor->Seek(PledgeLoanRefEntry(&accountID, &outpoint));
+                // Test key of first record
+                TestKey();
+            }
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (accountID != 0) {
+                key = outpoint;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcoinviewdb->GetCoin(outpoint, coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return accountID != 0; }
+        void Next() override {
+            pcursor->Next();
+            TestKey();
+        }
+
+    private:
+        void TestKey() {
+            CAccountID tempAccountID;
+            PledgeLoanRefEntry entry(&tempAccountID, &outpoint);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGELOAN || tempAccountID != accountID) {
                 accountID = 0;
             }
         }
@@ -471,11 +587,13 @@ size_t CCoinsViewDB::EstimateSize() const
 CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
     CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
+    std::unique_ptr<CDBIterator> pcursor;
     CAmount availableBalance = 0;
 
     // Read from database
     {
-        std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
+        if (!pcursor) pcursor.reset(db.NewIterator());
+
         CAmount value;
         AccountCoinEntry entry(accountID, COutPoint(uint256(), 0));
         pcursor->Seek(entry);
@@ -507,6 +625,36 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     // The bind plotter coin
     if (pBindPlotterBalance != nullptr) {
         *pBindPlotterBalance = 0;
+
+        // Read from database
+        {
+            if (!pcursor) pcursor.reset(db.NewIterator());
+
+            BindPlotterEntry entry(accountID, 0, COutPoint(uint256(), 0));
+            pcursor->Seek(entry);
+            while (pcursor->Valid()) {
+                if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.accountID == accountID) {
+                    *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_AMOUNT;
+                } else {
+                    break;
+                }
+                pcursor->Next();
+            }
+        }
+
+        // Apply modified coin
+        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
+                    it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                if (it->second.coin.IsSpent()) {
+                    if (db.Exists(CoinEntry(&it->first)))
+                        *pBindPlotterBalance -= PROTOCOL_BINDPLOTTER_AMOUNT;
+                } else {
+                    if (!db.Exists(CoinEntry(&it->first)))
+                        *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_AMOUNT;
+                }
+            }
+        }
         assert(*pBindPlotterBalance >= 0);
     }
 
@@ -516,12 +664,13 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
+            if (!pcursor) pcursor.reset(db.NewIterator());
+
             CAmount value;
-            PledgeCreditEntry entry(accountID, COutPoint(uint256(), 0));
+            PledgeLoanEntry entry(accountID, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
             while (pcursor->Valid()) {
-                if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGECREDIT && entry.creditAccountID == accountID) {
+                if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGELOAN && entry.creditAccountID == accountID) {
                     if (pcursor->GetValue(VARINT(value)))
                         *pPledgeLoanBalance += value;
                 } else {
@@ -553,7 +702,8 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
+            if (!pcursor) pcursor.reset(db.NewIterator());
+
             CAmount value;
             PledgeDebitEntry entry(accountID, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
@@ -702,26 +852,72 @@ bool CCoinsViewDB::Upgrade() {
     uiInterface.ShowProgress(_("Upgrading UTXO database"), 0, true);
     LogPrintf("Upgrading UTXO database: [0%%]...");
 
-    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     int remove = 0, add = 0;
+    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
 
     // Clear old account balance index data
-    {
-        AccountCoinEntry entry(0, COutPoint(uint256(), 0));
-        pcursor->Seek(entry);
-        if (pcursor->Valid()) {
-            CDBBatch batch(db);
-            while (pcursor->Valid()) {
-                if (pcursor->GetKey(entry) && entry.key == DB_ACCOUNT_COIN) {
-                    batch.Erase(entry);
-                    remove++;
-                } else {
-                    break;
-                }
-                pcursor->Next();
+    pcursor->Seek(DB_ACCOUNT_COIN);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        AccountCoinEntry entry(0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_ACCOUNT_COIN) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
             }
-            db.WriteBatch(batch);
+            pcursor->Next();
         }
+        db.WriteBatch(batch);
+    }
+    // Clear old bind plotter index data
+    pcursor->Seek(DB_COIN_BINDPLOTTER);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        BindPlotterEntry entry(0, 0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
+    }
+    // Clear old pledge loan index data
+    pcursor->Seek(DB_COIN_PLEDGELOAN);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        PledgeLoanEntry entry(0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGELOAN) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
+    }
+    // Clear old pledge debit index data
+    pcursor->Seek(DB_COIN_PLEDGEDEBIT);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        PledgeDebitEntry entry(0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGEDEBIT) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
     }
 
     // Create account balance index data
@@ -740,8 +936,23 @@ bool CCoinsViewDB::Upgrade() {
                     return error("%s: cannot parse coin record", __func__);
 
                 if (coin.refOutAccountID != 0) {
+                    // Balance of address index
                     batch.Write(AccountCoinRefEntry(&coin.refOutAccountID, &outpoint), VARINT(coin.out.nValue));
                     add++;
+
+                    // Extra data
+                    if (coin.extraData) {
+                        if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                            batch.Write(BindPlotterRefEntry(&coin.refOutAccountID, &BindPlotterPayload::As(coin.extraData)->GetId(), &outpoint), VARINT(0));
+                            add++;
+                        }
+                        else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                            batch.Write(PledgeLoanRefEntry(&coin.refOutAccountID, &outpoint), VARINT(coin.out.nValue));
+                            batch.Write(PledgeDebitRefEntry(&PledgePayload::As(coin.extraData)->GetDebitAccountID(), &outpoint), VARINT(coin.out.nValue));
+                            add += 2;
+                        }
+                    }
+
                     if (batch.SizeEstimate() > batch_size) {
                         db.WriteBatch(batch);
                         batch.Clear();

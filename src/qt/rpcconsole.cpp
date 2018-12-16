@@ -902,7 +902,7 @@ void RPCConsole::updatePledge()
         ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
 
-        // Bind plotter ID
+        // Bind plotter
         QString strBindPlotters;
         {
             std::set<uint64_t> existPlotterId;

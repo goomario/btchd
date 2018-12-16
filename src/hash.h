@@ -229,4 +229,7 @@ public:
 uint64_t SipHashUint256(uint64_t k0, uint64_t k1, const uint256& val);
 uint64_t SipHashUint256Extra(uint64_t k0, uint64_t k1, const uint256& val, uint32_t extra);
 
+/** Utility function to generate plotter id from passphrase */
+uint64_t GeneratePlotterId(const std::string &passphrase);
+
 #endif // BITCOIN_HASH_H

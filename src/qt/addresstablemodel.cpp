@@ -34,6 +34,8 @@ struct AddressTableEntry
     QString label;
     QString address;
     bool fPrimary;
+    bool fWatchonly;
+
     CAmount amount;
     CAmount pledgeLoanAmount;
     CAmount pledgeDebitAmount;
@@ -41,7 +43,7 @@ struct AddressTableEntry
 
     AddressTableEntry() {}
     AddressTableEntry(Type _type, const QString &_label, const QString &_address):
-        type(_type), label(_label), address(_address), fPrimary(false),
+        type(_type), label(_label), address(_address), fPrimary(false), fWatchonly(false),
         amount(0), pledgeLoanAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0) {}
 };
 
@@ -104,6 +106,7 @@ public:
                                   QString::fromStdString(strName),
                                   QString::fromStdString(EncodeDestination(address))));
                 entry.fPrimary = wallet->IsPrimaryDestination(address);
+                entry.fWatchonly = wallet->HaveWatchOnly(GetScriptForDestination(address));
                 cachedAddressTable.append(entry);
             }
         }
@@ -192,7 +195,7 @@ AddressTableModel::AddressTableModel(const PlatformStyle *_platformStyle, CWalle
     wallet(_wallet),
     priv(0)
 {
-    columns << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Loan") << tr("Debit") << tr("Locked");
+    columns << "" << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Loan") << tr("Debit") << tr("Locked");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -228,6 +231,10 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         case Status:
             if (role == Qt::EditRole && rec->fPrimary)
                 return tr("Primary address");
+            break; 
+        case Watchonly:
+            if (role == Qt::EditRole && rec->fWatchonly)
+                return tr("Watchonly address");
             break; 
         case Label:
             if(rec->label.isEmpty() && role == Qt::DisplayRole)
@@ -284,11 +291,16 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
     }
     else if (role == Qt::DecorationRole)
     {
-        if (index.column() == Status)
+        switch (index.column())
         {
-            if (rec->fPrimary) {
+        case Status:
+            if (rec->fPrimary)
                 return platformStyle->SingleColorIcon(":/icons/key");
-            }
+            break;
+        case Watchonly:
+            if (rec->fWatchonly)
+                return platformStyle->SingleColorIcon(":/icons/eye");
+            break;
         }
     }
     else if (role == Qt::ToolTipRole)
@@ -296,9 +308,18 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         switch (index.column())
         {
         case Status:
+            if (rec->fPrimary)
+                return tr("Primary address");
+            break;
+        case Watchonly:
+            if (rec->fWatchonly)
+                return tr("Watchonly address");
+            break; 
         case Address:
             if (rec->fPrimary)
                 return tr("Primary address");
+            else if (rec->fWatchonly)
+                return tr("Watchonly address");
             break;
         case Amount:
         case LoanAmount:

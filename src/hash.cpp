@@ -4,6 +4,7 @@
 
 #include <hash.h>
 #include <crypto/common.h>
+#include <crypto/curve25519.h>
 #include <crypto/hmac_sha512.h>
 
 
@@ -244,4 +245,33 @@ uint64_t SipHashUint256Extra(uint64_t k0, uint64_t k1, const uint256& val, uint3
     SIPROUND;
     SIPROUND;
     return v0 ^ v1 ^ v2 ^ v3;
+}
+
+uint64_t GeneratePlotterId(const std::string &passphrase)
+{
+    // Test case:
+    //
+    // rough high night desk familiar hop freely needle slowly threaten process flicker
+    // 11529889285493050610ULL;
+    // 
+    // 1.k = sha256(passphrase): 0xFE 0x71 0x11 0x6F
+    // 2.publicKey = Curve25519(null,k): 0x1D 0x60 0x74 0xF4
+    // 3.publicKeyHash = sha256(publicKey): 0xF2 0x4C 0x65 0x99
+    // 4.id = int(publicKeyHash[0~7]): -6916854788216501006
+    // 5.unsigned = 11529889285493050610
+    uint8_t privateKey[CSHA256::OUTPUT_SIZE] = {0};
+    uint8_t publicKey[CSHA256::OUTPUT_SIZE] = {0};
+    uint8_t publicKeyHash[CSHA256::OUTPUT_SIZE] = {0};
+    CSHA256().Write((const unsigned char*)passphrase.data(), (size_t)passphrase.length()).Finalize(privateKey);
+    crypto::curve25519(publicKey, nullptr, (unsigned char*)privateKey);
+    CSHA256().Write((const unsigned char*)publicKey, sizeof(publicKey)).Finalize(publicKeyHash);
+
+    return ((uint64_t)publicKeyHash[0]) | \
+        ((uint64_t)publicKeyHash[1]) << 8 | \
+        ((uint64_t)publicKeyHash[2]) << 16 | \
+        ((uint64_t)publicKeyHash[3]) << 24 | \
+        ((uint64_t)publicKeyHash[4]) << 32 | \
+        ((uint64_t)publicKeyHash[5]) << 40 | \
+        ((uint64_t)publicKeyHash[6]) << 48 | \
+        ((uint64_t)publicKeyHash[7]) << 56;
 }

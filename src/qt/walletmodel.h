@@ -61,6 +61,9 @@ public:
     // If from a payment request, this is used for storing the memo
     QString message;
 
+    // For bind plotter request
+    QString plotterPassphrase;
+
     // If from a payment request, paymentRequest.IsInitialized() will be true
     PaymentRequestPlus paymentRequest;
     // Empty if no authentication or invalid signature/cert/etc.

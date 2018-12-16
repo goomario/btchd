@@ -113,7 +113,7 @@ public:
         consensus.BHDIP004ActiveHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
         consensus.BHDIP006Height = 128800; // BHDIP006. Active about on Wed, 02 Jan 2019 09:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = 130816; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 09:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = 130816; // BHDIP006. Bind plotter active. Active about on Wed, 09 Jan 2019 09:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -422,7 +422,7 @@ public:
         consensus.BHDIP004ActiveHeight = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
         consensus.BHDIP004InActiveHeight = 21000;
         consensus.BHDIP006Height = 44300; // BHDIP006. Active about on Wed, 02 Jan 2019 04:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = 46316; // BHDIP006. Bind plotter ID active. Active about on Wed, 09 Jan 2019 04:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = 46316; // BHDIP006. Bind plotter active. Active about on Wed, 09 Jan 2019 04:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;

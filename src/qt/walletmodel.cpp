@@ -310,12 +310,13 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
     }
     else if (payOperateMethod == PayOperateMethod::SendPledge) {
-        if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() || coinControl.payPolicy != PAYPOLICY_FROM_PRIMARY_ONLY)
+        if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
+                coinControl.payPolicy != PAYPOLICY_FROM_PRIMARY_ONLY)
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
         const SendCoinsRecipient &rcp = recipients[0];
-        if (!validateAddress(rcp.address))
+        if (!validateAddress(rcp.address) || !IsValidDestination(wallet->GetPrimaryDestination()))
             return InvalidAddress;
         if (rcp.amount < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
             return SmallPledgeLoanAmount;
@@ -324,19 +325,29 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
-        //! Real output to self
-        CTxDestination primaryDest = wallet->GetPrimaryDestination();
-        if (!IsValidDestination(primaryDest))
-            return InvalidAddress;
         vecSend.push_back({GetScriptForDestination(wallet->GetPrimaryDestination()), rcp.amount, rcp.fSubtractFeeFromAmount});
-        //! Tx datacarrier
         vecSend.push_back({GetPledgeScriptForDestination(DecodeDestination(rcp.address.toStdString())), 0, false});
 
         total += rcp.amount;
     }
     else if (payOperateMethod == PayOperateMethod::BindPlotter) {
-        assert(false);
-        return OK;
+        if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
+                coinControl.payPolicy != PAYPOLICY_FROM_CHANGE_ONLY || recipients[0].plotterPassphrase.isEmpty())
+            return InvalidAddress;
+
+        LOCK2(cs_main, wallet->cs_wallet);
+        const SendCoinsRecipient &rcp = recipients[0];
+        if (!IsValidDestination(coinControl.destChange) || coinControl.destChange != DecodeDestination(rcp.address.toStdString()))
+            return InvalidAddress;
+        if (rcp.fSubtractFeeFromAmount || rcp.amount != PROTOCOL_BINDPLOTTER_AMOUNT)
+            return InvalidBindPlotterAmount;
+
+        fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
+
+        vecSend.push_back({GetScriptForDestination(coinControl.destChange), rcp.amount, rcp.fSubtractFeeFromAmount});
+        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destChange, rcp.plotterPassphrase.toStdString()), 0, false});
+
+        total += rcp.amount;
     }
     else {
         assert(false);
@@ -376,9 +387,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
 
         // Check pledge amount
-        if (payOperateMethod == PayOperateMethod::BindPlotter && fSubtractFeeFromAmount && total - nFeeRequired != PROTOCOL_BINDPLOTTER_AMOUNT)
-            return InvalidBindPlotterAmount;
-        else if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+        if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
             return SmallPledgeLoanAmountExcludeFee;
 
         // reject absurdly high fee. (This can never happen because the
@@ -901,7 +910,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
             questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
         questionString.append("</td></tr>");
         questionString.append("<tr><td>").append(tr("Plotter ID:")).append("</td><td>").
-            append(QString::number(BindPlotterPayload::As(coin.extraData)->id)).append("</td></tr>");
+            append(QString::number(BindPlotterPayload::As(coin.extraData)->GetId())).append("</td></tr>");
         questionString.append("<tr><td>").append(tr("Transaction fee:")).append("</td><td>").
             append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
         questionString.append("</table>");

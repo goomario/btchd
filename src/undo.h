@@ -68,6 +68,7 @@ public:
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
 
+        txout->extraData = nullptr;
         if (nCode & 0x80000000) {
             unsigned int extraDataType;
             ::Unserialize(s, VARINT(extraDataType));

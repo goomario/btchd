@@ -28,13 +28,14 @@ public:
     ~AddressTableModel();
 
     enum ColumnIndex {
-        Status = 0,  /**< Status */
-        Label = 1,   /**< User specified label */
-        Address = 2, /**< BitcoinHD address */
-        Amount = 3,  /**< BitcoinHD amount */
-        LoanAmount = 4,   /**< BitcoinHD loan amount */
-        DebitAmount = 5,  /**< BitcoinHD debit amount */
-        LockedAmount = 6, /**< BitcoinHD locked amount */
+        Status = 0,     /**< Status */
+        Watchonly = 1,  /**< Watchonly */
+        Label = 2,      /**< User specified label */
+        Address = 3,    /**< BitcoinHD address */
+        Amount = 4,     /**< BitcoinHD amount */
+        LoanAmount = 5,   /**< BitcoinHD loan amount */
+        DebitAmount = 6,  /**< BitcoinHD debit amount */
+        LockedAmount = 7, /**< BitcoinHD locked amount */
     };
 
     enum RoleIndex {

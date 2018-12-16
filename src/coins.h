@@ -88,6 +88,7 @@ public:
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
 
+        extraData = nullptr;
         if (code & 0x80000000) {
             unsigned int extraDataType;
             ::Unserialize(s, VARINT(extraDataType));
@@ -207,6 +208,7 @@ public:
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursorRef Cursor() const;
 
+    virtual CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const;
     virtual CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const;
     virtual CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const;
 
@@ -237,6 +239,7 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
+    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const override;
     CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
@@ -274,6 +277,9 @@ public:
     void SetBestBlock(const uint256 &hashBlock);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override {
+        throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
+    }
+    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override {

@@ -28,18 +28,18 @@ static UniValue getMinerAccount(const JSONRPCRequest& request)
             "\nGet new miner account.\n"
             "\nResult:\n"
             "{\n"
-            "  [ passphrase ]              (string) Passphrase\n"
-            "  [ accountId ]               (string) Account ID\n"
+            "  [ passphrase ]              (string) The passphrase\n"
+            "  [ plotterId ]               (string) The plotter ID from passphrase\n"
             "}\n"
         );
     }
 
     std::string passphrase = poc::generatePassPhrase();
-    uint64_t nAccountId = poc::GetAccountIdByPassPhrase(passphrase);
+    uint64_t plotterID = GeneratePlotterId(passphrase);
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("passphrase", passphrase);
-    result.pushKV("accountId", std::to_string(nAccountId));
+    result.pushKV("plotterId", std::to_string(plotterID));
     return result;
 }
 
@@ -168,7 +168,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
     }
 
     uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-    uint64_t nAccountId = poc::GetAccountIdByPassPhrase(request.params[1].get_str());
+    uint64_t nAccountId = GeneratePlotterId(request.params[1].get_str());
 
     int nTargetHeight = 0;
     if (request.params.size() >= 3) {
@@ -374,7 +374,7 @@ static UniValue getPlotterId(const JSONRPCRequest& request)
         result.pushKV("result", "Missing parameters");
         return result;
     }
-    const uint64_t nAccountId = poc::GetAccountIdByPassPhrase(request.params[0].get_str());
+    const uint64_t nAccountId = GeneratePlotterId(request.params[0].get_str());
     return nAccountId;
 }
 

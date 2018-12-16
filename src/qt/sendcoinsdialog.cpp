@@ -240,7 +240,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
             ui->frameCoinControl->setVisible(false);
-            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_CHANGE_ONLY;
             break;
         default: // Normal pay
             ui->clearButton->setVisible(true);
@@ -305,6 +305,10 @@ void SendCoinsDialog::on_sendButton_clicked()
     {
     case PayOperateMethod::SendPledge:
         ctrl.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+        break;
+    case PayOperateMethod::BindPlotter:
+        ctrl.payPolicy = PAYPOLICY_FROM_CHANGE_ONLY;
+        ctrl.destChange = DecodeDestination(recipients[0].address.toStdString());
         break;
     default:
         if (model->getOptionsModel()->getCoinControlFeatures())
@@ -372,8 +376,8 @@ void SendCoinsDialog::on_sendButton_clicked()
         questionString = tr("Are you sure you want to send pledge?");
         break;
     case PayOperateMethod::BindPlotter:
-        titleString = tr("Confirm bind plotter ID");
-        questionString = tr("Are you sure you want to bind plotter ID?");
+        titleString = tr("Confirm bind plotter");
+        questionString = tr("Are you sure you want to bind plotter?");
         break;
     default:
         titleString = tr("Confirm send coins");

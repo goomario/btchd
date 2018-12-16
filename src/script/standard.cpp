@@ -398,20 +398,40 @@ namespace {
 
 std::vector<unsigned char> ToByteVector(DatacarrierType protocol) {
     unsigned int in = (unsigned int) protocol;
-    return { (unsigned char)((in >> 0)&0xff), (unsigned char)((in >> 8)&0xff), (unsigned char)((in >> 16)&0xff), (unsigned char)((in >> 24)&0xff) };
+    return {
+        (unsigned char)((in >> 0)&0xff),
+        (unsigned char)((in >> 8)&0xff),
+        (unsigned char)((in >> 16)&0xff),
+        (unsigned char)((in >> 24)&0xff),
+    };
+}
+
+std::vector<unsigned char> ToByteVector(uint64_t v) {
+    return {
+        (unsigned char)((v >> 0)&0xff),
+        (unsigned char)((v >> 8)&0xff),
+        (unsigned char)((v >> 16)&0xff),
+        (unsigned char)((v >> 24)&0xff),
+        (unsigned char)((v >> 32)&0xff),
+        (unsigned char)((v >> 40)&0xff),
+        (unsigned char)((v >> 48)&0xff),
+        (unsigned char)((v >> 56)&0xff),
+    };
 }
 
 }
 
-CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId) {
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase) {
     CScript script;
 
-    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
-    if (scriptID != nullptr) {
-        script << OP_RETURN;
-        script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
-        script << ToByteVector(*scriptID);
-        script << CScriptNum((int64_t)plotterId);
+    uint64_t plotterId = GeneratePlotterId(passphrase);
+    if (plotterId != 0) {
+        const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+        if (scriptID != nullptr) {
+            script << OP_RETURN;
+            script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
+            script << ToByteVector(plotterId);
+        }
     }
 
     return script;
@@ -457,6 +477,29 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
         // Bind plotter transaction
         if (tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
             return nullptr;
+
+        // Check destination
+        CTxDestination dest;
+        if (!ExtractDestination(tx.vout[0].scriptPubKey, dest) || boost::get<CScriptID>(&dest) == nullptr)
+            return nullptr;
+        
+        // Plotter
+        std::vector<unsigned char> plotterBytes;
+        if (!scriptPubKey.GetOp(pc, opcode, plotterBytes) || plotterBytes.size() != sizeof(uint64_t))
+            return nullptr;
+        uint64_t plotterId = (((uint64_t)plotterBytes[0]) >> 0) |
+                             (((uint64_t)plotterBytes[1]) << 8) |
+                             (((uint64_t)plotterBytes[2]) << 16) |
+                             (((uint64_t)plotterBytes[3]) << 24) |
+                             (((uint64_t)plotterBytes[4]) << 32) |
+                             (((uint64_t)plotterBytes[5]) << 40) |
+                             (((uint64_t)plotterBytes[6]) << 48) |
+                             (((uint64_t)plotterBytes[7]) << 56);
+        if (plotterId == 0)
+            return nullptr;
+        std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
+        payload->id = plotterId;
+        return payload;
     } else if (type == DATACARRIER_TYPE_PLEDGE) {
         // Plege transaction
         if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != 27)

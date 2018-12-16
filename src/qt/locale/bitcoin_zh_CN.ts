@@ -139,6 +139,10 @@
         <translation>首选地址</translation>
     </message>
     <message>
+        <source>Watchonly address</source>
+        <translation>仅观察地址</translation>
+    </message>
+    <message>
         <source>Total: %1\nAvaiable: %2\nLoan: %3\nDebit: %4\nAvaiable pledge: %5\nLocked: %6</source>
         <translation>总额: %1\n可用总额: %2\n借出抵押: %3\n借入抵押: %4\n可用于挖矿的抵押额: %5\n锁定的总额: %6</translation>
     </message>
@@ -608,8 +612,8 @@
         <translation>脑密码: %1</translation>
     </message>
     <message>
-        <source>Account Id: %1</source>
-        <translation>账户ID: %1</translation>
+        <source>Plotter Id: %1</source>
+        <translation>算力ID: %1</translation>
     </message>
 </context>
 <context>
@@ -1755,8 +1759,8 @@
         <translation>首选地址余额</translation>
     </message>
     <message>
-        <source>Bind plotter ID</source>
-        <translation>绑定到钱包的算力ID</translation>
+        <source>Bind plotter</source>
+        <translation>绑定到钱包的算力</translation>
     </message>
     <message>
         <source>Estimate capacity</source>
@@ -2471,11 +2475,11 @@
         <translation>您确定要发送抵押吗？</translation>
     </message>
     <message>
-        <source>Confirm bind plotter ID</source>
+        <source>Confirm bind plotter</source>
         <translation>确认绑定算力</translation>
     </message>
     <message>
-        <source>Are you sure you want to bind plotter ID?</source>
+        <source>Are you sure you want to bind plotter?</source>
         <translation>您确定要绑定算力吗？</translation>
     </message>
     <message>

@@ -1687,8 +1687,8 @@
         <translation>主要地址餘額</translation>
     </message>
     <message>
-        <source>Bind plotter ID</source>
-        <translation>綁定到錢包的算力ID</translation>
+        <source>Bind plotter</source>
+        <translation>綁定到錢包的算力</translation>
     </message>
     <message>
         <source>Estimate capacity</source>
