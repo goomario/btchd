@@ -70,8 +70,8 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
 
     // Operate method
     ui->operateMethodComboBox->addItem(tr("Pay to"), (int)PayOperateMethod::Pay);
-    ui->operateMethodComboBox->addItem(tr("Send pledge to"), (int)PayOperateMethod::SendPledge);
-    ui->operateMethodComboBox->addItem(tr("Bind plotter ID to"), (int)PayOperateMethod::BindPlotter);
+    ui->operateMethodComboBox->addItem(tr("Pledge to"), (int)PayOperateMethod::SendPledge);
+    ui->operateMethodComboBox->addItem(tr("Bind to"), (int)PayOperateMethod::BindPlotter);
     addEntry();
 
     GUIUtil::setupAddressWidget(ui->lineEditCoinControlChange, this);
@@ -417,8 +417,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     questionString.append("</span>");
 
 
-    SendConfirmationDialog confirmationDialog(titleString,
-        questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
+    SendConfirmationDialog confirmationDialog(titleString, questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
     confirmationDialog.exec();
     QMessageBox::StandardButton retval = (QMessageBox::StandardButton)confirmationDialog.result();
 
@@ -649,6 +648,21 @@ void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn 
     case WalletModel::PaymentRequestExpired:
         msgParams.first = tr("Payment request expired.");
         msgParams.second = CClientUIInterface::MSG_ERROR;
+        break;
+    case WalletModel::InvalidBindPlotterAmount:
+        msgParams.first = tr("The lock amount to bind plotter must be %1.")
+            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_BINDPLOTTER_AMOUNT));
+        break;
+    case WalletModel::BindPlotterExist:
+        msgParams.first = tr("The plotter already binded.");
+        break;
+    case WalletModel::SmallPledgeLoanAmount:
+        msgParams.first = tr("The valid amount to pledge loan must be larger than %1.")
+            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_PLEDGELOAN_AMOUNT_MIN));
+        break;
+    case WalletModel::SmallPledgeLoanAmountExcludeFee:
+        msgParams.first = tr("The valid amount to pledge loan must be larger than %1 on exclude fee %2.")
+            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_PLEDGELOAN_AMOUNT_MIN), msgArg);
         break;
     // included to prevent a compiler warning.
     case WalletModel::OK:

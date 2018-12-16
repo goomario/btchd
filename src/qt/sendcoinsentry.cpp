@@ -14,24 +14,17 @@
 #include <QApplication>
 #include <QClipboard>
 
-SendCoinsEntry::SendCoinsEntry(PayOperateMethod payOperateMethod, const PlatformStyle *_platformStyle, QWidget *parent) :
+SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const PlatformStyle *_platformStyle, QWidget *parent) :
     QStackedWidget(parent),
+    payOperateMethod(_payOperateMethod),
     ui(new Ui::SendCoinsEntry),
     model(0),
     platformStyle(_platformStyle)
 {
     ui->setupUi(this);
 
-    if (payOperateMethod == PayOperateMethod::SendPledge) {
-        ui->payToLabel->setText("Pledge &To:");
-    } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
-        ui->payToLabel->setText("Bind &To:");
-        ui->payAmount->setValue(PROTOCOL_BINDPLOTTER_AMOUNT);
-        ui->payAmount->setEnabled(false);
-        ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
-        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
-        ui->useAvailableBalanceButton->setVisible(false);
-    }
+    ui->plotterPassphraseLabel->setVisible(false);
+    ui->plotterPassphrase->setVisible(false);
 
     ui->addressBookButton->setIcon(platformStyle->SingleColorIcon(":/icons/address-book"));
     ui->pasteButton->setIcon(platformStyle->SingleColorIcon(":/icons/editpaste"));
@@ -60,6 +53,23 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod payOperateMethod, const Platform
     connect(ui->deleteButton_is, SIGNAL(clicked()), this, SLOT(deleteClicked()));
     connect(ui->deleteButton_s, SIGNAL(clicked()), this, SLOT(deleteClicked()));
     connect(ui->useAvailableBalanceButton, SIGNAL(clicked()), this, SLOT(useAvailableBalanceClicked()));
+
+    // Pay method
+    if (payOperateMethod == PayOperateMethod::SendPledge) {
+        ui->payToLabel->setText("Pledge &To:");
+    } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
+        ui->payToLabel->setText("Bind &To:");
+        ui->labellLabel->setVisible(false);
+        ui->addAsLabel->setVisible(false);
+        ui->plotterPassphraseLabel->setVisible(true);
+        ui->plotterPassphrase->setVisible(true);
+    #if QT_VERSION >= 0x040700
+        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter source passphrase"));
+    #endif
+        ui->payAmount->setReadOnly(true);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
+        ui->useAvailableBalanceButton->setEnabled(false);
+    }
 }
 
 SendCoinsEntry::~SendCoinsEntry()
@@ -77,7 +87,8 @@ void SendCoinsEntry::on_addressBookButton_clicked()
 {
     if(!model)
         return;
-    AddressBookPage dlg(platformStyle, AddressBookPage::ForSelection, AddressBookPage::SendingTab, this);
+    AddressBookPage::Tabs tab = (payOperateMethod == PayOperateMethod::BindPlotter ? AddressBookPage::ReceivingTab : AddressBookPage::SendingTab);
+    AddressBookPage dlg(platformStyle, AddressBookPage::ForSelection, tab, this);
     dlg.setModel(model->getAddressTableModel());
     if(dlg.exec())
     {
@@ -106,6 +117,7 @@ void SendCoinsEntry::clear()
     // clear UI elements for normal payment
     ui->payTo->clear();
     ui->addAsLabel->clear();
+    ui->plotterPassphrase->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
     ui->messageTextLabel->clear();
@@ -122,6 +134,12 @@ void SendCoinsEntry::clear()
 
     // update the display unit, to not use the default ("BitcoinHD")
     updateDisplayUnit();
+
+    // Update for bind plotter
+    if (payOperateMethod == PayOperateMethod::BindPlotter) {
+        ui->payAmount->setValue(PROTOCOL_BINDPLOTTER_AMOUNT);
+        ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
+    }
 }
 
 void SendCoinsEntry::checkSubtractFeeFromAmount()
@@ -171,6 +189,18 @@ bool SendCoinsEntry::validate()
 
     // Reject dust outputs:
     if (retval && GUIUtil::isDust(ui->payTo->text(), ui->payAmount->value())) {
+        ui->payAmount->setValid(false);
+        retval = false;
+    }
+
+    // Special tx amount
+    if (payOperateMethod == PayOperateMethod::SendPledge && ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+    {
+        ui->payAmount->setValid(false);
+        retval = false;
+    }
+    else if (payOperateMethod == PayOperateMethod::BindPlotter && ui->payAmount->value() != PROTOCOL_BINDPLOTTER_AMOUNT)
+    {
         ui->payAmount->setValid(false);
         retval = false;
     }

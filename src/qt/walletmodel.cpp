@@ -317,8 +317,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         const SendCoinsRecipient &rcp = recipients[0];
         if (!validateAddress(rcp.address))
             return InvalidAddress;
-        if (rcp.amount < PROTOCOL_PLEDGE_AMOUNT_MIN)
-            return InvalidAmount;
+        if (rcp.amount < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+            return SmallPledgeLoanAmount;
         setAddress.insert(rcp.address);
         ++nAddresses;
 
@@ -376,8 +376,10 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
 
         // Check pledge amount
-        if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGE_AMOUNT_MIN)
-            return InvalidAmount;
+        if (payOperateMethod == PayOperateMethod::BindPlotter && fSubtractFeeFromAmount && total - nFeeRequired != PROTOCOL_BINDPLOTTER_AMOUNT)
+            return InvalidBindPlotterAmount;
+        else if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+            return SmallPledgeLoanAmountExcludeFee;
 
         // reject absurdly high fee. (This can never happen because the
         // wallet caps the fee at maxTxFee. This merely serves as a

@@ -465,10 +465,7 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
 
 size_t CCoinsViewDB::EstimateSize() const
 {
-    return db.EstimateSize(DB_COIN, (char)(DB_COIN+1)) +
-        db.EstimateSize(DB_ACCOUNT_COIN, (char)(DB_ACCOUNT_COIN + 1)) +
-        db.EstimateSize(DB_COIN_PLEDGECREDIT, (char)(DB_COIN_PLEDGECREDIT + 1)) +
-        db.EstimateSize(DB_COIN_PLEDGEDEBIT, (char)(DB_COIN_PLEDGEDEBIT + 1));
+    return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
 }
 
 CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,

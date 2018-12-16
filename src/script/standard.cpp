@@ -459,7 +459,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
             return nullptr;
     } else if (type == DATACARRIER_TYPE_PLEDGE) {
         // Plege transaction
-        if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGE_AMOUNT_MIN || scriptPubKey.size() != 27)
+        if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != 27)
             return nullptr;
         if (tx.vout.size() == 3 && tx.vout[0].scriptPubKey != tx.vout[1].scriptPubKey)
             return nullptr;

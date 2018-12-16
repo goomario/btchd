@@ -3592,8 +3592,8 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     CAmount nAmount = AmountFromValue(request.params[1]);
     if (nAmount <= 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount for send");
-    else if (nAmount <= PROTOCOL_PLEDGE_AMOUNT_MIN)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require big then %s", FormatMoney(PROTOCOL_PLEDGE_AMOUNT_MIN)));
+    else if (nAmount <= PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require big then %s", FormatMoney(PROTOCOL_PLEDGELOAN_AMOUNT_MIN)));
 
     // Wallet comments
     CWalletTx wtx;
@@ -3653,9 +3653,9 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     if (!pwallet->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, CTransaction::UNIFORM_VERSION)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
-    if (nAmount - nFeeRequired < PROTOCOL_PLEDGE_AMOUNT_MIN)
+    if (nAmount - nFeeRequired < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Error: This pledge amount %s (requires fee of at least %s) small then %s",
-            FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_PLEDGE_AMOUNT_MIN)));
+            FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_PLEDGELOAN_AMOUNT_MIN)));
 
     CValidationState state;
     if (!pwallet->CommitTransaction(wtx, reservekey, g_connman.get(), state)) {

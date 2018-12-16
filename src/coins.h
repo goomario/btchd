@@ -25,9 +25,9 @@
  * A UTXO entry.
  *
  * Serialized format:
- * - VARINT((coinbase ? 1 : 0) | (height << 1) | (extraData ? 0 : 0x80000000))
+ * - VARINT((coinbase ? 1 : 0) | (height << 1) | (extraData ? 0x80000000 : 0))
  * - the non-spent CTxOut (via CTxOutCompressor)
- * - the extra-data CScript (via std::vector<unsigned char>)
+ * - the extra-data CDatacarrierPayloadRef
  */
 class Coin
 {

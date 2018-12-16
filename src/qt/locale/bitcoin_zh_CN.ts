@@ -2455,20 +2455,20 @@
         <translation>支付到</translation>
     </message>
     <message>
-        <source>Send pledge to</source>
-        <translation>发送抵押到</translation>
+        <source>Pledge to</source>
+        <translation>借出到</translation>
     </message>
     <message>
-        <source>Bind plotter ID to</source>
-        <translation>绑定算力到</translation>
+        <source>Bind to</source>
+        <translation>绑定到</translation>
     </message>
     <message>
         <source>Confirm send pledge coins</source>
-        <translation>确认租借抵押</translation>
+        <translation>确认发送抵押</translation>
     </message>
     <message>
         <source>Are you sure you want to send pledge?</source>
-        <translation>您确定要租借抵押吗？</translation>
+        <translation>您确定要发送抵押吗？</translation>
     </message>
     <message>
         <source>Confirm bind plotter ID</source>
@@ -2477,6 +2477,22 @@
     <message>
         <source>Are you sure you want to bind plotter ID?</source>
         <translation>您确定要绑定算力吗？</translation>
+    </message>
+    <message>
+        <source>The lock amount to bind plotter must be %1.</source>
+        <translation>绑定算力需要锁定的交易额必须是 %1 。</translation>
+    </message>
+    <message>
+        <source>The plotter already binded.</source>
+        <translation>算力和地址已经绑定过。</translation>
+    </message>
+    <message>
+        <source>The valid amount to pledge loan must be larger than %1.</source>
+        <translation>有效的抵押借出额除必须大于 %1 。</translation>
+    </message>
+    <message>
+        <source>The valid amount to pledge loan must be larger than %1 on exclude fee %2.</source>
+        <translation>有效的抵押借出额除去交易费用 %2 后必须大于 %1 。</translation>
     </message>
 </context>
 <context>
@@ -2496,6 +2512,10 @@
     <message>
         <source>&amp;Label:</source>
         <translation>标签(&amp;L)：</translation>
+    </message>
+    <message>
+        <source>&amp;Passphrase:</source>
+        <translation>脑密码(&amp;P)：</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2568,6 +2588,10 @@
     <message>
         <source>Enter a label for this address to add it to your address book</source>
         <translation>为这个地址输入一个标签，以便将它添加到您的地址簿</translation>
+    </message>
+    <message>
+        <source>Enter your plotter source passphrase</source>
+        <translation>输入您算力的源脑密码</translation>
     </message>
 </context>
 <context>

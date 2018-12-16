@@ -66,6 +66,7 @@ private Q_SLOTS:
     void updateDisplayUnit();
 
 private:
+    PayOperateMethod payOperateMethod;
     SendCoinsRecipient recipient;
     Ui::SendCoinsEntry *ui;
     WalletModel *model;

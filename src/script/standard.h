@@ -198,7 +198,7 @@ CAccountID GetAccountIDByTxDestination(const CTxDestination &dest);
 /** Utility function to get account id with given address. */
 CAccountID GetAccountIDByAddress(const std::string &address);
 
-/** opreturn protocol */
+/** opreturn type */
 enum DatacarrierType : unsigned int {
     // Range
     DATACARRIER_TYPE_MIN = 0x0000000f,
@@ -266,7 +266,7 @@ public:
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
 
 /** The minimal pledge loan amount */
-static const CAmount PROTOCOL_PLEDGE_AMOUNT_MIN = 1 * COIN;
+static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 
 /** Generate a bind plotter script. */
 CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const uint64_t& plotterId);
