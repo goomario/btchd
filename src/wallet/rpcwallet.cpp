@@ -2883,8 +2883,8 @@ UniValue listunspent(const JSONRPCRequest& request)
             "      \"address\"     (string) BitcoinHD address\n"
             "      ,...\n"
             "    ]\n"
-            "4. include_unsafe (bool, optional, default=true) Include outputs that are not safe to spend\n"
-            "                  See description of \"safe\" attribute below.\n"
+            "4. include_unsafe (bool, optional, default=true) Include outputs that are not safe to spend and locked\n"
+            "                  See description of \"safe\" and \"lock\" attribute below.\n"
             "5. query_options    (json, optional) JSON with query options\n"
             "    {\n"
             "      \"minimumAmount\"    (numeric or string, default=0) Minimum value of each UTXO in " + CURRENCY_UNIT + "\n"
@@ -2908,6 +2908,8 @@ UniValue listunspent(const JSONRPCRequest& request)
             "    \"safe\" : xxx              (bool) Whether this output is considered safe to spend. Unconfirmed transactions\n"
             "                              from outside keys and unconfirmed replacement transactions are considered unsafe\n"
             "                              and are not eligible for spending by fundrawtransaction and sendtoaddress.\n"
+            "    \"lock\" : xxx              (bool) The coin has lock, unspendable.\n"
+            "    \"extra\" : {}              (object) The coin extra data for bind plotter and pledge loan.\n"
             "  }\n"
             "  ,...\n"
             "]\n"
@@ -2985,7 +2987,7 @@ UniValue listunspent(const JSONRPCRequest& request)
     std::vector<COutput> vecOutputs;
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    pwallet->AvailableCoins(vecOutputs, !include_unsafe, true, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
+    pwallet->AvailableCoins(vecOutputs, !include_unsafe, include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
     for (const COutput& out : vecOutputs) {
         CTxDestination address;
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
@@ -3020,6 +3022,15 @@ UniValue listunspent(const JSONRPCRequest& request)
         entry.push_back(Pair("spendable", out.fSpendable));
         entry.push_back(Pair("solvable", out.fSolvable));
         entry.push_back(Pair("safe", out.fSafe));
+        entry.push_back(Pair("lock", out.fLock));
+        if (out.fLock) {
+            const Coin &coin = pcoinsTip->AccessCoin(COutPoint(out.tx->GetHash(), out.i));
+            if (coin.extraData) {
+                UniValue extra(UniValue::VOBJ);
+                DatacarrierPayloadToUniv(*coin.extraData, out.tx->tx->vout[out.i], extra);
+                entry.push_back(Pair("extra", extra));
+            }
+        }
         results.push_back(entry);
     }
 

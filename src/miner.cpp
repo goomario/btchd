@@ -190,7 +190,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = blockReward.miner0;
     if (fundOutIndex < coinbaseTx.vout.size()) {
-        coinbaseTx.vout[fundOutIndex].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BtchdFundAddress));
+        coinbaseTx.vout[fundOutIndex].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BHDFundAddress));
         coinbaseTx.vout[fundOutIndex].nValue = blockReward.fund;
     }
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));

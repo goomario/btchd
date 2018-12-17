@@ -25,6 +25,8 @@
 
 #include <boost/thread.hpp>
 
+static const char DB_COIN_VERSION = 'V';
+
 static const char DB_COIN = 'C';
 static const char DB_BLOCK_FILES = 'f';
 static const char DB_TXINDEX = 't';
@@ -840,13 +842,15 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
 /** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    const CAmount versionBalance = 0;
-    const AccountCoinEntry accountVersionEntry(std::numeric_limits<CAccountID>::max(), COutPoint(uint256(), 0));
+    const uint32_t newestCoinDbVersion = 0x0020181218;
 
-    CAmount currentVersionBalance;
-    if (db.Read(accountVersionEntry, VARINT(currentVersionBalance)) && currentVersionBalance == versionBalance)
-        return true; // Exist balance entry
-    db.Erase(accountVersionEntry);
+    // Check coin database version
+    {
+        uint32_t currentCoinDbVersion;
+        if (db.Read(DB_COIN_VERSION, VARINT(currentCoinDbVersion)) && currentCoinDbVersion == newestCoinDbVersion)
+            return true; // Newest version
+        db.Erase(DB_COIN_VERSION);
+    }
 
     // Reindex UTXO for address
     uiInterface.ShowProgress(_("Upgrading UTXO database"), 0, true);
@@ -974,9 +978,11 @@ bool CCoinsViewDB::Upgrade() {
         }
         db.WriteBatch(batch);
     }
-    if (!db.Write(accountVersionEntry, VARINT(versionBalance)))
+
+    // Update coin version
+    if (!db.Write(DB_COIN_VERSION, VARINT(newestCoinDbVersion)))
         return error("%s: cannot write UTXO upgrade flag", __func__);
-    add++;
+
     uiInterface.ShowProgress("", 100, false);
     LogPrintf("[%s]. remove utxo %d, add utxo %d\n", ShutdownRequested() ? "CANCELLED" : "DONE", remove, add);
 
