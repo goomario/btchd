@@ -35,7 +35,7 @@ static UniValue getMinerAccount(const JSONRPCRequest& request)
     }
 
     std::string passphrase = poc::generatePassPhrase();
-    uint64_t plotterID = GeneratePlotterId(passphrase);
+    uint64_t plotterID = PocLegacy::GeneratePlotterId(passphrase);
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("passphrase", passphrase);
@@ -168,7 +168,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
     }
 
     uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-    uint64_t nAccountId = GeneratePlotterId(request.params[1].get_str());
+    uint64_t nPlotterId = PocLegacy::GeneratePlotterId(request.params[1].get_str());
 
     int nTargetHeight = 0;
     if (request.params.size() >= 3) {
@@ -180,7 +180,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
         address = request.params[3].get_str();
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address);
+    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, address);
     return result;
 }
 
@@ -374,8 +374,8 @@ static UniValue getPlotterId(const JSONRPCRequest& request)
         result.pushKV("result", "Missing parameters");
         return result;
     }
-    const uint64_t nAccountId = GeneratePlotterId(request.params[0].get_str());
-    return nAccountId;
+
+    return PocLegacy::GeneratePlotterId(request.params[0].get_str());;
 }
 
 }}

@@ -56,7 +56,6 @@ void keygen25519(pub25519 P, spriv25519 s, priv25519 k) {
 	core25519(P, s, k, NULL);
 }
 
-
 /* Key agreement
  *   Z  [out] shared secret (needs hashing before use)
  *   k  [in]  your private key for key agreement
@@ -67,9 +66,49 @@ void curve25519(sec25519 Z, const priv25519 k, const pub25519 P) {
 	core25519(Z, NULL, k, P);
 }
 
+/* Deterministic EC-KCDSA
+ *
+ *    s is the private key for signing
+ *    P is the corresponding public key
+ *    Z is the context data (signer public key or certificate, etc)
+ *
+ * signing:
+ *
+ *    m = hash(Z, message)
+ *    x = hash(m, s)
+ *    keygen25519(Y, NULL, x);
+ *    r = hash(Y);
+ *    h = m XOR r
+ *    sign25519(v, h, x, s);
+ *
+ *    output (v,r) as the signature
+ *
+ * verification:
+ *
+ *    m = hash(Z, message);
+ *    h = m XOR r
+ *    verify25519(Y, v, h, P)
+ *
+ *    confirm  r == hash(Y)
+ *
+ * It would seem to me that it would be simpler to have the signer directly do
+ * h = hash(m, Y) and send that to the recipient instead of r, who can verify
+ * the signature by checking h == hash(m, Y).  If there are any problems with
+ * such a scheme, please let me know.
+ *
+ * Also, EC-KCDSA (like most DS algorithms) picks x random, which is a waste of
+ * perfectly good entropy, but does allow Y to be calculated in advance of (or
+ * parallel to) hashing the message.
+ */
 
+/* Signature generation primitive, calculates (x-h)s mod q
+ *   @param v  [out] signature value
+ *   @param h  [in]  signature hash (of message, signature pub key, and context data)
+ *   @param x  [in]  signature private key
+ *   @param s  [in]  private key for signing
+ * returns true on success, false on failure (use different x or h)
+ */
 int sign25519(k25519 v, const k25519 h, const priv25519 x, const spriv25519 s);
-
 
 /* Signature verification primitive, calculates Y = vP + hG
  *   Y  [out] signature public key

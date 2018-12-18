@@ -127,6 +127,8 @@ public:
         TransactionCommitFailed,
         AbsurdFee,
         PaymentRequestExpired,
+        // For BHDIP006
+        InactivedBHDIP006,
         InvalidBindPlotterAmount,
         BindPlotterExist,
         SmallPledgeLoanAmount,
@@ -179,10 +181,10 @@ public:
     };
 
     // prepare transaction for getting txfee before sending coins
-    SendCoinsReturn prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl, PayOperateMethod payOperateMethod = PayOperateMethod::Pay);
+    SendCoinsReturn prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl, PayOperateMethod payOperateMethod);
 
     // Send coins to a list of recipients
-    SendCoinsReturn sendCoins(WalletModelTransaction &transaction);
+    SendCoinsReturn sendCoins(WalletModelTransaction &transaction, PayOperateMethod payOperateMethod);
 
     // Wallet encryption
     bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);

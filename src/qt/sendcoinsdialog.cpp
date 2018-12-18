@@ -240,7 +240,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
             ui->frameCoinControl->setVisible(false);
-            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_CHANGE_ONLY;
+            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
             break;
         default: // Normal pay
             ui->clearButton->setVisible(true);
@@ -281,14 +281,12 @@ void SendCoinsDialog::on_sendButton_clicked()
         }
     }
 
-    if(!valid || recipients.isEmpty() || (operateMethod != PayOperateMethod::Pay && recipients.size() != 1))
-    {
+    if (!valid || recipients.isEmpty())
         return;
-    }
 
     fNewRecipientAllowed = false;
     WalletModel::UnlockContext ctx(model->requestUnlock());
-    if(!ctx.isValid())
+    if (!ctx.isValid())
     {
         // Unlock wallet was cancelled
         fNewRecipientAllowed = true;
@@ -304,9 +302,13 @@ void SendCoinsDialog::on_sendButton_clicked()
     switch (operateMethod)
     {
     case PayOperateMethod::SendPledge:
+        if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized())
+            return;
         ctrl.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
         break;
     case PayOperateMethod::BindPlotter:
+        if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized())
+            return;
         ctrl.payPolicy = PAYPOLICY_FROM_CHANGE_ONLY;
         ctrl.destChange = DecodeDestination(recipients[0].address.toStdString());
         break;
@@ -378,6 +380,38 @@ void SendCoinsDialog::on_sendButton_clicked()
     case PayOperateMethod::BindPlotter:
         titleString = tr("Confirm bind plotter");
         questionString = tr("Are you sure you want to bind plotter?");
+        {
+            const SendCoinsRecipient &rcp = recipients[0];
+            QString amount = "<b>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), rcp.amount) + "</b>";
+            QString plotterId;
+            {
+                uint64_t id;
+                if (IsValidPassphrase(rcp.plotterPassphrase.toStdString(), &id)) {
+                    if (id != 0) {
+                        plotterId = "<b>" + QString::number(id) + "</b>";
+                    } else {
+                        plotterId = "<b>" + QString::number(PocLegacy::GeneratePlotterId(rcp.plotterPassphrase.toStdString())) + "</b>";
+                    }
+                } else {
+                    plotterId = "<b>" + tr("Invalid plotter") + "</b>";
+                }
+            }
+            QString address;
+            if (rcp.label.length() > 0)
+                address = GUIUtil::HtmlEscape(rcp.label) + "(<span style='font-family: monospace;'>" + rcp.address + "</span>)";
+            else
+                address = "<span style='font-family: monospace;'>" + rcp.address + "</span>";
+
+            formatted.clear();
+            formatted.append(tr("%1 bind to %2").arg(plotterId, address));
+            formatted.append("");
+            formatted.append(tr("The operation will lock %1 in %2.").arg(amount, address));
+            // Hex data
+            {
+                CScript data = GetBindPlotterScriptForDestination(DecodeDestination(rcp.address.toStdString()), rcp.plotterPassphrase.toStdString(), chainActive.Height()+5);
+                formatted.append("<hr />" + QString::fromStdString(HexStr(data.begin(), data.end())));
+            }
+        }
         break;
     default:
         titleString = tr("Confirm send coins");
@@ -422,6 +456,8 @@ void SendCoinsDialog::on_sendButton_clicked()
 
 
     SendConfirmationDialog confirmationDialog(titleString, questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
+    if (operateMethod == PayOperateMethod::BindPlotter)
+        confirmationDialog.setTextInteractionFlags(Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse);
     confirmationDialog.exec();
     QMessageBox::StandardButton retval = (QMessageBox::StandardButton)confirmationDialog.result();
 
@@ -432,7 +468,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     }
 
     // now send the prepared transaction
-    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
+    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction, operateMethod);
     // process sendStatus and on error generate message shown to user
     processSendCoinsReturn(sendStatus);
 
@@ -653,9 +689,19 @@ void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn 
         msgParams.first = tr("Payment request expired.");
         msgParams.second = CClientUIInterface::MSG_ERROR;
         break;
+    case WalletModel::InactivedBHDIP006:
+        if (getPayOperateMethod() == PayOperateMethod::BindPlotter) {
+            msgParams.first = tr("The bind plotter consensus active on %1 after.")
+                .arg(QString::number(Params().GetConsensus().BHDIP006Height));
+        } else {
+            msgParams.first = tr("The pledge loan consensus active on %1 after.")
+                .arg(QString::number(Params().GetConsensus().BHDIP006Height));
+        }
+        break;
     case WalletModel::InvalidBindPlotterAmount:
         msgParams.first = tr("The lock amount to bind plotter must be %1.")
             .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_BINDPLOTTER_AMOUNT));
+        msgParams.second = CClientUIInterface::MSG_ERROR;
         break;
     case WalletModel::BindPlotterExist:
         msgParams.first = tr("The plotter already binded.");

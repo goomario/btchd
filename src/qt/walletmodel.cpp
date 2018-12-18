@@ -315,13 +315,12 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
+        if (chainActive.Height() < Params().GetConsensus().BHDIP006Height)
+            return InactivedBHDIP006;
+
         const SendCoinsRecipient &rcp = recipients[0];
         if (!validateAddress(rcp.address) || !IsValidDestination(wallet->GetPrimaryDestination()))
             return InvalidAddress;
-        if (rcp.amount < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
-            return SmallPledgeLoanAmount;
-        setAddress.insert(rcp.address);
-        ++nAddresses;
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
@@ -336,22 +335,23 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
+        if (chainActive.Height() < Params().GetConsensus().BHDIP006Height)
+            return InactivedBHDIP006;
+
         const SendCoinsRecipient &rcp = recipients[0];
         if (!IsValidDestination(coinControl.destChange) || coinControl.destChange != DecodeDestination(rcp.address.toStdString()))
             return InvalidAddress;
-        if (rcp.fSubtractFeeFromAmount || rcp.amount != PROTOCOL_BINDPLOTTER_AMOUNT)
-            return InvalidBindPlotterAmount;
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
         vecSend.push_back({GetScriptForDestination(coinControl.destChange), rcp.amount, rcp.fSubtractFeeFromAmount});
-        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destChange, rcp.plotterPassphrase.toStdString()), 0, false});
+        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destChange, rcp.plotterPassphrase.toStdString(), chainActive.Height() + 5), 0, false});
 
         total += rcp.amount;
     }
     else {
         assert(false);
-        return OK;
+        return InvalidAddress;
     }
 
     if (setAddress.size() != nAddresses)
@@ -386,8 +386,11 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return TransactionCreationFailed;
         }
 
+        // Check bind plotter amount
+        if (payOperateMethod == PayOperateMethod::BindPlotter && newTx->tx->vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
+            return InvalidBindPlotterAmount;
         // Check pledge amount
-        if (payOperateMethod == PayOperateMethod::SendPledge && fSubtractFeeFromAmount && total - nFeeRequired < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+        if (payOperateMethod == PayOperateMethod::SendPledge && newTx->tx->vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
             return SmallPledgeLoanAmountExcludeFee;
 
         // reject absurdly high fee. (This can never happen because the
@@ -400,7 +403,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     return SendCoinsReturn(OK);
 }
 
-WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &transaction)
+WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &transaction, PayOperateMethod payOperateMethod)
 {
     QByteArray transaction_array; /* store serialized transaction */
 
@@ -425,6 +428,15 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
             }
             else if (!rcp.message.isEmpty()) // Message from normal btchd:URI (btchd:123...?message=example)
                 newTx->vOrderForm.push_back(make_pair("Message", rcp.message.toStdString()));
+        }
+
+        // Check tx
+        if (payOperateMethod == PayOperateMethod::SendPledge) {
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height());
+            assert(payload && payload->type == DATACARRIER_TYPE_PLEDGE);
+        } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height());
+            assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
         }
 
         CReserveKey *keyChange = transaction.getPossibleKeyChange();

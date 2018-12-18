@@ -38,6 +38,7 @@ public:
             ::Serialize(s, VARINT((unsigned int&)txout->extraData->type));
             if (txout->extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
+                ::Serialize(s, BindPlotterPayload::As(txout->extraData)->sign);
             } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGE) {
                 ::Serialize(s, REF(PledgePayload::As(txout->extraData)->scriptID));
             } else
@@ -75,6 +76,7 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 txout->extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
+                ::Unserialize(s, BindPlotterPayload::As(txout->extraData)->sign);
             } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
                 txout->extraData = std::make_shared<PledgePayload>();
                 ::Unserialize(s, REF(PledgePayload::As(txout->extraData)->scriptID));

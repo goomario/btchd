@@ -109,7 +109,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
     // Parse special transaction
     CDatacarrierPayloadRef extraData;
     if (nHeight >= Params().GetConsensus().BHDIP006Height) // Make sure BHDIP006 before transaction except in UTXO
-        extraData = ExtractTransactionDatacarrier(tx);
+        extraData = ExtractTransactionDatacarrier(tx, nHeight);
 
     // Add coin
     bool fCoinbase = tx.IsCoinBase();

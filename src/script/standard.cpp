@@ -396,13 +396,12 @@ CAccountID GetAccountIDByAddress(const std::string &address) {
 
 namespace {
 
-std::vector<unsigned char> ToByteVector(DatacarrierType protocol) {
-    unsigned int in = (unsigned int) protocol;
+std::vector<unsigned char> ToByteVector(uint32_t v) {
     return {
-        (unsigned char)((in >> 0)&0xff),
-        (unsigned char)((in >> 8)&0xff),
-        (unsigned char)((in >> 16)&0xff),
-        (unsigned char)((in >> 24)&0xff),
+        (unsigned char)((v >> 0)&0xff),
+        (unsigned char)((v >> 8)&0xff),
+        (unsigned char)((v >> 16)&0xff),
+        (unsigned char)((v >> 24)&0xff),
     };
 }
 
@@ -419,19 +418,93 @@ std::vector<unsigned char> ToByteVector(uint64_t v) {
     };
 }
 
+std::vector<unsigned char> ToByteVector(DatacarrierType type) {
+    return ToByteVector((uint32_t) type);
 }
 
-CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase) {
+// Bind plotter type
+const static unsigned char BINDTYPE_ID = 0x00;
+const static unsigned char BINDTYPE_PASSPHRASE = 0x01;
+
+}
+
+bool IsValidPassphrase(const std::string& passphrase_or_id, uint64_t *plotterId) {
+    static const uint32_t CharMask_Digit    = (1u << 0);
+    static const uint32_t CharMask_Char     = (1u << 1);
+    static const uint32_t CharMask_Space    = (1u << 2);
+    static const uint32_t CharMask_Unknown  = (1u << 3);
+
+    if (passphrase_or_id.empty())
+        return false;
+
+    uint32_t type = 0x00000000;
+    for (const char &ch : passphrase_or_id) {
+        if (ch == ' ')
+            type |= CharMask_Space;
+        else if (ch >= '0' && ch <= '9')
+            type |= CharMask_Digit;
+        else if (ch >= 'a' && ch <= 'z')
+            type |= CharMask_Char;
+        else
+            type |= CharMask_Unknown;
+    }
+    if (type & CharMask_Unknown)
+        return false;
+    else if (!(type & (~CharMask_Digit)) && passphrase_or_id.length() <= 20 ) {
+        // Only digit
+        uint64_t id = static_cast<uint64_t>(std::stoull(passphrase_or_id));
+        if (id == 0)
+            return false;
+        else {
+            if (plotterId) *plotterId = id;
+            return true;
+        }
+    } else if ((type&CharMask_Char) && (type&CharMask_Space) && passphrase_or_id.length() > 20) {
+        // Passphrase
+        if (plotterId) *plotterId = 0;
+        return true;
+    } else
+        return false;
+}
+
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase_or_id, int lastActiveHeight) {
     CScript script;
 
-    uint64_t plotterId = GeneratePlotterId(passphrase);
+    if (lastActiveHeight <= 0)
+        return script;
+
+    // Check destination type is P2SH
+    const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+    if (scriptID == nullptr)
+        return script;
+
+    // Check passphrase
+    uint64_t plotterId;
+    if (!IsValidPassphrase(passphrase_or_id, &plotterId))
+        return script;
+
     if (plotterId != 0) {
-        const CScriptID *scriptID = boost::get<CScriptID>(&dest);
-        if (scriptID != nullptr) {
-            script << OP_RETURN;
-            script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
-            script << ToByteVector(plotterId);
-        }
+        // Bind with plotter ID
+        script << OP_RETURN;
+        script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
+        script << std::vector<unsigned char>{BINDTYPE_ID};
+        script << ToByteVector((uint32_t) lastActiveHeight);
+        script << ToByteVector(plotterId);
+    } else {
+        // Bind with passphrase
+        const std::string& passphrase = passphrase_or_id;
+        unsigned char data[32], signature[64], publicKey[32];
+        CSHA256().Write(scriptID->begin(), CScriptID::WIDTH).Write((const unsigned char*)&lastActiveHeight, 4).Finalize(data);
+        if (!PocLegacy::Sign(passphrase, data, signature, publicKey))
+            return script;
+        assert(PocLegacy::Verify(publicKey, data, signature));
+
+        script << OP_RETURN;
+        script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
+        script << std::vector<unsigned char>{BINDTYPE_PASSPHRASE};
+        script << ToByteVector((uint32_t) lastActiveHeight);
+        script << std::vector<unsigned char>(publicKey, publicKey+32);
+        script << std::vector<unsigned char>(signature, signature+64);
     }
 
     return script;
@@ -457,8 +530,8 @@ const CAccountID& PledgePayload::GetDebitAccountID() const {
     return ptr[0];
 }
 
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
-    if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout[0].scriptPubKey.IsUnspendable())
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight) {
+    if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
         return nullptr;
 
     // OP_RETURN 0x04 <Protocol> <...>
@@ -467,55 +540,91 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx) {
         return nullptr;
     CScript::const_iterator pc = scriptPubKey.begin() + 1;
     opcodetype opcode;
+    std::vector<unsigned char> vData;
 
     // Get data type
-    std::vector<unsigned char> typeBytes;
-    if (!scriptPubKey.GetOp(pc, opcode, typeBytes) || opcode != 0x04)
+    if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != 0x04)
         return nullptr;
-    unsigned int type = (typeBytes[0] << 0) | (typeBytes[1] << 8) | (typeBytes[2] << 16) | (typeBytes[3] << 24);
+    unsigned int type = (vData[0] << 0) | (vData[1] << 8) | (vData[2] << 16) | (vData[3] << 24);
     if (type == DATACARRIER_TYPE_BINDPLOTTER) {
         // Bind plotter transaction
         if (tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
             return nullptr;
-
         // Check destination
         CTxDestination dest;
-        if (!ExtractDestination(tx.vout[0].scriptPubKey, dest) || boost::get<CScriptID>(&dest) == nullptr)
+        if (!ExtractDestination(tx.vout[0].scriptPubKey, dest))
             return nullptr;
-        
-        // Plotter
-        std::vector<unsigned char> plotterBytes;
-        if (!scriptPubKey.GetOp(pc, opcode, plotterBytes) || plotterBytes.size() != sizeof(uint64_t))
+        const CScriptID *scriptID = boost::get<CScriptID>(&dest);
+        if (scriptID == nullptr)
             return nullptr;
-        uint64_t plotterId = (((uint64_t)plotterBytes[0]) >> 0) |
-                             (((uint64_t)plotterBytes[1]) << 8) |
-                             (((uint64_t)plotterBytes[2]) << 16) |
-                             (((uint64_t)plotterBytes[3]) << 24) |
-                             (((uint64_t)plotterBytes[4]) << 32) |
-                             (((uint64_t)plotterBytes[5]) << 40) |
-                             (((uint64_t)plotterBytes[6]) << 48) |
-                             (((uint64_t)plotterBytes[7]) << 56);
-        if (plotterId == 0)
+
+        // Type
+        if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != 0x01)
             return nullptr;
-        std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
-        payload->id = plotterId;
-        return payload;
+        uint32_t signType = vData[0];
+        if (signType != BINDTYPE_ID && signType != BINDTYPE_PASSPHRASE)
+            return nullptr;
+        // Check last height
+        if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint32_t))
+            return nullptr;
+        uint32_t lastActiveHeight = (((uint32_t)vData[0]) >> 0) | (((uint32_t)vData[1]) << 8) | (((uint32_t)vData[2]) << 16) | (((uint32_t)vData[3]) << 24);
+        if (lastActiveHeight == 0 || (nHeight != 0 && nHeight > (int)lastActiveHeight))
+            return nullptr;
+
+        if (signType == BINDTYPE_ID) {
+            // Bind with plotter ID
+            if (scriptPubKey.size() != 22)
+                return nullptr;
+            // Plotter ID
+            if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint64_t))
+                return nullptr;
+            uint64_t plotterId = (((uint64_t)vData[0]) >> 0) |
+                            (((uint64_t)vData[1]) << 8) |
+                            (((uint64_t)vData[2]) << 16) |
+                            (((uint64_t)vData[3]) << 24) |
+                            (((uint64_t)vData[4]) << 32) |
+                            (((uint64_t)vData[5]) << 40) |
+                            (((uint64_t)vData[6]) << 48) |
+                            (((uint64_t)vData[7]) << 56);
+            if (plotterId == 0)
+                return nullptr;
+
+            std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
+            payload->id = plotterId;
+            payload->sign = false;
+            return payload;
+        } else if (signType == BINDTYPE_PASSPHRASE) {
+            // Bind with passphrase
+            if (scriptPubKey.size() != 111)
+                return nullptr;
+            unsigned char data[32];
+            std::vector<unsigned char> vPublicKey, vSignature;
+            if (!scriptPubKey.GetOp(pc, opcode, vPublicKey) || opcode != 0x20)
+                return nullptr;
+            if (!scriptPubKey.GetOp(pc, opcode, vSignature) || opcode != 0x40)
+                return nullptr;
+            CSHA256().Write(scriptID->begin(), CScriptID::WIDTH).Write((const unsigned char*)&lastActiveHeight, 4).Finalize(data);
+            if (!PocLegacy::Verify(&vPublicKey[0], data, &vSignature[0]))
+                return nullptr;
+
+            std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
+            payload->id = PocLegacy::ToPlotterId(&vPublicKey[0]);
+            payload->sign = true;
+            return payload;
+        }
     } else if (type == DATACARRIER_TYPE_PLEDGE) {
         // Plege transaction
-        if (tx.vout.size() > 3 || tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != 27)
-            return nullptr;
-        if (tx.vout.size() == 3 && tx.vout[0].scriptPubKey != tx.vout[1].scriptPubKey)
+        if (tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != 27)
             return nullptr;
 
         // Debit account
-        std::vector<unsigned char> debitDestBytes;
-        if (!scriptPubKey.GetOp(pc, opcode, debitDestBytes) || opcode != CScriptID::WIDTH)
-            return nullptr;
-        std::shared_ptr<PledgePayload> payload = std::make_shared<PledgePayload>();
-        payload->scriptID = uint160(debitDestBytes);
-        if (payload->GetDebitAccountID() == 0)
+        if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != CScriptID::WIDTH)
             return nullptr;
 
+        std::shared_ptr<PledgePayload> payload = std::make_shared<PledgePayload>();
+        payload->scriptID = uint160(vData);
+        if (payload->GetDebitAccountID() == 0)
+            return nullptr;
         return payload;
     }
 

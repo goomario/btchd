@@ -1047,7 +1047,14 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 
     // Update transaction datacarrier
     if (wtx.tx->nVersion == CTransaction::UNIFORM_VERSION) {
-        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx);
+        int nHeight = 0;
+        {
+            LOCK(cs_main);
+            CBlockIndex *pindex = mapBlockIndex[wtx->GetHash()];
+            if (pindex != nullptr)
+                nHeight = pindex->nHeight;
+        }
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
         if (!payload) {
             // Check special tx
             if (wtx.tx->vin.size() == 1 && wtx.tx->vout.size() == 1) {
@@ -1175,7 +1182,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
         if (fExisted && !fUpdate) return false;
         bool fRelevantToMe = fExisted || IsMine(tx) || IsFromMe(tx);
         if (!fRelevantToMe && tx.nVersion == CTransaction::UNIFORM_VERSION) {
-            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, pIndex?pIndex->nHeight:0);
             if (!payload) {
                 // Check special tx
                 if (tx.vin.size() == 1 && tx.vout.size() == 1) {
@@ -2636,7 +2643,7 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, bool 
                         if (pcoin->tx->vout[i].scriptPubKey != destChangeScriptPubKey)
                             continue;
                     } else if (coinControl->payPolicy == PAYPOLICY_MOVETO) {
-                        // destChangeScriptPubKey is move to target destination
+                        // All coin move to destChangeScriptPubKey
                         if (pcoin->tx->vout[i].scriptPubKey == destChangeScriptPubKey)
                             continue;
                     }
@@ -3069,7 +3076,8 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet,
-                                int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, int32_t nTxVersion)
+                                int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign,
+                                int32_t nTxVersion)
 {
     assert(nTxVersion == 0 || nTxVersion == CTransaction::CURRENT_VERSION || nTxVersion == CTransaction::UNIFORM_VERSION);
 

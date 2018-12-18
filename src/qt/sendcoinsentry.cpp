@@ -64,7 +64,7 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
         ui->plotterPassphraseLabel->setVisible(true);
         ui->plotterPassphrase->setVisible(true);
     #if QT_VERSION >= 0x040700
-        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter source passphrase"));
+        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase or digit ID"));
     #endif
         ui->payAmount->setReadOnly(true);
         ui->checkboxSubtractFeeFromAmount->setEnabled(false);
@@ -196,15 +196,17 @@ bool SendCoinsEntry::validate()
     // Special tx amount
     if (payOperateMethod == PayOperateMethod::SendPledge)
     {
-        if (ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN) {
+        if (ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN ||
+                (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked && ui->payAmount->value() <= PROTOCOL_PLEDGELOAN_AMOUNT_MIN)) {
             ui->payAmount->setValid(false);
             retval = false;
         }
     }
     else if (payOperateMethod == PayOperateMethod::BindPlotter)
     {
-        if (ui->payAmount->value() != PROTOCOL_BINDPLOTTER_AMOUNT) {
-            ui->payAmount->setValid(false);
+        QString passphrase = ui->plotterPassphrase->text().trimmed();
+        if (!IsValidPassphrase(passphrase.toStdString())) {
+            ui->plotterPassphrase->setValid(false);
             retval = false;
         }
     }
@@ -221,7 +223,8 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     // Normal payment
     recipient.address = ui->payTo->text();
     recipient.label = ui->addAsLabel->text();
-    recipient.plotterPassphrase = ui->plotterPassphrase->text();
+    if (payOperateMethod == PayOperateMethod::BindPlotter)
+        recipient.plotterPassphrase = ui->plotterPassphrase->text().trimmed();
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);

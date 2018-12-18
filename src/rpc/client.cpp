@@ -138,6 +138,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "listbindplotters", 2, "include_watchonly" },
     { "listbindplotters", 3, "include_invalid" },
     { "listbindplotterofaddress", 2, "count" },
+    { "createbindplotterdata", 2, "lastActiveHeight" },
     { "getpledge", 1, "verbose" },
     { "getpledgeofaddress", 2, "verbose" },
     { "sendpledgetoaddress", 1, "amount" },

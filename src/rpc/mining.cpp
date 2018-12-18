@@ -705,7 +705,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
         throw std::runtime_error(
-            "listbindplotterofaddress address plotterId\n"
+            "listbindplotterofaddress address (plotterId count)\n"
             "\nReturns up to binded plotter of address.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
@@ -783,6 +783,42 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     }
 
     return ret;
+}
+UniValue createbindplotterdata(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+            "createbindplotterdata address passphrase_or_id (lastActiveHeight)\n"
+            "\nReturn bind plotter hex data.\n"
+            "\nArguments:\n"
+            "1. address             (string, required) The BitcoinHD address\n"
+            "2. passphrase_or_id    (string, required) The passphrase or plotter id for bind\n"
+            "3. lastActiveHeight    (numeric, optional) The last active height for bind data\n"
+            ""
+            "\nResult: bind plotter hex data. See \"bindplotter\"\n"
+
+            "\nExamples:\n"
+            "\nReturn bind plotter hex data\n"
+            + HelpExampleCli("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"rough high night desk familiar hop freely needle slowly threaten process flicker\"")
+            + HelpExampleRpc("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"rough high night desk familiar hop freely needle slowly threaten process flicker\"")
+        );
+
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    if (!request.params[1].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid passphrase");
+    int lastActiveHeight = 0;
+    if (request.params.size() >= 3)
+        lastActiveHeight = request.params[2].get_int();
+
+    LOCK(cs_main);
+    if (lastActiveHeight == 0)
+        lastActiveHeight = chainActive.Height() + 5;
+    CScript script = GetBindPlotterScriptForDestination(DecodeDestination(request.params[0].get_str()), request.params[1].get_str(), lastActiveHeight);
+    if (script.empty())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot generate bind script");
+
+    return HexStr(script.begin(), script.end());
 }
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
@@ -1464,6 +1500,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getblocktemplate",             &getblocktemplate,          {"template_request"} },
     { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
     { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,  {"address", "plotterId", "count"} },
+    { "mining",             "createbindplotterdata",        &createbindplotterdata,     {"address", "passphrase_or_id", "lastActiveHeight"} },
     { "mining",             "getpledgeofaddress",           &getpledgeofaddress,        {"address", "plotterId", "verbose"} },
     { "mining",             "getplottermininginfo",         &getplottermininginfo,      {"plotterId", "verbose"} },
     { "mining",             "listpledgeloanofaddress",      &listpledgeloanofaddress,   {"address"} },

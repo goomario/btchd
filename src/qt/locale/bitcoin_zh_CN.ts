@@ -2483,6 +2483,22 @@
         <translation>您确定要绑定算力吗？</translation>
     </message>
     <message>
+        <source>%1 bind to %2</source>
+        <translation>把 %1 绑定到 %2</translation>
+    </message>
+    <message>
+        <source>The operation will lock %1 in %2.</source>
+        <translation>此操作将会在 %2 锁定 %1。</translation>
+    </message>
+    <message>
+        <source>The bind plotter consensus active on %1 after.</source>
+        <translation>绑定算力共识将在 %1 高度之后启用。</translation>
+    </message>
+    <message>
+        <source>The pledge loan consensus active on %1 after.</source>
+        <translation>抵押租借共识将在 %1 高度之后启用。</translation>
+    </message>
+    <message>
         <source>The lock amount to bind plotter must be %1.</source>
         <translation>绑定算力需要锁定的交易额必须是 %1 。</translation>
     </message>
@@ -2594,8 +2610,8 @@
         <translation>为这个地址输入一个标签，以便将它添加到您的地址簿</translation>
     </message>
     <message>
-        <source>Enter your plotter source passphrase</source>
-        <translation>输入您算力的源脑密码</translation>
+        <source>Enter your plotter passphrase or digit ID</source>
+        <translation>输入您算力的脑密码或者数字ID</translation>
     </message>
 </context>
 <context>

@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 extern "C" {
 
@@ -80,7 +81,7 @@ static int mula32(dstptr p, srcptr x, srcptr y, unsigned t, int z) {
 	unsigned i;
 	for (i = 0; i < t; i++) {
 		int zy = z * y[i];
-		p[i+n] = w += mula_small(p,p, i, x, n, zy) + p[i+n] + zy * x[n];
+		p[i+n] = w += mula_small(p, p, i, x, n, zy) + p[i+n] + zy * x[n];
 		w >>= 8;
 	}
 	p[i+n] += w;
@@ -94,10 +95,15 @@ static int mula32(dstptr p, srcptr x, srcptr y, unsigned t, int z) {
  * q may overlap with r+t */
 static void divmod(dstptr q, dstptr r, unsigned n, srcptr d, unsigned t) {
 	int rn = 0;
-	int dt = d[t-1] << 8 | (d[t-2] & -(t > 1));
+	int dt = d[t-1] << 8;
+	if (t > 1)
+		dt |= d[t-2];
 
 	while (n-- >= t) {
-		int z = (rn << 16 | r[n] << 8 | (r[n-1] & -(n > 0))) / dt;
+		int z = (rn << 16) | (r[n] << 8);
+		if (n > 0)
+			z |= r[n-1];
+		z /= dt;
 		rn += mula_small(r,r, n-t+1, d, t, -z);
 		q[n-t+1] = z + rn; /* rn is 0 or -1 (underflow) */
 		mula_small(r,r, n-t+1, d, t, -rn);
@@ -486,6 +492,17 @@ static inline int is_negative(i25519 x) {
 	return (is_overflow(x) | (x[9] < 0)) ^ (x[0] & 1);
 }
 
+/* a square root */
+static void sqrt25519(i25519 x, i25519 u) {
+	i25519 v, t1, t2;
+	add25519(t1, u, u); /* t1 = 2u    */
+	recip25519(v, t1, 1); /* v = (2u)^((p-5)/8) */
+	sqr25519(x, v); /* x = v^2    */
+	mul25519(t2, t1, x); /* t2 = 2uv^2   */
+	t2[0]--; /* t2 = 2uv^2-1   */
+	mul25519(t1, v, t2); /* t1 = v(2uv^2-1)  */
+	mul25519(x, u, t1); /* x = uv(2uv^2-1)  */
+}
 
 /********************* Elliptic curve *********************/
 
@@ -541,7 +558,7 @@ static inline void x_to_y2(i25519 t, i25519 y2, const i25519 x) {
 	mul25519(y2, t, x);
 }
 
-/* P = kG   and  s = sign(P)/k  */
+/* P = kG   and  s = sign(P)/k */
 void core25519(k25519 Px, k25519 s, const k25519 k, const k25519 Gx) {
 	i25519 dx, x[2], z[2], t1, t2, t3, t4;
 	unsigned i, j;
@@ -611,6 +628,138 @@ void core25519(k25519 Px, k25519 s, const k25519 k, const k25519 Gx) {
 		if ((int8_t) s[31] < 0)
 			mula_small(s, s, 0, order25519, 32, 1);
 	}
+}
+
+/* v = (x - h) s mod q */
+int sign25519(k25519 v, const k25519 h, const priv25519 x, const spriv25519 s) {
+	int w, i;
+	k25519 h1, x1;
+	k25519 tmp1[2], tmp2[2], tmp3;
+
+	// Don't clobber the arguments, be nice!
+	cpy32(h1, h);
+	cpy32(x1, x);
+
+	// Reduce modulo group order
+	divmod(tmp3, h1, 32, order25519, 32);
+	divmod(tmp3, x1, 32, order25519, 32);
+
+	// v = x1 - h1
+	// If v is negative, add the group order to it to become positive.
+	// If v was already positive we don't have to worry about overflow
+	// when adding the order because v < order25519 and 2*order25519 < 2^256
+	mula_small(v, x1, 0, h1, 32, -1);
+	mula_small(v, v, 0, order25519, 32, 1);
+
+	// tmp1 = (x-h)*s mod q
+	memset(tmp1, 0, sizeof(tmp1));
+	mula32((dstptr)tmp1, v, s, 32, 1);
+	divmod((dstptr)tmp2, (dstptr)tmp1, 64, order25519, 32);
+
+	for (w = 0, i = 0; i < 32; i++)
+		w |= v[i] = tmp1[0][i];
+	return w != 0;
+}
+
+/** Y = v abs(P) + h G  */
+void verify25519(pub25519 Y, const k25519 v, const k25519 h, const pub25519 P) {
+	k25519 d;
+	i25519 p[2], s[2], yx[3], yz[3], t1[3], t2[3];
+
+	int vi = 0, hi = 0, di = 0, nvh = 0;
+	int i, j, k;
+
+	/* set p[0] to G and p[1] to P  */
+
+	set25519(p[0], 9);
+	unpack25519(p[1], P);
+
+	/* set s[0] to P+G and s[1] to P-G  */
+
+	/* s[0] = (Py^2 + Gy^2 - 2 Py Gy)/(Px - Gx)^2 - Px - Gx - 486662  */
+	/* s[1] = (Py^2 + Gy^2 + 2 Py Gy)/(Px - Gx)^2 - Px - Gx - 486662  */
+
+	x_to_y2(t1[0], t2[0], p[1]); /* t2[0] = Py^2  */
+	sqrt25519(t1[0], t2[0]); /* t1[0] = Py or -Py  */
+	j = is_negative(t1[0]); /*      ... check which  */
+	t2[0][0] += 39420360; /* t2[0] = Py^2 + Gy^2  */
+	mul25519(t2[1], base_2y, t1[0]);/* t2[1] = 2 Py Gy or -2 Py Gy  */
+	sub25519(t1[j], t2[0], t2[1]); /* t1[0] = Py^2 + Gy^2 - 2 Py Gy  */
+	add25519(t1[1 - j], t2[0], t2[1]);/* t1[1] = Py^2 + Gy^2 + 2 Py Gy  */
+	cpy25519(t2[0], p[1]); /* t2[0] = Px  */
+	t2[0][0] -= 9; /* t2[0] = Px - Gx  */
+	sqr25519(t2[1], t2[0]); /* t2[1] = (Px - Gx)^2  */
+	recip25519(t2[0], t2[1], 0); /* t2[0] = 1/(Px - Gx)^2  */
+	mul25519(s[0], t1[0], t2[0]); /* s[0] = t1[0]/(Px - Gx)^2  */
+	sub25519(s[0], s[0], p[1]); /* s[0] = t1[0]/(Px - Gx)^2 - Px  */
+	s[0][0] -= 9 + 486662; /* s[0] = X(P+G)  */
+	mul25519(s[1], t1[1], t2[0]); /* s[1] = t1[1]/(Px - Gx)^2  */
+	sub25519(s[1], s[1], p[1]); /* s[1] = t1[1]/(Px - Gx)^2 - Px  */
+	s[1][0] -= 9 + 486662; /* s[1] = X(P-G)  */
+	mul25519small(s[0], s[0], 1); /* reduce s[0] */
+	mul25519small(s[1], s[1], 1); /* reduce s[1] */
+
+	/* prepare the chain  */
+	for (i = 0; i < 32; i++) {
+		vi = (vi >> 8) ^ v[i] ^ (v[i] << 1);
+		hi = (hi >> 8) ^ h[i] ^ (h[i] << 1);
+		nvh = ~(vi ^ hi);
+		di = (nvh & (di & 0x80) >> 7) ^ vi;
+		di ^= nvh & (di & 0x01) << 1;
+		di ^= nvh & (di & 0x02) << 1;
+		di ^= nvh & (di & 0x04) << 1;
+		di ^= nvh & (di & 0x08) << 1;
+		di ^= nvh & (di & 0x10) << 1;
+		di ^= nvh & (di & 0x20) << 1;
+		di ^= nvh & (di & 0x40) << 1;
+		d[i] = (unsigned char) di;
+	}
+
+	di = ((nvh & (di & 0x80) << 1) ^ vi) >> 8;
+
+	/* initialize state */
+	set25519(yx[0], 1);
+	cpy25519(yx[1], p[di]);
+	cpy25519(yx[2], s[0]);
+	set25519(yz[0], 0);
+	set25519(yz[1], 1);
+	set25519(yz[2], 1);
+
+	/* y[0] is (even)P + (even)G
+	 * y[1] is (even)P + (odd)G  if current d-bit is 0
+	 * y[1] is (odd)P + (even)G  if current d-bit is 1
+	 * y[2] is (odd)P + (odd)G
+	 */
+
+	vi = 0;
+	hi = 0;
+
+	/* and go for it! */
+	for (i = 32; i-- != 0; ) {
+		vi = (vi << 8) | v[i];
+		hi = (hi << 8) | h[i];
+		di = (di << 8) | d[i];
+
+		for (j = 8; j-- != 0; ) {
+			mont_prep(t1[0], t2[0], yx[0], yz[0]);
+			mont_prep(t1[1], t2[1], yx[1], yz[1]);
+			mont_prep(t1[2], t2[2], yx[2], yz[2]);
+
+			k = ((vi ^ vi >> 1) >> j & 1) + ((hi ^ hi >> 1) >> j & 1);
+			mont_dbl(yx[2], yz[2], t1[k], t2[k], yx[0], yz[0]);
+
+			k = (di >> j & 2) ^ ((di >> j & 1) << 1);
+			mont_add(t1[1], t2[1], t1[k], t2[k], yx[1], yz[1], p[di >> j & 1]);
+
+			mont_add(t1[2], t2[2], t1[0], t2[0], yx[2], yz[2], s[((vi ^ hi) >> j & 2) >> 1]);
+		}
+	}
+
+	k = (vi & 1) + (hi & 1);
+	recip25519(t1[0], yz[k], 0);
+	mul25519(t1[1], yx[k], t1[0]);
+
+	pack25519(t1[1], Y);
 }
 
 } // extern "C"

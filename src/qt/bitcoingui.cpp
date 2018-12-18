@@ -1209,7 +1209,7 @@ void BitcoinGUI::toggleNetworkActive()
 void BitcoinGUI::genMinerAccount()
 {
     std::string passphrase = poc::generatePassPhrase();
-    uint64_t plotterId = GeneratePlotterId(passphrase);
+    uint64_t plotterId = PocLegacy::GeneratePlotterId(passphrase);
 
     QString information;
     information += tr("Please save your mining account.") + "\n\n";
@@ -1217,7 +1217,7 @@ void BitcoinGUI::genMinerAccount()
     information += tr("Plotter Id: %1").arg(QString::number(plotterId));
 
     QMessageBox messageBox(QMessageBox::Information, tr("Generate mining account"), information, QMessageBox::Ok, this);
-    messageBox.setTextInteractionFlags(Qt::TextSelectableByMouse);
+    messageBox.setTextInteractionFlags(Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse);
     messageBox.exec();
 }
 

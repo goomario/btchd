@@ -239,9 +239,11 @@ public:
         return (const BindPlotterPayload*) ref.get();
     }
 
-    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0) {}
+    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0), sign(false) {}
     const uint64_t& GetId() const { return id; }
+    bool IsSign() const { return sign; }
     uint64_t id;
+    bool sign;
 };
 
 // For pledge tx
@@ -266,16 +268,19 @@ public:
 /** The bind plotter lock amount */
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
 
-/** The minimal pledge loan amount */
-static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
+/** Check whether a string is a valid passphrase or plotter ID. */
+bool IsValidPassphrase(const std::string& passphrase_or_id, uint64_t *plotterId = nullptr);
 
 /** Generate a bind plotter script. */
-CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase);
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase_or_id, int lastActiveHeight);
+
+/** The minimal pledge loan amount */
+static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 
 /** Generate a pledge script. */
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);
 
 /** Parse a datacarrier transaction. */
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx);
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H
