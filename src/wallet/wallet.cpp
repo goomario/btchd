@@ -1048,15 +1048,14 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
     // Update transaction datacarrier
     if (wtx.tx->nVersion == CTransaction::UNIFORM_VERSION) {
         int nHeight = 0;
-        {
+        if (!wtx.hashUnset()) {
             LOCK(cs_main);
-            CBlockIndex *pindex = mapBlockIndex[wtx->GetHash()];
-            if (pindex != nullptr)
-                nHeight = pindex->nHeight;
+            if (mapBlockIndex.count(wtx.hashBlock))
+                nHeight = mapBlockIndex[wtx.hashBlock]->nHeight;
         }
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
         if (!payload) {
-            // Check special tx
+            // Check relevant unlock tx
             if (wtx.tx->vin.size() == 1 && wtx.tx->vout.size() == 1) {
                 std::map<uint256, CWalletTx>::iterator itWalletTx = mapWallet.find(wtx.tx->vin[0].prevout.hash);
                 if (itWalletTx != mapWallet.end() && itWalletTx->second.mapValue.count("type")) {
@@ -1066,6 +1065,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
                         fUpdated = true;
                         wtx.mapValue["type"] = "unbindplotter";
                         wtx.mapValue["plotter_id"] = relevantWalletTx.mapValue["plotter_id"];
+                        wtx.mapValue["signature"] = relevantWalletTx.mapValue["signature"];
                         wtx.mapValue["from"] = relevantWalletTx.mapValue["from"];
                         wtx.mapValue["relevant_txid"] = relevantWalletTx.tx->GetHash().ToString();
                     } else if (type == "pledge") {
@@ -1082,11 +1082,12 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "bindplotter";
             wtx.mapValue["plotter_id"] = std::to_string(BindPlotterPayload::As(payload)->GetId());
+            wtx.mapValue["signature"] = BindPlotterPayload::As(payload)->IsSign() ? "1" : "0";
 
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
-        } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
+        } else if (payload->type == DATACARRIER_TYPE_PLEDGELOAN) {
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "pledge";
@@ -1095,7 +1096,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
 
-            wtx.mapValue["to"] = EncodeDestination(PledgePayload::As(payload)->scriptID);
+            wtx.mapValue["to"] = EncodeDestination(PledgeLoanPayload::As(payload)->scriptID);
         }
     }
 
@@ -1184,7 +1185,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
         if (!fRelevantToMe && tx.nVersion == CTransaction::UNIFORM_VERSION) {
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, pIndex?pIndex->nHeight:0);
             if (!payload) {
-                // Check special tx
+                // Check relevant unlock tx
                 if (tx.vin.size() == 1 && tx.vout.size() == 1) {
                     std::map<uint256, CWalletTx>::iterator itWalletTx = mapWallet.find(tx.vin[0].prevout.hash);
                     if (itWalletTx != mapWallet.end() && itWalletTx->second.mapValue.count("type")) {
@@ -1192,9 +1193,9 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
                         fRelevantToMe = (type == "bindplotter" || type == "pledge");
                     }
                 }
-            } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
+            } else if (payload->type == DATACARRIER_TYPE_PLEDGELOAN) {
                 // Pledge to me
-                fRelevantToMe = ::IsMine(*this, PledgePayload::As(payload)->scriptID) != 0;
+                fRelevantToMe = ::IsMine(*this, PledgeLoanPayload::As(payload)->scriptID) != 0;
             }
         }
         if (fRelevantToMe) {

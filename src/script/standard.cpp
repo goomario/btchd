@@ -490,6 +490,8 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
         script << std::vector<unsigned char>{BINDTYPE_ID};
         script << ToByteVector((uint32_t) lastActiveHeight);
         script << ToByteVector(plotterId);
+
+        assert(script.size() == 22);
     } else {
         // Bind with passphrase
         const std::string& passphrase = passphrase_or_id;
@@ -505,6 +507,8 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
         script << ToByteVector((uint32_t) lastActiveHeight);
         script << std::vector<unsigned char>(publicKey, publicKey+32);
         script << std::vector<unsigned char>(signature, signature+64);
+
+        assert(script.size() == 111);
     }
 
     return script;
@@ -516,7 +520,7 @@ CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
     if (scriptID != nullptr) {
         script << OP_RETURN;
-        script << ToByteVector(DATACARRIER_TYPE_PLEDGE);
+        script << ToByteVector(DATACARRIER_TYPE_PLEDGELOAN);
         script << ToByteVector(*scriptID);
     }
 
@@ -524,10 +528,9 @@ CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     return script;
 }
 
-const CAccountID& PledgePayload::GetDebitAccountID() const {
+const CAccountID& PledgeLoanPayload::GetDebitAccountID() const {
     // For performance
-    const uint64_t *ptr = (const uint64_t *) scriptID.begin();
-    return ptr[0];
+    return ((const uint64_t *) scriptID.begin())[0];
 }
 
 CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight) {
@@ -561,8 +564,8 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         // Type
         if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != 0x01)
             return nullptr;
-        uint32_t signType = vData[0];
-        if (signType != BINDTYPE_ID && signType != BINDTYPE_PASSPHRASE)
+        uint32_t bindType = vData[0];
+        if (bindType != BINDTYPE_ID && bindType != BINDTYPE_PASSPHRASE)
             return nullptr;
         // Check last height
         if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint32_t))
@@ -571,7 +574,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         if (lastActiveHeight == 0 || (nHeight != 0 && nHeight > (int)lastActiveHeight))
             return nullptr;
 
-        if (signType == BINDTYPE_ID) {
+        if (bindType == BINDTYPE_ID) {
             // Bind with plotter ID
             if (scriptPubKey.size() != 22)
                 return nullptr;
@@ -593,7 +596,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             payload->id = plotterId;
             payload->sign = false;
             return payload;
-        } else if (signType == BINDTYPE_PASSPHRASE) {
+        } else if (bindType == BINDTYPE_PASSPHRASE) {
             // Bind with passphrase
             if (scriptPubKey.size() != 111)
                 return nullptr;
@@ -612,7 +615,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             payload->sign = true;
             return payload;
         }
-    } else if (type == DATACARRIER_TYPE_PLEDGE) {
+    } else if (type == DATACARRIER_TYPE_PLEDGELOAN) {
         // Plege transaction
         if (tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != 27)
             return nullptr;
@@ -621,7 +624,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != CScriptID::WIDTH)
             return nullptr;
 
-        std::shared_ptr<PledgePayload> payload = std::make_shared<PledgePayload>();
+        std::shared_ptr<PledgeLoanPayload> payload = std::make_shared<PledgeLoanPayload>();
         payload->scriptID = uint160(vData);
         if (payload->GetDebitAccountID() == 0)
             return nullptr;

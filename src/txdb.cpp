@@ -327,9 +327,9 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                         batch.Erase(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->GetId(), &it->first));
                     }
-                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                         batch.Erase(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first));
-                        batch.Erase(PledgeDebitRefEntry(&PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first));
+                        batch.Erase(PledgeDebitRefEntry(&PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first));
                     }
                 }
             } else {
@@ -342,9 +342,9 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                         batch.Write(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->GetId(), &it->first), VARINT(0));
                     }
-                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                         batch.Write(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
-                        batch.Write(PledgeDebitRefEntry(&PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first), VARINT(it->second.coin.out.nValue));
+                        batch.Write(PledgeDebitRefEntry(&PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first), VARINT(it->second.coin.out.nValue));
                     }
                 }
             }
@@ -431,13 +431,14 @@ CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
     return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
 }
 
-CCoinsViewCursorRef CCoinsViewDB::BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const {
+CCoinsViewCursorRef CCoinsViewDB::BindPlotterCursor(const CAccountID &accountID) const {
     class CCoinsViewDBBindPlotterCursor : public CCoinsViewCursor
     {
     public:
-        CCoinsViewDBBindPlotterCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn, const uint64_t& plotterIdIn)
-            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), plotterId(plotterIdIn), outpoint(uint256(), 0) {
+        CCoinsViewDBBindPlotterCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
             if (accountID != 0) {
+                uint64_t plotterId = 0;
                 pcursor->Seek(BindPlotterRefEntry(&accountID, &plotterId, &outpoint));
                 // Test key of first record
                 TestKey();
@@ -465,10 +466,9 @@ CCoinsViewCursorRef CCoinsViewDB::BindPlotterCursor(const CAccountID &accountID,
     private:
         void TestKey() {
             CAccountID tempAccountID;
-            CAccountID tempPlotterId;
+            uint64_t tempPlotterId;
             BindPlotterRefEntry entry(&tempAccountID, &tempPlotterId, &outpoint);
-            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_BINDPLOTTER ||
-                    tempAccountID != accountID || (plotterId != 0 && plotterId != tempPlotterId)) {
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_BINDPLOTTER || tempAccountID != accountID) {
                 accountID = 0;
             }
         }
@@ -476,11 +476,10 @@ CCoinsViewCursorRef CCoinsViewDB::BindPlotterCursor(const CAccountID &accountID,
         const CCoinsViewDB* pcoinviewdb;
         std::unique_ptr<CDBIterator> pcursor;
         CAccountID accountID;
-        uint64_t plotterId;
         COutPoint outpoint;
     };
 
-    return std::make_shared<CCoinsViewDBBindPlotterCursor>(this, db.NewIterator(), GetBestBlock(), accountID, plotterId);
+    return std::make_shared<CCoinsViewDBBindPlotterCursor>(this, db.NewIterator(), GetBestBlock(), accountID);
 }
 
 CCoinsViewCursorRef CCoinsViewDB::PledgeCreditCursor(const CAccountID &accountID) const {
@@ -581,8 +580,7 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
     return std::make_shared<CCoinsViewDBPledgeDebitCursor>(this, db.NewIterator(), GetBestBlock(), accountID);
 }
 
-size_t CCoinsViewDB::EstimateSize() const
-{
+size_t CCoinsViewDB::EstimateSize() const {
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
 }
 
@@ -685,7 +683,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         // Apply modified coin
         for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
-                    it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                    it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
                         *pPledgeLoanBalance -= it->second.coin.out.nValue;
@@ -723,8 +721,8 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         // Apply modified coin
         for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.extraData &&
-                    it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE &&
-                    PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() == accountID) {
+                    it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN &&
+                    PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() == accountID) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
                         *pPledgeDebitBalance -= it->second.coin.out.nValue;
@@ -842,19 +840,19 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
 /** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    const uint32_t newestCoinDbVersion = 0x0020181218;
+    const uint32_t currentCoinDbVersion = 0x20181218;
 
     // Check coin database version
     {
-        uint32_t currentCoinDbVersion;
-        if (db.Read(DB_COIN_VERSION, VARINT(currentCoinDbVersion)) && currentCoinDbVersion == newestCoinDbVersion)
+        uint32_t coinDbVersion;
+        if (db.Read(DB_COIN_VERSION, VARINT(coinDbVersion)) && coinDbVersion == currentCoinDbVersion)
             return true; // Newest version
         db.Erase(DB_COIN_VERSION);
     }
 
     // Reindex UTXO for address
     uiInterface.ShowProgress(_("Upgrading UTXO database"), 0, true);
-    LogPrintf("Upgrading UTXO database: [0%%]...");
+    LogPrintf("Upgrading UTXO database to %08x: [0%%]...", currentCoinDbVersion);
 
     int remove = 0, add = 0;
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
@@ -950,9 +948,9 @@ bool CCoinsViewDB::Upgrade() {
                             batch.Write(BindPlotterRefEntry(&coin.refOutAccountID, &BindPlotterPayload::As(coin.extraData)->GetId(), &outpoint), VARINT(0));
                             add++;
                         }
-                        else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+                        else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                             batch.Write(PledgeLoanRefEntry(&coin.refOutAccountID, &outpoint), VARINT(coin.out.nValue));
-                            batch.Write(PledgeDebitRefEntry(&PledgePayload::As(coin.extraData)->GetDebitAccountID(), &outpoint), VARINT(coin.out.nValue));
+                            batch.Write(PledgeDebitRefEntry(&PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID(), &outpoint), VARINT(coin.out.nValue));
                             add += 2;
                         }
                     }
@@ -980,7 +978,7 @@ bool CCoinsViewDB::Upgrade() {
     }
 
     // Update coin version
-    if (!db.Write(DB_COIN_VERSION, VARINT(newestCoinDbVersion)))
+    if (!db.Write(DB_COIN_VERSION, VARINT(currentCoinDbVersion)))
         return error("%s: cannot write UTXO upgrade flag", __func__);
 
     uiInterface.ShowProgress("", 100, false);

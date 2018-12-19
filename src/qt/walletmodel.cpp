@@ -433,7 +433,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
         // Check tx
         if (payOperateMethod == PayOperateMethod::SendPledge) {
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height());
-            assert(payload && payload->type == DATACARRIER_TYPE_PLEDGE);
+            assert(payload && payload->type == DATACARRIER_TYPE_PLEDGELOAN);
         } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height());
             assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
@@ -869,7 +869,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
 
     // Coin
     const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
-    if (coin.IsSpent() || !coin.extraData || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGE))
+    if (coin.IsSpent() || !coin.extraData || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN))
         return false;
 
     CCoinControl coin_control;
@@ -891,7 +891,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     if (!wallet->FundTransaction(txNew, nFeeOut, changePosition, strFailReason, false, {0}, coin_control)) {
         if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
             QMessageBox::critical(0, tr("Unbind plotter error"), QString::fromStdString(strFailReason));
-        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
             QMessageBox::critical(0, tr("Withdraw pledge error"), QString::fromStdString(strFailReason));
         }
         return false;
@@ -904,7 +904,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     if (!wallet->SignTransaction(txNew)) {
         if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
             QMessageBox::critical(0, tr("Unbind plotter error"), tr("Can't sign transaction."));
-        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
             QMessageBox::critical(0, tr("Withdraw pledge error"), tr("Can't sign transaction."));
         }
         return false;
@@ -930,7 +930,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
         SendConfirmationDialog confirmationDialog(tr("Unbind plotter"), questionString);
         confirmationDialog.exec();
         retval = (QMessageBox::StandardButton)confirmationDialog.result();
-    } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+    } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
         QString questionString = tr("Are you sure you want to withdraw pledge?");
         questionString.append("<br />");
         questionString.append("<table style=\"text-align: left;\">");
@@ -940,7 +940,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
             questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
         questionString.append("</td></tr>");
         {
-            CTxDestination dest = PledgePayload::As(coin.extraData)->scriptID;
+            CTxDestination dest = PledgeLoanPayload::As(coin.extraData)->scriptID;
             questionString.append("<tr><td>").append(tr("To address:")).append("</td><td>").append(QString::fromStdString(EncodeDestination(dest)));
             if (wallet->mapAddressBook.count(dest) && !wallet->mapAddressBook[dest].name.empty())
                 questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[dest].name)).append(")");
@@ -967,7 +967,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     if (!wallet->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
         if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
             QMessageBox::critical(0, tr("Unbind plotter error"), tr("Could not commit transaction") + ":" + QString::fromStdString(state.GetRejectReason()));
-        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
             QMessageBox::critical(0, tr("Withdraw pledge error"), tr("Could not commit transaction") + ":" + QString::fromStdString(state.GetRejectReason()));
         }
         return false;

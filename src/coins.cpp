@@ -15,7 +15,7 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
-CCoinsViewCursorRef CCoinsView::BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::BindPlotterCursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeCreditCursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeDebitCursor(const CAccountID &accountID) const { return nullptr; }
 CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
@@ -40,7 +40,7 @@ std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetH
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursorRef CCoinsViewBacked::Cursor() const { return base->Cursor(); }
-CCoinsViewCursorRef CCoinsViewBacked::BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const { return base->BindPlotterCursor(accountID, plotterId); }
+CCoinsViewCursorRef CCoinsViewBacked::BindPlotterCursor(const CAccountID &accountID) const { return base->BindPlotterCursor(accountID); }
 CCoinsViewCursorRef CCoinsViewBacked::PledgeCreditCursor(const CAccountID &accountID) const { return base->PledgeCreditCursor(accountID); }
 CCoinsViewCursorRef CCoinsViewBacked::PledgeDebitCursor(const CAccountID &accountID) const { return base->PledgeDebitCursor(accountID); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
@@ -118,7 +118,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        if (i == 0 && extraData && (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGE)) {
+        if (i == 0 && extraData && (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGELOAN)) {
             Coin coin(tx.vout[i], nHeight, fCoinbase);
             coin.extraData = extraData;
             cache.AddCoin(COutPoint(txid, i), std::move(coin), overwrite);
@@ -257,8 +257,8 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
             if (it->second.coin.refOutAccountID != accountID &&
                 (!it->second.coin.extraData ||
-                    it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
-                    PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
+                    it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN ||
+                    PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                 continue;
             }
             tempUsCoinsMap[it->first] = it->second;
@@ -273,8 +273,8 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                 }
                 if (it->second.coin.refOutAccountID != accountID &&
                     (!it->second.coin.extraData ||
-                        it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
-                        PledgePayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
+                        it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN ||
+                        PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                     continue;
                 }
                 CCoinsMap::iterator itUs = tempUsCoinsMap.find(it->first);

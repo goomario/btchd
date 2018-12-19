@@ -206,29 +206,31 @@ enum DatacarrierType : unsigned int {
 
     // Type of consensus relevant
     DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
-    DATACARRIER_TYPE_PLEDGE      = 0x00000011,
+    DATACARRIER_TYPE_PLEDGELOAN  = 0x00000011,
     DATACARRIER_TYPE_CONTRACT    = 0x00000012,
 
     // Others
     DATACARRIER_TYPE_TEXT        = 0x00000013,
 };
 
-/**
- * Datacarrier payload
- */
-class DatacarrierPayload
+/** Datacarrier payload */
+struct DatacarrierPayload
 {
-public:
-    DatacarrierPayload(DatacarrierType typeIn) : type(typeIn) {}
+    explicit DatacarrierPayload(DatacarrierType typeIn) : type(typeIn) {}
     virtual ~DatacarrierPayload() {}
     const DatacarrierType type;
 };
 typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
 
-// For bind plotter tx
-class BindPlotterPayload : public DatacarrierPayload
+/** For bind plotter */
+struct BindPlotterPayload : public DatacarrierPayload
 {
-public:
+    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0), sign(false) {}
+    const uint64_t& GetId() const { return id; }
+    bool IsSign() const { return sign; }
+    uint64_t id;
+    bool sign;
+
     // Checkable cast for CDatacarrierPayloadRef
     static BindPlotterPayload * As(CDatacarrierPayloadRef &ref) {
         assert(ref->type == DATACARRIER_TYPE_BINDPLOTTER);
@@ -238,35 +240,28 @@ public:
         assert(ref->type == DATACARRIER_TYPE_BINDPLOTTER);
         return (const BindPlotterPayload*) ref.get();
     }
-
-    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0), sign(false) {}
-    const uint64_t& GetId() const { return id; }
-    bool IsSign() const { return sign; }
-    uint64_t id;
-    bool sign;
 };
 
-// For pledge tx
-class PledgePayload : public DatacarrierPayload
+/** For pledge loan */
+struct PledgeLoanPayload : public DatacarrierPayload
 {
-public:
-    // Checkable cast for CDatacarrierPayloadRef
-    static PledgePayload * As(CDatacarrierPayloadRef &ref) {
-        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
-        return (PledgePayload*) ref.get();
-    }
-    static const PledgePayload * As(const CDatacarrierPayloadRef &ref) {
-        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
-        return (const PledgePayload*) ref.get();
-    }
-
-    PledgePayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGE) {}
+    PledgeLoanPayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGELOAN) {}
     const CAccountID& GetDebitAccountID() const;
     CScriptID scriptID;
+
+    // Checkable cast for CDatacarrierPayloadRef
+    static PledgeLoanPayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_PLEDGELOAN);
+        return (PledgeLoanPayload*) ref.get();
+    }
+    static const PledgeLoanPayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_PLEDGELOAN);
+        return (const PledgeLoanPayload*) ref.get();
+    }
 };
 
 /** The bind plotter lock amount */
-static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 1 * COIN;
+static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 10 * CENT;
 
 /** Check whether a string is a valid passphrase or plotter ID. */
 bool IsValidPassphrase(const std::string& passphrase_or_id, uint64_t *plotterId = nullptr);

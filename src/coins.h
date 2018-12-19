@@ -73,9 +73,9 @@ public:
             ::Serialize(s, VARINT((unsigned int&)extraData->type));
             if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-                ::Serialize(s, BindPlotterPayload::As(extraData)->sign);
-            } else if (extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                ::Serialize(s, REF(PledgePayload::As(extraData)->scriptID));
+                ::Serialize(s, REF(BindPlotterPayload::As(extraData)->sign));
+            } else if (extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+                ::Serialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
             } else
                 assert(false);
         }
@@ -88,6 +88,7 @@ public:
         nHeight = (code&0x7fffffff) >> 1;
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
+        refOutAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
 
         extraData = nullptr;
         if (code & 0x80000000) {
@@ -96,15 +97,13 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-                ::Unserialize(s, BindPlotterPayload::As(extraData)->sign);
-            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
-                extraData = std::make_shared<PledgePayload>();
-                ::Unserialize(s, REF(PledgePayload::As(extraData)->scriptID));
+                ::Unserialize(s, REF(BindPlotterPayload::As(extraData)->sign));
+            } else if (extraDataType == DATACARRIER_TYPE_PLEDGELOAN) {
+                extraData = std::make_shared<PledgeLoanPayload>();
+                ::Unserialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
             } else
                 assert(false);
         }
-
-        refOutAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
     }
 
     bool IsSpent() const {
@@ -210,7 +209,7 @@ public:
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursorRef Cursor() const;
 
-    virtual CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const;
+    virtual CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID) const;
     virtual CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const;
     virtual CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const;
 
@@ -241,7 +240,7 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
-    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
@@ -281,7 +280,7 @@ public:
     CCoinsViewCursorRef Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID, const uint64_t &plotterId) const override {
+    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override {

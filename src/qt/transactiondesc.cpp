@@ -149,15 +149,13 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 
     if (rec->type == TransactionRecord::BindPlotter || rec->type == TransactionRecord::UnbindPlotter)
     {
-        if (wtx.mapValue.count("plotter_id"))
-            strHTML += "<b>" + tr("Plotter ID") + ":</b> " + QString::fromStdString(wtx.mapValue["plotter_id"]) + "<br>";
-        if (rec->type == TransactionRecord::UnbindPlotter && wtx.mapValue.count("relevant_txid"))
+        strHTML += "<b>" + tr("Plotter ID") + ":</b> " + QString::fromStdString(wtx.mapValue["plotter_id"]) + " (" + tr(wtx.mapValue["signature"] == "1" ? "Has signature" : "Not signature") + ")<br>";
+        if (rec->type == TransactionRecord::UnbindPlotter)
             strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
     }
     else if (rec->type == TransactionRecord::WithdrawPledge)
     {
-        if (wtx.mapValue.count("relevant_txid"))
-            strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
+        strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
     }
 
     //

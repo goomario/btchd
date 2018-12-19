@@ -2981,6 +2981,14 @@
         <source>Relevant transaction ID</source>
         <translation>关联的交易ID</translation>
     </message>
+    <message>
+        <source>Has signature</source>
+        <translation>已签名</translation>
+    </message>
+    <message>
+        <source>Not signature</source>
+        <translation>未签名</translation>
+    </message>
 </context>
 <context>
     <name>TransactionDescDialog</name>

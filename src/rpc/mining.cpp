@@ -715,12 +715,13 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
-            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
-            "    \"plotter_id\": plotter_id,            (string) The binded plotter ID.\n"
+            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"plotter_id\": plotter_id,          (string) The binded plotter ID.\n"
+            "    \"signature\": signature,            (bool) The binded plotter ID with signature.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
-            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"height\": xxx,                       (numeric) The block height.\n"
+            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"height\": xxx,                     (numeric) The block height.\n"
             "  }\n"
             "]\n"
 
@@ -750,36 +751,32 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         count = request.params[2].get_int();
 
     LOCK(cs_main);
-
-    UniValue ret(UniValue::VARR);
-
     FlushStateToDisk();
-    for (CCoinsViewCursorRef pcursor = pcoinsdbview->BindPlotterCursor(accountID, plotterId); pcursor->Valid(); pcursor->Next()) {
-        if (--count < 0)
-            break;
-
+    UniValue ret(UniValue::VARR);
+    for (CCoinsViewCursorRef pcursor = pcoinsdbview->BindPlotterCursor(accountID); pcursor->Valid() && (int)ret.size() < count; pcursor->Next()) {
         COutPoint key;
         Coin coin;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
-            assert(key.n == 0);
             assert(!coin.IsSpent());
-            assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
-            UniValue item(UniValue::VOBJ);
-            {
-                CTxDestination fromDest;
-                ExtractDestination(coin.out.scriptPubKey, fromDest);
-                item.push_back(Pair("address", EncodeDestination(fromDest)));
-            }
-            item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
-            item.push_back(Pair("plotter_id", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
-            item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
-            item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
-            item.push_back(Pair("height", (int)coin.nHeight));
+            if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER && coin.refOutAccountID == accountID &&
+                    (plotterId == 0 || BindPlotterPayload::As(coin.extraData)->GetId() == plotterId)) {
+                UniValue item(UniValue::VOBJ);
+                {
+                    CTxDestination fromDest;
+                    ExtractDestination(coin.out.scriptPubKey, fromDest);
+                    item.push_back(Pair("address", EncodeDestination(fromDest)));
+                }
+                item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
+                item.push_back(Pair("plotter_id", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
+                item.push_back(Pair("signature", BindPlotterPayload::As(coin.extraData)->IsSign()));
+                item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
+                item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
+                item.push_back(Pair("height", (int)coin.nHeight));
 
-            ret.push_back(item);
-        } else {
+                ret.push_back(item);
+            }
+        } else
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
-        }
     }
 
     return ret;
@@ -1156,16 +1153,14 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
             assert(key.n == 0);
             assert(!coin.IsSpent());
-            assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
+            assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN);
             UniValue item(UniValue::VOBJ);
             {
                 CTxDestination fromDest;
                 ExtractDestination(coin.out.scriptPubKey, fromDest);
                 item.push_back(Pair("from", EncodeDestination(fromDest)));
             }
-            {
-                item.push_back(Pair("to", EncodeDestination(PledgePayload::As(coin.extraData)->scriptID)));
-            }
+            item.push_back(Pair("to", EncodeDestination(PledgeLoanPayload::As(coin.extraData)->scriptID)));
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("txid", key.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
@@ -1173,9 +1168,8 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
             item.push_back(Pair("height", (int)coin.nHeight));
 
             ret.push_back(item);
-        } else {
+        } else
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
-        }
     }
 
     return ret;

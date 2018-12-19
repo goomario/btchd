@@ -57,10 +57,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
             sub.type = TransactionRecord::UnbindPlotter;
             sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
-            parts.append(sub);
 
-            if (wtx.tx->vin.size() == 1 && wtx.tx->vout.size() == 1)
-                return parts; // Standard unbind plotter tx
+            parts.append(sub);
+            return parts;
         }
         else if (itType->second == "pledge")
         {
@@ -118,10 +117,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 (!(sendIsmine & ISMINE_SPENDABLE) && !(toIsmine & ISMINE_SPENDABLE));
             sub.type = TransactionRecord::WithdrawPledge;
             sub.address = sendIsmine ? mapValue["to"] : mapValue["from"];
-            parts.append(sub);
 
-            if (wtx.tx->vin.size() == 1 && wtx.tx->vout.size() == 1)
-                return parts; // Standard withdraw pledge tx
+            parts.append(sub);
+            return parts;
         }
     }
 

@@ -3758,15 +3758,16 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
-            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
-            "    \"plotter_id\": plotter_id,            (string) The binded plotter ID.\n"
+            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"plotter_id\": plotter_id,          (string) The binded plotter ID.\n"
+            "    \"signature\": signature,            (bool) The binded plotter ID with signature.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
-            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"valid\": valid,                      (string) The bind valid.\n"
-            "    \"watchonly\": watchonly,              (string) The bind to watchonly address.\n"
+            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"valid\": valid,                    (bool) The bind valid.\n"
+            "    \"watchonly\": watchonly,            (bool) The bind to watchonly address.\n"
             "  }\n"
-            "]\n"
 
             "\nExamples:\n"
             "\nList the bind plotter transactions from UTXOs\n"
@@ -3809,6 +3810,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         uint256 txid;
         CTxDestination address;
         uint64_t plotterId;
+        bool fSign;
         bool fValid;
         bool fWatchonly;
     } TxBindPlotter;
@@ -3847,6 +3849,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         txBindPlotter.txid = wtx.GetHash();
         txBindPlotter.address = address;
         txBindPlotter.plotterId = BindPlotterPayload::As(coin.extraData)->GetId();
+        txBindPlotter.fSign = BindPlotterPayload::As(coin.extraData)->IsSign();
         txBindPlotter.fValid = fValid;
         txBindPlotter.fWatchonly = (ismine & ISMINE_WATCH_ONLY) != 0;
         mapTxBindPlotter.insert(std::pair<int64_t, TxBindPlotter>(wtx.nTimeReceived, txBindPlotter));
@@ -3867,12 +3870,12 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         item.push_back(Pair("amount", ValueFromAmount(wtx.tx->vout[0].nValue)));
         item.push_back(Pair("address", EncodeDestination(it->second.address)));
         item.push_back(Pair("plotter_id", std::to_string(it->second.plotterId)));
-        if (!wtx.hashUnset()) {
+        item.push_back(Pair("signature", it->second.fSign));
+        if (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) {
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
-            if (pblockIndex != nullptr) {
-                item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
-                item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
-            }
+            item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
+            item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
+            item.push_back(Pair("height", pblockIndex->nHeight));
         }
         item.push_back(Pair("valid", it->second.fValid));
         if (filter & ISMINE_WATCH_ONLY) {
@@ -4053,7 +4056,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
 
     // Check
     CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height());
-    if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
+    if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error on create pledge loan data");
 
     CValidationState state;
@@ -4137,7 +4140,7 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     txNew.vin.push_back(CTxIn(COutPoint(txid, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
         const Coin &coin = pcoinsTip->AccessCoin(COutPoint(txid, 0));
-        if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_PLEDGE)
+        if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not pledge");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge loan not mine");
@@ -4263,20 +4266,20 @@ UniValue listpledges(const JSONRPCRequest& request)
             // Coin not found from cache, read from tx
             if (fIncludeInvalid)
                 payload = ExtractTransactionDatacarrier(*wtx.tx, (int)coin.nHeight);
-        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
+        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
             // In cache
             payload = coin.extraData;
         }
-        if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
+        if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN)
             continue;
 
-        bool fValid = (!coin.IsSpent() && coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGE);
+        bool fValid = (!coin.IsSpent() && coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN);
         if (!fIncludeInvalid && !fValid)
             continue;
 
         CTxDestination fromDest, toDest;
         ExtractDestination(wtx.tx->vout[0].scriptPubKey, fromDest);
-        toDest = PledgePayload::As(payload)->scriptID;
+        toDest = PledgeLoanPayload::As(payload)->scriptID;
         isminetype sendIsmine = ::IsMine(*pwallet, fromDest);
         isminetype receiveIsmine = ::IsMine(*pwallet, toDest);
         bool fSendIsmine = (sendIsmine & filter) != 0;
@@ -4311,12 +4314,10 @@ UniValue listpledges(const JSONRPCRequest& request)
         item.push_back(Pair("from", EncodeDestination(it->second.fromDest)));
         item.push_back(Pair("to", EncodeDestination(it->second.toDest)));
         item.push_back(Pair("category", it->second.category));
-        if (!wtx.hashUnset()) {
+        if (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) {
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
-            if (pblockIndex != nullptr) {
-                item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
-                item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
-            }
+            item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
+            item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
         }
         item.push_back(Pair("valid", it->second.fValid));
         if (filter & ISMINE_WATCH_ONLY) {
