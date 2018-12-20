@@ -26,6 +26,7 @@
 #include <QFontMetrics>
 #include <QScrollBar>
 #include <QSettings>
+#include <QStringList>
 #include <QTextDocument>
 
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
@@ -166,7 +167,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         // Coin Control
         connect(_model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(coinControlUpdateLabels()));
         connect(_model->getOptionsModel(), SIGNAL(coinControlFeaturesChanged(bool)), this, SLOT(coinControlFeatureChanged(bool)));
-        ui->frameCoinControl->setVisible(_model->getOptionsModel()->getCoinControlFeatures());
+        ui->frameCoinControl->setVisible(_model->getOptionsModel()->getCoinControlFeatures() && getPayOperateMethod() != PayOperateMethod::Pay);
         coinControlUpdateLabels();
 
         // fee section
@@ -231,21 +232,21 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
         switch ((PayOperateMethod)opMethodValue)
         {
         case PayOperateMethod::SendPledge:
-            ui->clearButton->setVisible(false);
-            ui->addButton->setVisible(false);
-            ui->frameCoinControl->setVisible(false);
-            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
-            break;
         case PayOperateMethod::BindPlotter:
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
             ui->frameCoinControl->setVisible(false);
-            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+            {
+                LOCK(model->getWallet()->cs_wallet);
+                CoinControlDialog::coinControl()->coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+                CoinControlDialog::coinControl()->destPick = CoinControlDialog::coinControl()->destChange = model->getWallet()->GetPrimaryDestination();
+            }
             break;
         default: // Normal pay
             ui->clearButton->setVisible(true);
             ui->addButton->setVisible(true);
-            CoinControlDialog::coinControl()->payPolicy = PAYPOLICY_FROM_ANY;
+            CoinControlDialog::coinControl()->destChange = CNoDestination();
+            CoinControlDialog::coinControl()->destPick = CNoDestination();
             ui->frameCoinControl->setVisible(model->getOptionsModel()->getCoinControlFeatures());
             break;
         }
@@ -302,15 +303,14 @@ void SendCoinsDialog::on_sendButton_clicked()
     switch (operateMethod)
     {
     case PayOperateMethod::SendPledge:
-        if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized())
-            return;
-        ctrl.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
-        break;
     case PayOperateMethod::BindPlotter:
         if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized())
             return;
-        ctrl.payPolicy = PAYPOLICY_FROM_CHANGE_ONLY;
-        ctrl.destChange = DecodeDestination(recipients[0].address.toStdString());
+        ctrl.coinPickPolicy = CoinControlDialog::coinControl()->coinPickPolicy;
+        if (operateMethod == PayOperateMethod::SendPledge)
+            ctrl.destPick = ctrl.destChange = CoinControlDialog::coinControl()->destPick;
+        else
+            ctrl.destPick = ctrl.destChange = DecodeDestination(recipients[0].address.toStdString());
         break;
     default:
         if (model->getOptionsModel()->getCoinControlFeatures())
@@ -321,6 +321,16 @@ void SendCoinsDialog::on_sendButton_clicked()
     updateCoinControlState(ctrl);
 
     prepareStatus = model->prepareTransaction(currentTransaction, ctrl, operateMethod);
+
+    // Check plotter bind
+    if(prepareStatus.status == WalletModel::OK && operateMethod == PayOperateMethod::BindPlotter) {
+        LOCK(cs_main);
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
+        assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
+        if (pcoinsTip->HaveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
+            prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
+                                QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
+    }
 
     // process prepareStatus and on error generate message shown to user
     processSendCoinsReturn(prepareStatus,
@@ -704,7 +714,10 @@ void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn 
         msgParams.second = CClientUIInterface::MSG_ERROR;
         break;
     case WalletModel::BindPlotterExist:
-        msgParams.first = tr("The plotter already binded.");
+        {
+            QStringList args = sendCoinsReturn.reasonCommitFailed.split("\n");
+            msgParams.first = tr("The plotter %1 already binded to %2.").arg(args.size() > 0 ? args[0] : "", args.size() > 1 ? args[1] : "");
+        }
         break;
     case WalletModel::SmallPledgeLoanAmount:
         msgParams.first = tr("The valid amount to pledge loan must be larger than %1.")
@@ -901,7 +914,7 @@ void SendCoinsDialog::coinControlClipboardChange()
 // Coin Control: settings menu - coin control enabled/disabled by user
 void SendCoinsDialog::coinControlFeatureChanged(bool checked)
 {
-    ui->frameCoinControl->setVisible(checked);
+    ui->frameCoinControl->setVisible(checked && getPayOperateMethod() != PayOperateMethod::Pay);
 
     if (!checked && model) // coin control features disabled
         CoinControlDialog::coinControl()->SetNull();

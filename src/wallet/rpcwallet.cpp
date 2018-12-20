@@ -553,21 +553,27 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
     }
 
     if (!request.params[8].isNull()) {
-        if (request.params[8].get_str() == "ANY") {
-            coin_control.payPolicy = PAYPOLICY_FROM_ANY;
-        } else if (request.params[8].get_str() == "PRIMARYONLY") {
-            coin_control.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
-        } else if (request.params[8].get_str() == "PRIMARYEXCLUDE") {
-            coin_control.payPolicy = PAYPOLICY_FROM_PRIMARY_EXCLUDE;
-        } else if (request.params[8].get_str() == "MOVETO") {
-            coin_control.payPolicy = PAYPOLICY_MOVETO;
-            coin_control.destChange = dest;
+        const std::string payPolicy = request.params[8].get_str();
+        if (payPolicy == "ANY") {
+            // Unlimit
+            coin_control.coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+            coin_control.destPick = CNoDestination();
+        } else if (payPolicy == "PRIMARYONLY") {
+            coin_control.coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+            coin_control.destPick = pwallet->GetPrimaryDestination();
+        } else if (payPolicy == "PRIMARYEXCLUDE") {
+            coin_control.coinPickPolicy = CoinPickPolicy::ExcludeIfSet;
+            coin_control.destPick = pwallet->GetPrimaryDestination();
+        } else if (payPolicy == "MOVETO") {
+            coin_control.coinPickPolicy = CoinPickPolicy::MoveAllTo;
+            coin_control.destPick = dest;
+            coin_control.destChange = dest; // Don't use, but set for change params
         } else {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid pay_policy parameter");
         }
     }
     if (!request.params[9].isNull() && !request.params[9].get_str().empty()) {
-        if (coin_control.payPolicy == PAYPOLICY_MOVETO)
+        if (coin_control.coinPickPolicy == CoinPickPolicy::MoveAllTo)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid changeaddress parameter on pay_policy=MOVETO");
 
         CTxDestination changeDest = DecodeDestination(request.params[9].get_str());
@@ -580,7 +586,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
     EnsureWalletIsUnlocked(pwallet);
 
     CAmount sendAmount = SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
-    if (coin_control.payPolicy == PAYPOLICY_MOVETO) {
+    if (coin_control.coinPickPolicy == CoinPickPolicy::MoveAllTo) {
         UniValue result(UniValue::VOBJ);
         result.pushKV("txid", wtx.GetHash().GetHex());
         result.pushKV("vout", 0);
@@ -3552,8 +3558,8 @@ UniValue bindplotter(const JSONRPCRequest& request)
     // Passphrase or Plotter ID or Bind hex
     if (!request.params[1].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter passphrase");
-    std::string bindParamString = request.params[1].get_str();
-    bool fBindHexData = IsHex(bindParamString);
+    const std::string bindParamString = request.params[1].get_str();
+    bool fBindHexData = IsHex(bindParamString) && bindParamString.length() > 22;
 
     // Wallet comments
     CWalletTx wtx;
@@ -3577,7 +3583,8 @@ UniValue bindplotter(const JSONRPCRequest& request)
         }
     }
 
-    coin_control.payPolicy = PAYPOLICY_FROM_CHANGE_ONLY;
+    coin_control.coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+    coin_control.destPick = bindToDest;
     coin_control.destChange = bindToDest;
 
     // Check active state
@@ -3606,7 +3613,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
     } else {
         vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, chainActive.Height() + 5);
     }
-    if (vecSend[1].scriptPubKey.empty())
+    if (vecSend[1].scriptPubKey.empty() || !vecSend[1].scriptPubKey.IsUnspendable())
         throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
     int nChangePosRet = 1;
     if (!pwallet->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, CTransaction::UNIFORM_VERSION)) {
@@ -3614,13 +3621,16 @@ UniValue bindplotter(const JSONRPCRequest& request)
     }
 
     // Check
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height());
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
     if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
         if (fBindHexData)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data, maybe not for current address");
         else
             throw JSONRPCError(RPC_WALLET_ERROR, "Error on create bind data");
     }
+    if (pcoinsTip->HaveBindPlotter(GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey), BindPlotterPayload::As(payload)->GetId()))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s.",
+                std::to_string(BindPlotterPayload::As(payload)->GetId()), EncodeDestination(bindToDest)));
 
     CValidationState state;
     if (!pwallet->CommitTransaction(wtx, reservekey, g_connman.get(), state)) {
@@ -3817,24 +3827,15 @@ UniValue listbindplotters(const JSONRPCRequest& request)
     std::multimap<int64_t, TxBindPlotter> mapTxBindPlotter;
     for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
-        if (wtx.IsCoinBase() || !wtx.IsInMainChain() || !CheckFinalTx(*wtx.tx) )
+        if (!CheckFinalTx(*wtx.tx) || !wtx.mapValue.count("type") || wtx.mapValue.find("type")->second != "bindplotter")
             continue;
 
-        CDatacarrierPayloadRef payload;
-        // Read coin from cache
-        const Coin &coin = pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0));
-        if (!coin.extraData) {
-            // Coin not found from cache, read from tx
-            if (fIncludeInvalid)
-                payload = ExtractTransactionDatacarrier(*wtx.tx, (int)coin.nHeight);
-        } else if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-            // In cache
-            payload = coin.extraData;
-        }
+        // Extract tx
+        int nHeight = (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) ? mapBlockIndex[wtx.hashBlock]->nHeight : 0;
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
         if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER)
             continue;
-
-        bool fValid = (!coin.IsSpent() && coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+        bool fValid = pcoinsTip->HaveCoin(COutPoint(wtx.GetHash(), 0));
         if (!fIncludeInvalid && !fValid)
             continue;
 
@@ -3848,8 +3849,8 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         TxBindPlotter txBindPlotter;
         txBindPlotter.txid = wtx.GetHash();
         txBindPlotter.address = address;
-        txBindPlotter.plotterId = BindPlotterPayload::As(coin.extraData)->GetId();
-        txBindPlotter.fSign = BindPlotterPayload::As(coin.extraData)->IsSign();
+        txBindPlotter.plotterId = BindPlotterPayload::As(payload)->GetId();
+        txBindPlotter.fSign = BindPlotterPayload::As(payload)->IsSign();
         txBindPlotter.fValid = fValid;
         txBindPlotter.fWatchonly = (ismine & ISMINE_WATCH_ONLY) != 0;
         mapTxBindPlotter.insert(std::pair<int64_t, TxBindPlotter>(wtx.nTimeReceived, txBindPlotter));
@@ -4019,16 +4020,18 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
         }
     }
 
-    coin_control.payPolicy = PAYPOLICY_FROM_PRIMARY_ONLY;
+    CTxDestination primaryDest = pwallet->GetPrimaryDestination();
+    if (!IsValidDestination(primaryDest))
+        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid primary address");
+
+    coin_control.coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+    coin_control.destPick = primaryDest;
+    coin_control.destChange = primaryDest;
 
     // Check active state
     if (chainActive.Height() + 1 < Params().GetConsensus().BHDIP006Height) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The pledge loan inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
-
-    CTxDestination primaryDest = pwallet->GetPrimaryDestination();
-    if (!IsValidDestination(primaryDest))
-        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid primary address");
 
     EnsureWalletIsUnlocked(pwallet);
 
@@ -4055,7 +4058,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
             FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_PLEDGELOAN_AMOUNT_MIN)));
 
     // Check
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height());
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
     if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error on create pledge loan data");
 
@@ -4256,24 +4259,15 @@ UniValue listpledges(const JSONRPCRequest& request)
     std::multimap<int64_t, TxPledge> mapTxPledge;
     for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
-        if (wtx.IsCoinBase() || !wtx.IsInMainChain() || !CheckFinalTx(*wtx.tx) )
+        if (!CheckFinalTx(*wtx.tx) || !wtx.mapValue.count("type") || wtx.mapValue.find("type")->second != "pledge")
             continue;
 
-        CDatacarrierPayloadRef payload;
-        // Read coin from cache
-        const Coin &coin = pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0));
-        if (!coin.extraData) {
-            // Coin not found from cache, read from tx
-            if (fIncludeInvalid)
-                payload = ExtractTransactionDatacarrier(*wtx.tx, (int)coin.nHeight);
-        } else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
-            // In cache
-            payload = coin.extraData;
-        }
+        // Extract tx
+        int nHeight = (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) ? mapBlockIndex[wtx.hashBlock]->nHeight : 0;
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
         if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN)
             continue;
-
-        bool fValid = (!coin.IsSpent() && coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN);
+        bool fValid = pcoinsTip->HaveCoin(COutPoint(wtx.GetHash(), 0));
         if (!fIncludeInvalid && !fValid)
             continue;
 

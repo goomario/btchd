@@ -276,6 +276,6 @@ static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);
 
 /** Parse a datacarrier transaction. */
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0);
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *fRejectTx = nullptr);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

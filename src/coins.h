@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include <memory>
+#include <set>
 #include <unordered_map>
 
 /**
@@ -206,11 +207,11 @@ public:
     //! The passed mapCoins can be modified.
     virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
 
-    //! Get a cursor to iterate over the whole state
+    //! Get a cursor to iterate over the whole spendable state
     virtual CCoinsViewCursorRef Cursor() const;
 
-    virtual CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID) const;
-    virtual CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const;
+    //! Get a cursor to iterate over the whole pledge loan and debit state
+    virtual CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const;
     virtual CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
@@ -219,9 +220,12 @@ public:
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
 
-    //! Get balance. Return all available balance
+    //! Get balance. Return amount of account
     virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const;
+
+    //! Get bind plotter all outpoint. if plotterId = 0 then return all accountID binded
+    virtual void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const;
 };
 
 
@@ -240,12 +244,12 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
-    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID) const override;
-    CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-       CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
+    void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
 };
 
 
@@ -280,10 +284,7 @@ public:
     CCoinsViewCursorRef Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CCoinsViewCursorRef BindPlotterCursor(const CAccountID &accountID) const override {
-        throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
-    }
-    CCoinsViewCursorRef PledgeCreditCursor(const CAccountID &accountID) const override {
+    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override {
@@ -291,6 +292,7 @@ public:
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
+    void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -356,11 +358,15 @@ public:
     //! Check whether all prevouts of the transaction are present in the UTXO set represented by this view
     bool HaveInputs(const CTransaction& tx) const;
 
-    /**
-     * Scan UTXO for the account. Return total balance.
-     */
+    /** Scan UTXO for the account. Return total balance. */
     CAmount GetAccountBalance(const CAccountID &accountID, 
         CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
+
+    /** Just check whether a given <accountID,plotterId> exist. */
+    bool HaveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId, bool *fSign = nullptr) const;
+
+    /** Find accont revelate plotters */
+    void GetAccountBindPlotters(const CAccountID &accountID, std::set<uint64_t> &plotters) const;
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint) const;

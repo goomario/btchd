@@ -311,7 +311,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     }
     else if (payOperateMethod == PayOperateMethod::SendPledge) {
         if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
-                coinControl.payPolicy != PAYPOLICY_FROM_PRIMARY_ONLY)
+                coinControl.coinPickPolicy != CoinPickPolicy::IncludeIfSet ||
+                coinControl.destChange != coinControl.destPick ||
+                !IsValidDestination(coinControl.destPick))
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
@@ -319,19 +321,22 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return InactivedBHDIP006;
 
         const SendCoinsRecipient &rcp = recipients[0];
-        if (!validateAddress(rcp.address) || !IsValidDestination(wallet->GetPrimaryDestination()))
+        if (!validateAddress(rcp.address))
             return InvalidAddress;
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
-        vecSend.push_back({GetScriptForDestination(wallet->GetPrimaryDestination()), rcp.amount, rcp.fSubtractFeeFromAmount});
+        vecSend.push_back({GetScriptForDestination(coinControl.destPick), rcp.amount, rcp.fSubtractFeeFromAmount});
         vecSend.push_back({GetPledgeScriptForDestination(DecodeDestination(rcp.address.toStdString())), 0, false});
 
         total += rcp.amount;
     }
     else if (payOperateMethod == PayOperateMethod::BindPlotter) {
         if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
-                coinControl.payPolicy != PAYPOLICY_FROM_CHANGE_ONLY || recipients[0].plotterPassphrase.isEmpty())
+                coinControl.coinPickPolicy != CoinPickPolicy::IncludeIfSet ||
+                coinControl.destChange != coinControl.destPick ||
+                !IsValidDestination(coinControl.destPick) ||
+                recipients[0].plotterPassphrase.isEmpty())
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
@@ -339,13 +344,13 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return InactivedBHDIP006;
 
         const SendCoinsRecipient &rcp = recipients[0];
-        if (!IsValidDestination(coinControl.destChange) || coinControl.destChange != DecodeDestination(rcp.address.toStdString()))
+        if (!validateAddress(rcp.address) || coinControl.destPick != DecodeDestination(rcp.address.toStdString()))
             return InvalidAddress;
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
-        vecSend.push_back({GetScriptForDestination(coinControl.destChange), rcp.amount, rcp.fSubtractFeeFromAmount});
-        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destChange, rcp.plotterPassphrase.toStdString(), chainActive.Height() + 5), 0, false});
+        vecSend.push_back({GetScriptForDestination(coinControl.destPick), rcp.amount, rcp.fSubtractFeeFromAmount});
+        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), chainActive.Height() + 5), 0, false});
 
         total += rcp.amount;
     }
@@ -432,10 +437,10 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
 
         // Check tx
         if (payOperateMethod == PayOperateMethod::SendPledge) {
-            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height());
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height() + 1);
             assert(payload && payload->type == DATACARRIER_TYPE_PLEDGELOAN);
         } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
-            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height());
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height() + 1);
             assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
         }
 

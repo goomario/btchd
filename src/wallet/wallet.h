@@ -99,15 +99,6 @@ enum WalletFeature
     FEATURE_LATEST = FEATURE_COMPRPUBKEY // HD is optional, use FEATURE_COMPRPUBKEY as latest version
 };
 
-/** Pay policy */
-enum PayPolicy : int {
-    PAYPOLICY_FROM_ANY = 0,             //! Pay from any address, but exclude lock UTXO
-    PAYPOLICY_FROM_PRIMARY_ONLY,        //! Pay from primary address only
-    PAYPOLICY_FROM_PRIMARY_EXCLUDE,     //! Pay from any address, but exclude primary address
-    PAYPOLICY_FROM_CHANGE_ONLY,         //! Pay from chane address only
-    PAYPOLICY_MOVETO,                   //! Move coin to address
-};
-
 enum OutputType : int
 {
     OUTPUT_TYPE_NONE,

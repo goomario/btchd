@@ -2556,8 +2556,7 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, bool 
     {
         LOCK2(cs_main, cs_wallet);
 
-        const CScript primaryScriptPubKey = GetScriptForDestination(GetPrimaryDestination());
-        const CScript destChangeScriptPubKey = (coinControl && IsValidDestination(coinControl->destChange)) ? GetScriptForDestination(coinControl->destChange) : CScript();
+        const CScript pickScriptPubKey = (coinControl && IsValidDestination(coinControl->destPick)) ? GetScriptForDestination(coinControl->destPick) : CScript();
         CAmount nTotal = 0;
 
         for (const auto& entry : mapWallet)
@@ -2634,19 +2633,17 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, bool 
                         continue;
 
                     // Pay policy
-                    if (coinControl->payPolicy == PAYPOLICY_FROM_PRIMARY_ONLY) {
-                        if (pcoin->tx->vout[i].scriptPubKey != primaryScriptPubKey)
-                            continue;
-                    } else if (coinControl->payPolicy == PAYPOLICY_FROM_PRIMARY_EXCLUDE) {
-                        if (pcoin->tx->vout[i].scriptPubKey == primaryScriptPubKey)
-                            continue;
-                    } else if (coinControl->payPolicy == PAYPOLICY_FROM_CHANGE_ONLY) {
-                        if (pcoin->tx->vout[i].scriptPubKey != destChangeScriptPubKey)
-                            continue;
-                    } else if (coinControl->payPolicy == PAYPOLICY_MOVETO) {
-                        // All coin move to destChangeScriptPubKey
-                        if (pcoin->tx->vout[i].scriptPubKey == destChangeScriptPubKey)
-                            continue;
+                    if (!pickScriptPubKey.empty()) {
+                        if (coinControl->coinPickPolicy == CoinPickPolicy::IncludeIfSet) {
+                            if (pcoin->tx->vout[i].scriptPubKey != pickScriptPubKey)
+                                continue;
+                        } else if (coinControl->coinPickPolicy == CoinPickPolicy::ExcludeIfSet) {
+                            if (pcoin->tx->vout[i].scriptPubKey == pickScriptPubKey)
+                                continue;
+                        } else if (coinControl->coinPickPolicy == CoinPickPolicy::MoveAllTo) {
+                            if (pcoin->tx->vout[i].scriptPubKey == pickScriptPubKey)
+                                continue;
+                        }
                     }
                 }
 
@@ -3156,8 +3153,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
             CScript scriptChange;
 
             // Process moveto policy
-            if (coin_control.payPolicy == PAYPOLICY_MOVETO)
-            {
+            if (coin_control.coinPickPolicy == CoinPickPolicy::MoveAllTo) {
+                // Move all to coin_control.destPick
                 assert (vecSend.size() == 1);
                 nValue = 0;
                 for (const COutput& out : vAvailableCoins)
@@ -3166,7 +3163,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                         nValue += out.tx->tx->vout[out.i].nValue;
                 }
                 const CRecipient &recipient = vecSend[0];
-                if (nValue < recipient.nAmount)
+                if (nValue < recipient.nAmount) // recipient.nAmount is minimal move amount
                 {
                     strFailReason = _("Not enough move amount");
                     return false;
@@ -3175,14 +3172,12 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 // "Move to" impossible have change
                 scriptChange = GetScriptForDestination(GetPrimaryDestination());
             }
-            else
-            {
-                // coin control: send change to custom address
-                if (!boost::get<CNoDestination>(&coin_control.destChange)) {
-                    scriptChange = GetScriptForDestination(coin_control.destChange);
-                } else { // no coin control: send change to primary address
-                    scriptChange = GetScriptForDestination(GetPrimaryDestination());
-                }
+
+            // coin control: send change to custom address
+            if (!boost::get<CNoDestination>(&coin_control.destChange)) {
+                scriptChange = GetScriptForDestination(coin_control.destChange);
+            } else { // no coin control: send change to primary address
+                scriptChange = GetScriptForDestination(GetPrimaryDestination());
             }
 
             CTxOut change_prototype_txout(0, scriptChange);

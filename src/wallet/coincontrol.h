@@ -13,12 +13,18 @@
 #include <boost/optional.hpp>
 
 
+/** Coin pick policy */
+enum class CoinPickPolicy {
+    IncludeIfSet = 0,   //! Pick all coin if "destPick" set. Default
+    ExcludeIfSet,       //! Pick all coin but exclude if "destPick" set
+    MoveAllTo,          //! Pick all but exclude "destPick". Only for move to
+};
 
 /** Coin Control Features. */
 class CCoinControl
 {
 public:
-    //! Custom change destination, if not set an address is generated
+    //! Custom change destination, if not set will output to primary destination
     CTxDestination destChange;
     //! Custom change type, ignored if destChange is set, defaults to g_change_type
     OutputType change_type;
@@ -36,8 +42,10 @@ public:
     bool signalRbf;
     //! Fee estimation mode to control arguments to estimateSmartFee
     FeeEstimateMode m_fee_mode;
-    //! Pay policy
-    PayPolicy payPolicy;
+    //! Coin pick policy
+    CoinPickPolicy coinPickPolicy;
+    //! Custom pick destination, if not set unlimit select
+    CTxDestination destPick;
 
     CCoinControl()
     {
@@ -56,7 +64,8 @@ public:
         m_confirm_target.reset();
         signalRbf = fWalletRbf;
         m_fee_mode = FeeEstimateMode::UNSET;
-        payPolicy = PAYPOLICY_FROM_ANY;
+        coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+        destPick = CNoDestination();
     }
 
     bool HasSelected() const

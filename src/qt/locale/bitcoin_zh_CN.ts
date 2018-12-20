@@ -2503,8 +2503,8 @@
         <translation>绑定算力需要锁定的交易额必须是 %1 。</translation>
     </message>
     <message>
-        <source>The plotter already binded.</source>
-        <translation>算力和地址已经绑定过。</translation>
+        <source>The plotter %1 already binded to %2.</source>
+        <translation>算力 %1 和地址 %2 已经绑定过。</translation>
     </message>
     <message>
         <source>The valid amount to pledge loan must be larger than %1.</source>

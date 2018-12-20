@@ -30,6 +30,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -749,34 +750,58 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     int count = std::numeric_limits<int>::max();
     if (request.params.size() >= 3)
         count = request.params[2].get_int();
+    if (count < 0)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid count");
 
-    LOCK(cs_main);
-    FlushStateToDisk();
     UniValue ret(UniValue::VARR);
-    for (CCoinsViewCursorRef pcursor = pcoinsdbview->BindPlotterCursor(accountID); pcursor->Valid() && (int)ret.size() < count; pcursor->Next()) {
-        COutPoint key;
-        Coin coin;
-        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
-            assert(!coin.IsSpent());
-            if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER && coin.refOutAccountID == accountID &&
-                    (plotterId == 0 || BindPlotterPayload::As(coin.extraData)->GetId() == plotterId)) {
-                UniValue item(UniValue::VOBJ);
-                {
-                    CTxDestination fromDest;
-                    ExtractDestination(coin.out.scriptPubKey, fromDest);
-                    item.push_back(Pair("address", EncodeDestination(fromDest)));
-                }
-                item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
-                item.push_back(Pair("plotter_id", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
-                item.push_back(Pair("signature", BindPlotterPayload::As(coin.extraData)->IsSign()));
-                item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
-                item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
-                item.push_back(Pair("height", (int)coin.nHeight));
+    if (count == 0)
+        return ret;
 
-                ret.push_back(item);
+    // Load all relation coins
+    typedef std::map<COutPoint,Coin> CCoinsOrderMap;
+    typedef std::map<uint32_t,CCoinsOrderMap,std::greater<uint32_t> > CCoinsOrderByHeightMap;
+    CCoinsOrderByHeightMap mapOrderedCoins;
+    {
+        LOCK(cs_main);
+        std::set<COutPoint> outpoints;
+        pcoinsTip->GetBindPlotterEntries(accountID, plotterId, outpoints);
+        for (auto it = outpoints.cbegin(); it != outpoints.cend(); ++it) {
+            Coin coin;
+            if (pcoinsTip->GetCoin(*it, coin)) {
+                assert(!coin.IsSpent());
+                assert(coin.extraData);
+                assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+                assert(coin.refOutAccountID == accountID);
+                CCoinsOrderMap &mapCoins = mapOrderedCoins[coin.nHeight];
+                mapCoins[*it] = std::move(coin);
+            } else
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
+        }
+    }
+
+    bool fContinue = true;
+    for (CCoinsOrderByHeightMap::const_iterator itMapCoins = mapOrderedCoins.cbegin(); fContinue && itMapCoins != mapOrderedCoins.cend(); ++itMapCoins) {
+        const CCoinsOrderMap &mapCoins = itMapCoins->second;
+        for (CCoinsOrderMap::const_reverse_iterator it = mapCoins.rbegin(); fContinue && it != mapCoins.rend(); ++it) {
+            const Coin &coin = it->second;
+            UniValue item(UniValue::VOBJ);
+            {
+                CTxDestination fromDest;
+                ExtractDestination(coin.out.scriptPubKey, fromDest);
+                item.push_back(Pair("address", EncodeDestination(fromDest)));
             }
-        } else
-            throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
+            item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
+            item.push_back(Pair("plotter_id", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
+            item.push_back(Pair("signature", BindPlotterPayload::As(coin.extraData)->IsSign()));
+            item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
+            item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
+            item.push_back(Pair("height", (int)coin.nHeight));
+
+            ret.push_back(item);
+
+            if (--count <= 0)
+                fContinue = false;
+        }
     }
 
     return ret;
@@ -1211,7 +1236,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     FlushStateToDisk();
-    return ListPledges(pcoinsdbview->PledgeCreditCursor(accountID));
+    return ListPledges(pcoinsdbview->PledgeLoanCursor(accountID));
 }
 
 UniValue listpledgedebitofaddress(const JSONRPCRequest& request)

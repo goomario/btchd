@@ -533,7 +533,10 @@ const CAccountID& PledgeLoanPayload::GetDebitAccountID() const {
     return ((const uint64_t *) scriptID.begin())[0];
 }
 
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight) {
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *fRejectTx) {
+    if (fRejectTx) *fRejectTx = false;
+
+    // Check pre-condition
     if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
         return nullptr;
 
@@ -607,8 +610,10 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             if (!scriptPubKey.GetOp(pc, opcode, vSignature) || opcode != 0x40)
                 return nullptr;
             CSHA256().Write(scriptID->begin(), CScriptID::WIDTH).Write((const unsigned char*)&lastActiveHeight, 4).Finalize(data);
-            if (!PocLegacy::Verify(&vPublicKey[0], data, &vSignature[0]))
+            if (!PocLegacy::Verify(&vPublicKey[0], data, &vSignature[0])) {
+                if (fRejectTx) *fRejectTx = true;
                 return nullptr;
+            }
 
             std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
             payload->id = PocLegacy::ToPlotterId(&vPublicKey[0]);
