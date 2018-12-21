@@ -127,7 +127,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // pblock->nTime = GetAdjustedTime();
     //
     int64_t nAdjustedTime = GetAdjustedTime();
-    if (!chainparams.GetConsensus().fPocAllowMinDifficultyBlocks && nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
+    if (nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
         // Time changed
         pblock->nTime = static_cast<uint32_t>(nAdjustedTime);
     } else {
