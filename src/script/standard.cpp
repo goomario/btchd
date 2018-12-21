@@ -500,6 +500,8 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
         if (!PocLegacy::Sign(passphrase, data, signature, publicKey))
             return script;
         assert(PocLegacy::Verify(publicKey, data, signature));
+        if (PocLegacy::ToPlotterId(publicKey) == 0)
+            return script;
 
         script << OP_RETURN;
         script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
@@ -614,9 +616,12 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
                 if (fRejectTx) *fRejectTx = true;
                 return nullptr;
             }
+            uint64_t plotterId = PocLegacy::ToPlotterId(&vPublicKey[0]);
+            if (plotterId == 0)
+                return nullptr;
 
             std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
-            payload->id = PocLegacy::ToPlotterId(&vPublicKey[0]);
+            payload->id = plotterId;
             payload->sign = true;
             return payload;
         }

@@ -76,6 +76,7 @@ struct Params {
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
 
+    /** View all BHDIP document on https://btchd.org/wiki/BHDIP */
     /** Block height at which BHDIP004 becomes active. Some block error, fork begin height */
     int BHDIP004ActiveHeight;
     /** Block height at which BHDIP004 becomes inactive */

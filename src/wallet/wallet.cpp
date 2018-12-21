@@ -901,7 +901,7 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
 
 CTxDestination CWallet::GetPrimaryDestination() const
 {
-    AssertLockHeld(cs_wallet);
+    LOCK(cs_wallet);
 
     CTxDestination dest;
     for (auto it = mapAddressBook.begin(); it != mapAddressBook.end(); it++) {
@@ -4101,7 +4101,6 @@ void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
 
 void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
 {
-    LOCK(cs_wallet);
     script = std::make_shared<CReserveKey>(this);
     script->reserveScript = GetScriptForDestination(GetPrimaryDestination()); // BitcoinHD must uniform script pubkey
 }
@@ -4423,9 +4422,10 @@ CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
 
     // Check and Set Primary address
     {
-        LOCK(walletInstance->cs_wallet);
         CTxDestination primaryDest = walletInstance->GetPrimaryDestination();
         if (!boost::get<CScriptID>(&primaryDest)) {
+            LOCK(walletInstance->cs_wallet);
+
             // Create new address
             CPubKey pubkey;
             if (walletInstance->GetKeyFromPool(pubkey)) {

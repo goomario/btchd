@@ -48,7 +48,7 @@ unsigned int ParseConfirmTarget(const UniValue& value)
 
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, bool keepScript)
 {
-    const uint64_t nNonce = 0, nPlotterId = 0, nDeadline = 0;
+    const uint64_t nNonce = 0, nPlotterId = 1, nDeadline = 0;
 
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -717,7 +717,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "  {\n"
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
             "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
-            "    \"plotter_id\": plotter_id,          (string) The binded plotter ID.\n"
+            "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
             "    \"signature\": signature,            (bool) The binded plotter ID with signature.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
@@ -791,7 +791,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
                 item.push_back(Pair("address", EncodeDestination(fromDest)));
             }
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
-            item.push_back(Pair("plotter_id", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
+            item.push_back(Pair("plotterId", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
             item.push_back(Pair("signature", BindPlotterPayload::As(coin.extraData)->IsSign()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
@@ -845,6 +845,7 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
 {
+    LOCK(cs_main);
     CAccountID accountID = GetAccountIDByAddress(address);
     if (accountID == 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");

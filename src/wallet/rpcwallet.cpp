@@ -242,7 +242,6 @@ UniValue getrawchangeaddress(const JSONRPCRequest& request)
             + HelpExampleRpc("getrawchangeaddress", "")
         );
 
-    LOCK2(cs_main, pwallet->cs_wallet);
     return EncodeDestination(pwallet->GetPrimaryDestination());
 }
 
@@ -387,7 +386,6 @@ UniValue getprimaryaddress(const JSONRPCRequest& request)
             + HelpExampleRpc("getprimaryaddress", "")
         );
 
-    LOCK2(cs_main, pwallet->cs_wallet);
     return EncodeDestination(pwallet->GetPrimaryDestination());
 }
 
@@ -3769,7 +3767,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "  {\n"
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
             "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
-            "    \"plotter_id\": plotter_id,          (string) The binded plotter ID.\n"
+            "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
             "    \"signature\": signature,            (bool) The binded plotter ID with signature.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
@@ -3870,7 +3868,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         item.push_back(Pair("txid", wtx.GetHash().GetHex()));
         item.push_back(Pair("amount", ValueFromAmount(wtx.tx->vout[0].nValue)));
         item.push_back(Pair("address", EncodeDestination(it->second.address)));
-        item.push_back(Pair("plotter_id", std::to_string(it->second.plotterId)));
+        item.push_back(Pair("plotterId", std::to_string(it->second.plotterId)));
         item.push_back(Pair("signature", it->second.fSign));
         if (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) {
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
@@ -3910,8 +3908,6 @@ UniValue getpledge(const JSONRPCRequest& request)
             + HelpExampleCli("getpledge", "\"0\" true")
             + HelpExampleRpc("getpledge", "\"0\", true")
         );
-
-    LOCK2(cs_main, pwallet->cs_wallet);
 
     CTxDestination dest = pwallet->GetPrimaryDestination();
     if (!IsValidDestination(dest)) {

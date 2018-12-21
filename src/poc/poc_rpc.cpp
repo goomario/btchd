@@ -77,7 +77,7 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight, const std::string &address)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight, const std::string &address, bool fCheckBind)
 {
     if (IsInitialBlockDownload()) {
         throw std::runtime_error("Is initial block downloading!");
@@ -90,25 +90,35 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     }
 
     uint64_t bestDeadline = 0;
-    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, address, Params().GetConsensus());
-
-    result.pushKV("result", "success");
-    result.pushKV("deadline", deadline);
-    result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
-    result.pushKV("height", pBlockIndex->nHeight + 1);
+    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, address, fCheckBind, Params().GetConsensus());
+    if (deadline == poc::INVALID_DEADLINE) {
+        result.pushKV("result", "error");
+        result.pushKV("errorCode", "001");
+        result.pushKV("errorDescription", "Invalid plotter ID");
+    } else if (deadline == poc::INVALID_DEADLINE_NOTBIND) {
+        result.pushKV("result", "error");
+        result.pushKV("errorCode", "002");
+        result.pushKV("errorDescription", "Not bind plotter ID to address");
+    } else {
+        result.pushKV("result", "success");
+        result.pushKV("deadline", deadline);
+        result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
+        result.pushKV("height", pBlockIndex->nHeight + 1);
+    }
 }
 
 static UniValue submitNonceToPool(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonceToPool \"nonce\" \"accountId\" height \"address\"\n"
+            "submitNonceToPool \"nonce\" \"accountId\" (height \"address\" checkBind)\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"accountId\"       (string, required) The digit string of the brust account ID\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
             "4. \"address\"         (string, optional) Target address for mining\n"
+            "5. \"checkBind\"       (boolean, optional, true) Check bind for BHDIP006\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -119,7 +129,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() < 2 || request.params.size() > 4) {
+    if (request.params.size() < 2 || request.params.size() > 5) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
@@ -137,7 +147,12 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
         address = request.params[3].get_str();
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address);
+    bool fCheckBind = true;
+    if (request.params.size() >= 5) {
+        fCheckBind = request.params[4].get_bool();
+    }
+
+    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address, fCheckBind);
     return result;
 }
 
@@ -145,13 +160,14 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonceAsSolo \"nonce\" \"passphrase\" height \"address\"\n"
+            "submitNonceAsSolo \"nonce\" \"passphrase\" (height \"address\" checkBind)\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
             "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
             "2. \"passphrase\"      (string, optional) The string of the passphrase.\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
             "4. \"address\"         (string, optional) Target address for mining\n"
+            "5. \"checkBind\"       (boolean, optional, true) Check bind for BHDIP006\n"
             "\nResult:\n"
             "{\n"
             "  [ result ]                  (string) Submit result: 'success' or others \n"
@@ -162,7 +178,7 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
     }
 
     UniValue result(UniValue::VOBJ);
-    if (request.params.size() < 2 || request.params.size() > 4) {
+    if (request.params.size() < 2 || request.params.size() > 5) {
         result.pushKV("result", "Missing parameters");
         return result;
     }
@@ -180,7 +196,12 @@ static UniValue submitNonceAsSolo(const JSONRPCRequest& request)
         address = request.params[3].get_str();
     }
 
-    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, address);
+    bool fCheckBind = true;
+    if (request.params.size() >= 5) {
+        fCheckBind = request.params[4].get_bool();
+    }
+
+    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, address, fCheckBind);
     return result;
 }
 
@@ -386,8 +407,8 @@ static const CRPCCommand commands[] =
     { "hidden",           "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height", "address" } },
-    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height", "address" } },
+    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height", "address", "checkBind" } },
+    { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height", "address", "checkBind" } },
     { "hidden",           "getConstants",             &poc::rpc::getConstants,          { } },
     { "hidden",           "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },
     { "hidden",           "getBlock",                 &poc::rpc::getBlock,              { "block", "height", "timestamp"} },

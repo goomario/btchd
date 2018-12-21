@@ -94,8 +94,7 @@ void BlockAssembler::resetBlock()
     nFees = 0;
 }
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx,
-    uint64_t nonce, uint64_t plotterId, uint64_t deadline)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx, uint64_t nonce, uint64_t plotterId, uint64_t deadline)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -128,7 +127,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // pblock->nTime = GetAdjustedTime();
     //
     int64_t nAdjustedTime = GetAdjustedTime();
-    if (nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
+    if (!chainparams.GetConsensus().fPocAllowMinDifficultyBlocks && nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
         // Time changed
         pblock->nTime = static_cast<uint32_t>(nAdjustedTime);
     } else {
@@ -170,7 +169,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Reward
     BlockReward blockReward = GetBlockReward(nHeight, nFees, accountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
-    if (blockReward.miner1 != 0) {
+    if (blockReward.minerBHD004Compatiable != 0) {
         // Let old wallet can verify
         if (blockReward.fund != 0) {
             fundOutIndex = 2;
@@ -180,7 +179,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         }
         // Old consensus will check [1] amount
         coinbaseTx.vout[1].scriptPubKey = scriptPubKeyIn;
-        coinbaseTx.vout[1].nValue = blockReward.miner1;
+        coinbaseTx.vout[1].nValue = blockReward.minerBHD004Compatiable;
     } else if (blockReward.fund != 0) {
         fundOutIndex = 1;
         coinbaseTx.vout.resize(2);
@@ -188,7 +187,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         coinbaseTx.vout.resize(1);
     }
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[0].nValue = blockReward.miner0;
+    coinbaseTx.vout[0].nValue = blockReward.miner;
     if (fundOutIndex < coinbaseTx.vout.size()) {
         coinbaseTx.vout[fundOutIndex].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BHDFundAddress));
         coinbaseTx.vout[fundOutIndex].nValue = blockReward.fund;

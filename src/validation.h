@@ -219,6 +219,10 @@ static const unsigned int DEFAULT_CHECKLEVEL = 3;
 // Setting the target to > than 550MB will make it likely we can respect the target.
 static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024;
 
+// Block deadline cache
+typedef std::unordered_map<uint256, uint64_t, BlockHasher> BlockDeadlineCacheMap;
+extern BlockDeadlineCacheMap mapBlockDeadlineCache;
+
 /** 
  * Process an incoming block. This only returns after the best known valid
  * block is made active. Note that it does not, however, guarantee that the
@@ -280,14 +284,13 @@ bool GetTransaction(const uint256& hash, CTransactionRef& tx, const Consensus::P
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
 /** Get Block reward */
 typedef struct {
-    CAmount miner0;
-    CAmount miner1;
+    CAmount miner;
+    //! Hark fork compatible. See https://btchd.org/wiki/BHDIP/004#multi-output
+    CAmount minerBHD004Compatiable;
     CAmount fund;
 } BlockReward;
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
-                           const CCoinsViewCache &view, const Consensus::Params& consensusParams);
-/** Get miner pledge */
-CAmount GetMinerPledge(const CAccountID &minerAccountID, int nHeight, const uint64_t &nPlotterId, const Consensus::Params& consensusParams, CAmount *pMinerPledgeOldConsensus = nullptr);
+    const CCoinsViewCache &view, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

@@ -2534,8 +2534,8 @@
         <translation>标签(&amp;L)：</translation>
     </message>
     <message>
-        <source>&amp;Passphrase:</source>
-        <translation>脑密码(&amp;P)：</translation>
+        <source>&amp;Plotter:</source>
+        <translation>算力(&amp;P)：</translation>
     </message>
     <message>
         <source>Choose previously used address</source>

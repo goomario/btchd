@@ -82,6 +82,7 @@ public:
         strNetworkID = "main";
 
         consensus.BHDFundAddress = "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE";
+        // See https://btchd.org/wiki/fund-address-pool
         consensus.BHDFundAddressPool = {
             "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y", //!< 0x20000000, Deprecated!. Last use on v1.1.0.1-30849da
             "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000004
@@ -632,7 +633,7 @@ public:
         consensus.BHDIP004ActiveHeight = 0;
         consensus.BHDIP004InActiveHeight = 0;
         consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200;
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP001NoPledgeHeight + 300;
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

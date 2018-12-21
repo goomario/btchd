@@ -236,11 +236,8 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
             ui->frameCoinControl->setVisible(false);
-            {
-                LOCK(model->getWallet()->cs_wallet);
-                CoinControlDialog::coinControl()->coinPickPolicy = CoinPickPolicy::IncludeIfSet;
-                CoinControlDialog::coinControl()->destPick = CoinControlDialog::coinControl()->destChange = model->getWallet()->GetPrimaryDestination();
-            }
+            CoinControlDialog::coinControl()->coinPickPolicy = CoinPickPolicy::IncludeIfSet;
+            CoinControlDialog::coinControl()->destPick = CoinControlDialog::coinControl()->destChange = model->getWallet()->GetPrimaryDestination();
             break;
         default: // Normal pay
             ui->clearButton->setVisible(true);
@@ -323,7 +320,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     prepareStatus = model->prepareTransaction(currentTransaction, ctrl, operateMethod);
 
     // Check plotter bind
-    if(prepareStatus.status == WalletModel::OK && operateMethod == PayOperateMethod::BindPlotter) {
+    if (prepareStatus.status == WalletModel::OK && operateMethod == PayOperateMethod::BindPlotter) {
         LOCK(cs_main);
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
         assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);

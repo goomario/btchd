@@ -329,33 +329,34 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount 
 }
 
 bool CCoinsViewCache::HaveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId, bool *fSign) const {
+    if (plotterId == 0)
+        return false;
+
     // Find all bind plotter outpoint
     std::set<COutPoint> outpoints;
     GetBindPlotterEntries(accountID, plotterId, outpoints);
+    if (outpoints.empty())
+        return false;
 
     // Find last outpoint
-    uint32_t lastHeight = 0;
-    const COutPoint *lastOutpoint = nullptr;
-    for (auto it = outpoints.rbegin(); it != outpoints.rend(); ++it) {
-        Coin coin;
-        GetCoin(*it, coin);
-        assert(coin.extraData);
-        assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
-        // Same height select largest tx hash
-        if (lastHeight < coin.nHeight) {
-            lastHeight = coin.nHeight;
-            lastOutpoint = &*it;
+    if (fSign != nullptr) {
+        // Care signature
+        // Last bind is actived
+        uint32_t lastHeight = 0;
+        for (auto it = outpoints.rbegin(); it != outpoints.rend(); ++it) {
+            Coin coin;
+            GetCoin(*it, coin);
+            assert(coin.extraData);
+            assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+            assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
+            // Same height select largest tx hash
+            if (lastHeight < coin.nHeight) {
+                lastHeight = coin.nHeight;
+                *fSign = BindPlotterPayload::As(coin.extraData)->IsSign();
+            }
         }
     }
-
-    if (lastOutpoint != nullptr) {
-        Coin coin;
-        GetCoin(*lastOutpoint, coin);
-        if (fSign) *fSign = BindPlotterPayload::As(coin.extraData)->IsSign();
-        return true;
-    }
-    
-    return false;
+    return true;
 }
 
 void CCoinsViewCache::GetAccountBindPlotters(const CAccountID &accountID, std::set<uint64_t> &plotters) const {

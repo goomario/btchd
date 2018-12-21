@@ -21,18 +21,14 @@
 
 #include <inttypes.h>
 
+#include <exception>
 #include <limits>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 
 #include <event2/thread.h>
 
 namespace {
-
-// Block deadline cache
-typedef std::unordered_map<uint256, uint64_t, BlockHasher> BlockDeadlineCacheMap;
-BlockDeadlineCacheMap mapBlockDeadlineCache;
 
 // shabal256
 uint256 shabal256(const uint256 &genSig, int64_t nMix64)
@@ -48,17 +44,15 @@ uint256 shabal256(const uint256 &genSig, int64_t nMix64)
 std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline, const std::string &address)
 {
     AssertLockHeld(cs_main);
-    if (::vpwallets.empty()) {
-        return nullptr;
-    }
 
     CScript scriptPubKey;
     if (address.empty()) {
         // From wallet
-        CWallet * const pwallet = ::vpwallets[0];
+        if (::vpwallets.empty())
+            return nullptr;
 
         std::shared_ptr<CReserveScript> coinbaseScript;
-        pwallet->GetScriptForMining(coinbaseScript);
+        ::vpwallets[0]->GetScriptForMining(coinbaseScript);
         if (!coinbaseScript) {
             LogPrintf("Cannot load script from wallet\n");
             return nullptr;
@@ -77,7 +71,13 @@ std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t 
         return nullptr;
     }
 
-    std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(scriptPubKey, true, nNonce, nPlotterId, nDeadline));
+    std::unique_ptr<CBlockTemplate> pblocktemplate;
+    try {
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptPubKey, true, nNonce, nPlotterId, nDeadline);
+    } catch (std::exception &e) {
+        const char *what = e.what();
+        LogPrintf("%s\n", what ? what : "CreateBlock(): Catch unknown exception");
+    }
     if (!pblocktemplate.get()) 
         return nullptr;
 
@@ -179,10 +179,12 @@ void CheckDeadlineThread()
                                     arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
                                     if (mineBlockWork < tipBlockWork || pblock->nTime > pindexTip->nTime) {
                                         // Low chainwork
-                                        LogPrintf("Snatch block give up: Low chainwork, mine/%s/%d < tip/%s/%d\n", mineBlockWork.ToString(), pblock->nTime, tipBlockWork.ToString(), pindexTip->nTime);
+                                        LogPrintf("Snatch block give up: Low chainwork, mine/%s/%d < tip/%s/%d\n",
+                                            mineBlockWork.ToString(), pblock->nTime, tipBlockWork.ToString(), pindexTip->nTime);
                                     } else {
                                         // Snatch block
-                                        LogPrint(BCLog::POC, "Snatch block: mine/%s/%d <-> tip/%s/%d %d\n", pblock->GetHash().ToString(), pblock->nTime, pindexTip->phashBlock->ToString(), pindexTip->nTime, pindexTip->nHeight);
+                                        LogPrint(BCLog::POC, "Snatch block: mine/%s/%d <-> tip/%s/%d %d\n",
+                                            pblock->GetHash().ToString(), pblock->nTime, pindexTip->phashBlock->ToString(), pindexTip->nTime, pindexTip->nHeight);
                                         height = it->first;
                                         deadline = it->second.deadline;
 
@@ -335,6 +337,10 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
     if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
         return 0;
 
+    // BHDIP006 disallow plotter ID equal 0
+    if (block.nPlotterId == 0 && prevBlockIndex.nHeight + 1 >= params.BHDIP006Height)
+        return poc::INVALID_DEADLINE;
+
     // Regtest
     if (params.fPocAllowMinDifficultyBlocks)
         return block.nNonce;
@@ -444,10 +450,25 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
     }
 }
 
-uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const std::string &address, const Consensus::Params& params)
+uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId,
+    const std::string &address, bool fCheckBind, const Consensus::Params& params)
 {
-    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
-        prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
+    AssertLockHeld(cs_main);
+    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n", prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
+
+    // Check bind
+    if (fCheckBind && prevBlockIndex.nHeight + 1 >= params.BHDIP006BindPlotterActiveHeight) {
+        CAccountID accountID;
+        if (address.empty()) {
+            if (::vpwallets.empty())
+                return INVALID_DEADLINE_NOTBIND;
+            accountID = GetAccountIDByTxDestination(::vpwallets[0]->GetPrimaryDestination());
+        } else {
+            accountID = GetAccountIDByAddress(address);
+        }
+        if (!pcoinsTip->HaveBindPlotter(accountID, nPlotterId))
+            return INVALID_DEADLINE_NOTBIND;
+    }
 
     CBlockHeader block;
     block.nVersion   = ComputeBlockVersion(&prevBlockIndex, params);
@@ -467,7 +488,7 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
         }
     } else {
         GeneratorState &generator = mapGenerators[prevBlockIndex.nHeight + 1];
-        if (generator.deadline == INVALID_DEADLINE || calcDeadline < generator.deadline) {
+        if (calcDeadline < generator.deadline) {
             generator.nonce     = nNonce;
             generator.plotterId = nPlotterId;
             generator.deadline  = calcDeadline;
@@ -497,6 +518,77 @@ int64_t GetForgeEscape()
         }
         return nEscapeTime;
     }
+}
+
+CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &plotterId, int nMiningHeight, const CCoinsViewCache &view,
+    const Consensus::Params &consensusParams, CAmount *pMinerPledgeOldConsensus)
+{
+    AssertLockHeld(cs_main);
+    assert(nMiningHeight > 0);
+    assert(nMiningHeight <= chainActive.Height() + 1);
+    assert(GetSpendHeight(view) == nMiningHeight);
+    if (pMinerPledgeOldConsensus != nullptr)
+        *pMinerPledgeOldConsensus = 0;
+
+    // Calc range
+    int nBeginHeight = std::max(nMiningHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BHDIP001StartMingingHeight + 1);
+    if (nMiningHeight <= nBeginHeight)
+        return 0;
+
+    uint64_t nAvgBaseTarget = 0; // Average BaseTarget
+    int nTotalForgeCount = 0, nTotalForgeCountOldConsensus = 0;
+    if (nMiningHeight < consensusParams.BHDIP006BindPlotterActiveHeight) {
+        // Forged by plotter ID
+        for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
+            CBlockIndex *pblockIndex = chainActive[index];
+            nAvgBaseTarget += pblockIndex->nBaseTarget;
+
+            // 1. Multi plotter generate to same wallet (like pool)
+            // 2. Same plotter generate to multi wallets (for decrease pledge)
+            if (pblockIndex->minerAccountID == minerAccountID || pblockIndex->nPlotterId == plotterId) {
+                ++nTotalForgeCount;
+
+                if (pblockIndex->minerAccountID != minerAccountID) {
+                    // Old consensus: multi mining. Plotter ID bind to multi miner (also multi wallet)
+                    nTotalForgeCountOldConsensus = -1;
+                } else if (nTotalForgeCountOldConsensus != -1) {
+                    nTotalForgeCountOldConsensus++;
+                }
+            }
+            assert(nTotalForgeCount >= nTotalForgeCountOldConsensus);
+        }
+    } else {
+        // Require bind plotter
+        std::set<uint64_t> plotters;
+        view.GetAccountBindPlotters(minerAccountID, plotters);
+        for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
+            CBlockIndex *pblockIndex = chainActive[index];
+            nAvgBaseTarget += pblockIndex->nBaseTarget;
+
+            if (plotters.count(pblockIndex->nPlotterId))
+                ++nTotalForgeCount;
+        }
+    }
+    if (nTotalForgeCount == 0)
+        return 0;
+
+    // Net capacity
+    nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
+    int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+
+    // Old consensus pledge
+    if (pMinerPledgeOldConsensus != nullptr) {
+        if (nTotalForgeCountOldConsensus == -1) {
+            *pMinerPledgeOldConsensus = MAX_MONEY;
+        } else if (nTotalForgeCountOldConsensus > 0) {
+            int64_t nMinerCapacityTBOldConsensus = std::max((nNetCapacityTB * nTotalForgeCountOldConsensus) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
+            *pMinerPledgeOldConsensus = consensusParams.BHDIP001PledgeAmountPerTB * nMinerCapacityTBOldConsensus;
+        }
+    }
+
+    // New consensus pledge
+    int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
+    return consensusParams.BHDIP001PledgeAmountPerTB * nMinerCapacityTB;
 }
 
 }

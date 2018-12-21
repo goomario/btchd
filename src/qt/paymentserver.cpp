@@ -636,11 +636,7 @@ void PaymentServer::fetchPaymentACK(CWallet* wallet, const SendCoinsRecipient& r
     // Create a new refund address, or re-use:
     QString account = tr("Refund from %1").arg(recipient.authenticatedMerchant);
     std::string strAccount = account.toStdString();
-    CTxDestination dest;
-    {
-        LOCK(wallet->cs_wallet);
-        dest = wallet->GetPrimaryDestination();
-    }
+    CTxDestination dest = wallet->GetPrimaryDestination();
     if (IsValidDestination(dest)) {
         // BIP70 requests encode the scriptPubKey directly, so we are not restricted to address
         // types supported by the receiver. As a result, we choose the address format we also

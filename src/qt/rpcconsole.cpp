@@ -15,6 +15,7 @@
 #include <base58.h>
 #include <chainparams.h>
 #include <netbase.h>
+#include <poc/poc.h>
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <util.h>
@@ -866,7 +867,6 @@ void RPCConsole::setMempoolSize(long numberOfTxs, size_t dynUsage)
 void RPCConsole::currentWalletPrimaryAddressChanged(CWallet *wallet)
 {
     if (wallet != nullptr) {
-        LOCK(wallet->cs_wallet);
         ui->primaryAddress->setText(QString::fromStdString(EncodeDestination(wallet->GetPrimaryDestination())));
     } else {
         ui->primaryAddress->clear();
@@ -897,14 +897,14 @@ void RPCConsole::updatePledge()
         ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
         // Primary address capacity and pledge
-        CAmount nPledgeAmount = GetMinerPledge(accountID, chainActive.Height(), 0, Params().GetConsensus());
+        CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, Params().GetConsensus());
         ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
         ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
         ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
 
-        // Bind plotter
+        // Binded plotter
         QString strBindPlotters;
-        {
+        if (chainActive.Height() < Params().GetConsensus().BHDIP006BindPlotterActiveHeight) {
             std::set<uint64_t> existPlotterId;
             const int nEndHeight = chainActive.Height();
             const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
@@ -913,15 +913,23 @@ void RPCConsole::updatePledge()
                 CBlockIndex *pblockIndex = chainActive[index];
                 if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
                     continue;
-                if (!strBindPlotters.isEmpty()) {
+                if (!strBindPlotters.isEmpty())
                     strBindPlotters += ",";
-                }
                 strBindPlotters += QString::number(pblockIndex->nPlotterId);
                 existPlotterId.insert(pblockIndex->nPlotterId);
+            }
+        } else {
+            std::set<uint64_t> plotters;
+            pcoinsTip->GetAccountBindPlotters(accountID, plotters);
+            for (const uint64_t &id : plotters) {
+                if (!strBindPlotters.isEmpty())
+                    strBindPlotters += ",";
+                strBindPlotters += QString::number(id);
             }
         }
         ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
     } else {
+        // Pending
         ui->primaryAddressBalance->setText("N/A");
         ui->estimateCapacity->setText("N/A");
         ui->bindPlotterId->setText("N/A");

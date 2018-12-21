@@ -198,18 +198,20 @@ CAccountID GetAccountIDByTxDestination(const CTxDestination &dest);
 /** Utility function to get account id with given address. */
 CAccountID GetAccountIDByAddress(const std::string &address);
 
-/** opreturn type */
+/** opreturn type. See https://btchd.org/wiki/datacarrier */
 enum DatacarrierType : unsigned int {
     // Range
     DATACARRIER_TYPE_MIN = 0x0000000f,
     DATACARRIER_TYPE_MAX = 0x10000000,
 
     // Type of consensus relevant
+    //! See https://btchd.org/wiki/datacarrier/bind-plotter
     DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
+    //! See https://btchd.org/wiki/datacarrier/pledge-loan
     DATACARRIER_TYPE_PLEDGELOAN  = 0x00000011,
+    //! See https://btchd.org/wiki/datacarrier/contract
     DATACARRIER_TYPE_CONTRACT    = 0x00000012,
-
-    // Others
+    //! See https://btchd.org/wiki/datacarrier/text
     DATACARRIER_TYPE_TEXT        = 0x00000013,
 };
 
