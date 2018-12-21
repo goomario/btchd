@@ -531,7 +531,7 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
         *pMinerPledgeOldConsensus = 0;
 
     // Calc range
-    int nBeginHeight = std::max(nMiningHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow) + 1, consensusParams.BHDIP001StartMingingHeight + 1);
+    int nBeginHeight = std::max(nMiningHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
     if (nMiningHeight <= nBeginHeight)
         return 0;
 

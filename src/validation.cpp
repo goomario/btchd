@@ -1166,7 +1166,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         // No pledge
         reward.miner = nSubsidy + nFees;
     } else if (nHeight >= consensusParams.BHDIP004ActiveHeight && nHeight < consensusParams.BHDIP004InActiveHeight) {
-        // Soft fork
+        // Soft fork. Bad idea
         // Y is 95% reward, N is 30% reward.
         // -------- Old ------------ => ------------ New ------------
         // Y[95%->miner, 5%->fund]   =>    Y[95%->miner, 5%->fund] pass
@@ -1189,11 +1189,22 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
         }
         reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHD004Compatiable;
-    } else {
+    } else if (nHeight < consensusParams.BHDIP006Height) {
         // Normal mining
-        CAmount minerPledgeAmount = poc::GetMinerForgePledge(minerAccountID, nPlotterId, nHeight, view, consensusParams);
         CAmount accountBalance = view.GetAccountBalance(minerAccountID);
+        CAmount minerPledgeAmount = poc::GetMinerForgePledge(minerAccountID, nPlotterId, nHeight, view, consensusParams);
         if (accountBalance >= minerPledgeAmount) {
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
+        } else {
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
+        }
+        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHD004Compatiable;
+    } else {
+        // Normal mining for BHDIP006
+        CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
+        CAmount accountBalance = view.GetAccountBalance(minerAccountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
+        CAmount minerPledgeAmount = poc::GetMinerForgePledge(minerAccountID, nPlotterId, nHeight, view, consensusParams);
+        if (accountBalance - pledgeLoanBalance + pledgeDebitBalance >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
         } else {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
