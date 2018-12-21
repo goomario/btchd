@@ -286,7 +286,7 @@ bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams,
 typedef struct {
     CAmount miner;
     //! Hark fork compatible. See https://btchd.org/wiki/BHDIP/004#multi-output
-    CAmount minerBHD004Compatiable;
+    CAmount minerBHDIP004Compatiable;
     CAmount fund;
 } BlockReward;
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,

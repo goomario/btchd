@@ -1183,12 +1183,12 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
             if (accountBalance < minerPledgeAmountAtOldConsensus) {
                 // Old consensus => fund
-                reward.minerBHD004Compatiable = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
+                reward.minerBHDIP004Compatiable = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
             }
         } else {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
         }
-        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHD004Compatiable;
+        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
     } else if (nHeight < consensusParams.BHDIP006Height) {
         // Normal mining
         CAmount accountBalance = view.GetAccountBalance(minerAccountID);
@@ -1198,7 +1198,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         } else {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
         }
-        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHD004Compatiable;
+        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
     } else {
         // Normal mining for BHDIP006
         CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
@@ -1209,10 +1209,10 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         } else {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
         }
-        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHD004Compatiable;
+        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
     }
 
-    assert(reward.miner + reward.minerBHD004Compatiable + reward.fund == nSubsidy + nFees);
+    assert(reward.miner + reward.minerBHDIP004Compatiable + reward.fund == nSubsidy + nFees);
     return reward;
 }
 
@@ -2020,15 +2020,15 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // GetBlockReward() must use pre CCoinsView
     BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->minerAccountID, pindex->nPlotterId, view, chainparams.GetConsensus());
     // Check coinbase amount
-    if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.minerBHD004Compatiable + blockReward.fund)
+    if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.minerBHDIP004Compatiable + blockReward.fund)
         return state.DoS(100,
                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
-                            block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.minerBHD004Compatiable + blockReward.fund),
+                            block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.minerBHDIP004Compatiable + blockReward.fund),
                         REJECT_INVALID, "bad-cb-amount");
 
     if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006Height) {
         // Standard transaction: vout[0] for miner, vout[1] for fund (maybe not exist), vout[2] for witness nulldata (allow not exist)
-        if (blockReward.minerBHD004Compatiable != 0)
+        if (blockReward.minerBHDIP004Compatiable != 0)
             return state.DoS(100, error("ConnectBlock(): coinbase not standard"), REJECT_INVALID, "bad-cb-amount");
 
         if (blockReward.fund != 0) {
@@ -2075,7 +2075,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             // Check real fund
             if (blockReward.fund != 0) {
                 // Require pay to fund
-                fundIndex = (blockReward.minerBHD004Compatiable != 0) ? 2 : 1;
+                fundIndex = (blockReward.minerBHDIP004Compatiable != 0) ? 2 : 1;
                 // Check output size
                 if (fundIndex >= block.vtx[0]->vout.size())
                     return state.DoS(100,
@@ -2092,7 +2092,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 }
                 if (!chainparams.GetConsensus().BHDFundAddressPool.count(address))
                     return state.DoS(100,
-                                    error("ConnectBlock(): coinbase not pays to fund account (limit=%d)", blockReward.minerBHD004Compatiable),
+                                    error("ConnectBlock(): coinbase not pays to fund account (limit=%d)", blockReward.minerBHDIP004Compatiable),
                                     REJECT_INVALID, "bad-cb-amount");
 
                 // Check output amount
@@ -2103,7 +2103,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
 
             // Check output amount for miner[1], let old wallet can verify
-            if (blockReward.minerBHD004Compatiable != 0) {
+            if (blockReward.minerBHDIP004Compatiable != 0) {
                 // Check output size
                 if (block.vtx[0]->vout.size() < 2)
                     return state.DoS(100,
@@ -2111,9 +2111,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                     REJECT_INVALID, "bad-cb-amount");
 
                 // Check output amount
-                if (block.vtx[0]->vout[1].nValue < blockReward.minerBHD004Compatiable)
+                if (block.vtx[0]->vout[1].nValue < blockReward.minerBHDIP004Compatiable)
                     return state.DoS(100,
-                                    error("ConnectBlock(): coinbase pays too less to miner[1] (actual=%d vs limit=%d)", block.vtx[0]->vout[1].nValue, blockReward.minerBHD004Compatiable),
+                                    error("ConnectBlock(): coinbase pays too less to miner[1] (actual=%d vs limit=%d)", block.vtx[0]->vout[1].nValue, blockReward.minerBHDIP004Compatiable),
                                     REJECT_INVALID, "bad-cb-amount");
             }
 
@@ -2132,7 +2132,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                 error("ConnectBlock(): Depreacted block version %08x", pindex->nVersion),
                                 REJECT_INVALID, "bad-block-version");
 
-            CAmount fund = (blockReward.minerBHD004Compatiable != 0 ? blockReward.minerBHD004Compatiable : blockReward.fund);
+            CAmount fund = (blockReward.minerBHDIP004Compatiable != 0 ? blockReward.minerBHDIP004Compatiable : blockReward.fund);
             if (fund != 0) {
                 // Require pay to fund
                 // [0] => miner, [1] => fund, [2] => miner-append
