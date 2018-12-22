@@ -256,14 +256,14 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
     std::vector<CRecipient> vecSend;
 
-    if (recipients.empty())
-        return OK;
-
-    QSet<QString> setAddress; // Used to detect duplicates
-    int nAddresses = 0;
-
     // Pre-check input data for validity
     if (payOperateMethod == PayOperateMethod::Pay) {
+        if (recipients.empty())
+            return OK;
+
+        // BUG Define out of if scope will crash on mingw64/windows. May be Qt bug
+        QSet<QString> setAddress; // Used to detect duplicates
+        int nAddresses = 0;
         for (const SendCoinsRecipient &rcp : recipients) {
             if (rcp.fSubtractFeeFromAmount)
                 fSubtractFeeFromAmount = true;
@@ -308,6 +308,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 total += rcp.amount;
             }
         }
+        if (setAddress.size() != nAddresses)
+            return DuplicateAddress;
     }
     else if (payOperateMethod == PayOperateMethod::SendPledge) {
         if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
@@ -346,6 +348,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         const SendCoinsRecipient &rcp = recipients[0];
         if (!validateAddress(rcp.address) || coinControl.destPick != DecodeDestination(rcp.address.toStdString()))
             return InvalidAddress;
+        setAddress.insert(rcp.address);
+        ++nAddresses;
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
@@ -358,9 +362,6 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         assert(false);
         return InvalidAddress;
     }
-
-    if (setAddress.size() != nAddresses)
-        return DuplicateAddress;
 
     CAmount nBalance = getBalance(&coinControl);
 
