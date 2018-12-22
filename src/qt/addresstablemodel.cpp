@@ -40,11 +40,12 @@ struct AddressTableEntry
     CAmount pledgeLoanAmount;
     CAmount pledgeDebitAmount;
     CAmount bindPlotterAmount;
+    bool fReloadAmount;
 
     AddressTableEntry() {}
     AddressTableEntry(Type _type, const QString &_label, const QString &_address):
         type(_type), label(_label), address(_address), fPrimary(false), fWatchonly(false),
-        amount(0), pledgeLoanAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0) {}
+        amount(0), pledgeLoanAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0), fReloadAmount(true) {}
 };
 
 struct AddressTableEntryLessThan
@@ -155,6 +156,7 @@ public:
             }
             lower->type = newEntryType;
             lower->label = label;
+            lower->fReloadAmount = true;
             parent->emitDataChanged(lowerIndex);
             break;
         case CT_DELETED:
@@ -248,7 +250,7 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         case Address:
             return rec->address;
         case Amount:
-            {
+            if (rec->fReloadAmount) {
                 CAccountID accountID = GetAccountIDByAddress(rec->address.toStdString());
                 if (accountID != 0) {
                     LOCK(cs_main);
@@ -259,6 +261,8 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
                     rec->pledgeDebitAmount = 0;
                     rec->bindPlotterAmount = 0;
                 }
+
+                rec->fReloadAmount = false;
             }
             return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount, false, BitcoinUnits::separatorNever);
         case LoanAmount:
@@ -387,6 +391,8 @@ bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value,
                 wallet->DelAddressBook(curAddress);
                 // Add new entry with new address
                 wallet->SetAddressBook(newAddress, rec->label.toStdString(), strPurpose);
+
+                rec->fReloadAmount = true;
             }
         }
         return true;

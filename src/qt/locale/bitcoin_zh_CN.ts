@@ -2540,6 +2540,10 @@ Locked: %6</source>
         <translation>借给(&amp;T)：</translation>
     </message>
     <message>
+        <source>Bind &amp;To:</source>
+        <translation>绑定到(&amp;T)：</translation>
+    </message>
+    <message>
         <source>&amp;Label:</source>
         <translation>标签(&amp;L)：</translation>
     </message>
