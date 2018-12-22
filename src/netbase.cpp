@@ -513,7 +513,7 @@ bool ConnectSocketDirectly(const CService &addrConnect, const SOCKET& hSocket, i
             }
             if (nRet != 0)
             {
-                LogPrintf("connect() to %s failed after select(): %s\n", addrConnect.ToString(), NetworkErrorString(nRet));
+                LogPrint(BCLog::NET, "connect() to %s failed after select(): %s\n", addrConnect.ToString(), NetworkErrorString(nRet));
                 return false;
             }
         }

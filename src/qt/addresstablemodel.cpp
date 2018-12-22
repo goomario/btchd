@@ -320,12 +320,13 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
                 return tr("Primary address");
             else if (rec->fWatchonly)
                 return tr("Watchonly address");
-            break;
+            else
+                return rec->address;
         case Amount:
         case LoanAmount:
         case DebitAmount:
         case LockedAmount:
-            return QString(tr("Total: %1\nAvaiable: %2\nLoan: %3\nDebit: %4\nAvaiable pledge: %5\nLocked: %6"))
+            return tr("Total: %1\nAvaiable: %2\nLoan: %3\nDebit: %4\nAvaiable pledge: %5\nLocked: %6")
                     .arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount, false, BitcoinUnits::separatorNever),
                         BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->bindPlotterAmount - rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
                         BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),

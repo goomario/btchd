@@ -56,9 +56,9 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
 
     // Pay method
     if (payOperateMethod == PayOperateMethod::SendPledge) {
-        ui->payToLabel->setText("Pledge &To:");
+        ui->payToLabel->setText(tr("Pledge &To:"));
     } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
-        ui->payToLabel->setText("Bind &To:");
+        ui->payToLabel->setText(tr("Bind &To:"));
         ui->labellLabel->setVisible(false);
         ui->addAsLabel->setVisible(false);
         ui->plotterPassphraseLabel->setVisible(true);

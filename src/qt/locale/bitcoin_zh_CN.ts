@@ -143,8 +143,18 @@
         <translation>仅观察地址</translation>
     </message>
     <message>
-        <source>Total: %1\nAvaiable: %2\nLoan: %3\nDebit: %4\nAvaiable pledge: %5\nLocked: %6</source>
-        <translation>总额: %1\n可用总额: %2\n借出抵押: %3\n借入抵押: %4\n可用于挖矿的抵押额: %5\n锁定的总额: %6</translation>
+        <source>Total: %1
+Avaiable: %2
+Loan: %3
+Debit: %4
+Avaiable pledge: %5
+Locked: %6</source>
+        <translation>总额: %1
+可用总额: %2
+借出抵押: %3
+借入抵押: %4
+可用于挖矿的抵押额: %5
+锁定的总额: %6</translation>
     </message>
 </context>
 <context>
@@ -2611,7 +2621,7 @@
     </message>
     <message>
         <source>Enter your plotter passphrase or digit ID</source>
-        <translation>输入您算力的脑密码或者数字ID</translation>
+        <translation>请输入您算力的脑密码或者数字ID</translation>
     </message>
 </context>
 <context>

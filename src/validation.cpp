@@ -1756,7 +1756,7 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
 {
     LOCK(cs_main);
     int32_t nVersion = VERSIONBITS_TOP_BITS;
-    if (pindexPrev != nullptr && pindexPrev->nHeight + 1 < params.BHDIP006Height)
+    if (pindexPrev != nullptr && pindexPrev->nHeight + 1 >= params.BHDIP004ActiveHeight && pindexPrev->nHeight + 1 < params.BHDIP006Height)
         nVersion |= VERSIONBITS_BHDV2_BITS;
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
