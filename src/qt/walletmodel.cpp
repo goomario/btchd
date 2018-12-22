@@ -348,8 +348,6 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         const SendCoinsRecipient &rcp = recipients[0];
         if (!validateAddress(rcp.address) || coinControl.destPick != DecodeDestination(rcp.address.toStdString()))
             return InvalidAddress;
-        setAddress.insert(rcp.address);
-        ++nAddresses;
 
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
