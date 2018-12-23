@@ -126,3 +126,4 @@ dist/
 *.background.tiff
 
 .vscode/
+.vs/
