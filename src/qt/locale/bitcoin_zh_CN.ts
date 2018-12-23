@@ -454,8 +454,8 @@ Locked: %6</source>
         <translation>设置(&amp;S)</translation>
     </message>
     <message>
-        <source>&amp;Tools</source>
-        <translation>工具(&amp;T)</translation>
+        <source>T&amp;ools</source>
+        <translation>工具(&amp;O)</translation>
     </message>
     <message>
         <source>&amp;Generate mining account</source>
@@ -2293,6 +2293,10 @@ Locked: %6</source>
         <translation>(智能交易费用尚未初始化。需要再下载一些数据块...)</translation>
     </message>
     <message>
+        <source>Generate bind plotter data</source>
+        <translation>生成绑定算力数据</translation>
+    </message>
+    <message>
         <source>Send to multiple recipients at once</source>
         <translation>一次发送给多个接收者</translation>
     </message>
@@ -2335,6 +2339,22 @@ Locked: %6</source>
     <message>
         <source>S&amp;end</source>
         <translation>发送(&amp;E)</translation>
+    </message>
+    <message>
+        <source>Generate &amp;Bind Data</source>
+        <translation>生成绑定数据(&amp;B)</translation>
+    </message>
+    <message>
+        <source>Bind plotter data</source>
+        <translation>绑定数据</translation>
+    </message>
+    <message>
+        <source>You can safe copy and send below signature bind data to %1 owner, and let the bind active:</source>
+        <translation>你可以安全的拷贝并发送下面已签名的绑定数据给 %1 地址的拥有者以激活绑定：</translation>
+    </message>
+    <message>
+        <source>You can copy and send below unsignature bind data to %1 owner, and let the bind active:</source>
+        <translation>你可以拷贝并发送下面未签名的绑定数据给 %1 地址的拥有者以激活绑定：</translation>
     </message>
     <message>
         <source>Copy quantity</source>
@@ -2541,7 +2561,7 @@ Locked: %6</source>
     </message>
     <message>
         <source>Bind &amp;To:</source>
-        <translation>绑定到(&amp;T)：</translation>
+        <translation>绑给(&amp;T)：</translation>
     </message>
     <message>
         <source>&amp;Label:</source>

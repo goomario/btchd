@@ -2013,8 +2013,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                             error("ConnectBlock(): Must bind %" PRIu64 " to %s", pindex->nPlotterId, EncodeDestination(dest)),
                             REJECT_INVALID, "bad-cb-bindplotter");
         }
-        if (!fSigned)
-            pindex->nChainWork = (pindex->pprev ? pindex->pprev->nChainWork : 0) + GetBlockProof(*pindex, Params().GetConsensus()) - 1;
+        if (!fSigned) // Unsignatured bind decrease 10% chain work
+            pindex->nChainWork = (pindex->pprev ? pindex->pprev->nChainWork : 0) + GetBlockProof(*pindex, Params().GetConsensus()) * 9 / 10;
     }
 
     // GetBlockReward() must use pre CCoinsView

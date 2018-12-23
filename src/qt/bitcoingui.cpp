@@ -446,7 +446,7 @@ void BitcoinGUI::createMenuBar()
     }
     settings->addAction(optionsAction);
 
-    QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
+    QMenu *tools = appMenuBar->addMenu(tr("T&ools"));
     tools->addAction(genMinerAccountAction);
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));

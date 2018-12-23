@@ -63,10 +63,12 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
         ui->addButton->setIcon(QIcon());
         ui->clearButton->setIcon(QIcon());
         ui->sendButton->setIcon(QIcon());
+        ui->genBindDataButton->setIcon(QIcon());
     } else {
         ui->addButton->setIcon(_platformStyle->SingleColorIcon(":/icons/add"));
         ui->clearButton->setIcon(_platformStyle->SingleColorIcon(":/icons/remove"));
         ui->sendButton->setIcon(_platformStyle->SingleColorIcon(":/icons/send"));
+        ui->genBindDataButton->setIcon(_platformStyle->SingleColorIcon(":/icons/key"));
     }
 
     // Operate method
@@ -206,7 +208,11 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         else
             ui->confTargetSelector->setCurrentIndex(getIndexForConfTarget(settings.value("nConfTarget").toInt()));
 
+        // Set default pay method and force trigger update status
         ui->operateMethodComboBox->setCurrentIndex(0);
+        QMetaObject::invokeMethod(ui->operateMethodComboBox, "currentIndexChanged", Qt::QueuedConnection,
+            Q_ARG(int, ui->operateMethodComboBox->currentIndex()));
+ 
     }
 }
 
@@ -247,6 +253,8 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             ui->frameCoinControl->setVisible(model->getOptionsModel()->getCoinControlFeatures());
             break;
         }
+
+        ui->genBindDataButton->setVisible((PayOperateMethod)opMethodValue == PayOperateMethod::BindPlotter);
 
         clear();
         setBalance(model->getBalance(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -413,11 +421,6 @@ void SendCoinsDialog::on_sendButton_clicked()
             formatted.append(tr("%1 bind to %2").arg(plotterId, address));
             formatted.append("");
             formatted.append(tr("The operation will lock %1 in %2.").arg(amount, address));
-            // Hex data
-            {
-                CScript data = GetBindPlotterScriptForDestination(DecodeDestination(rcp.address.toStdString()), rcp.plotterPassphrase.toStdString(), chainActive.Height()+5);
-                formatted.append("<hr />" + QString::fromStdString(HexStr(data.begin(), data.end())));
-            }
         }
         break;
     default:
@@ -463,8 +466,6 @@ void SendCoinsDialog::on_sendButton_clicked()
 
 
     SendConfirmationDialog confirmationDialog(titleString, questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
-    if (operateMethod == PayOperateMethod::BindPlotter)
-        confirmationDialog.setTextInteractionFlags(Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse);
     confirmationDialog.exec();
     QMessageBox::StandardButton retval = (QMessageBox::StandardButton)confirmationDialog.result();
 
@@ -486,6 +487,60 @@ void SendCoinsDialog::on_sendButton_clicked()
         coinControlUpdateLabels();
     }
     fNewRecipientAllowed = true;
+}
+
+void SendCoinsDialog::on_genBindDataButton_clicked()
+{
+    if (!model || !model->getOptionsModel())
+        return;
+    if (getPayOperateMethod() != PayOperateMethod::BindPlotter || ui->entries->count() != 1)
+        return;
+
+    SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
+    if (!entry->validate())
+        return;
+    const SendCoinsRecipient recipient = entry->getValue();
+
+    LOCK(cs_main);
+    CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
+    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), chainActive.Height() + 5);
+    if (script.empty())
+        return;
+    // Check
+    CMutableTransaction dummyTx;
+    dummyTx.nVersion = CTransaction::UNIFORM_VERSION;
+    dummyTx.vin.push_back(CTxIn());
+    dummyTx.vout.push_back(CTxOut(PROTOCOL_BINDPLOTTER_AMOUNT, GetScriptForDestination(bindToDest)));
+    dummyTx.vout.push_back(CTxOut(0, script));
+    bool fReject = false;
+    int lastActiveHeight = 0;
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(CTransaction(dummyTx), chainActive.Height(), &fReject, &lastActiveHeight);
+    if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER)
+        return;
+
+    // format
+    QString address;
+    if (recipient.label.length() > 0)
+        address = GUIUtil::HtmlEscape(recipient.label) + "(<span style='font-family: monospace;'>" + recipient.address + "</span>)";
+    else
+        address = "<span style='font-family: monospace;'>" + recipient.address + "</span>";
+    address = "<b>" + address + "</b>";
+    QString plotterId = "<b>" + QString::number(BindPlotterPayload::As(payload)->GetId()) + "</b>";
+
+    QString information;
+    information += tr("%1 bind to %2").arg(plotterId, address) + "<br /><br />";
+    if (BindPlotterPayload::As(payload)->IsSign())
+        information += tr("You can safe copy and send below signature bind data to %1 owner, and let the bind active:").arg(address);
+    else
+        information += tr("You can copy and send below unsignature bind data to %1 owner, and let the bind active:").arg(address);
+    information += "<hr />";
+    information += "<span>";
+    information += QString::fromStdString(HexStr(script.begin(), script.end()));
+    information += "</span>";
+
+    QMessageBox messageBox(QMessageBox::Information, tr("Bind plotter data"), information, QMessageBox::Ok, this);
+    messageBox.setTextInteractionFlags(Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse);
+    messageBox.exec();
 }
 
 void SendCoinsDialog::clear()

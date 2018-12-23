@@ -488,10 +488,9 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
         script << OP_RETURN;
         script << ToByteVector(DATACARRIER_TYPE_BINDPLOTTER);
         script << std::vector<unsigned char>{BINDTYPE_ID};
-        script << ToByteVector((uint32_t) lastActiveHeight);
         script << ToByteVector(plotterId);
 
-        assert(script.size() == 22);
+        assert(script.size() == 17);
     } else {
         // Bind with passphrase
         const std::string& passphrase = passphrase_or_id;
@@ -535,8 +534,9 @@ const CAccountID& PledgeLoanPayload::GetDebitAccountID() const {
     return ((const uint64_t *) scriptID.begin())[0];
 }
 
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *fRejectTx) {
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *fRejectTx, int *lastActiveHeightForBind) {
     if (fRejectTx) *fRejectTx = false;
+    if (lastActiveHeightForBind) *lastActiveHeightForBind = 0;
 
     // Check pre-condition
     if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
@@ -572,16 +572,9 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         uint32_t bindType = vData[0];
         if (bindType != BINDTYPE_ID && bindType != BINDTYPE_PASSPHRASE)
             return nullptr;
-        // Check last height
-        if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint32_t))
-            return nullptr;
-        uint32_t lastActiveHeight = (((uint32_t)vData[0]) >> 0) | (((uint32_t)vData[1]) << 8) | (((uint32_t)vData[2]) << 16) | (((uint32_t)vData[3]) << 24);
-        if (lastActiveHeight == 0 || (nHeight != 0 && nHeight > (int)lastActiveHeight))
-            return nullptr;
-
         if (bindType == BINDTYPE_ID) {
             // Bind with plotter ID
-            if (scriptPubKey.size() != 22)
+            if (scriptPubKey.size() != 17)
                 return nullptr;
             // Plotter ID
             if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint64_t))
@@ -605,6 +598,15 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             // Bind with passphrase
             if (scriptPubKey.size() != 111)
                 return nullptr;
+
+            // Check last height
+            if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint32_t))
+                return nullptr;
+            uint32_t lastActiveHeight = (((uint32_t)vData[0]) >> 0) | (((uint32_t)vData[1]) << 8) | (((uint32_t)vData[2]) << 16) | (((uint32_t)vData[3]) << 24);
+            if (lastActiveHeight == 0 || (nHeight != 0 && nHeight > (int)lastActiveHeight))
+                return nullptr;
+
+            // Verify signature
             unsigned char data[32];
             std::vector<unsigned char> vPublicKey, vSignature;
             if (!scriptPubKey.GetOp(pc, opcode, vPublicKey) || opcode != 0x20)
@@ -619,6 +621,8 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             uint64_t plotterId = PocLegacy::ToPlotterId(&vPublicKey[0]);
             if (plotterId == 0)
                 return nullptr;
+
+            if (lastActiveHeightForBind) *lastActiveHeightForBind = (int) lastActiveHeight;
 
             std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
             payload->id = plotterId;

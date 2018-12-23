@@ -806,9 +806,10 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 
     return ret;
 }
+
 UniValue createbindplotterdata(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 2)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
         throw std::runtime_error(
             "createbindplotterdata address passphrase_or_id (lastActiveHeight)\n"
             "\nReturn bind plotter hex data.\n"
@@ -841,6 +842,71 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot generate bind script");
 
     return HexStr(script.begin(), script.end());
+}
+
+UniValue verifybindplotterdata(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+            "verifybindplotterdata address hexdata\n"
+            "\nVerify plotter hex data.\n"
+            "\nArguments:\n"
+            "1. address             (string, required) The BitcoinHD address\n"
+            "2. hexdata             (string, required) The bind hex data\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"result\":\"result\",                     (string) Verify result. 1.success; 2.reject: can't verify signature; 3.invalid: The data not bind plotter hex data\n"
+            "    \"signature\":signature,                 (bool) The bind signature flag.\n"
+            "    \"plotterId\":\"plotterId\",               (string) The binded plotter ID.\n"
+            "    \"lastActiveHeight\":lastActiveHeight,   (numeric) The bind last active height for tx package. Only for signature bind.\n"
+            "    \"address\":\"address\",                   (string) The BitcoinHD address of the binded.\n"
+            "  }\n"
+
+            "\nExamples:\n"
+            "\nVerify bind plotter hex data\n"
+            + HelpExampleCli("verifybindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"0000\"")
+            + HelpExampleRpc("verifybindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"0000\"")
+        );
+
+    CTxDestination bindToDest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(bindToDest))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+
+    std::vector<unsigned char> bindData = ParseHex(request.params[1].get_str());
+
+    CMutableTransaction dummyTx;
+    dummyTx.nVersion = CTransaction::UNIFORM_VERSION;
+    dummyTx.vin.push_back(CTxIn());
+    dummyTx.vout.push_back(CTxOut(PROTOCOL_BINDPLOTTER_AMOUNT, GetScriptForDestination(bindToDest)));
+    dummyTx.vout.push_back(CTxOut(0, CScript(bindData.cbegin(), bindData.cend())));
+
+    UniValue result(UniValue::VOBJ);
+    int nHeight = 0;
+    {
+        LOCK(cs_main);
+        nHeight = chainActive.Height();
+    }
+    bool fReject = false;
+    int lastActiveHeight = 0;
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(CTransaction(dummyTx), nHeight, &fReject, &lastActiveHeight);
+    if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
+        // Verify pass
+        result.push_back(Pair("result", "success"));
+        result.push_back(Pair("plotterId", std::to_string(BindPlotterPayload::As(payload)->GetId())));
+        result.push_back(Pair("signature", BindPlotterPayload::As(payload)->IsSign()));
+        if (BindPlotterPayload::As(payload)->IsSign())
+            result.push_back(Pair("lastActiveHeight", lastActiveHeight));
+        result.push_back(Pair("address", EncodeDestination(bindToDest)));
+    } else if (fReject) {
+        // Signature not verify
+        result.push_back(Pair("result", "reject"));
+    } else {
+        // Not bind plotter hex data
+        result.push_back(Pair("result", "invalid"));
+    }
+
+    return result;
 }
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
@@ -1521,6 +1587,7 @@ static const CRPCCommand commands[] =
     { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
     { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,  {"address", "plotterId", "count"} },
     { "mining",             "createbindplotterdata",        &createbindplotterdata,     {"address", "passphrase_or_id", "lastActiveHeight"} },
+    { "mining",             "verifybindplotterdata",        &verifybindplotterdata,     {"address", "hexdata"} },
     { "mining",             "getpledgeofaddress",           &getpledgeofaddress,        {"address", "plotterId", "verbose"} },
     { "mining",             "getplottermininginfo",         &getplottermininginfo,      {"plotterId", "verbose"} },
     { "mining",             "listpledgeloanofaddress",      &listpledgeloanofaddress,   {"address"} },

@@ -3557,7 +3557,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
     if (!request.params[1].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter passphrase");
     const std::string bindParamString = request.params[1].get_str();
-    bool fBindHexData = IsHex(bindParamString) && bindParamString.length() > 22;
+    bool fBindHexData = IsHex(bindParamString) && bindParamString.length() >= 17;
 
     // Wallet comments
     CWalletTx wtx;
