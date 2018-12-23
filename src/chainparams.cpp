@@ -169,7 +169,6 @@ public:
         vSeeds.push_back("seed0-chain.btchd.info");
         vSeeds.push_back("seed0-chain.btchd.top");
         vSeeds.push_back("seed0-chain.btchd.pro");
-        vSeeds.push_back("bhd.chain.nanvann.top");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
