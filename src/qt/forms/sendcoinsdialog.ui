@@ -1173,7 +1173,7 @@
         <string>Send to multiple recipients at once</string>
        </property>
        <property name="text">
-        <string>Generate Bind Data</string>
+        <string>Generate &amp;Bind Data</string>
        </property>
        <property name="icon">
         <iconset resource="../bitcoin.qrc">
