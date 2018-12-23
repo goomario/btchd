@@ -2341,6 +2341,10 @@ Locked: %6</source>
         <translation>发送(&amp;E)</translation>
     </message>
     <message>
+        <source>Generating bind data</source>
+        <translation>生成绑定数据</translation>
+    </message>
+    <message>
         <source>Generate &amp;Bind Data</source>
         <translation>生成绑定数据(&amp;B)</translation>
     </message>
