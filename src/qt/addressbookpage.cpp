@@ -276,9 +276,9 @@ void AddressBookPage::selectionChanged()
                 QModelIndex index = indexes.at(0);
                 std::string strAddress = index.sibling(index.row(), (int)AddressTableModel::Address).data(Qt::EditRole).toString().toStdString();
                 CTxDestination dest = DecodeDestination(strAddress);
-                bool fPrimary = model->getWallet()->IsPrimaryDestination(dest);
-                ui->deleteAddress->setEnabled(!fPrimary);
-                deleteAction->setEnabled(!fPrimary);
+                bool fDontDelete = model->getWallet()->IsPrimaryDestination(dest) || (::IsMine(*model->getWallet(), dest) & ISMINE_SPENDABLE) != 0;
+                ui->deleteAddress->setEnabled(!fDontDelete);
+                deleteAction->setEnabled(!fDontDelete);
             }
             break;
         }
