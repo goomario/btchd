@@ -3609,7 +3609,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
         std::vector<unsigned char> bindData(ParseHex(bindParamString));
         vecSend[1].scriptPubKey = CScript(bindData.cbegin(), bindData.cend());
     } else {
-        vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, chainActive.Height() + 5);
+        vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, chainActive.Height() + 288*14);
     }
     if (vecSend[1].scriptPubKey.empty() || !vecSend[1].scriptPubKey.IsUnspendable())
         throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
