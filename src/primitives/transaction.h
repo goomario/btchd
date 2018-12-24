@@ -267,7 +267,7 @@ public:
     // Default transaction version.
     static const int32_t CURRENT_VERSION=2;
 
-    // The transaction vin & vout is uniform destinaton
+    // The transaction vin & vout is uniform destination
     static const int32_t UNIFORM_VERSION=3;
 
     // Changing the default transaction version requires a two step process: first

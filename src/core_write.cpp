@@ -211,7 +211,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
         entry.pushKV("blockhash", hashBlock.GetHex());
     }
 
-    if (tx.nVersion == CTransaction::UNIFORM_VERSION) {
+    if (tx.IsUniform()) {
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
         if (payload) {
             UniValue extra(UniValue::VOBJ);;

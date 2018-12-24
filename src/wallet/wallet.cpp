@@ -1046,7 +1046,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
     }
 
     // Update transaction datacarrier
-    if (wtx.tx->nVersion == CTransaction::UNIFORM_VERSION) {
+    if (wtx.tx->IsUniform()) {
         int nHeight = 0;
         if (!wtx.hashUnset()) {
             LOCK(cs_main);
@@ -1182,7 +1182,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
         bool fRelevantToMe = fExisted || IsMine(tx) || IsFromMe(tx);
-        if (!fRelevantToMe && tx.nVersion == CTransaction::UNIFORM_VERSION) {
+        if (!fRelevantToMe && tx.IsUniform()) {
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, pIndex?pIndex->nHeight:0);
             if (!payload) {
                 // Check relevant unlock tx

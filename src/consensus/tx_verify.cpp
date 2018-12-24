@@ -235,12 +235,12 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         }
 
         // Check special coin spend
-        if (coin.extraData && (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vin.size() != 1 || tx.vout.size() != 1))
+        if (coin.extraData && (!tx.IsUniform() || tx.vin.size() != 1 || tx.vout.size() != 1))
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-spend-special-coin");
     }
 
     // Check uniform transaction. Inputs[i] == Outputs[j]
-    if (tx.nVersion == CTransaction::UNIFORM_VERSION && nSpendHeight >= params.BHDIP006Height) {
+    if (tx.IsUniform() && nSpendHeight >= params.BHDIP006Height) {
         const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
         for (unsigned int i = 1; i < tx.vin.size(); ++i) {
             const Coin& coin = inputs.AccessCoin(tx.vin[i].prevout);
