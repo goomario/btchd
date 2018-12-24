@@ -458,8 +458,8 @@ public:
 
         consensus.BHDIP004ActiveHeight = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
         consensus.BHDIP004InActiveHeight = 21000;
-        consensus.BHDIP006Height = 44300; // BHDIP006. Active about on Wed, 02 Jan 2019 04:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = 46316; // BHDIP006. Bind plotter active. Active about on Wed, 09 Jan 2019 04:00:00 GMT
+        consensus.BHDIP006Height = 41290; // BHDIP006
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -688,6 +688,7 @@ public:
                 {  40600, uint256S("0x7d7a35e15c0e9f2299b6712cd2ae7877cf33d5c0c6cec80b14c9b5f82e810bc0") },
                 {  40800, uint256S("0xd70f30d32ac04b398a9fed8a785a9d45c91661cf8194b9f6345f635037c5a5c7") },
                 {  41000, uint256S("0xf5aba9e950da5e44d1a8c1d2bdd616fba62a6e6c226492436782ad7fda3bcd72") },
+                {  41200, uint256S("0x7e69b9de8f46fa350e59f3dd8ec84c95c1f070f471020d35df1bf7c9043eb33b") },
             }
         };
 
