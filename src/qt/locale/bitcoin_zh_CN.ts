@@ -149,12 +149,12 @@ Loan: %3
 Debit: %4
 Avaiable pledge: %5
 Locked: %6</source>
-        <translation>总额: %1
-可用总额: %2
-借出抵押: %3
-借入抵押: %4
-可用于挖矿的抵押额: %5
-锁定的总额: %6</translation>
+        <translation>总的金额: %1
+可用金额: %2
+借出抵押金额: %3
+借入抵押金额: %4
+可用于挖矿的抵押金额: %5
+锁定的金额: %6</translation>
     </message>
 </context>
 <context>
@@ -2353,7 +2353,7 @@ Locked: %6</source>
         <translation>绑定数据</translation>
     </message>
     <message>
-        <source>You can safe copy and send below signature bind data to %1 owner, and let the bind active:</source>
+        <source>You can copy and send below signature bind data to %1 owner, and let the bind active:</source>
         <translation>你可以安全的拷贝并发送下面已签名的绑定数据给 %1 地址的拥有者以激活绑定：</translation>
     </message>
     <message>

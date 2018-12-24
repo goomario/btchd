@@ -530,7 +530,7 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
     QString information;
     information += tr("%1 bind to %2").arg(plotterId, address) + "<br /><br />";
     if (BindPlotterPayload::As(payload)->IsSign())
-        information += tr("You can safe copy and send below signature bind data to %1 owner, and let the bind active:").arg(address);
+        information += tr("You can copy and send below signature bind data to %1 owner, and let the bind active:").arg(address);
     else
         information += tr("You can copy and send below unsignature bind data to %1 owner, and let the bind active:").arg(address);
     information += "<hr />";

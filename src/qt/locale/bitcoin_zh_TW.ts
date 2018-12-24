@@ -119,12 +119,42 @@
         <translation>金額</translation>
     </message>
     <message>
+        <source>Loan</source>
+        <translation>借出金額</translation>
+    </message>
+    <message>
+        <source>Debit</source>
+        <translation>借入金額</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>鎖定金額</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(無標記)</translation>
     </message>
     <message>
         <source>Primary address</source>
         <translation>主要位址</translation>
+    </message>
+    <message>
+        <source>Watchonly address</source>
+        <translation>僅觀察位址</translation>
+    </message>
+    <message>
+        <source>Total: %1
+Avaiable: %2
+Loan: %3
+Debit: %4
+Avaiable pledge: %5
+Locked: %6</source>
+        <translation>總的金額: %1
+可用金額: %2
+借出抵押金額: %3
+借入抵押金額: %4
+可用於開採的抵押金額: %5
+鎖定的金額: %6</translation>
     </message>
 </context>
 <context>
@@ -424,8 +454,8 @@
         <translation>設定(&amp;S)</translation>
     </message>
     <message>
-        <source>&amp;Tools</source>
-        <translation>工具(&amp;T)</translation>
+        <source>T&amp;ools</source>
+        <translation>工具(&amp;O)</translation>
     </message>
     <message>
         <source>&amp;Generate mining account</source>
@@ -580,6 +610,18 @@
     <message>
         <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
         <translation>發生了致命的錯誤。BitcoinHD 軟體沒辦法再繼續安全執行，只好結束。</translation>
+    </message>
+    <message>
+        <source>Please save your mining account.</source>
+        <translation>請保存好你的挖礦賬號。</translation>
+    </message>
+    <message>
+        <source>Passphrase: %1</source>
+        <translation>腦密碼: %1</translation>
+    </message>
+    <message>
+        <source>Plotter Id: %1</source>
+        <translation>算力ID: %1</translation>
     </message>
 </context>
 <context>
@@ -1313,6 +1355,30 @@
         <translation>還沒成熟的開採金額</translation>
     </message>
     <message>
+        <source>Locked:</source>
+        <translation>鎖定的金額:</translation>
+    </message>
+    <message>
+        <source>Total of balance that have to be locked (for bind plotter and pledge loan), and do not yet count toward the spendable balance</source>
+        <translation>被鎖定的總額(綁定算力和抵押租出)，未計入當前金額</translation>
+    </message>
+    <message>
+        <source>Pledge loan:</source>
+        <translation>借出的抵押額:</translation>
+    </message>
+    <message>
+        <source>Total of balance that have to be pledge loan, and do not yet count toward the spendable balance</source>
+        <translation>借出的抵押總額，未計入當前餘額</translation>
+    </message>
+    <message>
+        <source>Pledge debit:</source>
+        <translation>借入的抵押額:</translation>
+    </message>
+    <message>
+        <source>Total of balance that have to be pledge debit, and do not yet count toward the spendable balance</source>
+        <translation>借到的抵押總額，未計入當前餘額</translation>
+    </message>
+    <message>
         <source>Balances</source>
         <translation>餘額</translation>
     </message>
@@ -1347,6 +1413,18 @@
     <message>
         <source>Current total balance in watch-only addresses</source>
         <translation>所有只能看位址的目前全部餘額</translation>
+    </message>
+    <message>
+        <source>Locked (for bind plotter and pledge loan) balance to watch-only addresses</source>
+        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和抵押租出)</translation>
+    </message>
+    <message>
+        <source>Pledge loan to watch-only addresses</source>
+        <translation>只能看位址(watch-only address)借出的抵押金額</translation>
+    </message>
+    <message>
+        <source>Pledge debit to watch-only addresses</source>
+        <translation>只能看位址(watch-only address)借入的抵押金額</translation>
     </message>
 </context>
 <context>
@@ -2207,6 +2285,10 @@
         <translation>(手續費智慧演算法還沒準備好。通常都要等幾個區塊才行...)</translation>
     </message>
     <message>
+        <source>Generate bind plotter data</source>
+        <translation>生成綁定算力數據</translation>
+    </message>
+    <message>
         <source>Send to multiple recipients at once</source>
         <translation>一次付給多個收款人</translation>
     </message>
@@ -2249,6 +2331,26 @@
     <message>
         <source>S&amp;end</source>
         <translation>付款(&amp;E)</translation>
+    </message>
+    <message>
+        <source>Generating bind data</source>
+        <translation>生成綁定數據</translation>
+    </message>
+    <message>
+        <source>Generate &amp;Bind Data</source>
+        <translation>生成綁定數據(&amp;B)</translation>
+    </message>
+    <message>
+        <source>Bind plotter data</source>
+        <translation>綁定數據</translation>
+    </message>
+    <message>
+        <source>You can copy and send below signature bind data to %1 owner, and let the bind active:</source>
+        <translation>你可以安全的拷貝並發送下面已簽名的綁定數據給 %1 地址的擁有者以激活綁定:</translation>
+    </message>
+    <message>
+        <source>You can copy and send below unsignature bind data to %1 owner, and let the bind active:</source>
+        <translation>你可以拷貝並發送下面未簽名的綁定數據給 %1 地址的擁有者以激活綁定:</translation>
     </message>
     <message>
         <source>Copy quantity</source>
@@ -2378,6 +2480,66 @@
         <source>(no label)</source>
         <translation>(無標記)</translation>
     </message>
+    <message>
+        <source>Pay to</source>
+        <translation>支付到</translation>
+    </message>
+    <message>
+        <source>Pledge to</source>
+        <translation>借出到</translation>
+    </message>
+    <message>
+        <source>Bind to</source>
+        <translation>綁定到</translation>
+    </message>
+    <message>
+        <source>Confirm send pledge coins</source>
+        <translation>確認發送抵押</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to send pledge?</source>
+        <translation>您確定要發送抵押嗎？</translation>
+    </message>
+    <message>
+        <source>Confirm bind plotter</source>
+        <translation>確認綁定算力</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to bind plotter?</source>
+        <translation>您確定要綁定算力嗎？</translation>
+    </message>
+    <message>
+        <source>%1 bind to %2</source>
+        <translation>把 %1 綁定到 %2</translation>
+    </message>
+    <message>
+        <source>The operation will lock %1 in %2.</source>
+        <translation>此操作將會在 %2 鎖定 %1。</translation>
+    </message>
+    <message>
+        <source>The bind plotter consensus active on %1 after.</source>
+        <translation>綁定算力共識將在 %1 高度之後啟用。</translation>
+    </message>
+    <message>
+        <source>The pledge loan consensus active on %1 after.</source>
+        <translation>抵押租借共識將在 %1 高度之後啟用。</translation>
+    </message>
+    <message>
+        <source>The lock amount to bind plotter must be %1.</source>
+        <translation>綁定算力需要鎖定的交易額必須是 %1 。</translation>
+    </message>
+    <message>
+        <source>The plotter %1 already binded to %2.</source>
+        <translation>算力 %1 和地址 %2 已經綁定過。</translation>
+    </message>
+    <message>
+        <source>The valid amount to pledge loan must be larger than %1.</source>
+        <translation>有效的抵押借出額除必須大於 %1 。</translation>
+    </message>
+    <message>
+        <source>The valid amount to pledge loan must be larger than %1 on exclude fee %2.</source>
+        <translation>有效的抵押借出額除去交易費用 %2 後必須大於 %1 。</translation>
+    </message>
 </context>
 <context>
     <name>SendCoinsEntry</name>
@@ -2390,8 +2552,20 @@
         <translation>付給(&amp;T):</translation>
     </message>
     <message>
+        <source>Pledge &amp;To:</source>
+        <translation>借給(&amp;T)：</translation>
+    </message>
+    <message>
+        <source>Bind &amp;To:</source>
+        <translation>綁給(&amp;T)：</translation>
+    </message>
+    <message>
         <source>&amp;Label:</source>
         <translation>標記(&amp;L):</translation>
+    </message>
+    <message>
+        <source>&amp;Plotter:</source>
+        <translation>算力(&amp;P)：</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2464,6 +2638,10 @@
     <message>
         <source>Enter a label for this address to add it to your address book</source>
         <translation>請輸入這個位址的標記來把它加進位址簿中</translation>
+    </message>
+    <message>
+        <source>Enter your plotter passphrase or digit ID</source>
+        <translation>請輸入您算力的腦密碼或者數字ID</translation>
     </message>
 </context>
 <context>
@@ -2817,6 +2995,30 @@
         <source>false</source>
         <translation>否</translation>
     </message>
+    <message>
+        <source>Plotter ID</source>
+        <translation>算力ID</translation>
+    </message>
+    <message>
+        <source>Unbinded Plotter ID</source>
+        <translation>已解綁ID</translation>
+    </message>
+    <message>
+        <source>Withdrawn</source>
+        <translation>已贖回</translation>
+    </message>
+    <message>
+        <source>Relevant transaction ID</source>
+        <translation>關聯的交易ID</translation>
+    </message>
+    <message>
+        <source>Has signature</source>
+        <translation>已簽名</translation>
+    </message>
+    <message>
+        <source>Not signature</source>
+        <translation>未簽名</translation>
+    </message>
 </context>
 <context>
     <name>TransactionDescDialog</name>
@@ -2993,6 +3195,38 @@
         <translation>開採所得</translation>
     </message>
     <message>
+        <source>Binded plotter</source>
+        <translation>綁定算力</translation>
+    </message>
+    <message>
+        <source>Unbinded plotter</source>
+        <translation>解綁算力</translation>
+    </message>
+    <message>
+        <source>This bind plotter has inactived</source>
+        <translation>此綁定已無效</translation>
+    </message>
+    <message>
+        <source>Sent pledge to</source>
+        <translation>借出抵押</translation>
+    </message>
+    <message>
+        <source>Received pledge with</source>
+        <translation>借入抵押</translation>
+    </message>
+    <message>
+        <source>This pledge has withdraw</source>
+        <translation>此抵押已被贖回</translation>
+    </message>
+    <message>
+        <source>Self pledge</source>
+        <translation>抵押給自己</translation>
+    </message>
+    <message>
+        <source>Withdrawn pledge</source>
+        <translation>贖回抵押</translation>
+    </message>
+    <message>
         <source>Other</source>
         <translation>其它</translation>
     </message>
@@ -3011,6 +3245,14 @@
     <message>
         <source>Increase transaction fee</source>
         <translation>提高手續費</translation>
+    </message>
+    <message>
+        <source>Unbind plotter</source>
+        <translation>解綁算力</translation>
+    </message>
+    <message>
+        <source>Withdraw pledge</source>
+        <translation>贖回抵押</translation>
     </message>
     <message>
         <source>Copy address</source>
@@ -3160,6 +3402,54 @@
     <message>
         <source>Could not commit transaction</source>
         <translation>沒辦法提交交易</translation>
+    </message>
+    <message>
+        <source>Unbind plotter</source>
+        <translation>解綁算力</translation>
+    </message>
+    <message>
+        <source>Withdraw pledge</source>
+        <translation>贖回抵押</translation>
+    </message>
+    <message>
+        <source>Unbind plotter error</source>
+        <translation>解綁算力失敗</translation>
+    </message>
+    <message>
+        <source>Withdraw pledge error</source>
+        <translation>贖回抵押失敗</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to unbind plotter?</source>
+        <translation>你是否確認解綁算力?</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to withdraw pledge?</source>
+        <translation>你是否確認贖回抵押?</translation>
+    </message>
+    <message>
+        <source>Transaction fee:</source>
+        <translation>交易費：</translation>
+    </message>
+    <message>
+        <source>Binded address:</source>
+        <translation>綁定的位址：</translation>
+    </message>
+    <message>
+        <source>Plotter ID:</source>
+        <translation>算力ID：</translation>
+    </message>
+    <message>
+        <source>From address:</source>
+        <translation>來自：</translation>
+    </message>
+    <message>
+        <source>To address:</source>
+        <translation>到：</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>總額：</translation>
     </message>
 </context>
 <context>
