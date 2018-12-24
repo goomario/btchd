@@ -352,7 +352,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
         vecSend.push_back({GetScriptForDestination(coinControl.destPick), rcp.amount, rcp.fSubtractFeeFromAmount});
-        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), chainActive.Height() + 288*14), 0, false});
+        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + 288*7), 0, false});
 
         total += rcp.amount;
     }

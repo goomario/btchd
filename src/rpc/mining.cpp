@@ -836,7 +836,7 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 
     LOCK(cs_main);
     if (lastActiveHeight == 0)
-        lastActiveHeight = chainActive.Height() + 288 * 14;
+        lastActiveHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + 288 * 7;
     CScript script = GetBindPlotterScriptForDestination(DecodeDestination(request.params[0].get_str()), request.params[1].get_str(), lastActiveHeight);
     if (script.empty())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot generate bind script");
