@@ -1165,7 +1165,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     } else if (nHeight <= consensusParams.BHDIP001NoPledgeHeight) {
         // No pledge
         reward.miner = nSubsidy + nFees;
-    } else if (nHeight >= consensusParams.BHDIP004ActiveHeight && nHeight < consensusParams.BHDIP004InActiveHeight) {
+    } else if (nHeight < consensusParams.BHDIP006Height) {
         // Soft fork. Bad idea
         // Y is 95% reward, N is 30% reward.
         // -------- Old ------------ => ------------ New ------------
@@ -1181,20 +1181,10 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         CAmount accountBalance = view.GetAccountBalance(minerAccountID);
         if (accountBalance >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
-            if (accountBalance < minerPledgeAmountAtOldConsensus) {
+            if (nHeight < consensusParams.BHDIP004InActiveHeight && accountBalance < minerPledgeAmountAtOldConsensus) {
                 // Old consensus => fund
                 reward.minerBHDIP004Compatiable = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
             }
-        } else {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
-        }
-        reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
-    } else if (nHeight < consensusParams.BHDIP006Height) {
-        // Normal mining
-        CAmount accountBalance = view.GetAccountBalance(minerAccountID);
-        CAmount minerPledgeAmount = poc::GetMinerForgePledge(minerAccountID, nPlotterId, nHeight, view, consensusParams);
-        if (accountBalance >= minerPledgeAmount) {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
         } else {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
         }
