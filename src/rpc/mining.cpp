@@ -928,44 +928,59 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     int nTotalForgeCount = 0;
 
     // Calc
-    int nHeight = chainActive.Height() + 1; // For next block
-    int nEndHeight = nHeight - 1;
-    int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1, Params().GetConsensus().BHDIP001StartMingingHeight + 1);
-    if (nEndHeight >= nBeginHeight) {
+    const Consensus::Params &params = Params().GetConsensus();
+    int nMiningHeight = chainActive.Height() + 1; // For next block
+    int nBeginHeight = std::max(nMiningHeight - static_cast<int>(params.nMinerConfirmationWindow), params.BHDIP001StartMingingHeight + 1);
+    if (nMiningHeight > nBeginHeight) {
         uint64_t nAvgBaseTarget = 0;
-        // Current account
-        for (int index = nEndHeight; index >= nBeginHeight; index--) {
-            CBlockIndex *pblockIndex = chainActive[index];
-            nAvgBaseTarget += pblockIndex->nBaseTarget;
+        if (nMiningHeight < params.BHDIP006BindPlotterActiveHeight) {
+            // Forged by plotter ID
+            for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
+                CBlockIndex *pblockIndex = chainActive[index];
+                nAvgBaseTarget += pblockIndex->nBaseTarget;
 
-            if (pblockIndex->minerAccountID == accountID) {
-                nTotalForgeCount++;
+                if (pblockIndex->minerAccountID == accountID) {
+                    nTotalForgeCount++;
 
-                // Bind plotter to miner
-                auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
-                if (itPlotter == mapBindPlotter.end()) {
-                    mapBindPlotter.insert(std::make_pair(pblockIndex->nPlotterId, PlotterItem{index, 1, 0, {}}));
-                } else {
-                    itPlotter->second.forgeCount++;
+                    // Bind plotter to miner
+                    auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
+                    if (itPlotter == mapBindPlotter.end()) {
+                        mapBindPlotter.insert(std::make_pair(pblockIndex->nPlotterId, PlotterItem{index, 1, 0, {}}));
+                    } else {
+                        itPlotter->second.forgeCount++;
+                    }
+                } else if (pblockIndex->nPlotterId == nPlotterId) {
+                    nTotalForgeCount++;
                 }
-            } else if (pblockIndex->nPlotterId == nPlotterId) {
-                nTotalForgeCount++;
+            }
+        } else {
+            // Bind plotter actived
+            std::set<uint64_t> plotters;
+            pcoinsTip->GetAccountBindPlotters(accountID, plotters);
+            for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
+                CBlockIndex *pblockIndex = chainActive[index];
+                nAvgBaseTarget += pblockIndex->nBaseTarget;
+
+                if (plotters.count(pblockIndex->nPlotterId)) {
+                    ++nTotalForgeCount;
+                }
             }
         }
+
         // Other account
-        for (int index = nEndHeight; index >= nBeginHeight; index--) {
+        for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
             CBlockIndex *pblockIndex = chainActive[index];
             auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
             if (itPlotter == mapBindPlotter.end())
                 continue;
             if (pblockIndex->minerAccountID != accountID && pblockIndex->nPlotterId == itPlotter->first)
                 itPlotter->second.forgeCountAdditional++;
-            if (itPlotter->second.bindedMinerAtLastHeight.find(pblockIndex->minerAccountID) == itPlotter->second.bindedMinerAtLastHeight.end()) {
+            if (itPlotter->second.bindedMinerAtLastHeight.count(pblockIndex->minerAccountID)) {
                 itPlotter->second.bindedMinerAtLastHeight[pblockIndex->minerAccountID] = index;
             }
         }
 
-        nAvgBaseTarget /= (nEndHeight - nBeginHeight + 1);
+        nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
         nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
@@ -985,20 +1000,20 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     result.pushKV("pledgeDebitBalance", ValueFromAmount(pledgeDebitBalance));
     //! This balance include pledge debit and avaliable balance. For mining pledge
     result.pushKV("availablePledgeBalance", ValueFromAmount(totalBalance - pledgeLoanBalance + pledgeDebitBalance));
-    if (nHeight < Params().GetConsensus().BHDIP001NoPledgeHeight + 1) {
-        result.pushKV("start", Params().GetConsensus().BHDIP001NoPledgeHeight + 1);
+    if (nMiningHeight <= params.BHDIP001NoPledgeHeight) {
+        result.pushKV("start", params.BHDIP001NoPledgeHeight + 1);
     }
     if (nTotalForgeCount == 0) {
         result.pushKV("pledge", ValueFromAmount(0));
         result.pushKV("maxAdditionalPledge", ValueFromAmount(0));
         result.pushKV("capacity", "0 TB");
     } else {
-        assert(nEndHeight >= nBeginHeight);
+        assert(nMiningHeight > nBeginHeight);
         int64_t nCapacityTB;
 
         // Miner
-        nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-        result.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
+        nCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
+        result.pushKV("pledge", ValueFromAmount(params.BHDIP001PledgeAmountPerTB * nCapacityTB));
         result.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
 
         // Bind plotter
@@ -1007,11 +1022,11 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
             UniValue objBindPlotters(UniValue::VOBJ);
             for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
                 CBlockIndex *plastForgeblockIndex = chainActive[it->second.lastForgeHeight];
-                nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCount) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
 
                 UniValue item(UniValue::VOBJ);
                 item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
+                item.pushKV("pledge", ValueFromAmount(params.BHDIP001PledgeAmountPerTB * nCapacityTB));
                 {
                     UniValue lastBlock(UniValue::VOBJ);
                     lastBlock.pushKV("blockhash", plastForgeblockIndex->GetBlockHash().GetHex());
@@ -1020,12 +1035,12 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                 }
 
                 if (it->second.forgeCountAdditional > 0) {
-                    nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                    nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
                     UniValue objAdditional(UniValue::VOBJ);
                     objAdditional.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                    objAdditional.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
+                    objAdditional.pushKV("pledge", ValueFromAmount(params.BHDIP001PledgeAmountPerTB * nCapacityTB));
                     item.pushKV("additional", objAdditional);
-                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB);
+                    maxAdditionalPledge = std::max(maxAdditionalPledge, params.BHDIP001PledgeAmountPerTB * nCapacityTB);
                 }
 
                 // Multi mining
@@ -1036,7 +1051,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                         // Get coinbase output address
                         std::string address;
                         CBlock block;
-                        if (plastblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastblockIndex, Params().GetConsensus())) {
+                        if (plastblockIndex->nTx > 0 && ReadBlockFromDisk(block, plastblockIndex, params)) {
                             CTxDestination dest;
                             if (ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest)) {
                                 address = EncodeDestination(dest);
@@ -1046,14 +1061,14 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                         UniValue item(UniValue::VOBJ);
                         {
                             int forgeCount = 0;
-                            for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                            for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
                                 CBlockIndex *pblockIndex = chainActive[index];
                                 if (pblockIndex->minerAccountID == plastblockIndex->minerAccountID && pblockIndex->nPlotterId == it->first)
                                     forgeCount++;
                             }
-                            nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
+                            nCapacityTB = std::max((nNetCapacityTB * forgeCount) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
                             item.pushKV("capacity", std::to_string(nCapacityTB) + " TB");
-                            item.pushKV("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB));
+                            item.pushKV("pledge", ValueFromAmount(params.BHDIP001PledgeAmountPerTB * nCapacityTB));
                         }
                         {
                             UniValue lastBlock(UniValue::VOBJ);
@@ -1072,14 +1087,14 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         } else {
             for (auto it = mapBindPlotter.cbegin(); it != mapBindPlotter.cend(); it++) {
                 if (it->second.forgeCountAdditional > 0) {
-                    nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nEndHeight - nBeginHeight + 1), static_cast<int64_t>(1));
-                    maxAdditionalPledge = std::max(maxAdditionalPledge, Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB);
+                    nCapacityTB = std::max((nNetCapacityTB * it->second.forgeCountAdditional) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
+                    maxAdditionalPledge = std::max(maxAdditionalPledge, params.BHDIP001PledgeAmountPerTB * nCapacityTB);
                 }
             }
             result.pushKV("maxAdditionalPledge", ValueFromAmount(maxAdditionalPledge));
         }
     }
-    result.pushKV("height", nHeight);
+    result.pushKV("height", nMiningHeight);
     result.pushKV("address", address);
 
     return result;

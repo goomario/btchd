@@ -570,7 +570,7 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
             assert(nTotalForgeCount >= nTotalForgeCountOldConsensus);
         }
     } else {
-        // Require bind plotter
+        // Bind plotter actived
         std::set<uint64_t> plotters;
         view.GetAccountBindPlotters(minerAccountID, plotters);
         for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
