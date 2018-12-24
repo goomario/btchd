@@ -3586,7 +3586,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
     coin_control.destChange = bindToDest;
 
     // Check active state
-    if (chainActive.Height() + 1 < Params().GetConsensus().BHDIP006Height) {
+    if (chainActive.Height() < Params().GetConsensus().BHDIP006Height) {
         throw JSONRPCError(RPC_INVALID_PARAMETER,
             strprintf("The bind plotter inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
@@ -4025,7 +4025,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     coin_control.destChange = primaryDest;
 
     // Check active state
-    if (chainActive.Height() + 1 < Params().GetConsensus().BHDIP006Height) {
+    if (chainActive.Height() < Params().GetConsensus().BHDIP006Height) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The pledge loan inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
 
