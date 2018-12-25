@@ -963,6 +963,14 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
 
                 if (plotters.count(pblockIndex->nPlotterId)) {
                     ++nTotalForgeCount;
+                    
+                    // Bind plotter to miner
+                    auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
+                    if (itPlotter == mapBindPlotter.end()) {
+                        mapBindPlotter.insert(std::make_pair(pblockIndex->nPlotterId, PlotterItem{index, 1, 0, {}}));
+                    } else {
+                        itPlotter->second.forgeCount++;
+                    }
                 }
             }
         }
