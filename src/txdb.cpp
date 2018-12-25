@@ -828,7 +828,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 }
 
 /** Upgrade the database from older formats */
-bool CCoinsViewDB::Upgrade() {
+bool CCoinsViewDB::Upgrade(bool &fDoUpgrade) {
+    fDoUpgrade = false;
+
     const uint32_t currentCoinDbVersion = 0x20181225;
 
     // Check coin database version
@@ -980,6 +982,8 @@ bool CCoinsViewDB::Upgrade() {
     #else
         unlink((GetDataDir() / "chainstate/account.db3").c_str());
     #endif
+
+    fDoUpgrade = true;
 
     return !ShutdownRequested();
 }

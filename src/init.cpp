@@ -1490,7 +1490,8 @@ bool AppInitMain()
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                if (!pcoinsdbview->Upgrade()) {
+                bool fDoUpgrade = false;
+                if (!pcoinsdbview->Upgrade(fDoUpgrade)) {
                     strLoadError = _("Error upgrading chainstate database");
                     break;
                 }
@@ -1512,9 +1513,9 @@ bool AppInitMain()
                         break;
                     }
                     assert(chainActive.Tip() != nullptr);
+
                     // Reconsider block
-                    if (chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1 &&
-                            chainActive.Height() < chainparams.GetConsensus().BHDIP006Height + (int)chainparams.GetConsensus().nMinerConfirmationWindow) {
+                    if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1) {
                         {
                             LOCK(cs_main);
                             ResetBlockFailureFlags(chainActive[chainparams.GetConsensus().BHDIP006Height - 1]);
