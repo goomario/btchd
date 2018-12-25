@@ -264,7 +264,10 @@ struct PledgeLoanPayload : public DatacarrierPayload
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 10 * CENT;
 
 /** The height for bind plotter default maximum relative tip height */
-static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 12;
+static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 6;
+
+/** The height for bind plotter maximum relative tip height */
+static const int PROTOCOL_BINDPLOTTER_MAXALIVE = 288 * 7;
 
 /** Check whether a string is a valid passphrase ID. */
 bool IsValidPassphrase(const std::string& passphrase);
@@ -279,6 +282,6 @@ static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);
 
 /** Parse a datacarrier transaction. */
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *fRejectTx = nullptr, int *lastActiveHeightForBind = nullptr);
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *pReject = nullptr, int *pLastActiveHeight = nullptr);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

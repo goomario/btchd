@@ -149,7 +149,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 
     if (rec->type == TransactionRecord::BindPlotter || rec->type == TransactionRecord::UnbindPlotter)
     {
-        strHTML += "<b>" + tr("Plotter ID") + ":</b> " + QString::fromStdString(wtx.mapValue["plotter_id"]) + ")<br>";
+        strHTML += "<b>" + tr("Plotter ID") + ":</b> " + QString::fromStdString(wtx.mapValue["plotter_id"]) + "<br>";
         if (rec->type == TransactionRecord::UnbindPlotter)
             strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
     }

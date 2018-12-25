@@ -483,9 +483,9 @@ const CAccountID& PledgeLoanPayload::GetDebitAccountID() const {
     return ((const uint64_t *) scriptID.begin())[0];
 }
 
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *fRejectTx, int *lastActiveHeightForBind) {
-    if (fRejectTx) *fRejectTx = false;
-    if (lastActiveHeightForBind) *lastActiveHeightForBind = 0;
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *pReject, int *pLastActiveHeight) {
+    if (pReject) *pReject = false;
+    if (pLastActiveHeight) *pLastActiveHeight = 0;
 
     // Check pre-condition
     if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
@@ -515,12 +515,13 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         if (scriptID == nullptr)
             return nullptr;
 
-        // Check last height
+        // Check last active height
         if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != sizeof(uint32_t))
             return nullptr;
         uint32_t lastActiveHeight = (((uint32_t)vData[0]) >> 0) | (((uint32_t)vData[1]) << 8) | (((uint32_t)vData[2]) << 16) | (((uint32_t)vData[3]) << 24);
-        if (lastActiveHeight == 0 || (nHeight != 0 && nHeight > (int)lastActiveHeight))
+        if (nHeight != 0 && (nHeight > (int)lastActiveHeight || nHeight + PROTOCOL_BINDPLOTTER_MAXALIVE < (int)lastActiveHeight))
             return nullptr;
+        if (pLastActiveHeight) *pLastActiveHeight = (int) lastActiveHeight;
 
         // Verify signature
         unsigned char data[32];
@@ -531,14 +532,13 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             return nullptr;
         CSHA256().Write(scriptID->begin(), CScriptID::WIDTH).Write((const unsigned char*)&lastActiveHeight, 4).Finalize(data);
         if (!PocLegacy::Verify(&vPublicKey[0], data, &vSignature[0])) {
-            if (fRejectTx) *fRejectTx = true;
+            if (pReject) *pReject = true;
             return nullptr;
         }
+
         uint64_t plotterId = PocLegacy::ToPlotterId(&vPublicKey[0]);
         if (plotterId == 0)
             return nullptr;
-
-        if (lastActiveHeightForBind) *lastActiveHeightForBind = (int) lastActiveHeight;
 
         std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
         payload->id = plotterId;

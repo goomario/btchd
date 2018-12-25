@@ -872,8 +872,8 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
     LOCK(cs_main);
     if (lastActiveHeight == 0)
         lastActiveHeight = chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
-    if (lastActiveHeight > chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height to large (limit %d)", chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE));
+    if (lastActiveHeight > chainActive.Height() + PROTOCOL_BINDPLOTTER_MAXALIVE)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height to large (limit %d)", chainActive.Height() + PROTOCOL_BINDPLOTTER_MAXALIVE));
 
     CScript script = GetBindPlotterScriptForDestination(DecodeDestination(request.params[0].get_str()), request.params[1].get_str(), lastActiveHeight);
     if (script.empty())

@@ -3619,10 +3619,16 @@ UniValue bindplotter(const JSONRPCRequest& request)
     }
 
     // Check
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
+    bool fReject = false;
+    int lastActiveHeight = 0;
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1, &fReject, &lastActiveHeight);
     if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
-        if (fBindHexData)
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data, maybe not for current address");
+        if (fReject)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Not for current address");
+        else if (lastActiveHeight != 0 && lastActiveHeight < chainActive.Height() + 1)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid active height. Last active height is %d", lastActiveHeight));
+        else if (fBindHexData)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data");
         else
             throw JSONRPCError(RPC_WALLET_ERROR, "Error on create bind data");
     }

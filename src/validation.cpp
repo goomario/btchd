@@ -2000,7 +2000,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
         std::string address = EncodeDestination(dest);
         return state.DoS(100,
-                        error("ConnectBlock(): Not active binded %" PRIu64 " to %s", pindex->nPlotterId, address),
+                        error("ConnectBlock(): Not active bind %" PRIu64 " to %s", pindex->nPlotterId, address),
                         REJECT_INVALID, "bad-cb-bindplotter");
     }
 
