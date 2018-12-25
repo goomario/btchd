@@ -99,14 +99,6 @@ enum WalletFeature
     FEATURE_LATEST = FEATURE_COMPRPUBKEY // HD is optional, use FEATURE_COMPRPUBKEY as latest version
 };
 
-/** Pay policy */
-enum PayPolicy : int {
-    PAYPOLICY_FROM_ANY = 0,             //! Pay from any address
-    PAYPOLICY_FROM_PRIMARY_ONLY,        //! Pay from primary address only
-    PAYPOLICY_FROM_PRIMARY_EXCLUDE,     //! Pay from any address but exclude primary address
-    PAYPOLICY_MOVETO,                   //! Move coin to address
-};
-
 enum OutputType : int
 {
     OUTPUT_TYPE_NONE,
@@ -339,25 +331,16 @@ public:
     int64_t nOrderPos; //!< position in ordered transaction list
 
     // memory only
-    mutable bool fDebitCached;
-    mutable bool fCreditCached;
-    mutable bool fImmatureCreditCached;
-    mutable bool fAvailableCreditCached;
-    mutable bool fWatchDebitCached;
-    mutable bool fWatchCreditCached;
-    mutable bool fImmatureWatchCreditCached;
-    mutable bool fAvailableWatchCreditCached;
-    mutable bool fChangeCached;
+    typedef std::pair<bool,CAmount> CacheableAmount;
+    mutable CacheableAmount debitCached, watchOnlyDebitCached;
+    mutable CacheableAmount creditCached, watchOnlyCreditCached;
+    mutable CacheableAmount immatureCreditCached, watchOnlyImmatureCreditCached;
+    mutable CacheableAmount availableCreditCached, watchOnlyAvailableCreditCached;
+    mutable CacheableAmount pledgeLoanCached, watchOnlyPledgeLoanCached;
+    mutable CacheableAmount pledgeDebitCached, watchOnlyPledgeDebitCached;
+    mutable CacheableAmount lockedCreditCached, watchOnlyLockedCreditCached;
+    mutable CacheableAmount changeCached;
     mutable bool fInMempool;
-    mutable CAmount nDebitCached;
-    mutable CAmount nCreditCached;
-    mutable CAmount nImmatureCreditCached;
-    mutable CAmount nAvailableCreditCached;
-    mutable CAmount nWatchDebitCached;
-    mutable CAmount nWatchCreditCached;
-    mutable CAmount nImmatureWatchCreditCached;
-    mutable CAmount nAvailableWatchCreditCached;
-    mutable CAmount nChangeCached;
 
     CWalletTx()
     {
@@ -379,25 +362,15 @@ public:
         nTimeSmart = 0;
         fFromMe = false;
         strFromAccount.clear();
-        fDebitCached = false;
-        fCreditCached = false;
-        fImmatureCreditCached = false;
-        fAvailableCreditCached = false;
-        fWatchDebitCached = false;
-        fWatchCreditCached = false;
-        fImmatureWatchCreditCached = false;
-        fAvailableWatchCreditCached = false;
-        fChangeCached = false;
+        debitCached.first = watchOnlyDebitCached.first = false;
+        creditCached.first = watchOnlyCreditCached.first = false;
+        immatureCreditCached.first = watchOnlyImmatureCreditCached.first = false;
+        availableCreditCached.first = watchOnlyAvailableCreditCached.first = false;
+        pledgeLoanCached.first = watchOnlyPledgeLoanCached.first = false;
+        pledgeDebitCached.first = watchOnlyPledgeDebitCached.first = false;
+        lockedCreditCached.first = watchOnlyLockedCreditCached.first = false;
+        changeCached.first = false;
         fInMempool = false;
-        nDebitCached = 0;
-        nCreditCached = 0;
-        nImmatureCreditCached = 0;
-        nAvailableCreditCached = 0;
-        nWatchDebitCached = 0;
-        nWatchCreditCached = 0;
-        nAvailableWatchCreditCached = 0;
-        nImmatureWatchCreditCached = 0;
-        nChangeCached = 0;
         nOrderPos = -1;
     }
 
@@ -447,15 +420,14 @@ public:
     //! make sure balances are recalculated
     void MarkDirty()
     {
-        fCreditCached = false;
-        fAvailableCreditCached = false;
-        fImmatureCreditCached = false;
-        fWatchDebitCached = false;
-        fWatchCreditCached = false;
-        fAvailableWatchCreditCached = false;
-        fImmatureWatchCreditCached = false;
-        fDebitCached = false;
-        fChangeCached = false;
+        debitCached.first = watchOnlyDebitCached.first = false;
+        creditCached.first = watchOnlyCreditCached.first = false;
+        immatureCreditCached.first = watchOnlyImmatureCreditCached.first = false;
+        availableCreditCached.first = watchOnlyAvailableCreditCached.first = false;
+        pledgeLoanCached.first = watchOnlyPledgeLoanCached.first = false;
+        pledgeDebitCached.first = watchOnlyPledgeDebitCached.first = false;
+        lockedCreditCached.first = watchOnlyLockedCreditCached.first = false;
+        changeCached.first = false;
     }
 
     void BindWallet(CWallet *pwalletIn)
@@ -469,8 +441,14 @@ public:
     CAmount GetCredit(const isminefilter& filter) const;
     CAmount GetImmatureCredit(bool fUseCache=true) const;
     CAmount GetAvailableCredit(bool fUseCache=true) const;
-    CAmount GetImmatureWatchOnlyCredit(const bool fUseCache=true) const;
-    CAmount GetAvailableWatchOnlyCredit(const bool fUseCache=true) const;
+    CAmount GetPledgeLoan(bool fUseCache=true) const;
+    CAmount GetPledgeDebit(bool fUseCache=true) const;
+    CAmount GetLockedCredit(bool fUseCache=true) const;
+    CAmount GetWatchOnlyImmatureCredit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyAvailableCredit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyPledgeLoan(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyPledgeDebit(const bool fUseCache=true) const;
+    CAmount GetWatchOnlyLockedCredit(const bool fUseCache=true) const;
     CAmount GetChange() const;
 
     void GetAmounts(std::list<COutputEntry>& listReceived,
@@ -549,9 +527,14 @@ public:
      */
     bool fSafe;
 
-    COutput(const CWalletTx *txIn, int iIn, int nDepthIn, bool fSpendableIn, bool fSolvableIn, bool fSafeIn)
+    /**
+     * Whether this output lock in bind plotter or pledge loan
+     */
+    bool fLock;
+
+    COutput(const CWalletTx *txIn, int iIn, int nDepthIn, bool fSpendableIn, bool fSolvableIn, bool fSafeIn, bool fLockIn)
     {
-        tx = txIn; i = iIn; nDepth = nDepthIn; fSpendable = fSpendableIn; fSolvable = fSolvableIn; fSafe = fSafeIn;
+        tx = txIn; i = iIn; nDepth = nDepthIn; fSpendable = fSpendableIn; fSolvable = fSolvableIn; fSafe = fSafeIn; fLock = fLockIn;
     }
 
     std::string ToString() const;
@@ -839,7 +822,7 @@ public:
     std::list<CAccountingEntry> laccentries;
 
     typedef std::pair<CWalletTx*, CAccountingEntry*> TxPair;
-    typedef std::multimap<int64_t, TxPair > TxItems;
+    typedef std::multimap<int64_t, TxPair> TxItems;
     TxItems wtxOrdered;
 
     int64_t nOrderPosNext;
@@ -858,7 +841,7 @@ public:
     /**
      * populate vCoins with vector of available COutputs.
      */
-    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe=true, const CCoinControl *coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0, const int nMinDepth = 0, const int nMaxDepth = 9999999) const;
+    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe = true, bool fIncludeLock = false, const CCoinControl *coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0, const int nMinDepth = 0, const int nMaxDepth = 9999999) const;
 
     /**
      * Return list of available coins and locked coins grouped by non-change output address.
@@ -933,6 +916,8 @@ public:
     bool RemoveWatchOnly(const CScript &dest) override;
     //! Adds a watch-only address to the store, without saving it to disk (used by LoadWallet)
     bool LoadWatchOnly(const CScript &dest);
+    //! Remove watch-only address if exist, will update transactions
+    bool RemoveWatchOnlyIfExist(const CTxDestination &dest);
 
     //! Holds a timestamp at which point the wallet is scheduled (externally) to be relocked. Caller must arrange for actual relocking to occur via Lock().
     int64_t nRelockTime;
@@ -977,9 +962,15 @@ public:
     CAmount GetBalance() const;
     CAmount GetUnconfirmedBalance() const;
     CAmount GetImmatureBalance() const;
+    CAmount GetPledgeLoanBalance() const;
+    CAmount GetPledgeDebitBalance() const;
+    CAmount GetLockedBalance() const;
     CAmount GetWatchOnlyBalance() const;
     CAmount GetUnconfirmedWatchOnlyBalance() const;
     CAmount GetImmatureWatchOnlyBalance() const;
+    CAmount GetPledgeLoanWatchOnlyBalance() const;
+    CAmount GetPledgeDebitWatchOnlyBalance() const;
+    CAmount GetLockedWatchOnlyBalance() const;
     CAmount GetLegacyBalance(const isminefilter& filter, int minDepth, const std::string* account) const;
     CAmount GetAvailableBalance(const CCoinControl* coinControl = nullptr) const;
 
@@ -998,7 +989,7 @@ public:
      * @note passing nChangePosInOut as -1 will result in setting a random position
      */
     bool CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut,
-                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true);
+                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true, int32_t nTxVersion = 0);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);

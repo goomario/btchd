@@ -82,7 +82,7 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     case ReceivingTab:
         ui->labelExplanation->setText(tr("These are your BitcoinHD addresses for receiving payments."));
         ui->newAddress->setVisible(false);
-        ui->deleteAddress->setVisible(false);
+        ui->deleteAddress->setVisible(true);
         break;
     }
 
@@ -98,13 +98,11 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
     contextMenu->addAction(editAction);
-    if (tab == SendingTab) {
-        contextMenu->addAction(deleteAction);
-    } else {
+    contextMenu->addAction(deleteAction);
+    if (tab == ReceivingTab) {
         contextMenu->addSeparator();
         contextMenu->addAction(setPrimaryAction);
     }
-    contextMenu->addSeparator();
 
     // Connect signals for context menu actions
     connect(copyAddressAction, SIGNAL(triggered()), this, SLOT(on_copyAddress_clicked()));
@@ -153,14 +151,22 @@ void AddressBookPage::setModel(AddressTableModel *_model)
     // Set column widths
 #if QT_VERSION < 0x050000
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
 #else
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
 #endif
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
@@ -254,21 +260,26 @@ void AddressBookPage::selectionChanged()
     if(!table->selectionModel())
         return;
 
-    if(table->selectionModel()->hasSelection())
+    QModelIndexList indexes = table->selectionModel()->selectedRows();
+    if(!indexes.isEmpty())
     {
         switch(tab)
         {
         case SendingTab:
             // In sending tab, allow deletion of selection
             ui->deleteAddress->setEnabled(true);
-            ui->deleteAddress->setVisible(true);
             deleteAction->setEnabled(true);
             break;
         case ReceivingTab:
             // Deleting receiving addresses, however, is not allowed
-            ui->deleteAddress->setEnabled(false);
-            ui->deleteAddress->setVisible(false);
-            deleteAction->setEnabled(false);
+            {
+                QModelIndex index = indexes.at(0);
+                std::string strAddress = index.sibling(index.row(), (int)AddressTableModel::Address).data(Qt::EditRole).toString().toStdString();
+                CTxDestination dest = DecodeDestination(strAddress);
+                bool fDontDelete = model->getWallet()->IsPrimaryDestination(dest) || (::IsMine(*model->getWallet(), dest) & ISMINE_SPENDABLE) != 0;
+                ui->deleteAddress->setEnabled(!fDontDelete);
+                deleteAction->setEnabled(!fDontDelete);
+            }
             break;
         }
         ui->copyAddress->setEnabled(true);
@@ -318,9 +329,13 @@ void AddressBookPage::on_exportButton_clicked()
     // name, column, role
     writer.setModel(proxyModel);
     writer.addColumn("Status", AddressTableModel::Status, Qt::EditRole);
+    writer.addColumn("Watchonly", AddressTableModel::Watchonly, Qt::EditRole);
     writer.addColumn("Label", AddressTableModel::Label, Qt::EditRole);
     writer.addColumn("Address", AddressTableModel::Address, Qt::EditRole);
     writer.addColumn("Amount", AddressTableModel::Amount, Qt::EditRole);
+    writer.addColumn("Pledge loan amount", AddressTableModel::LoanAmount, Qt::EditRole);
+    writer.addColumn("Pledge debit amount", AddressTableModel::DebitAmount, Qt::EditRole);
+    writer.addColumn("Locked amount", AddressTableModel::LockedAmount, Qt::EditRole);
 
     if(!writer.write()) {
         QMessageBox::critical(this, tr("Exporting Failed"),
@@ -333,14 +348,8 @@ void AddressBookPage::contextualMenu(const QPoint &point)
     QModelIndex index = ui->tableView->indexAt(point);
     if(index.isValid())
     {
-        if (setPrimaryAction) {
-            std::string strAddress = index.sibling(index.row(), (int)AddressTableModel::Address).data(Qt::EditRole).toString().toStdString();
-            CTxDestination dest = DecodeDestination(strAddress);
-            {
-                LOCK(model->getWallet()->cs_wallet);
-                setPrimaryAction->setEnabled(!model->getWallet()->IsPrimaryDestination(dest));
-            }
-        }
+        if (setPrimaryAction)
+            setPrimaryAction->setEnabled(deleteAction != nullptr && deleteAction->isEnabled());
 
         contextMenu->exec(QCursor::pos());
     }

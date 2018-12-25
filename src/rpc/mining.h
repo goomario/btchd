@@ -16,6 +16,6 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
 unsigned int ParseConfirmTarget(const UniValue& value);
 
 /** Get pledge (mine) */
-UniValue GetPledge(const std::string &address, uint64_t nPlotterId, int nHeight);
+UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose);
 
 #endif

@@ -36,6 +36,13 @@ QT_BEGIN_NAMESPACE
 class QTimer;
 QT_END_NAMESPACE
 
+/** Pay operate method */
+enum class PayOperateMethod {
+    Pay,
+    SendPledge,
+    BindPlotter,
+};
+
 class SendCoinsRecipient
 {
 public:
@@ -53,6 +60,9 @@ public:
     CAmount amount;
     // If from a payment request, this is used for storing the memo
     QString message;
+
+    // For bind plotter request
+    QString plotterPassphrase;
 
     // If from a payment request, paymentRequest.IsInitialized() will be true
     PaymentRequestPlus paymentRequest;
@@ -116,7 +126,13 @@ public:
         TransactionCreationFailed, // Error returned when wallet is still locked
         TransactionCommitFailed,
         AbsurdFee,
-        PaymentRequestExpired
+        PaymentRequestExpired,
+        // For BHDIP006
+        InactivedBHDIP006,
+        InvalidBindPlotterAmount,
+        BindPlotterExist,
+        SmallPledgeLoanAmount,
+        SmallPledgeLoanAmountExcludeFee,
     };
 
     enum EncryptionStatus
@@ -134,10 +150,16 @@ public:
     CAmount getBalance(const CCoinControl *coinControl = nullptr) const;
     CAmount getUnconfirmedBalance() const;
     CAmount getImmatureBalance() const;
+    CAmount getPledgeCreditBalance() const;
+    CAmount getPledgeDebitBalance() const;
+    CAmount getLockedBalance() const;
     bool haveWatchOnly() const;
     CAmount getWatchBalance() const;
     CAmount getWatchUnconfirmedBalance() const;
     CAmount getWatchImmatureBalance() const;
+    CAmount getWatchPledgeCreditBalance() const;
+    CAmount getWatchPledgeDebitBalance() const;
+    CAmount getWatchLockedBalance() const;
     EncryptionStatus getEncryptionStatus() const;
 
     // Get wallet
@@ -159,10 +181,10 @@ public:
     };
 
     // prepare transaction for getting txfee before sending coins
-    SendCoinsReturn prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl);
+    SendCoinsReturn prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl, PayOperateMethod payOperateMethod);
 
     // Send coins to a list of recipients
-    SendCoinsReturn sendCoins(WalletModelTransaction &transaction);
+    SendCoinsReturn sendCoins(WalletModelTransaction &transaction, PayOperateMethod payOperateMethod);
 
     // Wallet encryption
     bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
@@ -215,6 +237,9 @@ public:
     bool transactionCanBeBumped(uint256 hash) const;
     bool bumpFee(uint256 hash);
 
+    bool transactionCanBeUnlock(uint256 hash, DatacarrierType type) const;
+    bool unlockTransaction(uint256 hash);
+
     static bool isWalletEnabled();
 
     bool hdEnabled() const;
@@ -240,9 +265,15 @@ private:
     CAmount cachedBalance;
     CAmount cachedUnconfirmedBalance;
     CAmount cachedImmatureBalance;
-    CAmount cachedWatchOnlyBalance;
+    CAmount cachedPledgeLoanBalance;
+    CAmount cachedPledgeDebitBalance;
+    CAmount cachedLockedBalance;
+    CAmount cachedWatchBalance;
     CAmount cachedWatchUnconfBalance;
     CAmount cachedWatchImmatureBalance;
+    CAmount cachedWatchPledgeLoanBalance;
+    CAmount cachedWatchPledgeDebitBalance;
+    CAmount cachedWatchLockedBalance;
     EncryptionStatus cachedEncryptionStatus;
     int cachedNumBlocks;
 
@@ -255,7 +286,9 @@ private:
 Q_SIGNALS:
     // Signal that balance in wallet changed
     void balanceChanged(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                        const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance);
+                        const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                        const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
+                        const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
 
     // Encryption status of wallet changed
     void encryptionStatusChanged(int status);

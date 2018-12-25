@@ -207,10 +207,43 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
     }
     entry.pushKV("vout", vout);
 
-    if (!hashBlock.IsNull())
+    if (!hashBlock.IsNull()) {
         entry.pushKV("blockhash", hashBlock.GetHex());
+    }
+
+    if (tx.IsUniform()) {
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
+        if (payload) {
+            UniValue extra(UniValue::VOBJ);;
+            DatacarrierPayloadToUniv(*payload, tx.vout[0], extra);
+            entry.push_back(Pair("extra", extra));
+        }
+    }
 
     if (include_hex) {
         entry.pushKV("hex", EncodeHexTx(tx, serialize_flags)); // the hex-encoded transaction. used the name "hex" to be consistent with the verbose output of "getrawtransaction".
+    }
+}
+
+void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& txOut, UniValue& out)
+{
+    if (payload.type == DATACARRIER_TYPE_BINDPLOTTER) {
+        auto ptr = (const BindPlotterPayload *) &payload;
+        CTxDestination relevantDest;
+        ExtractDestination(txOut.scriptPubKey, relevantDest);
+
+        out.push_back(Pair("type", "bindplotter"));
+        out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
+        out.push_back(Pair("address", EncodeDestination(relevantDest)));
+        out.push_back(Pair("id", std::to_string(ptr->GetId())));
+    } else if (payload.type == DATACARRIER_TYPE_PLEDGELOAN) {
+        auto ptr = (const PledgeLoanPayload *) &payload;
+        CTxDestination relevantDest;
+        ExtractDestination(txOut.scriptPubKey, relevantDest);
+
+        out.push_back(Pair("type", "pledge"));
+        out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
+        out.push_back(Pair("from", EncodeDestination(relevantDest)));
+        out.push_back(Pair("to", EncodeDestination(ptr->scriptID)));
     }
 }

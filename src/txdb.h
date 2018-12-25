@@ -10,17 +10,11 @@
 #include <dbwrapper.h>
 #include <chain.h>
 
-#include <map>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <sqlite3.h>
-
 class CBlockIndex;
-class CChainParams;
-class CCoinsViewDBCursor;
 class uint256;
 
 //! No need to periodic flush if at least this much space still available.
@@ -67,61 +61,31 @@ struct CDiskTxPos : public CDiskBlockPos
     }
 };
 
-typedef std::unique_ptr<sqlite3, int(*)(sqlite3*)> SqlAutoReleaseDB;
-typedef std::unique_ptr<sqlite3_stmt, int(*)(sqlite3_stmt*)> SqlAutoReleaseStmt;
-
 /** CCoinsView backed by the coin database (chainstate/) */
 class CCoinsViewDB final : public CCoinsView
 {
 protected:
-    CDBWrapper      db;
-
-    // SQL
-    mutable SqlAutoReleaseDB accountDB;
-    mutable SqlAutoReleaseStmt getAccountNearestStmt; // height <= ?
+    mutable CDBWrapper  db;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
-    bool CheckDB(const CChainParams &chainparams);
 
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
-    bool BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) override;
-    CCoinsViewCursor *Cursor() const override;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    CCoinsViewCursorRef Cursor() const override;
+    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();
     size_t EstimateSize() const override;
 
-    CAmount GetAccountBalance(const CAccountId &nAccountId, int nHeight) const override;
-
-private:
-    bool ClearAccount();
-
-};
-
-/** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
-class CCoinsViewDBCursor: public CCoinsViewCursor
-{
-public:
-    ~CCoinsViewDBCursor() {}
-
-    bool GetKey(COutPoint &key) const override;
-    bool GetValue(Coin &coin) const override;
-    unsigned int GetValueSize() const override;
-
-    bool Valid() const override;
-    void Next() override;
-
-private:
-    CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn):
-        CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {}
-    std::unique_ptr<CDBIterator> pcursor;
-    std::pair<char, COutPoint> keyTmp;
-
-    friend class CCoinsViewDB;
+    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
+    void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
 };
 
 /** Access to the block database (blocks/index/) */

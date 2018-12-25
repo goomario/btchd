@@ -24,11 +24,11 @@
 namespace {
 
 QString AddLinkToAddress(const QString &address) {
-    return "<a href=\"http://btchd.org/explorer/address/" + address + "\">" + address + "</a>";
+    return "<a href=\"https://btchd.org/explorer/address/" + address + "\">" + address + "</a>";
 }
 
 QString AddLinkToTx(const QString &tx) {
-    return "<a href=\"http://btchd.org/explorer/tx/" + tx + "\">" + tx + "</a>";
+    return "<a href=\"https://btchd.org/explorer/tx/" + tx + "\">" + tx + "</a>";
 }
 
 }
@@ -72,7 +72,19 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
 
-    strHTML += "<b>" + tr("Status") + ":</b> " + FormatTxStatus(wtx);
+    if ((rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge) &&
+        rec->status.status == TransactionStatus::Inactived)
+    {
+        strHTML += "<b>" + tr("Status") + ":</b> " + tr("Withdrawn") + " (" + FormatTxStatus(wtx) + ")";
+    }
+    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Inactived)
+    {
+        strHTML += "<b>" + tr("Status") + ":</b> " + tr("Unbinded Plotter ID") + " (" + FormatTxStatus(wtx) + ")";
+    }
+    else
+    {
+        strHTML += "<b>" + tr("Status") + ":</b> " + FormatTxStatus(wtx);
+    }
     int nRequests = wtx.GetRequestCount();
     if (nRequests != -1)
     {
@@ -133,6 +145,17 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         if (wallet->mapAddressBook.count(dest) && !wallet->mapAddressBook[dest].name.empty())
             strHTML += GUIUtil::HtmlEscape(wallet->mapAddressBook[dest].name) + " ";
         strHTML += AddLinkToAddress(QString::fromStdString(strAddress)) + "<br>";
+    }
+
+    if (rec->type == TransactionRecord::BindPlotter || rec->type == TransactionRecord::UnbindPlotter)
+    {
+        strHTML += "<b>" + tr("Plotter ID") + ":</b> " + QString::fromStdString(wtx.mapValue["plotter_id"]) + " (" + tr(wtx.mapValue["signature"] == "1" ? "Has signature" : "Not signature") + ")<br>";
+        if (rec->type == TransactionRecord::UnbindPlotter)
+            strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
+    }
+    else if (rec->type == TransactionRecord::WithdrawPledge)
+    {
+        strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
     }
 
     //

@@ -5,8 +5,10 @@
 #include <consensus/tx_verify.h>
 
 #include <consensus/consensus.h>
+#include <consensus/params.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
+#include <script/script.h>
 #include <consensus/validation.h>
 
 // TODO remove the following dependencies
@@ -205,7 +207,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
-bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee)
+bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -230,6 +232,25 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         nValueIn += coin.out.nValue;
         if (!MoneyRange(coin.out.nValue) || !MoneyRange(nValueIn)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
+        }
+
+        // Check special coin spend
+        if (coin.extraData && (!tx.IsUniform() || tx.vin.size() != 1 || tx.vout.size() != 1))
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-spend-special-coin");
+    }
+
+    // Check uniform transaction. Inputs[i] == Outputs[j]
+    if (tx.IsUniform() && nSpendHeight >= params.BHDIP006Height) {
+        const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
+        for (unsigned int i = 1; i < tx.vin.size(); ++i) {
+            const Coin& coin = inputs.AccessCoin(tx.vin[i].prevout);
+            if (coin.out.scriptPubKey != scriptPubKey)
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputdest-invaliduniform");
+        }
+        for (unsigned int i = 0; i < tx.vout.size(); ++i) {
+            const CTxOut &out = tx.vout[i];
+            if (out.nValue != 0 && out.scriptPubKey != scriptPubKey)
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-outputdest-invaliduniform");
         }
     }
 

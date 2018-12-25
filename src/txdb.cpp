@@ -25,8 +25,10 @@
 
 #include <boost/thread.hpp>
 
+/** UTXO version flag */
+static const char DB_COIN_VERSION = 'V';
+
 static const char DB_COIN = 'C';
-static const char DB_COINS = 'c';
 static const char DB_BLOCK_FILES = 'f';
 static const char DB_TXINDEX = 't';
 static const char DB_BLOCK_INDEX = 'b';
@@ -37,12 +39,21 @@ static const char DB_FLAG = 'F';
 static const char DB_REINDEX_FLAG = 'R';
 static const char DB_LAST_BLOCK = 'l';
 
+/** Index flag for <Account,UTXO> to UTXO amount */
+static const char DB_ACCOUNT_COIN = 'T';
+/** Index flag for <Loan account,UTXO> to pledge loan UTXO amount */
+static const char DB_COIN_PLEDGELOAN = 'E';
+/** Index flag for <Debit account,UTXO> to pledge debit UTXO amount */
+static const char DB_COIN_PLEDGEDEBIT = 'e';
+/** Index flag for <Account,PlotterId> to bind plotter UTXO */
+static const char DB_COIN_BINDPLOTTER = 'P';
+
 namespace {
 
 struct CoinEntry {
     COutPoint* outpoint;
     char key;
-    explicit CoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN)  {}
+    explicit CoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -59,208 +70,215 @@ struct CoinEntry {
     }
 };
 
-// Account version exception
-class CUpgradeAccountException : public std::exception { };
+struct AccountCoinEntry {
+    CAccountID accountID;
+    COutPoint outpoint;
+    char key;
+    AccountCoinEntry(const CAccountID &accountIdIn, const COutPoint &outpointIn) :
+        accountID(accountIdIn), outpoint(outpointIn),
+        key(DB_ACCOUNT_COIN) {}
 
-// SQL exception
-class CSqlException : public std::exception
-{
-public:
-    CSqlException(SqlAutoReleaseDB &db, const std::string &err) : std::exception()
-    {
-        detail += err;
-        detail += " (";
-        detail += sqlite3_errmsg(db.get());
-        detail += ")";
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(accountID);
+        s << outpoint.hash;
+        s << VARINT(outpoint.n);
     }
 
-    const char* what() const noexcept
-    {
-        return detail.c_str();
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(accountID);
+        s >> outpoint.hash;
+        s >> VARINT(outpoint.n);
     }
-
-private:
-    std::string detail;
 };
 
-void TryExecuteSql(SqlAutoReleaseDB &db, const std::string &sql) {
-    char *errmsg;
-    sqlite3_exec(db.get(), sql.c_str(), NULL, NULL, &errmsg);
-    if (errmsg != NULL) {
-        std::string err = errmsg;
-        sqlite3_free(errmsg);
-        throw CSqlException(db, err);
-    }
-}
+struct AccountCoinRefEntry {
+    CAccountID* accountID;
+    COutPoint* outpoint;
+    char key;
+    AccountCoinRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        accountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)),
+        key(DB_ACCOUNT_COIN) {}
 
-SqlAutoReleaseDB CreateDatabase(const fs::path& path, const std::string &initSql, bool fWipe) {
-    sqlite3 *db = NULL;
-#ifdef WIN32
-    if (fWipe) ::DeleteFileW(path.c_str()); // Remove database file
-    int rc = sqlite3_open16(path.c_str(), &db);
-#else
-    if (fWipe) unlink(path.c_str()); // Remove database file
-    int rc = sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
-#endif
-    auto autoDB = SqlAutoReleaseDB(db, sqlite3_close);
-    if (rc != SQLITE_OK) {
-        throw CSqlException(autoDB, std::string("ERROR opening SQLite DB(") + path.string() + ")");
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(*accountID);
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
     }
 
-    TryExecuteSql(autoDB, initSql);
-    return autoDB;
-}
-
-SqlAutoReleaseStmt CreateStatement(SqlAutoReleaseDB &db, const std::string &sql) {
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db.get(), sql.c_str(), -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        throw CSqlException(db, "ERROR create SQLite statement");
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(*accountID);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
     }
-
-    return SqlAutoReleaseStmt(stmt, sqlite3_finalize);
-}
-
-void CheckRC(int requireRc, int rc, SqlAutoReleaseDB &db, const char *func) {
-    if (rc != requireRc)
-        throw CSqlException(db, func);
-}
-
-//! Auto commit wrapper
-class SqlAutoTransaction
-{
-public:
-    SqlAutoTransaction(SqlAutoReleaseDB &dbIn) : db(dbIn), commited(false) {
-        TryExecuteSql(db, "BEGIN TRANSACTION");
-    }
-
-    ~SqlAutoTransaction() {
-        if (!commited) {
-            TryExecuteSql(db, "ROLLBACK");
-        }
-    }
-
-    bool Commit() {
-        assert(!commited);
-        try {
-            TryExecuteSql(db, "COMMIT");
-            commited = true;
-            return true;
-        } catch (CSqlException &e) {
-            LogPrintf("CCoinsViewDB: Commit account transaction error: \"%s\"", e.what());
-        }
-
-        return false;
-    }
-
-private:
-    SqlAutoReleaseDB &db;
-    bool commited;
 };
 
-class SqlAutoResetStmt
-{
-public:
-    SqlAutoResetStmt(SqlAutoReleaseStmt &stmtIn) : stmt(stmtIn) {}
-    ~SqlAutoResetStmt() {
-        sqlite3_reset(stmt.get());
-        sqlite3_clear_bindings(stmt.get());
+struct BindPlotterEntry {
+    CAccountID accountID;
+    uint64_t plotterId;
+    COutPoint outpoint;
+    char key;
+    BindPlotterEntry(const CAccountID &accountIDIn, const uint64_t &plotterIdIn, const COutPoint &outpointIn) :
+        accountID(accountIDIn), plotterId(plotterIdIn), outpoint(outpointIn),
+        key(DB_COIN_BINDPLOTTER) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(accountID);
+        s << VARINT(plotterId);
+        s << outpoint.hash;
+        s << VARINT(outpoint.n);
     }
 
-private:
-    SqlAutoReleaseStmt &stmt;
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(accountID);
+        s >> VARINT(plotterId);
+        s >> outpoint.hash;
+        s >> VARINT(outpoint.n);
+    }
 };
 
-const std::string ACCOUNT_DDL_SQL =
-    "CREATE TABLE IF NOT EXISTS `account` ("
-    "  `db_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
-    "  `accountId` BIGINT(20) NOT NULL,"
-    "  `balance` BIGINT(20) NOT NULL,"
-    "  `height` INTEGER(11) NOT NULL"
-    ");"
-    "CREATE UNIQUE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
-    "CREATE INDEX IF NOT EXISTS `account_accountId_height_idx` ON `account` (`accountId`,`height`);"
-    "CREATE TABLE IF NOT EXISTS `account_meta` (`name` VARCHAR(32) PRIMARY KEY, `value` VARCHAR(64));";
-const std::string ACCOUNT_GET_NEAREST_BALANCE_SQL =
-    "SELECT `balance`,`height` FROM `account`"
-    " WHERE `accountId` = ? AND `height` <= ?"
-    " ORDER BY `height` DESC"
-    " LIMIT 1;";
-const std::string ACCOUNT_INSERT_SQL =
-    "INSERT INTO `account`(`accountId`,`balance`,`height`)"
-    " VALUES(?,?,?);";
-const std::string ACCOUNT_UPDATE_BALANCE_SQL =
-    "UPDATE `account` SET `balance` = `balance` + ?"
-    " WHERE `accountId` = ? AND `height` >= ?";
+struct BindPlotterRefEntry {
+    CAccountID* accountID;
+    uint64_t* plotterId;
+    COutPoint* outpoint;
+    char key;
+    BindPlotterRefEntry(const CAccountID* accountIDIn, const uint64_t* plotterIdIn, const COutPoint *outpointIn) :
+        accountID(const_cast<CAccountID*>(accountIDIn)), plotterId(const_cast<uint64_t*>(plotterIdIn)), outpoint(const_cast<COutPoint*>(outpointIn)),
+        key(DB_COIN_BINDPLOTTER) {}
 
-const int ACCOUNT_VERSION = 20180920;
-int nCurrentAccountDbVersion = 0;
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(*accountID);
+        s << VARINT(*plotterId);
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(*accountID);
+        s >> VARINT(*plotterId);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
+    }
+};
+
+struct PledgeLoanEntry {
+    CAccountID creditAccountID;
+    COutPoint outpoint;
+    char key;
+    PledgeLoanEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) :
+        creditAccountID(accountIDIn), outpoint(outpointIn),
+        key(DB_COIN_PLEDGELOAN) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(creditAccountID);
+        s << outpoint.hash;
+        s << VARINT(outpoint.n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(creditAccountID);
+        s >> outpoint.hash;
+        s >> VARINT(outpoint.n);
+    }
+};
+
+struct PledgeLoanRefEntry {
+    CAccountID* creditAccountID;
+    COutPoint* outpoint;
+    char key;
+    PledgeLoanRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        creditAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)),
+        key(DB_COIN_PLEDGELOAN) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(*creditAccountID);
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(*creditAccountID);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
+    }
+};
+
+struct PledgeDebitEntry {
+    CAccountID debitAccountID;
+    COutPoint outpoint;
+    char key;
+    PledgeDebitEntry(const CAccountID &accountIDIn, const COutPoint &outpointIn) :
+        debitAccountID(accountIDIn), outpoint(outpointIn),
+        key(DB_COIN_PLEDGEDEBIT) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(debitAccountID);
+        s << outpoint.hash;
+        s << VARINT(outpoint.n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(debitAccountID);
+        s >> outpoint.hash;
+        s >> VARINT(outpoint.n);
+    }
+};
+
+struct PledgeDebitRefEntry {
+    CAccountID* debitAccountID;
+    COutPoint* outpoint;
+    char key;
+    PledgeDebitRefEntry(const CAccountID* ptr1, const COutPoint* ptr2) :
+        debitAccountID(const_cast<CAccountID*>(ptr1)), outpoint(const_cast<COutPoint*>(ptr2)),
+        key(DB_COIN_PLEDGEDEBIT) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << VARINT(*debitAccountID);
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
+        s >> VARINT(*debitAccountID);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
+    }
+};
 
 }
 
-#define CRC_DONE(rc)    CheckRC(SQLITE_DONE, rc, accountDB, __func__)
-
-
-CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) :
-    db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true),
-    accountDB(CreateDatabase(GetDataDir() / "chainstate/account.db3", ACCOUNT_DDL_SQL, fWipe)),
-    getAccountNearestStmt(CreateStatement(accountDB, ACCOUNT_GET_NEAREST_BALANCE_SQL))
-{
-    if (fWipe) {
-        // Clear (try test database, dont remvove)
-        if (!ClearAccount()) {
-            throw CUpgradeAccountException();
-        }
-        nCurrentAccountDbVersion = 0;
-    }
-}
-
-bool CCoinsViewDB::ClearAccount() {
-    SqlAutoTransaction autoTx(accountDB);
-    SqlAutoReleaseStmt clearAccountStmt(CreateStatement(accountDB, "DELETE FROM `account`"));
-    SqlAutoReleaseStmt clearAccountMetaStmt(CreateStatement(accountDB, "DELETE FROM `account_meta`"));
-    SqlAutoReleaseStmt dropAccountVersionStmt(CreateStatement(accountDB, "DROP TABLE IF EXISTS `account_ver`"));
-    SqlAutoReleaseStmt resetSequenceStmt(CreateStatement(accountDB, "DELETE FROM `sqlite_sequence` WHERE `name` = 'account'"));
-    CRC_DONE(sqlite3_step(clearAccountStmt.get()));
-    CRC_DONE(sqlite3_step(clearAccountMetaStmt.get()));
-    CRC_DONE(sqlite3_step(dropAccountVersionStmt.get()));
-    CRC_DONE(sqlite3_step(resetSequenceStmt.get()));
-    return autoTx.Commit();
-}
-
-bool CCoinsViewDB::CheckDB(const CChainParams &chainparams) {
-    std::map<std::string, std::string> mapAccountMeta;
-    // Load meta data
-    {
-        SqlAutoReleaseStmt accountMetaStmt(CreateStatement(accountDB, "SELECT `name`,`value` FROM `account_meta`"));
-        while (sqlite3_step(accountMetaStmt.get()) == SQLITE_ROW) {
-            char * name = (char *) sqlite3_column_text(accountMetaStmt.get(), 0);
-            char * value = (char *) sqlite3_column_text(accountMetaStmt.get(), 1);
-            mapAccountMeta[std::string(name)] = std::move(std::string(value?value : ""));
-        }
-    }
-
-    // Check best block
-    uint256 bestBlock = GetBestBlock();
-    if (bestBlock.IsNull()) {
-        // Empty
-        return ClearAccount();
-    }
-
-    if (mapAccountMeta.count("bestHash") == 0 || mapAccountMeta["bestHash"] != bestBlock.ToString()) {
-        // Bad block
-        return false;
-    }
-
-    // Check account version
-    nCurrentAccountDbVersion = mapAccountMeta.count("ver") ? std::stoi(mapAccountMeta["ver"]) : 0;
-    if (nCurrentAccountDbVersion != ACCOUNT_VERSION) {
-        // Require upgrade
-        return false;
-    }
-
-    return true;
-}
+CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true) { }
 
 bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return db.Read(CoinEntry(&outpoint), coin);
@@ -285,7 +303,7 @@ std::vector<uint256> CCoinsViewDB::GetHeadBlocks() const {
     return vhashHeadBlocks;
 }
 
-bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAccountDiffCoins, const uint256 &hashBlock) {
+bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
     CDBBatch batch(db);
     size_t count = 0;
     size_t changed = 0;
@@ -312,11 +330,37 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
 
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) {
-            CoinEntry entry(&it->first);
-            if (it->second.coin.IsSpent())
-                batch.Erase(entry);
-            else
-                batch.Write(entry, it->second.coin);
+            if (it->second.coin.IsSpent()) {
+                batch.Erase(CoinEntry(&it->first));
+
+                if (it->second.coin.refOutAccountID != 0)
+                    batch.Erase(AccountCoinRefEntry(&it->second.coin.refOutAccountID, &it->first));
+
+                if (it->second.coin.extraData) {
+                    if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                        batch.Erase(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first));
+                    }
+                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+                        batch.Erase(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first));
+                        batch.Erase(PledgeDebitRefEntry(&PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first));
+                    }
+                }
+            } else {
+                batch.Write(CoinEntry(&it->first), it->second.coin);
+
+                if (it->second.coin.refOutAccountID != 0)
+                    batch.Write(AccountCoinRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
+
+                if (it->second.coin.extraData) {
+                    if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                        batch.Write(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first), 0);
+                    }
+                    else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+                        batch.Write(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
+                        batch.Write(PledgeDebitRefEntry(&PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID(), &it->first), VARINT(it->second.coin.out.nValue));
+                    }
+                }
+            }
             changed++;
         }
         count++;
@@ -340,138 +384,337 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, CAccountDiffCoinsMap &mapAcco
     batch.Erase(DB_HEAD_BLOCKS);
     batch.Write(DB_BEST_BLOCK, hashBlock);
 
-    // Update account table
-    size_t accountChanged = mapAccountDiffCoins.size();
-    size_t accountDiffCoinsMemorySize = memusage::DynamicUsage(mapAccountDiffCoins);
-    SqlAutoTransaction autoTx(accountDB);
-    // Check account best block
+    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+    bool ret = db.WriteBatch(batch);
+    LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
+    return ret;
+
+}
+
+CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
+    /** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
+    class CCoinsViewDBCursor : public CCoinsViewCursor
     {
-        uint256 currentBestBlock;
-        SqlAutoReleaseStmt accountBestStmt(CreateStatement(accountDB, "SELECT `value` FROM `account_meta` WHERE `name` = 'bestHash'"));
-        if (sqlite3_step(accountBestStmt.get()) == SQLITE_ROW) {
-            char * bestBlockHash = (char *) sqlite3_column_text(accountBestStmt.get(), 0);
-            if (bestBlockHash) {
-                currentBestBlock = uint256S(bestBlockHash);
+    public:
+        CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn) : CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {
+            /* It seems that there are no "const iterators" for LevelDB.  Since we
+               only need read operations on it, use a const-cast to get around
+               that restriction.  */
+            pcursor->Seek(DB_COIN);
+            // Cache key of first record
+            if (pcursor->Valid()) {
+                CoinEntry entry(&keyTmp.second);
+                pcursor->GetKey(entry);
+                keyTmp.first = entry.key;
+            }
+            else {
+                keyTmp.first = 0; // Make sure Valid() and GetKey() return false
             }
         }
-        if (currentBestBlock != old_tip) {
-            // levelDB and sqlite not synced
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (keyTmp.first == DB_COIN) {
+                key = keyTmp.second;
+                return true;
+            }
             return false;
         }
 
-        SqlAutoReleaseStmt deleteBestStmt(CreateStatement(accountDB, "DELETE FROM `account_meta` WHERE `name` = 'bestHash' OR `name` = 'bestHeight'"));
-        CRC_DONE(sqlite3_step(deleteBestStmt.get()));
-    }
-    if (!mapAccountDiffCoins.empty()) {
-        // Insert items
-        SqlAutoReleaseStmt addAccountStmt(CreateStatement(accountDB, ACCOUNT_INSERT_SQL));
-        SqlAutoReleaseStmt updateAccountBalanceStmt(CreateStatement(accountDB, ACCOUNT_UPDATE_BALANCE_SQL));
-        for (auto itHeight = mapAccountDiffCoins.begin(); itHeight != mapAccountDiffCoins.end(); itHeight = mapAccountDiffCoins.erase(itHeight)) {
-            int nDataHeight = itHeight->first;
-            auto &mapAccountDiff = itHeight->second;
-            for (auto itAccount = mapAccountDiff.begin(); itAccount != mapAccountDiff.end(); itAccount = mapAccountDiff.erase(itAccount)) {
-                auto &nAccountId = itAccount->first;
-                auto &accountDiff = itAccount->second;
-                if (nAccountId == 0 || accountDiff.nDiffCoins == 0)
-                    continue;
+        bool GetValue(Coin &coin) const override { return pcursor->GetValue(coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
 
-                LogPrint(BCLog::COINDB, "CoinDiff: %19" PRIu64 "\t %6d\t %+8d.%08d\n", nAccountId, nDataHeight,
-                    (int)(accountDiff.nDiffCoins / COIN), abs((int)(accountDiff.nDiffCoins % COIN)));
-
-                // Query near balance
-                CAmount nAccountBalance;
-                int nBalanceHeight;
-                {
-                    SqlAutoResetStmt autoResetStmt(getAccountNearestStmt);
-                    sqlite3_bind_int64(getAccountNearestStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
-                    sqlite3_bind_int(getAccountNearestStmt.get(), 2, nDataHeight);
-                    if (sqlite3_step(getAccountNearestStmt.get()) == SQLITE_ROW) {
-                        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountNearestStmt.get(), 0));
-                        nBalanceHeight = sqlite3_column_int(getAccountNearestStmt.get(), 1);
-                    } else {
-                        nAccountBalance = 0;
-                        nBalanceHeight = -1;
-                    }
-                }
-                nAccountBalance += accountDiff.nDiffCoins;
-                assert(nAccountBalance >= 0);
-                if (nBalanceHeight == nDataHeight) {
-                    // Update current and all new height balance
-                    SqlAutoResetStmt autoResetStmt(updateAccountBalanceStmt);
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
-                    sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight);
-                    CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
-                } else {
-                    // Add new item
-                    SqlAutoResetStmt autoResetStmt(addAccountStmt);
-                    sqlite3_bind_int64(addAccountStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
-                    sqlite3_bind_int64(addAccountStmt.get(), 2, static_cast<sqlite_int64>(nAccountBalance));
-                    sqlite3_bind_int(addAccountStmt.get(), 3, nDataHeight);
-                    CRC_DONE(sqlite3_step(addAccountStmt.get()));
-
-                    // Update all new height balance
-                    SqlAutoResetStmt autoResetStmt2(updateAccountBalanceStmt);
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 1, static_cast<sqlite_int64>(accountDiff.nDiffCoins));
-                    sqlite3_bind_int64(updateAccountBalanceStmt.get(), 2, static_cast<sqlite_int64>(nAccountId));
-                    sqlite3_bind_int(updateAccountBalanceStmt.get(), 3, nDataHeight + 1);
-                    CRC_DONE(sqlite3_step(updateAccountBalanceStmt.get()));
-                }
+        bool Valid() const override { return keyTmp.first == DB_COIN; }
+        void Next() override {
+            pcursor->Next();
+            CoinEntry entry(&keyTmp.second);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry)) {
+                keyTmp.first = 0; // Invalidate cached key after last record so that Valid() and GetKey() return false
+            }
+            else {
+                keyTmp.first = entry.key;
             }
         }
-    }
-    // Write version
-    if (nCurrentAccountDbVersion != ACCOUNT_VERSION) {
-        SqlAutoReleaseStmt insertAccountVersionStmt(CreateStatement(accountDB, "INSERT INTO `account_meta`(`name`,`value`) VALUES('ver',?)"));
-        sqlite3_bind_int(insertAccountVersionStmt.get(), 1, ACCOUNT_VERSION);
-        CRC_DONE(sqlite3_step(insertAccountVersionStmt.get()));
-    }
-    // Write best block
-    {
-        int nHeight = mapBlockIndex[hashBlock]->nHeight;
-        std::string bestBlockHash = hashBlock.ToString();
-        // Hash
-        SqlAutoReleaseStmt insertAccountBestHashStmt(CreateStatement(accountDB, "INSERT INTO `account_meta`(`name`,`value`) VALUES('bestHash',?)"));
-        sqlite3_bind_text(insertAccountBestHashStmt.get(), 1, bestBlockHash.c_str(), -1, NULL);
-        CRC_DONE(sqlite3_step(insertAccountBestHashStmt.get()));
-        // Height
-        SqlAutoReleaseStmt insertAccountBestHeightStmt(CreateStatement(accountDB, "INSERT INTO `account_meta`(`name`,`value`) VALUES('bestHeight',?)"));
-        sqlite3_bind_int(insertAccountBestHeightStmt.get(), 1, nHeight);
-        CRC_DONE(sqlite3_step(insertAccountBestHeightStmt.get()));
-    }
 
-    // Commit changes
-    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", (batch.SizeEstimate() + accountDiffCoinsMemorySize) * (1.0 / 1048576.0));
-    bool ret = db.WriteBatch(batch) && autoTx.Commit();
-    LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
-    LogPrint(BCLog::COINDB, "Committed %u changed account balance outputs to account database...\n", (unsigned int)accountChanged);
-    if (ret) {
-        nCurrentAccountDbVersion = ACCOUNT_VERSION;
-    }
-    return ret;
+    private:
+        std::unique_ptr<CDBIterator> pcursor;
+        std::pair<char, COutPoint> keyTmp;
+    };
+
+    return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
 }
 
-size_t CCoinsViewDB::EstimateSize() const
-{
+CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) const {
+    class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBPledgeCreditCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
+            if (accountID != 0) {
+                pcursor->Seek(PledgeLoanRefEntry(&accountID, &outpoint));
+                // Test key of first record
+                TestKey();
+            }
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (accountID != 0) {
+                key = outpoint;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcoinviewdb->GetCoin(outpoint, coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return accountID != 0; }
+        void Next() override {
+            pcursor->Next();
+            TestKey();
+        }
+
+    private:
+        void TestKey() {
+            CAccountID tempAccountID;
+            PledgeLoanRefEntry entry(&tempAccountID, &outpoint);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGELOAN || tempAccountID != accountID) {
+                accountID = 0;
+            }
+        }
+
+        const CCoinsViewDB* pcoinviewdb;
+        std::unique_ptr<CDBIterator> pcursor;
+        CAccountID accountID;
+        COutPoint outpoint;
+    };
+
+    return std::make_shared<CCoinsViewDBPledgeCreditCursor>(this, db.NewIterator(), GetBestBlock(), accountID);
+}
+
+CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID) const {
+    class CCoinsViewDBPledgeDebitCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBPledgeDebitCursor(const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn, const CAccountID& accountIDIn)
+            : CCoinsViewCursor(hashBlockIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), accountID(accountIDIn), outpoint(uint256(), 0) {
+            if (accountID != 0) {
+                pcursor->Seek(PledgeDebitRefEntry(&accountID, &outpoint));
+                // Test key of first record
+                TestKey();
+            }
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (accountID != 0) {
+                key = outpoint;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcoinviewdb->GetCoin(outpoint, coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return accountID != 0; }
+        void Next() override {
+            pcursor->Next();
+            TestKey();
+        }
+
+    private:
+        void TestKey() {
+            CAccountID tempAccountID;
+            PledgeDebitRefEntry entry(&tempAccountID, &outpoint);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGEDEBIT || tempAccountID != accountID) {
+                accountID = 0;
+            }
+        }
+
+        const CCoinsViewDB* pcoinviewdb;
+        std::unique_ptr<CDBIterator> pcursor;
+        CAccountID accountID;
+        COutPoint outpoint;
+    };
+
+    return std::make_shared<CCoinsViewDBPledgeDebitCursor>(this, db.NewIterator(), GetBestBlock(), accountID);
+}
+
+size_t CCoinsViewDB::EstimateSize() const {
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
 }
 
-CAmount CCoinsViewDB::GetAccountBalance(const CAccountId &nAccountId, int nHeight) const
+CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+    CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
-    CAmount nAccountBalance = 0;
+    std::unique_ptr<CDBIterator> pcursor;
+    CAmount availableBalance = 0;
 
-    SqlAutoResetStmt autoResetStmt(getAccountNearestStmt);
-    sqlite3_bind_int64(getAccountNearestStmt.get(), 1, static_cast<sqlite_int64>(nAccountId));
-    sqlite3_bind_int(getAccountNearestStmt.get(), 2, nHeight);
-    if (sqlite3_step(getAccountNearestStmt.get()) == SQLITE_ROW) {
-        nAccountBalance = static_cast<CAmount>(sqlite3_column_int64(getAccountNearestStmt.get(), 0));
+    // Read from database
+    {
+        if (!pcursor) pcursor.reset(db.NewIterator());
+
+        CAmount value;
+        AccountCoinEntry entry(accountID, COutPoint(uint256(), 0));
+        pcursor->Seek(entry);
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_ACCOUNT_COIN && entry.accountID == accountID) {
+                if (pcursor->GetValue(VARINT(value)))
+                    availableBalance += value;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
     }
 
-    return nAccountBalance;
+    // Apply modified coin
+    for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+        if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID) {
+            if (it->second.coin.IsSpent()) {
+                if (db.Exists(CoinEntry(&it->first)))
+                    availableBalance -= it->second.coin.out.nValue;
+            } else {
+                if (!db.Exists(CoinEntry(&it->first)))
+                    availableBalance += it->second.coin.out.nValue;
+            }
+        }
+    }
+    assert(availableBalance >= 0);
+
+    // The bind plotter coin
+    if (pBindPlotterBalance != nullptr) {
+        *pBindPlotterBalance = 0;
+
+        // Read from database
+        {
+            if (!pcursor) pcursor.reset(db.NewIterator());
+
+            BindPlotterEntry entry(accountID, 0, COutPoint(uint256(), 0));
+            pcursor->Seek(entry);
+            while (pcursor->Valid()) {
+                if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.accountID == accountID) {
+                    *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_AMOUNT;
+                } else {
+                    break;
+                }
+                pcursor->Next();
+            }
+        }
+
+        // Apply modified coin
+        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
+                    it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                if (it->second.coin.IsSpent()) {
+                    if (db.Exists(CoinEntry(&it->first)))
+                        *pBindPlotterBalance -= PROTOCOL_BINDPLOTTER_AMOUNT;
+                } else {
+                    if (!db.Exists(CoinEntry(&it->first)))
+                        *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_AMOUNT;
+                }
+            }
+        }
+        assert(*pBindPlotterBalance >= 0);
+    }
+
+    // The pledge loan
+    if (pPledgeLoanBalance != nullptr) {
+        *pPledgeLoanBalance = 0;
+
+        // Read from database
+        {
+            if (!pcursor) pcursor.reset(db.NewIterator());
+
+            CAmount value;
+            PledgeLoanEntry entry(accountID, COutPoint(uint256(), 0));
+            pcursor->Seek(entry);
+            while (pcursor->Valid()) {
+                if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGELOAN && entry.creditAccountID == accountID) {
+                    if (pcursor->GetValue(VARINT(value)))
+                        *pPledgeLoanBalance += value;
+                } else {
+                    break;
+                }
+                pcursor->Next();
+            }
+        }
+
+        // Apply modified coin
+        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
+                    it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+                if (it->second.coin.IsSpent()) {
+                    if (db.Exists(CoinEntry(&it->first)))
+                        *pPledgeLoanBalance -= it->second.coin.out.nValue;
+                } else {
+                    if (!db.Exists(CoinEntry(&it->first)))
+                        *pPledgeLoanBalance += it->second.coin.out.nValue;
+                }
+            }
+        }
+        assert(*pPledgeLoanBalance >= 0);
+    }
+
+    // The pledge debit
+    if (pPledgeDebitBalance != nullptr) {
+        *pPledgeDebitBalance = 0;
+
+        // Read from database
+        {
+            if (!pcursor) pcursor.reset(db.NewIterator());
+
+            CAmount value;
+            PledgeDebitEntry entry(accountID, COutPoint(uint256(), 0));
+            pcursor->Seek(entry);
+            while (pcursor->Valid()) {
+                if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGEDEBIT && entry.debitAccountID == accountID) {
+                    if (pcursor->GetValue(VARINT(value)))
+                        *pPledgeDebitBalance += value;
+                } else {
+                    break;
+                }
+                pcursor->Next();
+            }
+        }
+
+        // Apply modified coin
+        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+            if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.extraData &&
+                    it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN &&
+                    PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() == accountID) {
+                if (it->second.coin.IsSpent()) {
+                    if (db.Exists(CoinEntry(&it->first)))
+                        *pPledgeDebitBalance -= it->second.coin.out.nValue;
+                } else {
+                    if (!db.Exists(CoinEntry(&it->first)))
+                        *pPledgeDebitBalance += it->second.coin.out.nValue;
+                }
+            }
+        }
+        assert(*pPledgeDebitBalance >= 0);
+    }
+
+    return availableBalance;
 }
 
-CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
+void CCoinsViewDB::GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
+    BindPlotterEntry entry(accountID, plotterId, COutPoint(uint256(), 0));
+    pcursor->Seek(entry);
+    while (pcursor->Valid()) {
+        if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.accountID == accountID && (plotterId == 0 || entry.plotterId == plotterId)) {
+            outpoints.insert(entry.outpoint);
+        } else {
+            break;
+        }
+        pcursor->Next();
+    }
 }
+
+CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) { }
 
 bool CBlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) {
     return Read(std::make_pair(DB_BLOCK_FILES, nFile), info);
@@ -491,60 +734,6 @@ bool CBlockTreeDB::ReadReindexing(bool &fReindexing) {
 
 bool CBlockTreeDB::ReadLastBlockFile(int &nFile) {
     return Read(DB_LAST_BLOCK, nFile);
-}
-
-CCoinsViewCursor *CCoinsViewDB::Cursor() const
-{
-    CCoinsViewDBCursor *i = new CCoinsViewDBCursor(const_cast<CDBWrapper&>(db).NewIterator(), GetBestBlock());
-    /* It seems that there are no "const iterators" for LevelDB.  Since we
-       only need read operations on it, use a const-cast to get around
-       that restriction.  */
-    i->pcursor->Seek(DB_COIN);
-    // Cache key of first record
-    if (i->pcursor->Valid()) {
-        CoinEntry entry(&i->keyTmp.second);
-        i->pcursor->GetKey(entry);
-        i->keyTmp.first = entry.key;
-    } else {
-        i->keyTmp.first = 0; // Make sure Valid() and GetKey() return false
-    }
-    return i;
-}
-
-bool CCoinsViewDBCursor::GetKey(COutPoint &key) const
-{
-    // Return cached key
-    if (keyTmp.first == DB_COIN) {
-        key = keyTmp.second;
-        return true;
-    }
-    return false;
-}
-
-bool CCoinsViewDBCursor::GetValue(Coin &coin) const
-{
-    return pcursor->GetValue(coin);
-}
-
-unsigned int CCoinsViewDBCursor::GetValueSize() const
-{
-    return pcursor->GetValueSize();
-}
-
-bool CCoinsViewDBCursor::Valid() const
-{
-    return keyTmp.first == DB_COIN;
-}
-
-void CCoinsViewDBCursor::Next()
-{
-    pcursor->Next();
-    CoinEntry entry(&keyTmp.second);
-    if (!pcursor->Valid() || !pcursor->GetKey(entry)) {
-        keyTmp.first = 0; // Invalidate cached key after last record so that Valid() and GetKey() return false
-    } else {
-        keyTmp.first = entry.key;
-    }
 }
 
 bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo) {
@@ -610,7 +799,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nPlotterId      = diskindex.nPlotterId;
                 pindexNew->nStatus         = diskindex.nStatus;
                 pindexNew->nTx             = diskindex.nTx;
-                pindexNew->nMinerAccountId = diskindex.nMinerAccountId;
+                pindexNew->minerAccountID  = diskindex.minerAccountID;
 
                 pcursor->Next();
             } else {
@@ -624,127 +813,159 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
     return true;
 }
 
-namespace {
-
-//! Legacy class to deserialize pre-pertxout database entries without reindex.
-class CCoins
-{
-public:
-    //! whether transaction is a coinbase
-    bool fCoinBase;
-
-    //! unspent transaction outputs; spent outputs are .IsNull(); spent outputs at the end of the array are dropped
-    std::vector<CTxOut> vout;
-
-    //! at which height this transaction was included in the active block chain
-    int nHeight;
-
-    //! empty constructor
-    CCoins() : fCoinBase(false), vout(0), nHeight(0) { }
-
-    template<typename Stream>
-    void Unserialize(Stream &s) {
-        unsigned int nCode = 0;
-        // version
-        int nVersionDummy;
-        ::Unserialize(s, VARINT(nVersionDummy));
-        // header code
-        ::Unserialize(s, VARINT(nCode));
-        fCoinBase = nCode & 1;
-        std::vector<bool> vAvail(2, false);
-        vAvail[0] = (nCode & 2) != 0;
-        vAvail[1] = (nCode & 4) != 0;
-        unsigned int nMaskCode = (nCode / 8) + ((nCode & 6) != 0 ? 0 : 1);
-        // spentness bitmask
-        while (nMaskCode > 0) {
-            unsigned char chAvail = 0;
-            ::Unserialize(s, chAvail);
-            for (unsigned int p = 0; p < 8; p++) {
-                bool f = (chAvail & (1 << p)) != 0;
-                vAvail.push_back(f);
-            }
-            if (chAvail != 0)
-                nMaskCode--;
-        }
-        // txouts themself
-        vout.assign(vAvail.size(), CTxOut());
-        for (unsigned int i = 0; i < vAvail.size(); i++) {
-            if (vAvail[i])
-                ::Unserialize(s, REF(CTxOutCompressor(vout[i])));
-        }
-        // coinbase height
-        ::Unserialize(s, VARINT(nHeight));
-    }
-};
-
-}
-
-/** Upgrade the database from older formats.
- *
- * Currently implemented: from the per-tx utxo model (0.8..0.14.x) to per-txout.
- */
+/** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
-    pcursor->Seek(std::make_pair(DB_COINS, uint256()));
-    if (!pcursor->Valid()) {
-        return true;
-    }
-    LogPrintf("Deprecated upgrade UTXO!\n");
-    assert(false);
+    const uint32_t currentCoinDbVersion = 0x20181218;
 
-    int64_t count = 0;
-    LogPrintf("Upgrading utxo-set database...\n");
-    LogPrintf("[0%%]...");
+    // Check coin database version
+    {
+        uint32_t coinDbVersion;
+        if (db.Read(DB_COIN_VERSION, VARINT(coinDbVersion)) && coinDbVersion == currentCoinDbVersion)
+            return true; // Newest version
+        db.Erase(DB_COIN_VERSION);
+    }
+
+    // Reindex UTXO for address
     uiInterface.ShowProgress(_("Upgrading UTXO database"), 0, true);
-    size_t batch_size = 1 << 24;
-    CDBBatch batch(db);
-    int reportDone = 0;
-    std::pair<unsigned char, uint256> key;
-    std::pair<unsigned char, uint256> prev_key = {DB_COINS, uint256()};
-    while (pcursor->Valid()) {
-        boost::this_thread::interruption_point();
-        if (ShutdownRequested()) {
-            break;
-        }
-        if (pcursor->GetKey(key) && key.first == DB_COINS) {
-            if (count++ % 256 == 0) {
-                uint32_t high = 0x100 * *key.second.begin() + *(key.second.begin() + 1);
-                int percentageDone = (int)(high * 100.0 / 65536.0 + 0.5);
-                uiInterface.ShowProgress(_("Upgrading UTXO database"), percentageDone, true);
-                if (reportDone < percentageDone/10) {
-                    // report max. every 10% step
-                    LogPrintf("[%d%%]...", percentageDone);
-                    reportDone = percentageDone/10;
-                }
-            }
-            CCoins old_coins;
-            if (!pcursor->GetValue(old_coins)) {
-                return error("%s: cannot parse CCoins record", __func__);
-            }
-            COutPoint outpoint(key.second, 0);
-            for (size_t i = 0; i < old_coins.vout.size(); ++i) {
-                if (!old_coins.vout[i].IsNull() && !old_coins.vout[i].scriptPubKey.IsUnspendable()) {
-                    Coin newcoin(std::move(old_coins.vout[i]), old_coins.nHeight, old_coins.fCoinBase);
-                    outpoint.n = i;
-                    CoinEntry entry(&outpoint);
-                    batch.Write(entry, newcoin);
-                }
-            }
-            batch.Erase(key);
-            if (batch.SizeEstimate() > batch_size) {
-                db.WriteBatch(batch);
-                batch.Clear();
-                db.CompactRange(prev_key, key);
-                prev_key = key;
+    LogPrintf("Upgrading UTXO database to %08x: [0%%]...", currentCoinDbVersion);
+
+    int remove = 0, add = 0;
+    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
+
+    // Clear old account balance index data
+    pcursor->Seek(DB_ACCOUNT_COIN);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        AccountCoinEntry entry(0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_ACCOUNT_COIN) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
             }
             pcursor->Next();
-        } else {
-            break;
         }
+        db.WriteBatch(batch);
     }
-    db.WriteBatch(batch);
-    db.CompactRange({DB_COINS, uint256()}, key);
+    // Clear old bind plotter index data
+    pcursor->Seek(DB_COIN_BINDPLOTTER);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        BindPlotterEntry entry(0, 0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
+    }
+    // Clear old pledge loan index data
+    pcursor->Seek(DB_COIN_PLEDGELOAN);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        PledgeLoanEntry entry(0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGELOAN) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
+    }
+    // Clear old pledge debit index data
+    pcursor->Seek(DB_COIN_PLEDGEDEBIT);
+    if (pcursor->Valid()) {
+        CDBBatch batch(db);
+        PledgeDebitEntry entry(0, COutPoint());
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGEDEBIT) {
+                batch.Erase(entry);
+                remove++;
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
+    }
+
+    // Create account balance index data
+    pcursor->Seek(DB_COIN);
+    if (pcursor->Valid()) {
+        size_t batch_size = (size_t)gArgs.GetArg("-dbbatchsize", nDefaultDbBatchSize);
+        int utxo_bucket = 130000 / 100; // Current UTXO about 130000
+        int indexProgress = -1;
+        CDBBatch batch(db);
+        COutPoint outpoint;
+        CoinEntry entry(&outpoint);
+        while (pcursor->Valid()) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN) {
+                Coin coin;
+                if (!pcursor->GetValue(coin))
+                    return error("%s: cannot parse coin record", __func__);
+
+                if (coin.refOutAccountID != 0) {
+                    // Balance of address index
+                    batch.Write(AccountCoinRefEntry(&coin.refOutAccountID, &outpoint), VARINT(coin.out.nValue));
+                    add++;
+
+                    // Extra data
+                    if (coin.extraData) {
+                        if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                            batch.Write(BindPlotterRefEntry(&coin.refOutAccountID, &BindPlotterPayload::As(coin.extraData)->id, &outpoint), 0);
+                            add++;
+                        }
+                        else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+                            batch.Write(PledgeLoanRefEntry(&coin.refOutAccountID, &outpoint), VARINT(coin.out.nValue));
+                            batch.Write(PledgeDebitRefEntry(&PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID(), &outpoint), VARINT(coin.out.nValue));
+                            add += 2;
+                        }
+                    }
+
+                    if (batch.SizeEstimate() > batch_size) {
+                        db.WriteBatch(batch);
+                        batch.Clear();
+                    }
+
+                    if (add % (utxo_bucket/10) == 0) {
+                        int newProgress = std::min(90, add / utxo_bucket);
+                        if (newProgress/10 != indexProgress/10) {
+                            indexProgress = newProgress;
+                            uiInterface.ShowProgress(_("Upgrading UTXO database"), indexProgress, true);
+                            LogPrintf("[%d%%]...", indexProgress);
+                        }
+                    }
+                }
+            } else {
+                break;
+            }
+            pcursor->Next();
+        }
+        db.WriteBatch(batch);
+    }
+
+    // Update coin version
+    if (!db.Write(DB_COIN_VERSION, VARINT(currentCoinDbVersion)))
+        return error("%s: cannot write UTXO upgrade flag", __func__);
+
     uiInterface.ShowProgress("", 100, false);
-    LogPrintf("[%s].\n", ShutdownRequested() ? "CANCELLED" : "DONE");
+    LogPrintf("[%s]. remove utxo %d, add utxo %d\n", ShutdownRequested() ? "CANCELLED" : "DONE", remove, add);
+
+
+    // Remove older database file
+    #ifdef WIN32
+        ::DeleteFileW((GetDataDir() / "chainstate/account.db3").c_str());
+    #else
+        unlink((GetDataDir() / "chainstate/account.db3").c_str());
+    #endif
+
     return !ShutdownRequested();
 }

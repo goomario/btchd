@@ -7,14 +7,18 @@
 
 #include <script/script.h>
 
+#include <amount.h>
 #include <arith_uint256.h>
+#include <primitives/transaction.h>
 #include <uint256.h>
+
 #include <stdlib.h>
 #include <stdint.h>
 
 class CBlockHeader;
 class CBlock;
 class CBlockIndex;
+class CCoinsViewCache;
 
 namespace Consensus { struct Params; }
 
@@ -33,9 +37,8 @@ static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 static const int64_t MAX_TARGET_DEADLINE = 365 * 24 * 60 * 60;
 
 // Invalid deadline
-static const uint64_t INVALID_DEADLINE = std::numeric_limits<uint64_t>::max();
-
-uint64_t GetAccountIdByPassPhrase(const std::string &passPhrase);
+static const uint64_t INVALID_DEADLINE         = std::numeric_limits<uint64_t>::max();
+static const uint64_t INVALID_DEADLINE_NOTBIND = std::numeric_limits<uint64_t>::max() - 1;
 
 /**
  * Get account Id
@@ -64,10 +67,26 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
 uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
 
 /** Add new nonce */
-uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const std::string &address, const Consensus::Params& params);
+uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId,
+    const std::string &address, bool fCheckBind, const Consensus::Params& params);
 
 /** Get forge escape second time */
 int64_t GetForgeEscape();
+
+/**
+ * Get miner pledge forge block
+ *
+ * @param minerAccountID Miner address digit ID
+ * @param nPlotterId Proof of capacity ID
+ * @param nMiningHeight The height of pledge if forge block
+ * @param view The coin view
+ * @param params Consensus params
+ * @param pMinerPledgeOldConsensus Only in BHDIP004. See https://btchd.org/wiki/BHDIP/004#getminerpledge
+ * 
+ * return MAX_MONEY if not bind. See https://btchd.org/wiki/BHDIP/006
+ */
+CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &plotterId, int nMiningHeight, const CCoinsViewCache &view,
+    const Consensus::Params &params, CAmount *pMinerPledgeOldConsensus = nullptr);
 
 }
 

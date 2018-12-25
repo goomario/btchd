@@ -35,6 +35,94 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     uint256 hash = wtx.GetHash();
     std::map<std::string, std::string> mapValue = wtx.mapValue;
 
+    // Bind plotter, Pledge
+    auto itType = mapValue.find("type");
+    if (itType != mapValue.end())
+    {
+        if (itType->second == "bindplotter")
+        {
+            TransactionRecord sub(hash, nTime);
+            sub.credit = wtx.tx->vout[0].nValue;
+            sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
+            sub.type = TransactionRecord::BindPlotter;
+            sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
+
+            parts.append(sub);
+            return parts;
+        }
+        else if (itType->second == "unbindplotter")
+        {
+            TransactionRecord sub(hash, nTime);
+            sub.credit = wtx.tx->vout[0].nValue;
+            sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
+            sub.type = TransactionRecord::UnbindPlotter;
+            sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
+
+            parts.append(sub);
+            return parts;
+        }
+        else if (itType->second == "pledge")
+        {
+            isminetype sendIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["from"]));
+            isminetype toIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["to"]));
+            TransactionRecord sub(hash, nTime);
+            sub.credit = wtx.tx->vout[0].nValue;
+            if ((sendIsmine & ISMINE_SPENDABLE) && (toIsmine & ISMINE_SPENDABLE)) {
+                // Mine -> Mine
+                sub.involvesWatchAddress = false;
+                sub.type = TransactionRecord::SelfPledge;
+                sub.address = mapValue["to"];
+                parts.append(sub);
+            } else if (sendIsmine & ISMINE_SPENDABLE) {
+                // Mine -> Other
+                sub.involvesWatchAddress = false;
+                sub.type = TransactionRecord::SendPledge;
+                sub.address = mapValue["to"];
+                parts.append(sub);
+            } else if (toIsmine & ISMINE_SPENDABLE) {
+                // Other -> Mine
+                sub.involvesWatchAddress = false;
+                sub.type = TransactionRecord::RecvPledge;
+                sub.address = mapValue["from"];
+                parts.append(sub);
+            } else if ((sendIsmine & ISMINE_WATCH_ONLY) && (toIsmine & ISMINE_WATCH_ONLY)) {
+                // WatchOnly -> WatchOnly
+                sub.involvesWatchAddress = true;
+                sub.type = TransactionRecord::SelfPledge;
+                sub.address = mapValue["to"];
+                parts.append(sub);
+            } else if (sendIsmine & ISMINE_WATCH_ONLY) {
+                // WatchOnly -> Other
+                sub.involvesWatchAddress = true;
+                sub.type = TransactionRecord::SendPledge;
+                sub.address = mapValue["to"];
+                parts.append(sub);
+            } else if (toIsmine & ISMINE_WATCH_ONLY) {
+                // Other -> WatchOnly
+                sub.involvesWatchAddress = true;
+                sub.type = TransactionRecord::RecvPledge;
+                sub.address = mapValue["from"];
+                parts.append(sub);
+            }
+
+            return parts;
+        }
+        else if (itType->second == "withdrawpledge")
+        {
+            isminetype sendIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["from"]));
+            isminetype toIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["to"]));
+            TransactionRecord sub(hash, nTime);
+            sub.credit = wtx.tx->vout[0].nValue;
+            sub.involvesWatchAddress = ((sendIsmine & ISMINE_WATCH_ONLY) || (toIsmine & ISMINE_WATCH_ONLY)) &&
+                (!(sendIsmine & ISMINE_SPENDABLE) && !(toIsmine & ISMINE_SPENDABLE));
+            sub.type = TransactionRecord::WithdrawPledge;
+            sub.address = sendIsmine ? mapValue["to"] : mapValue["from"];
+
+            parts.append(sub);
+            return parts;
+        }
+    }
+
     if (nNet > 0 || wtx.IsCoinBase())
     {
         //
@@ -243,6 +331,19 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
         else
         {
             status.status = TransactionStatus::Confirmed;
+        }
+
+        // Rewrite special tx status
+        if (status.status == TransactionStatus::Confirming || status.status == TransactionStatus::Confirmed)
+        {
+            if (type == TransactionRecord::BindPlotter || type == TransactionRecord::SendPledge ||
+                type == TransactionRecord::RecvPledge || type == TransactionRecord::SelfPledge)
+            {
+                if (pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0)).IsSpent())
+                {
+                    status.status = TransactionStatus::Inactived;
+                }
+            }
         }
     }
     status.needsUpdate = false;

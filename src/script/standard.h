@@ -12,6 +12,7 @@
 #include <boost/variant.hpp>
 
 #include <stdint.h>
+#include <memory>
 
 static const bool DEFAULT_ACCEPT_DATACARRIER = true;
 
@@ -28,10 +29,10 @@ public:
 };
 
 /**
- * Default setting for nMaxDatacarrierBytes. 80 bytes of data, +1 for OP_RETURN,
- * +2 for the pushdata opcodes.
+ * Default setting for nMaxDatacarrierBytes. 220 bytes of data,
+ * +1 for OP_RETURN, +2 for the pushdata opcodes.
  */
-static const unsigned int MAX_OP_RETURN_RELAY = 83;
+static const unsigned int MAX_OP_RETURN_RELAY = 223;
 
 /**
  * A data carrying output is an unspendable output containing data. The script
@@ -184,5 +185,99 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  * the various witness-specific CTxDestination subtypes.
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
+
+/** Utility function to get account id with given CScriptID. */
+CAccountID GetAccountIDByScriptID(const CScriptID &scriptID);
+
+/** Utility function to get account id with given scriptPubKey. */
+CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey);
+
+/** Utility function to get account id with given CTxDestination. */
+CAccountID GetAccountIDByTxDestination(const CTxDestination &dest);
+
+/** Utility function to get account id with given address. */
+CAccountID GetAccountIDByAddress(const std::string &address);
+
+/** opreturn type. See https://btchd.org/wiki/datacarrier */
+enum DatacarrierType : unsigned int {
+    // Range
+    DATACARRIER_TYPE_MIN = 0x0000000f,
+    DATACARRIER_TYPE_MAX = 0x10000000,
+
+    // Type of consensus relevant
+    //! See https://btchd.org/wiki/datacarrier/bind-plotter
+    DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
+    //! See https://btchd.org/wiki/datacarrier/pledge-loan
+    DATACARRIER_TYPE_PLEDGELOAN  = 0x00000011,
+    //! See https://btchd.org/wiki/datacarrier/contract
+    DATACARRIER_TYPE_CONTRACT    = 0x00000012,
+    //! See https://btchd.org/wiki/datacarrier/text
+    DATACARRIER_TYPE_TEXT        = 0x00000013,
+};
+
+/** Datacarrier payload */
+struct DatacarrierPayload
+{
+    explicit DatacarrierPayload(DatacarrierType typeIn) : type(typeIn) {}
+    virtual ~DatacarrierPayload() {}
+    const DatacarrierType type;
+};
+typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
+
+/** For bind plotter */
+struct BindPlotterPayload : public DatacarrierPayload
+{
+    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0), sign(false) {}
+    const uint64_t& GetId() const { return id; }
+    bool IsSign() const { return sign; }
+    uint64_t id;
+    bool sign;
+
+    // Checkable cast for CDatacarrierPayloadRef
+    static BindPlotterPayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_BINDPLOTTER);
+        return (BindPlotterPayload*) ref.get();
+    }
+    static const BindPlotterPayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_BINDPLOTTER);
+        return (const BindPlotterPayload*) ref.get();
+    }
+};
+
+/** For pledge loan */
+struct PledgeLoanPayload : public DatacarrierPayload
+{
+    PledgeLoanPayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGELOAN) {}
+    const CAccountID& GetDebitAccountID() const;
+    CScriptID scriptID;
+
+    // Checkable cast for CDatacarrierPayloadRef
+    static PledgeLoanPayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_PLEDGELOAN);
+        return (PledgeLoanPayload*) ref.get();
+    }
+    static const PledgeLoanPayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_PLEDGELOAN);
+        return (const PledgeLoanPayload*) ref.get();
+    }
+};
+
+/** The bind plotter lock amount */
+static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 10 * CENT;
+
+/** Check whether a string is a valid passphrase or plotter ID. */
+bool IsValidPassphrase(const std::string& passphrase_or_id, uint64_t *plotterId = nullptr);
+
+/** Generate a bind plotter script. */
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase_or_id, int lastActiveHeight);
+
+/** The minimal pledge loan amount */
+static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
+
+/** Generate a pledge script. */
+CScript GetPledgeScriptForDestination(const CTxDestination& dest);
+
+/** Parse a datacarrier transaction. */
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *fRejectTx = nullptr, int *lastActiveHeightForBind = nullptr);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

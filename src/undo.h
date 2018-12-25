@@ -9,6 +9,7 @@
 #include <compressor.h>
 #include <consensus/consensus.h>
 #include <primitives/transaction.h>
+#include <pubkey.h>
 #include <serialize.h>
 
 /** Undo information for a CTxIn
@@ -25,12 +26,24 @@ class TxInUndoSerializer
 public:
     template<typename Stream>
     void Serialize(Stream &s) const {
-        ::Serialize(s, VARINT(txout->nHeight * 2 + (txout->fCoinBase ? 1 : 0)));
+        unsigned int nCode = (txout->extraData ? 0x80000000 : 0) | (txout->nHeight << 1) | (txout->fCoinBase ? 0x01 : 0x00);
+        ::Serialize(s, VARINT(nCode));
         if (txout->nHeight > 0) {
             // Required to maintain compatibility with older undo format.
             ::Serialize(s, (unsigned char)0);
         }
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
+
+        if (nCode & 0x80000000) {
+            ::Serialize(s, VARINT((unsigned int&)txout->extraData->type));
+            if (txout->extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                ::Serialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
+                ::Serialize(s, REF(BindPlotterPayload::As(txout->extraData)->sign));
+            } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+                ::Serialize(s, REF(PledgeLoanPayload::As(txout->extraData)->scriptID));
+            } else
+                assert(false);
+        }
     }
 
     explicit TxInUndoSerializer(const Coin* coin) : txout(coin) {}
@@ -45,8 +58,8 @@ public:
     void Unserialize(Stream &s) {
         unsigned int nCode = 0;
         ::Unserialize(s, VARINT(nCode));
-        txout->nHeight = nCode / 2;
-        txout->fCoinBase = nCode & 1;
+        txout->nHeight = (nCode&0x7fffffff) >> 1;
+        txout->fCoinBase = nCode & 0x01;
         if (txout->nHeight > 0) {
             // Old versions stored the version number for the last spend of
             // a transaction's outputs. Non-final spends were indicated with
@@ -55,6 +68,22 @@ public:
             ::Unserialize(s, VARINT(nVersionDummy));
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
+        txout->refOutAccountID = GetAccountIDByScriptPubKey(txout->out.scriptPubKey);
+
+        txout->extraData = nullptr;
+        if (nCode & 0x80000000) {
+            unsigned int extraDataType;
+            ::Unserialize(s, VARINT(extraDataType));
+            if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
+                txout->extraData = std::make_shared<BindPlotterPayload>();
+                ::Unserialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
+                ::Unserialize(s, REF(BindPlotterPayload::As(txout->extraData)->sign));
+            } else if (extraDataType == DATACARRIER_TYPE_PLEDGELOAN) {
+                txout->extraData = std::make_shared<PledgeLoanPayload>();
+                ::Unserialize(s, REF(PledgeLoanPayload::As(txout->extraData)->scriptID));
+            } else
+                assert(false);
+        }
     }
 
     explicit TxInUndoDeserializer(Coin* coin) : txout(coin) {}

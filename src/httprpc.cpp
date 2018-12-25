@@ -227,29 +227,32 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
         const auto secretPhrase = parameters.find("secretPhrase");
         const auto height = parameters.find("height");
         const auto address = parameters.find("address");
+        const auto checkBind = parameters.find("checkBind");
         if (accountId != parameters.cend()) {
             // Pool
             jreq.strMethod = "submitNonceToPool";
             jreq.params.pushKV("nonce", nonce->second);
             jreq.params.pushKV("accountId", accountId->second);
-            if (height != parameters.cend()) {
+            if (height != parameters.cend())
                 jreq.params.pushKV("height", height->second);
-            }
-            if (address != parameters.cend()) {
+            if (address != parameters.cend())
                 jreq.params.pushKV("address", address->second);
-            }
+            if (address != parameters.cend())
+                jreq.params.pushKV("address", address->second);
+            if (checkBind != parameters.cend())
+                jreq.params.pushKV("checkBind", checkBind->second);
         }
         else if (secretPhrase != parameters.cend()) {
             // Solo
             jreq.strMethod = "submitNonceAsSolo";
             jreq.params.pushKV("nonce", nonce->second);
             jreq.params.pushKV("secretPhrase", secretPhrase->second);
-            if (height != parameters.cend()) {
+            if (height != parameters.cend())
                 jreq.params.pushKV("height", height->second);
-            }
-            if (address != parameters.cend()) {
+            if (address != parameters.cend())
                 jreq.params.pushKV("address", address->second);
-            }
+            if (checkBind != parameters.cend())
+                jreq.params.pushKV("checkBind", checkBind->second);
         }
         else {
             PoCJSONErrorReply(req, 1, "Incorrect request");

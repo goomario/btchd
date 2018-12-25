@@ -1,14 +1,14 @@
 dnl require autoconf 2.60 (AS_ECHO/AS_ECHO_N)
 AC_PREREQ([2.60])
 define(_CLIENT_VERSION_MAJOR, 1)
-define(_CLIENT_VERSION_MINOR, 1)
-define(_CLIENT_VERSION_REVISION, 4)
-define(_CLIENT_VERSION_BUILD, 16)
+define(_CLIENT_VERSION_MINOR, 2)
+define(_CLIENT_VERSION_REVISION, 0)
+define(_CLIENT_VERSION_BUILD, 4)
 define(_CLIENT_VERSION_IS_RELEASE, true)
-define(_COPYRIGHT_YEAR, 2018)
+define(_COPYRIGHT_YEAR, 2019)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[BitcoinHD Chain]])
-AC_INIT([BitcoinHD Chain],[_CLIENT_VERSION_MAJOR._CLIENT_VERSION_MINOR._CLIENT_VERSION_REVISION],[https://github.com/btchd/btchd/issues],[BitcoinHD],[http://btchd.org/])
+AC_INIT([BitcoinHD Chain],[_CLIENT_VERSION_MAJOR._CLIENT_VERSION_MINOR._CLIENT_VERSION_REVISION],[https://github.com/btchd/btchd/issues],[BitcoinHD],[https://btchd.org/])
 AC_CONFIG_SRCDIR([src/validation.cpp])
 AC_CONFIG_HEADERS([src/config/bitcoin-config.h])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -957,8 +957,6 @@ if test x$use_pkgconfig = xyes; then
       else
           AC_DEFINE_UNQUOTED([ENABLE_ZMQ],[0],[Define to 1 to enable ZMQ functions])
       fi
-
-      PKG_CHECK_MODULES([SQLITE3], [sqlite3 > 3.0],,[AC_MSG_ERROR(sqlite3  not found.)])
     ]
   )
 else
@@ -1004,9 +1002,6 @@ else
     BITCOIN_QT_CHECK([AC_CHECK_LIB([qrencode], [main],[QR_LIBS=-lqrencode], [have_qrencode=no])])
     BITCOIN_QT_CHECK([AC_CHECK_HEADER([qrencode.h],, have_qrencode=no)])
   fi
-
-  AC_CHECK_HEADER([sqlite3.h],, AC_MSG_ERROR(sqlite3 headers missing),)
-  AC_CHECK_LIB([sqlite3],     [main],SQLITE3_LIBS=-lsqlite3, AC_MSG_ERROR(sqlite3 missing))
 fi
 
 save_CXXFLAGS="${CXXFLAGS}"

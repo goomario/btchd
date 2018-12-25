@@ -521,7 +521,7 @@ std::string HelpMessage(HelpMessageMode mode)
 std::string LicenseInfo()
 {
     const std::string URL_SOURCE_CODE = "<https://github.com/btchd/btchd>";
-    const std::string URL_WEBSITE = "<http://btchd.org>";
+    const std::string URL_WEBSITE = "<https://btchd.org>";
 
     return CopyrightHolders(_("Copyright (C) %s")) + "\n" +
            "\n" +
@@ -1496,7 +1496,7 @@ bool AppInitMain()
                 }
 
                 // ReplayBlocks is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                if (!ReplayBlocks(chainparams, pcoinsdbview.get()) || !pcoinsdbview->CheckDB(chainparams)) {
+                if (!ReplayBlocks(chainparams, pcoinsdbview.get())) {
                     strLoadError = _("Unable to replay blocks. You will need to rebuild the database using -reindex-chainstate.");
                     break;
                 }
@@ -1512,6 +1512,17 @@ bool AppInitMain()
                         break;
                     }
                     assert(chainActive.Tip() != nullptr);
+                    // Reconsider block
+                    if (chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1 &&
+                            chainActive.Height() < chainparams.GetConsensus().BHDIP006Height + (int)chainparams.GetConsensus().nMinerConfirmationWindow) {
+                        {
+                            LOCK(cs_main);
+                            ResetBlockFailureFlags(chainActive[chainparams.GetConsensus().BHDIP006Height - 1]);
+                        }
+
+                        CValidationState state;
+                        ActivateBestChain(state, chainparams);
+                    }
                 }
 
                 if (!fReset) {

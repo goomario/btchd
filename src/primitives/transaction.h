@@ -12,9 +12,6 @@
 #include <serialize.h>
 #include <uint256.h>
 
-/** Account ID */
-typedef uint64_t CAccountId;
-
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
@@ -270,11 +267,14 @@ public:
     // Default transaction version.
     static const int32_t CURRENT_VERSION=2;
 
+    // The transaction vin & vout is uniform destination
+    static const int32_t UNIFORM_VERSION=3;
+
     // Changing the default transaction version requires a two step process: first
     // adapting relay policy by bumping MAX_STANDARD_VERSION, and then later date
     // bumping the default CURRENT_VERSION at which point both CURRENT_VERSION and
     // MAX_STANDARD_VERSION will be equal.
-    static const int32_t MAX_STANDARD_VERSION=2;
+    static const int32_t MAX_STANDARD_VERSION=3;
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not
@@ -359,6 +359,11 @@ public:
         }
         return false;
     }
+
+    bool IsUniform() const
+    {
+        return nVersion == UNIFORM_VERSION;
+    }
 };
 
 /** A mutable version of CTransaction. */
@@ -412,5 +417,8 @@ struct CMutableTransaction
 typedef std::shared_ptr<const CTransaction> CTransactionRef;
 static inline CTransactionRef MakeTransactionRef() { return std::make_shared<const CTransaction>(); }
 template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txIn) { return std::make_shared<const CTransaction>(std::forward<Tx>(txIn)); }
+
+/** Account ID. The 8 bytes of CScriptID head */
+typedef uint64_t CAccountID;
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

@@ -14,13 +14,17 @@
 #include <QApplication>
 #include <QClipboard>
 
-SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *parent) :
+SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const PlatformStyle *_platformStyle, QWidget *parent) :
     QStackedWidget(parent),
+    payOperateMethod(_payOperateMethod),
     ui(new Ui::SendCoinsEntry),
     model(0),
     platformStyle(_platformStyle)
 {
     ui->setupUi(this);
+
+    ui->plotterPassphraseLabel->setVisible(false);
+    ui->plotterPassphrase->setVisible(false);
 
     ui->addressBookButton->setIcon(platformStyle->SingleColorIcon(":/icons/address-book"));
     ui->pasteButton->setIcon(platformStyle->SingleColorIcon(":/icons/editpaste"));
@@ -49,6 +53,23 @@ SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *par
     connect(ui->deleteButton_is, SIGNAL(clicked()), this, SLOT(deleteClicked()));
     connect(ui->deleteButton_s, SIGNAL(clicked()), this, SLOT(deleteClicked()));
     connect(ui->useAvailableBalanceButton, SIGNAL(clicked()), this, SLOT(useAvailableBalanceClicked()));
+
+    // Pay method
+    if (payOperateMethod == PayOperateMethod::SendPledge) {
+        ui->payToLabel->setText(tr("Pledge &To:"));
+    } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
+        ui->payToLabel->setText(tr("Bind &To:"));
+        ui->labellLabel->setVisible(false);
+        ui->addAsLabel->setVisible(false);
+        ui->plotterPassphraseLabel->setVisible(true);
+        ui->plotterPassphrase->setVisible(true);
+    #if QT_VERSION >= 0x040700
+        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase or digit ID"));
+    #endif
+        ui->payAmount->setReadOnly(true);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
+        ui->useAvailableBalanceButton->setEnabled(false);
+    }
 }
 
 SendCoinsEntry::~SendCoinsEntry()
@@ -66,7 +87,8 @@ void SendCoinsEntry::on_addressBookButton_clicked()
 {
     if(!model)
         return;
-    AddressBookPage dlg(platformStyle, AddressBookPage::ForSelection, AddressBookPage::SendingTab, this);
+    AddressBookPage::Tabs tab = (payOperateMethod == PayOperateMethod::BindPlotter ? AddressBookPage::ReceivingTab : AddressBookPage::SendingTab);
+    AddressBookPage dlg(platformStyle, AddressBookPage::ForSelection, tab, this);
     dlg.setModel(model->getAddressTableModel());
     if(dlg.exec())
     {
@@ -95,6 +117,7 @@ void SendCoinsEntry::clear()
     // clear UI elements for normal payment
     ui->payTo->clear();
     ui->addAsLabel->clear();
+    ui->plotterPassphrase->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
     ui->messageTextLabel->clear();
@@ -111,6 +134,12 @@ void SendCoinsEntry::clear()
 
     // update the display unit, to not use the default ("BitcoinHD")
     updateDisplayUnit();
+
+    // Update for bind plotter
+    if (payOperateMethod == PayOperateMethod::BindPlotter) {
+        ui->payAmount->setValue(PROTOCOL_BINDPLOTTER_AMOUNT);
+        ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
+    }
 }
 
 void SendCoinsEntry::checkSubtractFeeFromAmount()
@@ -164,6 +193,24 @@ bool SendCoinsEntry::validate()
         retval = false;
     }
 
+    // Special tx amount
+    if (payOperateMethod == PayOperateMethod::SendPledge)
+    {
+        if (ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN ||
+                (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked && ui->payAmount->value() <= PROTOCOL_PLEDGELOAN_AMOUNT_MIN)) {
+            ui->payAmount->setValid(false);
+            retval = false;
+        }
+    }
+    else if (payOperateMethod == PayOperateMethod::BindPlotter)
+    {
+        QString passphrase = ui->plotterPassphrase->text().trimmed();
+        if (!IsValidPassphrase(passphrase.toStdString())) {
+            ui->plotterPassphrase->setValid(false);
+            retval = false;
+        }
+    }
+
     return retval;
 }
 
@@ -176,6 +223,8 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     // Normal payment
     recipient.address = ui->payTo->text();
     recipient.label = ui->addAsLabel->text();
+    if (payOperateMethod == PayOperateMethod::BindPlotter)
+        recipient.plotterPassphrase = ui->plotterPassphrase->text().trimmed();
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);
@@ -187,7 +236,8 @@ QWidget *SendCoinsEntry::setupTabChain(QWidget *prev)
 {
     QWidget::setTabOrder(prev, ui->payTo);
     QWidget::setTabOrder(ui->payTo, ui->addAsLabel);
-    QWidget *w = ui->payAmount->setupTabChain(ui->addAsLabel);
+    QWidget::setTabOrder(ui->addAsLabel, ui->plotterPassphrase);
+    QWidget *w = ui->payAmount->setupTabChain(ui->plotterPassphrase);
     QWidget::setTabOrder(w, ui->checkboxSubtractFeeFromAmount);
     QWidget::setTabOrder(ui->checkboxSubtractFeeFromAmount, ui->addressBookButton);
     QWidget::setTabOrder(ui->addressBookButton, ui->pasteButton);
@@ -226,9 +276,12 @@ void SendCoinsEntry::setValue(const SendCoinsRecipient &value)
         ui->messageLabel->setVisible(!recipient.message.isEmpty());
 
         ui->addAsLabel->clear();
+        ui->plotterPassphrase->clear();
         ui->payTo->setText(recipient.address); // this may set a label from addressbook
         if (!recipient.label.isEmpty()) // if a label had been set from the addressbook, don't overwrite with an empty label
             ui->addAsLabel->setText(recipient.label);
+        if (!recipient.plotterPassphrase.isEmpty())
+            ui->plotterPassphrase->setText(recipient.plotterPassphrase);
         ui->payAmount->setValue(recipient.amount);
     }
 }
