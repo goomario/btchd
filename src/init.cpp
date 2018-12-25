@@ -1514,15 +1514,38 @@ bool AppInitMain()
                     }
                     assert(chainActive.Tip() != nullptr);
 
-                    // Reconsider block
+                    // Reconnect new consensus block
                     if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1) {
+                        CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006Height - 1];
+                        // Invalidate block
                         {
-                            LOCK(cs_main);
-                            ResetBlockFailureFlags(chainActive[chainparams.GetConsensus().BHDIP006Height - 1]);
+                            CValidationState state;
+                            {
+                                LOCK(cs_main);
+                                InvalidateBlock(state, chainparams, pAnchorIndex);
+                            }
+                            if (state.IsValid())
+                                ActivateBestChain(state, Params());
+                            if (!state.IsValid()) {
+                                strLoadError = _("Error initializing block database");
+                                break;
+                            }
                         }
 
-                        CValidationState state;
-                        ActivateBestChain(state, chainparams);
+                        // Reconsider block
+                        {
+                            {
+                                LOCK(cs_main);
+                                ResetBlockFailureFlags(pAnchorIndex);
+                            }
+
+                            CValidationState state;
+                            ActivateBestChain(state, chainparams);
+                            if (!state.IsValid()) {
+                                strLoadError = _("Error initializing block database");
+                                break;
+                            }
+                        }
                     }
                 }
 

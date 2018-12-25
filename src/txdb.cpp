@@ -831,7 +831,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 bool CCoinsViewDB::Upgrade(bool &fDoUpgrade) {
     fDoUpgrade = false;
 
-    const uint32_t currentCoinDbVersion = 0x20181225;
+    const uint32_t currentCoinDbVersion = 0x20181226;
 
     // Check coin database version
     {
