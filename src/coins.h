@@ -74,7 +74,6 @@ public:
             ::Serialize(s, VARINT((unsigned int&)extraData->type));
             if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-                ::Serialize(s, REF(BindPlotterPayload::As(extraData)->sign));
             } else if (extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                 ::Serialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
             } else
@@ -98,7 +97,6 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-                ::Unserialize(s, REF(BindPlotterPayload::As(extraData)->sign));
             } else if (extraDataType == DATACARRIER_TYPE_PLEDGELOAN) {
                 extraData = std::make_shared<PledgeLoanPayload>();
                 ::Unserialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
@@ -224,8 +222,11 @@ public:
     virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const;
 
-    //! Get bind plotter all outpoint. if plotterId = 0 then return all accountID binded
-    virtual void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const;
+    //! Get account bind plotter all outpoint. if plotterId = 0 then return all accountID binded
+    virtual void GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const;
+
+    //! Get plotter bind all account outpoint.
+    virtual void GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const;
 };
 
 
@@ -249,7 +250,8 @@ public:
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
+    void GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
+    void GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
 };
 
 
@@ -292,7 +294,8 @@ public:
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    void GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
+    void GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
+    void GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -362,8 +365,11 @@ public:
     CAmount GetAccountBalance(const CAccountID &accountID, 
         CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
-    /** Just check whether a given <accountID,plotterId> exist. */
-    bool HaveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId, bool *fSign = nullptr) const;
+    /** Return a reference to lastest bind plotter Coin in the cache, or a pruned one if not found. */
+    const Coin& GetActiveBindPlotterCoin(const uint64_t &plotterId) const;
+
+    /** Just check whether a given <accountID,plotterId> exist and lastest binded of plotterId. */
+    bool HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const;
 
     /** Find accont revelate plotters */
     void GetAccountBindPlotters(const CAccountID &accountID, std::set<uint64_t> &plotters) const;

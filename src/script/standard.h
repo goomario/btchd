@@ -227,11 +227,9 @@ typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
 /** For bind plotter */
 struct BindPlotterPayload : public DatacarrierPayload
 {
-    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0), sign(false) {}
+    BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0) {}
     const uint64_t& GetId() const { return id; }
-    bool IsSign() const { return sign; }
     uint64_t id;
-    bool sign;
 
     // Checkable cast for CDatacarrierPayloadRef
     static BindPlotterPayload * As(CDatacarrierPayloadRef &ref) {
@@ -265,11 +263,17 @@ struct PledgeLoanPayload : public DatacarrierPayload
 /** The bind plotter lock amount */
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 10 * CENT;
 
-/** Check whether a string is a valid passphrase or plotter ID. */
-bool IsValidPassphrase(const std::string& passphrase_or_id, uint64_t *plotterId = nullptr);
+/** The height for bind plotter default maximum relative tip height */
+static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 6;
+
+/** The height for bind plotter maximum relative tip height */
+static const int PROTOCOL_BINDPLOTTER_MAXALIVE = 288 * 7;
+
+/** Check whether a string is a valid passphrase ID. */
+bool IsValidPassphrase(const std::string& passphrase);
 
 /** Generate a bind plotter script. */
-CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase_or_id, int lastActiveHeight);
+CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase, int lastActiveHeight);
 
 /** The minimal pledge loan amount */
 static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
@@ -278,6 +282,6 @@ static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);
 
 /** Parse a datacarrier transaction. */
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *fRejectTx = nullptr, int *lastActiveHeightForBind = nullptr);
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *pReject = nullptr, int *pLastActiveHeight = nullptr);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

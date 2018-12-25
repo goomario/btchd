@@ -700,12 +700,26 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     return availableBalance;
 }
 
-void CCoinsViewDB::GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+void CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     BindPlotterEntry entry(accountID, plotterId, COutPoint(uint256(), 0));
     pcursor->Seek(entry);
     while (pcursor->Valid()) {
         if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.accountID == accountID && (plotterId == 0 || entry.plotterId == plotterId)) {
+            outpoints.insert(entry.outpoint);
+        } else {
+            break;
+        }
+        pcursor->Next();
+    }
+}
+
+void CCoinsViewDB::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
+    BindPlotterEntry entry(0, 0, COutPoint(uint256(), 0));
+    pcursor->Seek(entry);
+    while (pcursor->Valid()) {
+        if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.plotterId == plotterId) {
             outpoints.insert(entry.outpoint);
         } else {
             break;
@@ -815,7 +829,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
 /** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    const uint32_t currentCoinDbVersion = 0x20181218;
+    const uint32_t currentCoinDbVersion = 0x20181225;
 
     // Check coin database version
     {

@@ -3553,11 +3553,11 @@ UniValue bindplotter(const JSONRPCRequest& request)
     if (!IsValidDestination(bindToDest))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 
-    // Passphrase or Plotter ID or Bind hex
+    // Passphrase or Bind hex
     if (!request.params[1].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter passphrase");
     const std::string bindParamString = request.params[1].get_str();
-    bool fBindHexData = IsHex(bindParamString) && bindParamString.length() >= 17;
+    bool fBindHexData = IsHex(bindParamString);
 
     // Wallet comments
     CWalletTx wtx;
@@ -3609,7 +3609,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
         std::vector<unsigned char> bindData(ParseHex(bindParamString));
         vecSend[1].scriptPubKey = CScript(bindData.cbegin(), bindData.cend());
     } else {
-        vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + 288*7);
+        vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     }
     if (vecSend[1].scriptPubKey.empty() || !vecSend[1].scriptPubKey.IsUnspendable())
         throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
@@ -3619,14 +3619,20 @@ UniValue bindplotter(const JSONRPCRequest& request)
     }
 
     // Check
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
+    bool fReject = false;
+    int lastActiveHeight = 0;
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1, &fReject, &lastActiveHeight);
     if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
-        if (fBindHexData)
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data, maybe not for current address");
+        if (fReject)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Not for current address");
+        else if (lastActiveHeight != 0 && lastActiveHeight < chainActive.Height() + 1)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid active height. Last active height is %d", lastActiveHeight));
+        else if (fBindHexData)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data");
         else
             throw JSONRPCError(RPC_WALLET_ERROR, "Error on create bind data");
     }
-    if (pcoinsTip->HaveBindPlotter(GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey), BindPlotterPayload::As(payload)->GetId()))
+    if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey), BindPlotterPayload::As(payload)->GetId()))
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s.",
                 std::to_string(BindPlotterPayload::As(payload)->GetId()), EncodeDestination(bindToDest)));
 
@@ -3768,12 +3774,11 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
             "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
-            "    \"signature\": signature,            (bool) The binded plotter ID with signature.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
-            "    \"valid\": valid,                    (bool) The bind valid.\n"
+            "    \"valid\": valid,                    (bool) The bind valid (Maybe not last bind for plotterId).\n"
             "    \"watchonly\": watchonly,            (bool) The bind to watchonly address.\n"
             "  }\n"
 
@@ -3818,7 +3823,6 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         uint256 txid;
         CTxDestination address;
         uint64_t plotterId;
-        bool fSign;
         bool fValid;
         bool fWatchonly;
     } TxBindPlotter;
@@ -3848,7 +3852,6 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         txBindPlotter.txid = wtx.GetHash();
         txBindPlotter.address = address;
         txBindPlotter.plotterId = BindPlotterPayload::As(payload)->GetId();
-        txBindPlotter.fSign = BindPlotterPayload::As(payload)->IsSign();
         txBindPlotter.fValid = fValid;
         txBindPlotter.fWatchonly = (ismine & ISMINE_WATCH_ONLY) != 0;
         mapTxBindPlotter.insert(std::pair<int64_t, TxBindPlotter>(wtx.nTimeReceived, txBindPlotter));
@@ -3869,7 +3872,6 @@ UniValue listbindplotters(const JSONRPCRequest& request)
         item.push_back(Pair("amount", ValueFromAmount(wtx.tx->vout[0].nValue)));
         item.push_back(Pair("address", EncodeDestination(it->second.address)));
         item.push_back(Pair("plotterId", std::to_string(it->second.plotterId)));
-        item.push_back(Pair("signature", it->second.fSign));
         if (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) {
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));

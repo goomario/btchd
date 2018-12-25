@@ -155,18 +155,18 @@ void AddressBookPage::setModel(AddressTableModel *_model)
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
 #else
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
 #endif
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
@@ -273,6 +273,7 @@ void AddressBookPage::selectionChanged()
         case ReceivingTab:
             // Deleting receiving addresses, however, is not allowed
             {
+                LOCK(model->getWallet()->cs_wallet);
                 QModelIndex index = indexes.at(0);
                 std::string strAddress = index.sibling(index.row(), (int)AddressTableModel::Address).data(Qt::EditRole).toString().toStdString();
                 CTxDestination dest = DecodeDestination(strAddress);
@@ -333,9 +334,9 @@ void AddressBookPage::on_exportButton_clicked()
     writer.addColumn("Label", AddressTableModel::Label, Qt::EditRole);
     writer.addColumn("Address", AddressTableModel::Address, Qt::EditRole);
     writer.addColumn("Amount", AddressTableModel::Amount, Qt::EditRole);
+    writer.addColumn("Locked amount", AddressTableModel::LockedAmount, Qt::EditRole);
     writer.addColumn("Pledge loan amount", AddressTableModel::LoanAmount, Qt::EditRole);
     writer.addColumn("Pledge debit amount", AddressTableModel::DebitAmount, Qt::EditRole);
-    writer.addColumn("Locked amount", AddressTableModel::LockedAmount, Qt::EditRole);
 
     if(!writer.write()) {
         QMessageBox::critical(this, tr("Exporting Failed"),
@@ -346,10 +347,13 @@ void AddressBookPage::on_exportButton_clicked()
 void AddressBookPage::contextualMenu(const QPoint &point)
 {
     QModelIndex index = ui->tableView->indexAt(point);
-    if(index.isValid())
+    if (index.isValid())
     {
-        if (setPrimaryAction)
-            setPrimaryAction->setEnabled(deleteAction != nullptr && deleteAction->isEnabled());
+        if (setPrimaryAction) {
+            std::string strAddress = index.sibling(index.row(), (int)AddressTableModel::Address).data(Qt::EditRole).toString().toStdString();
+            CTxDestination dest = DecodeDestination(strAddress);
+            setPrimaryAction->setEnabled(!model->getWallet()->IsPrimaryDestination(dest));
+        }
 
         contextMenu->exec(QCursor::pos());
     }

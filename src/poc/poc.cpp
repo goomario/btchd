@@ -478,7 +478,7 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
         } else {
             accountID = GetAccountIDByAddress(address);
         }
-        if (!pcoinsTip->HaveBindPlotter(accountID, nPlotterId))
+        if (!pcoinsTip->HaveActiveBindPlotter(accountID, nPlotterId))
             return INVALID_DEADLINE_NOTBIND;
     }
 

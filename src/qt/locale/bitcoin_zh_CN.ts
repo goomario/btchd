@@ -143,18 +143,16 @@
         <translation>仅观察地址</translation>
     </message>
     <message>
-        <source>Total: %1
-Avaiable: %2
+        <source>Amount: %1
+Locked: %2
 Loan: %3
 Debit: %4
-Avaiable pledge: %5
-Locked: %6</source>
+Available pledge: %5</source>
         <translation>总的金额: %1
-可用金额: %2
+锁定的金额: %2
 借出抵押金额: %3
 借入抵押金额: %4
-可用于挖矿的抵押金额: %5
-锁定的金额: %6</translation>
+可用于挖矿的抵押金额: %5</translation>
     </message>
 </context>
 <context>
@@ -2357,10 +2355,6 @@ Locked: %6</source>
         <translation>你可以安全的拷贝并发送下面已签名的绑定数据给 %1 地址的拥有者以激活绑定：</translation>
     </message>
     <message>
-        <source>You can copy and send below unsignature bind data to %1 owner, and let the bind active:</source>
-        <translation>你可以拷贝并发送下面未签名的绑定数据给 %1 地址的拥有者以激活绑定：</translation>
-    </message>
-    <message>
         <source>Copy quantity</source>
         <translation>复制数目</translation>
     </message>
@@ -2648,8 +2642,8 @@ Locked: %6</source>
         <translation>为这个地址输入一个标签，以便将它添加到您的地址簿</translation>
     </message>
     <message>
-        <source>Enter your plotter passphrase or digit ID</source>
-        <translation>请输入您算力的脑密码或者数字ID</translation>
+        <source>Enter your plotter passphrase</source>
+        <translation>请输入您算力的脑密码</translation>
     </message>
 </context>
 <context>
@@ -3005,11 +2999,11 @@ Locked: %6</source>
     </message>
     <message>
         <source>Plotter ID</source>
-        <translation>算力ID</translation>
+        <translation>算力 ID</translation>
     </message>
     <message>
         <source>Unbinded Plotter ID</source>
-        <translation>已解绑ID</translation>
+        <translation>已解绑 ID</translation>
     </message>
     <message>
         <source>Withdrawn</source>
@@ -3018,14 +3012,6 @@ Locked: %6</source>
     <message>
         <source>Relevant transaction ID</source>
         <translation>关联的交易ID</translation>
-    </message>
-    <message>
-        <source>Has signature</source>
-        <translation>已签名</translation>
-    </message>
-    <message>
-        <source>Not signature</source>
-        <translation>未签名</translation>
     </message>
 </context>
 <context>
@@ -3130,6 +3116,26 @@ Locked: %6</source>
     <message>
         <source>(no label)</source>
         <translation>(无标签)</translation>
+    </message>
+    <message>
+        <source>Sent pledge to</source>
+        <translation>借出抵押</translation>
+    </message>
+    <message>
+        <source>Received pledge with</source>
+        <translation>借入抵押</translation>
+    </message>
+    <message>
+        <source>This pledge has withdraw</source>
+        <translation>此抵押已被赎回</translation>
+    </message>
+    <message>
+        <source>Self pledge</source>
+        <translation>抵押给自己</translation>
+    </message>
+    <message>
+        <source>Withdrawn pledge</source>
+        <translation>赎回抵押</translation>
     </message>
     <message>
         <source>Transaction status. Hover over this field to show number of confirmations.</source>
@@ -3445,7 +3451,7 @@ Locked: %6</source>
     </message>
     <message>
         <source>Plotter ID:</source>
-        <translation>算力ID：</translation>
+        <translation>算力 ID：</translation>
     </message>
     <message>
         <source>From address:</source>

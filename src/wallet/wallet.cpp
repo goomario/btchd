@@ -1065,7 +1065,6 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
                         fUpdated = true;
                         wtx.mapValue["type"] = "unbindplotter";
                         wtx.mapValue["plotter_id"] = relevantWalletTx.mapValue["plotter_id"];
-                        wtx.mapValue["signature"] = relevantWalletTx.mapValue["signature"];
                         wtx.mapValue["from"] = relevantWalletTx.mapValue["from"];
                         wtx.mapValue["relevant_txid"] = relevantWalletTx.tx->GetHash().ToString();
                     } else if (type == "pledge") {
@@ -1082,7 +1081,6 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "bindplotter";
             wtx.mapValue["plotter_id"] = std::to_string(BindPlotterPayload::As(payload)->GetId());
-            wtx.mapValue["signature"] = BindPlotterPayload::As(payload)->IsSign() ? "1" : "0";
 
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
@@ -3128,12 +3126,15 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
     // nLockTime that preclude a fix later.
     txNew.nLockTime = chainActive.Height();
 
-    // Secondly occasionally randomly pick a nLockTime even further back, so
-    // that transactions that are delayed after signing for whatever reason,
-    // e.g. high-latency mix networks and some CoinJoin implementations, have
-    // better privacy.
-    if (GetRandInt(10) == 0)
-        txNew.nLockTime = std::max(0, (int)txNew.nLockTime - GetRandInt(100));
+    // Uniform transaction forbidden packaging in further back block
+    if (txNew.nVersion != CTransaction::UNIFORM_VERSION) {
+        // Secondly occasionally randomly pick a nLockTime even further back, so
+        // that transactions that are delayed after signing for whatever reason,
+        // e.g. high-latency mix networks and some CoinJoin implementations, have
+        // better privacy.
+        if (GetRandInt(10) == 0)
+            txNew.nLockTime = std::max(0, (int)txNew.nLockTime - GetRandInt(100));
+    }
 
     assert(txNew.nLockTime <= (unsigned int)chainActive.Height());
     assert(txNew.nLockTime < LOCKTIME_THRESHOLD);

@@ -64,7 +64,7 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
         ui->plotterPassphraseLabel->setVisible(true);
         ui->plotterPassphrase->setVisible(true);
     #if QT_VERSION >= 0x040700
-        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase or digit ID"));
+        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase"));
     #endif
         ui->payAmount->setReadOnly(true);
         ui->checkboxSubtractFeeFromAmount->setEnabled(false);
