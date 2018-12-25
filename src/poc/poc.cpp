@@ -347,22 +347,24 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
 
     if (fEnableCache) {
         // From cache
+        const uint256 hash = block.GetHash();
         BlockDeadlineCacheMap::iterator itCache;
         bool inserted;
-        std::tie(itCache, inserted) = mapBlockDeadlineCache.emplace(block.GetHash(), poc::INVALID_DEADLINE);
+        std::tie(itCache, inserted) = mapBlockDeadlineCache.emplace(hash, poc::INVALID_DEADLINE);
         if (inserted) {
             itCache->second = CalcDL(prevBlockIndex, block, params);
             
             // Prune deadline cache
-            if (mapBlockDeadlineCache.size() > mapBlockIndex.size()) {
+            if (mapBlockDeadlineCache.size() > mapBlockIndex.size() + params.nMinerConfirmationWindow) {
                 uint64_t deadline = itCache->second;
                 for (auto it = mapBlockDeadlineCache.begin(); it != mapBlockDeadlineCache.end();) {
-                    if (mapBlockIndex.count(it->first)) {
+                    if (it->first == hash || mapBlockIndex.count(it->first)) {
                         ++it;
                     } else {
                         it = mapBlockDeadlineCache.erase(it);
                     }
                 }
+
                 return deadline;
             }
         }
