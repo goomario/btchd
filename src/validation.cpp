@@ -2047,11 +2047,13 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                 error("ConnectBlock(): coinbase pays too less to fund (actual=%d vs limit=%d)", block.vtx[0]->vout[1].nValue, blockReward.fund),
                                 REJECT_INVALID, "bad-cb-amount");
 
+            // Force check other outputs
             if (block.vtx[0]->vout.size() > 3 || (block.vtx[0]->vout.size() == 3 && block.vtx[0]->vout[2].nValue != 0))
                 return state.DoS(100,
                                 error("ConnectBlock(): coinbase cannot pays to multi outputs"),
                                 REJECT_INVALID, "bad-cb-multiouts");
         } else {
+            // Force check other outputs
             if (block.vtx[0]->vout.size() > 2 || (block.vtx[0]->vout.size() == 2 && block.vtx[0]->vout[1].nValue != 0))
                 return state.DoS(100,
                                 error("ConnectBlock(): coinbase cannot pays to multi outputs"),
@@ -2059,9 +2061,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
     } else {
         // Old standard transaction
-        if (pindex->nVersion&VERSIONBITS_BHDV2_BITS) {
+        unsigned int fundIndex = std::numeric_limits<unsigned int>::max();
+        if (pindex->nVersion & VERSIONBITS_BHDV2_BITS) {
             // New block: 0x20000004
-            unsigned int fundIndex = std::numeric_limits<unsigned int>::max();
             // Check real fund
             if (blockReward.fund != 0) {
                 // Require pay to fund
@@ -2106,15 +2108,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                     error("ConnectBlock(): coinbase pays too less to miner[1] (actual=%d vs limit=%d)", block.vtx[0]->vout[1].nValue, blockReward.minerBHDIP004Compatiable),
                                     REJECT_INVALID, "bad-cb-amount");
             }
-
-            // All output for miner must be unique miner account, otherwise can steal pledge of other miner
-            for (unsigned int i = 1; i < block.vtx[0]->vout.size(); i++) {
-                if (i != fundIndex && block.vtx[0]->vout[i].nValue > 0 && block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
-                    return state.DoS(100,
-                                    error("ConnectBlock(): coinbase cannot pays to multi miners"),
-                                    REJECT_INVALID, "bad-cb-multiminer");
-                }
-            }
         } else {
             // Old block: 0x20000000
             if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004InActiveHeight)
@@ -2125,7 +2118,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             CAmount fund = (blockReward.minerBHDIP004Compatiable != 0 ? blockReward.minerBHDIP004Compatiable : blockReward.fund);
             if (fund != 0) {
                 // Require pay to fund
-                // [0] => miner, [1] => fund, [2] => miner-append
+                // For BHDIP004: [0] => miner, [1] => fund, [2] => miner-append
                 // Check output size
                 if (block.vtx[0]->vout.size() < 2)
                     return state.DoS(100,
@@ -2157,21 +2150,24 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     }
                 }
 
-                // All output for miner must be unique miner account, otherwise can steal pledge of other miner
-                for (unsigned int i = 2; i < block.vtx[0]->vout.size(); i++) {
-                    if (block.vtx[0]->vout[i].nValue != 0 && block.vtx[0]->vout[i].scriptPubKey != block.vtx[0]->vout[0].scriptPubKey) {
-                        return state.DoS(100,
-                                        error("ConnectBlock(): coinbase cannot pays to multi miners"),
-                                        REJECT_INVALID, "bad-cb-multiminer");
-                    }
-                }
-            } else {
-                // Check multi output
-                if (block.vtx[0]->vout.size() > 2 || (block.vtx[0]->vout.size() == 2 && block.vtx[0]->vout[1].nValue != 0))
-                    return state.DoS(100,
-                                    error("ConnectBlock(): coinbase cannot pays to multi outputs"),
-                                    REJECT_INVALID, "bad-cb-multiouts");
+                fundIndex = 1;
             }
+        }
+
+        // Check multi output
+        // All output for miner must be unique miner account, otherwise can steal pledge of other miner
+        for (unsigned int i = 1; i < block.vtx[0]->vout.size(); i++) {
+            if (i == fundIndex || block.vtx[0]->vout[i].nValue == 0 || block.vtx[0]->vout[i].scriptPubKey == block.vtx[0]->vout[0].scriptPubKey)
+                continue;
+
+            // If has other output, must output to fund
+            // Compatiable: Testnet 8501 vout[1] to fund
+            CTxDestination dest;
+            ExtractDestination(block.vtx[0]->vout[i].scriptPubKey, dest);
+            if (!chainparams.GetConsensus().BHDFundAddressPool.count(EncodeDestination(dest)))
+                return state.DoS(100,
+                                error("ConnectBlock(): coinbase cannot pays to multi outputs"),
+                                REJECT_INVALID, "bad-cb-multiouts");
         }
     }
 
