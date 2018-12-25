@@ -113,8 +113,9 @@ public:
 
         consensus.BHDIP004ActiveHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
-        consensus.BHDIP006Height = 128800; // BHDIP006. Active about on Wed, 02 Jan 2019 09:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = 130816; // BHDIP006. Bind plotter active. Active about on Wed, 09 Jan 2019 09:00:00 GMT
+        consensus.BHDIP006Height = 129100; // BHDIP006. Active about on Wed, 03 Jan 2019 10:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter active at 130816 about when Wed, 10 Jan 2019 10:00:00 GMT
+        assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 288 * 3);
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -459,7 +460,8 @@ public:
         consensus.BHDIP004ActiveHeight = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
         consensus.BHDIP004InActiveHeight = 21000;
         consensus.BHDIP006Height = 41290; // BHDIP006
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active at 41296
+        assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 5);
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -735,6 +737,7 @@ public:
         consensus.BHDIP004InActiveHeight = 0;
         consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200;
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50;
+        assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 5);
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
