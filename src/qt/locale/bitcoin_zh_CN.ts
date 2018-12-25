@@ -3132,6 +3132,26 @@ Locked: %6</source>
         <translation>(无标签)</translation>
     </message>
     <message>
+        <source>Sent pledge to</source>
+        <translation>借出抵押</translation>
+    </message>
+    <message>
+        <source>Received pledge with</source>
+        <translation>借入抵押</translation>
+    </message>
+    <message>
+        <source>This pledge has withdraw</source>
+        <translation>此抵押已被赎回</translation>
+    </message>
+    <message>
+        <source>Self pledge</source>
+        <translation>抵押给自己</translation>
+    </message>
+    <message>
+        <source>Withdrawn pledge</source>
+        <translation>赎回抵押</translation>
+    </message>
+    <message>
         <source>Transaction status. Hover over this field to show number of confirmations.</source>
         <translation>交易状态。鼠标移到此区域可显示确认项数量。</translation>
     </message>
