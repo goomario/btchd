@@ -1994,17 +1994,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
 
     // Check bind
-    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight) {
-        bool fSigned = false;
-        if (!pcoinsTip->HaveBindPlotter(pindex->minerAccountID, pindex->nPlotterId, &fSigned)) {
-            CTxDestination dest = CNoDestination();
-            ExtractDestination(block.vtx[0]->vout[1].scriptPubKey, dest);
-            return state.DoS(100,
-                            error("ConnectBlock(): Must bind %" PRIu64 " to %s", pindex->nPlotterId, EncodeDestination(dest)),
-                            REJECT_INVALID, "bad-cb-bindplotter");
-        }
-        if (!fSigned) // Unsignatured bind decrease 10% chain work
-            pindex->nChainWork = (pindex->pprev ? pindex->pprev->nChainWork : 0) + GetBlockProof(*pindex, Params().GetConsensus()) * 9 / 10;
+    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight &&
+            !pcoinsTip->HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
+        CTxDestination dest = CNoDestination();
+        ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
+        std::string address = EncodeDestination(dest);
+        return state.DoS(100,
+                        error("ConnectBlock(): Not active binded %" PRIu64 " to %s", pindex->nPlotterId, address),
+                        REJECT_INVALID, "bad-cb-bindplotter");
     }
 
     // GetBlockReward() must use pre CCoinsView

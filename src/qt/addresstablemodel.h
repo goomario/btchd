@@ -33,9 +33,9 @@ public:
         Label = 2,      /**< User specified label */
         Address = 3,    /**< BitcoinHD address */
         Amount = 4,     /**< BitcoinHD amount */
-        LoanAmount = 5,   /**< BitcoinHD loan amount */
-        DebitAmount = 6,  /**< BitcoinHD debit amount */
-        LockedAmount = 7, /**< BitcoinHD locked amount */
+        LockedAmount = 5, /**< BitcoinHD locked amount */
+        LoanAmount = 6,   /**< BitcoinHD loan amount */
+        DebitAmount = 7,  /**< BitcoinHD debit amount */
     };
 
     enum RoleIndex {

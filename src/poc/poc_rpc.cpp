@@ -98,7 +98,7 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     } else if (deadline == poc::INVALID_DEADLINE_NOTBIND) {
         result.pushKV("result", "error");
         result.pushKV("errorCode", "002");
-        result.pushKV("errorDescription", "Not bind plotter ID to address");
+        result.pushKV("errorDescription", "Not active bind plotter ID to address");
     } else {
         result.pushKV("result", "success");
         result.pushKV("deadline", deadline);

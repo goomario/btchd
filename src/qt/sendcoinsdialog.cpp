@@ -332,7 +332,7 @@ void SendCoinsDialog::on_sendButton_clicked()
         LOCK(cs_main);
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
         assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
-        if (pcoinsTip->HaveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
+        if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
             prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
                                 QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
     }
@@ -390,27 +390,15 @@ void SendCoinsDialog::on_sendButton_clicked()
     {
     case PayOperateMethod::SendPledge:
         titleString = tr("Confirm send pledge coins");
-        questionString = tr("Are you sure you want to send pledge?");
+        questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to send pledge?") + "</b></span>";
         break;
     case PayOperateMethod::BindPlotter:
         titleString = tr("Confirm bind plotter");
-        questionString = tr("Are you sure you want to bind plotter?");
+        questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to bind plotter?") + "</b></span>";
         {
             const SendCoinsRecipient &rcp = recipients[0];
             QString amount = "<b>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), rcp.amount) + "</b>";
-            QString plotterId;
-            {
-                uint64_t id;
-                if (IsValidPassphrase(rcp.plotterPassphrase.toStdString(), &id)) {
-                    if (id != 0) {
-                        plotterId = "<b>" + QString::number(id) + "</b>";
-                    } else {
-                        plotterId = "<b>" + QString::number(PocLegacy::GeneratePlotterId(rcp.plotterPassphrase.toStdString())) + "</b>";
-                    }
-                } else {
-                    plotterId = "<b>" + tr("Invalid plotter") + "</b>";
-                }
-            }
+            QString plotterId = "<b>" + QString::number(PocLegacy::GeneratePlotterId(rcp.plotterPassphrase.toStdString())) + "</b>";
             QString address;
             if (rcp.label.length() > 0)
                 address = GUIUtil::HtmlEscape(rcp.label) + "(<span style='font-family: monospace;'>" + rcp.address + "</span>)";
@@ -425,7 +413,7 @@ void SendCoinsDialog::on_sendButton_clicked()
         break;
     default:
         titleString = tr("Confirm send coins");
-        questionString = tr("Are you sure you want to send?");
+        questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to send?") + "<b></span>";
         break;
     }
     questionString.append("<br /><br />%1");
@@ -503,7 +491,7 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
 
     LOCK(cs_main);
     CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
-    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + 288*7);
+    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     if (script.empty())
         return;
     // Check
@@ -529,10 +517,7 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
 
     QString information;
     information += tr("%1 bind to %2").arg(plotterId, address) + "<br /><br />";
-    if (BindPlotterPayload::As(payload)->IsSign())
-        information += tr("You can copy and send below signature bind data to %1 owner, and let the bind active:").arg(address);
-    else
-        information += tr("You can copy and send below unsignature bind data to %1 owner, and let the bind active:").arg(address);
+    information += tr("You can copy and send below signature bind data to %1 owner, and let the bind active:").arg(address);
     information += "<hr />";
     information += "<span>";
     information += QString::fromStdString(HexStr(script.begin(), script.end()));

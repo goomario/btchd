@@ -23,7 +23,8 @@ CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &map
     if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
     return 0;
 }
-void CCoinsView::GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const { }
+void CCoinsView::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const { }
+void CCoinsView::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const { }
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const {
     Coin coin;
     return GetCoin(outpoint, coin);
@@ -44,8 +45,11 @@ CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMa
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
     return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
-void CCoinsViewBacked::GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
-    base->GetBindPlotterEntries(accountID, plotterId, outpoints);
+void CCoinsViewBacked::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+    base->GetAccountBindPlotterEntries(accountID, plotterId, outpoints);
+}
+void CCoinsViewBacked::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+    base->GetBindPlotterAccountEntries(plotterId, outpoints);
 }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
@@ -235,14 +239,6 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
 
 CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
-    // Invalid account ID
-    if (accountID == 0) {
-        if (pBindPlotterBalance != nullptr) *pBindPlotterBalance = 0;
-        if (pPledgeLoanBalance != nullptr) *pPledgeLoanBalance = 0;
-        if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
-        return 0;
-    }
-
     // Merge modified coin
     assert(&mapParentModifiedCoins != &cacheCoins);
     if (cacheCoins.empty()) {
@@ -302,12 +298,9 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
     }
 }
 
-void CCoinsViewCache::GetBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
-    if (accountID == 0)
-        return;
-
+void CCoinsViewCache::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
     // From base view
-    base->GetBindPlotterEntries(accountID, plotterId, outpoints);
+    base->GetAccountBindPlotterEntries(accountID, plotterId, outpoints);
 
     // Merge by cache
     for (CCoinsMap::iterator it = cacheCoins.begin(); it != cacheCoins.end(); it++) {
@@ -323,45 +316,74 @@ void CCoinsViewCache::GetBindPlotterEntries(const CAccountID &accountID, const u
     }
 }
 
+void CCoinsViewCache::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+    // From base view
+    base->GetBindPlotterAccountEntries(plotterId, outpoints);
+
+    // Merge by cache
+    for (CCoinsMap::iterator it = cacheCoins.begin(); it != cacheCoins.end(); it++) {
+        if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.extraData || it->second.coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER) {
+            continue;
+        }
+        if (BindPlotterPayload::As(it->second.coin.extraData)->GetId() == plotterId) {
+            if (it->second.coin.IsSpent())
+                outpoints.erase(it->first);
+            else
+                outpoints.insert(it->first);
+        }
+    }
+}
+
 CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
     // Merge with base cache coins
     return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 
-bool CCoinsViewCache::HaveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId, bool *fSign) const {
+const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId) const {
     if (plotterId == 0)
-        return false;
+        return coinEmpty;
 
     // Find all bind plotter outpoint
     std::set<COutPoint> outpoints;
-    GetBindPlotterEntries(accountID, plotterId, outpoints);
-    if (outpoints.empty())
-        return false;
-
-    // Find last outpoint
-    if (fSign != nullptr) {
-        // Care signature
+    GetBindPlotterAccountEntries(plotterId, outpoints);
+    if (!outpoints.empty()) {
         // Last bind is actived
+        const COutPoint *lastOutPoint = nullptr;
         uint32_t lastHeight = 0;
         for (auto it = outpoints.rbegin(); it != outpoints.rend(); ++it) {
             Coin coin;
-            GetCoin(*it, coin);
+            bool fSpendable = GetCoin(*it, coin);
+            assert(fSpendable);
             assert(coin.extraData);
             assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
             assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
-            // Same height select largest tx hash
+            // Same height select largest COutPoint<tx,n>
             if (lastHeight < coin.nHeight) {
                 lastHeight = coin.nHeight;
-                *fSign = BindPlotterPayload::As(coin.extraData)->IsSign();
+                lastOutPoint = &*it;
             }
         }
+        if (lastOutPoint) {
+            const Coin &coin = AccessCoin(*lastOutPoint);
+            assert(!coin.IsSpent());
+            assert(coin.extraData);
+            assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+            assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
+            return coin;
+        }
     }
-    return true;
+    
+
+    return coinEmpty;
+}
+
+bool CCoinsViewCache::HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const {
+    return accountID != 0 && GetActiveBindPlotterCoin(plotterId).refOutAccountID == accountID;
 }
 
 void CCoinsViewCache::GetAccountBindPlotters(const CAccountID &accountID, std::set<uint64_t> &plotters) const {
     std::set<COutPoint> outpoints;
-    GetBindPlotterEntries(accountID, 0, outpoints);
+    GetAccountBindPlotterEntries(accountID, 0, outpoints);
     for (auto it = outpoints.cbegin(); it != outpoints.cend(); ++it) {
         Coin coin;
         GetCoin(*it, coin);

@@ -142,19 +142,17 @@
         <source>Watchonly address</source>
         <translation>僅觀察位址</translation>
     </message>
-    <message>
-        <source>Total: %1
-Avaiable: %2
+        <message>
+        <source>Amount: %1
+Locked: %2
 Loan: %3
 Debit: %4
-Avaiable pledge: %5
-Locked: %6</source>
+Available pledge: %5</source>
         <translation>總的金額: %1
-可用金額: %2
+鎖定的金額: %2
 借出抵押金額: %3
 借入抵押金額: %4
-可用於開採的抵押金額: %5
-鎖定的金額: %6</translation>
+可用於開採的抵押金額: %5</translation>
     </message>
 </context>
 <context>
@@ -2349,10 +2347,6 @@ Locked: %6</source>
         <translation>你可以安全的拷貝並發送下面已簽名的綁定數據給 %1 地址的擁有者以激活綁定:</translation>
     </message>
     <message>
-        <source>You can copy and send below unsignature bind data to %1 owner, and let the bind active:</source>
-        <translation>你可以拷貝並發送下面未簽名的綁定數據給 %1 地址的擁有者以激活綁定:</translation>
-    </message>
-    <message>
         <source>Copy quantity</source>
         <translation>複製數目</translation>
     </message>
@@ -2640,8 +2634,8 @@ Locked: %6</source>
         <translation>請輸入這個位址的標記來把它加進位址簿中</translation>
     </message>
     <message>
-        <source>Enter your plotter passphrase or digit ID</source>
-        <translation>請輸入您算力的腦密碼或者數字ID</translation>
+        <source>Enter your plotter passphrase</source>
+        <translation>請輸入您算力的腦密碼</translation>
     </message>
 </context>
 <context>
@@ -2997,11 +2991,11 @@ Locked: %6</source>
     </message>
     <message>
         <source>Plotter ID</source>
-        <translation>算力ID</translation>
+        <translation>算力 ID</translation>
     </message>
     <message>
         <source>Unbinded Plotter ID</source>
-        <translation>已解綁ID</translation>
+        <translation>已解綁 ID</translation>
     </message>
     <message>
         <source>Withdrawn</source>
@@ -3010,14 +3004,6 @@ Locked: %6</source>
     <message>
         <source>Relevant transaction ID</source>
         <translation>關聯的交易ID</translation>
-    </message>
-    <message>
-        <source>Has signature</source>
-        <translation>已簽名</translation>
-    </message>
-    <message>
-        <source>Not signature</source>
-        <translation>未簽名</translation>
     </message>
 </context>
 <context>
@@ -3457,7 +3443,7 @@ Locked: %6</source>
     </message>
     <message>
         <source>Plotter ID:</source>
-        <translation>算力ID：</translation>
+        <translation>算力 ID：</translation>
     </message>
     <message>
         <source>From address:</source>

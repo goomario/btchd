@@ -48,7 +48,10 @@ unsigned int ParseConfirmTarget(const UniValue& value)
 
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, bool keepScript)
 {
-    const uint64_t nNonce = 0, nPlotterId = 1, nDeadline = 0;
+    // rough high night desk familiar hop freely needle slowly threaten process flicker
+    // =>
+    // 11529889285493050610ULL;
+    const uint64_t nNonce = 0, nPlotterId = 11529889285493050610ULL, nDeadline = 0;
 
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -702,6 +705,40 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
+UniValue getactivebindplotteradress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "getactivebindplotteradress plotterId\n"
+            "\nReturn active binded address of plotter ID.\n"
+            "\nArguments:\n"
+            "1. plotterId           (string, required) The plotter ID\n"
+            "\nResult:\n"
+            "\"address\"    (string) The active binded BitcoinHD address\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getactivebindplotteradress", "\"11529889285493050610\"")
+            + HelpExampleRpc("getactivebindplotteradress", "\"11529889285493050610\"")
+        );
+
+    if (!request.params[0].isStr())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
+    uint64_t plotterId;
+    try {
+        plotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
+    } catch(...) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
+    }
+    
+    LOCK(cs_main);
+    const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
+    if (!coin.IsSpent()) {
+        CTxDestination dest;
+        ExtractDestination(coin.out.scriptPubKey, dest);
+        return EncodeDestination(dest);
+    }
+    return UniValue();
+}
+
 UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
@@ -718,7 +755,6 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
             "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
-            "    \"signature\": signature,            (bool) The binded plotter ID with signature.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
@@ -764,7 +800,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     {
         LOCK(cs_main);
         std::set<COutPoint> outpoints;
-        pcoinsTip->GetBindPlotterEntries(accountID, plotterId, outpoints);
+        pcoinsTip->GetAccountBindPlotterEntries(accountID, plotterId, outpoints);
         for (auto it = outpoints.cbegin(); it != outpoints.cend(); ++it) {
             Coin coin;
             if (pcoinsTip->GetCoin(*it, coin)) {
@@ -792,7 +828,6 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             }
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("plotterId", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
-            item.push_back(Pair("signature", BindPlotterPayload::As(coin.extraData)->IsSign()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
@@ -811,12 +846,12 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
         throw std::runtime_error(
-            "createbindplotterdata address passphrase_or_id (lastActiveHeight)\n"
+            "createbindplotterdata address passphrase (lastActiveHeight)\n"
             "\nReturn bind plotter hex data.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
-            "2. passphrase_or_id    (string, required) The passphrase or plotter id for bind\n"
-            "3. lastActiveHeight    (numeric, optional) The last active height for bind data\n"
+            "2. passphrase          (string, required) The passphrase for bind\n"
+            "3. lastActiveHeight    (numeric, optional) The last active height for bind data. Max large then tip 12 blocks\n"
             ""
             "\nResult: bind plotter hex data. See \"bindplotter\"\n"
 
@@ -836,7 +871,10 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 
     LOCK(cs_main);
     if (lastActiveHeight == 0)
-        lastActiveHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + 288 * 7;
+        lastActiveHeight = chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
+    if (lastActiveHeight > chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height to large (limit %d)", chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE));
+
     CScript script = GetBindPlotterScriptForDestination(DecodeDestination(request.params[0].get_str()), request.params[1].get_str(), lastActiveHeight);
     if (script.empty())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot generate bind script");
@@ -857,9 +895,8 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"result\":\"result\",                     (string) Verify result. 1.success; 2.reject: can't verify signature; 3.invalid: The data not bind plotter hex data\n"
-            "    \"signature\":signature,                 (bool) The bind signature flag.\n"
             "    \"plotterId\":\"plotterId\",               (string) The binded plotter ID.\n"
-            "    \"lastActiveHeight\":lastActiveHeight,   (numeric) The bind last active height for tx package. Only for signature bind.\n"
+            "    \"lastActiveHeight\":lastActiveHeight,   (numeric) The bind last active height for tx package.\n"
             "    \"address\":\"address\",                   (string) The BitcoinHD address of the binded.\n"
             "  }\n"
 
@@ -894,9 +931,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
         // Verify pass
         result.push_back(Pair("result", "success"));
         result.push_back(Pair("plotterId", std::to_string(BindPlotterPayload::As(payload)->GetId())));
-        result.push_back(Pair("signature", BindPlotterPayload::As(payload)->IsSign()));
-        if (BindPlotterPayload::As(payload)->IsSign())
-            result.push_back(Pair("lastActiveHeight", lastActiveHeight));
+        result.push_back(Pair("lastActiveHeight", lastActiveHeight));
         result.push_back(Pair("address", EncodeDestination(bindToDest)));
     } else if (fReject) {
         // Signature not verify
@@ -1608,8 +1643,9 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",        &prioritisetransaction,     {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",             &getblocktemplate,          {"template_request"} },
     { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
+    { "mining",             "getactivebindplotteradress",   &getactivebindplotteradress,{"plotterId"} },
     { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,  {"address", "plotterId", "count"} },
-    { "mining",             "createbindplotterdata",        &createbindplotterdata,     {"address", "passphrase_or_id", "lastActiveHeight"} },
+    { "mining",             "createbindplotterdata",        &createbindplotterdata,     {"address", "passphrase", "lastActiveHeight"} },
     { "mining",             "verifybindplotterdata",        &verifybindplotterdata,     {"address", "hexdata"} },
     { "mining",             "getpledgeofaddress",           &getpledgeofaddress,        {"address", "plotterId", "verbose"} },
     { "mining",             "getplottermininginfo",         &getplottermininginfo,      {"plotterId", "verbose"} },

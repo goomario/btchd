@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>729</width>
+    <width>730</width>
     <height>150</height>
    </rect>
   </property>
@@ -229,7 +229,10 @@
     <item row="2" column="1">
      <widget class="QValidatedLineEdit" name="plotterPassphrase">
       <property name="toolTip">
-       <string>Enter your plotter passphrase or digit ID</string>
+       <string>Enter your plotter passphrase</string>
+      </property>
+      <property name="echoMode">
+       <enum>QLineEdit::Password</enum>
       </property>
      </widget>
     </item>
