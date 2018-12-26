@@ -491,7 +491,7 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
 
     LOCK(cs_main);
     CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
-    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_MAXALIVE);
+    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     if (script.empty())
         return;
     // Check

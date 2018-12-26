@@ -264,7 +264,7 @@ struct PledgeLoanPayload : public DatacarrierPayload
 static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 10 * CENT;
 
 /** The height for bind plotter default maximum relative tip height */
-static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 6;
+static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 288;
 
 /** The height for bind plotter maximum relative tip height */
 static const int PROTOCOL_BINDPLOTTER_MAXALIVE = 288 * 7;
