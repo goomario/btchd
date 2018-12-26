@@ -3110,6 +3110,10 @@ Available pledge: %5</source>
         <translation>(無標記)</translation>
     </message>
     <message>
+        <source>Binded plotter</source>
+        <translation>綁定算力</translation>
+    </message>
+    <message>
         <source>Sent pledge to</source>
         <translation>借出抵押</translation>
     </message>

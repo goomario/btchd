@@ -269,8 +269,11 @@ static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 6;
 /** The height for bind plotter maximum relative tip height */
 static const int PROTOCOL_BINDPLOTTER_MAXALIVE = 288 * 7;
 
-/** Check whether a string is a valid passphrase ID. */
+/** Check whether a string is a valid passphrase. */
 bool IsValidPassphrase(const std::string& passphrase);
+
+/** Check whether a string is a valid plotter ID. */
+bool IsValidPlotterID(const std::string& strPlotterId, uint64_t *id = nullptr);
 
 /** Generate a bind plotter script. */
 CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase, int lastActiveHeight);

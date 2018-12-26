@@ -223,16 +223,16 @@ static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const
     // submitNonce
     const auto nonce = parameters.find("nonce");
     if (nonce != parameters.cend()) {
-        const auto accountId = parameters.find("accountId");
+        const auto plotterId = parameters.find("accountId");
         const auto secretPhrase = parameters.find("secretPhrase");
         const auto height = parameters.find("height");
         const auto address = parameters.find("address");
         const auto checkBind = parameters.find("checkBind");
-        if (accountId != parameters.cend()) {
+        if (plotterId != parameters.cend()) {
             // Pool
             jreq.strMethod = "submitNonceToPool";
             jreq.params.pushKV("nonce", nonce->second);
-            jreq.params.pushKV("accountId", accountId->second);
+            jreq.params.pushKV("plotterId", plotterId->second);
             if (height != parameters.cend())
                 jreq.params.pushKV("height", height->second);
             if (address != parameters.cend())

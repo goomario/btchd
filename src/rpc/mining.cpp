@@ -720,15 +720,10 @@ UniValue getactivebindplotteradress(const JSONRPCRequest& request)
             + HelpExampleRpc("getactivebindplotteradress", "\"11529889285493050610\"")
         );
 
-    if (!request.params[0].isStr())
+    uint64_t plotterId = 0;
+    if (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &plotterId))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-    uint64_t plotterId;
-    try {
-        plotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-    } catch(...) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-    }
-    
+
     LOCK(cs_main);
     const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
     if (!coin.IsSpent()) {
@@ -775,13 +770,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
     uint64_t plotterId = 0;
     if (request.params.size() >= 2) {
-        if (!request.params[1].isStr())
+        if (!request.params[1].isStr() || !IsValidPlotterID(request.params[1].get_str(), &plotterId))
             throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-        try {
-            plotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
-        } catch(...) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-        }
     }
     int count = std::numeric_limits<int>::max();
     if (request.params.size() >= 3)
@@ -1151,7 +1141,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "Get mortage amount of address.\n"
             "\nArguments:\n"
             "1. address         (string, required) The BitcoinHD address.\n"
-            "2. plotterId       (string, optional) Plotter ID\n"
+            "2. plotterId       (string, optional) DEPRECTED after BHDIP006. Plotter ID\n"
             "3. verbose         (bool, optional, default=true) If true, return detail pledge\n"
             "\nResult:\n"
             "The mortage information of address\n"
@@ -1168,13 +1158,8 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
 
     uint64_t plotterId = 0;
     if (!request.params[1].isNull()) {
-        if (!request.params[1].isStr())
+        if (!request.params[1].isStr() || !IsValidPlotterID(request.params[1].get_str(), &plotterId))
             throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-        try {
-            plotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
-        } catch(...) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-        }
     }
 
     bool fVerbose = true;
@@ -1204,14 +1189,9 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    uint64_t nPlotterId;
-    if (!request.params[0].isStr())
+    uint64_t nPlotterId = 0;
+    if (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &nPlotterId))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-    try {
-        nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-    } catch(...) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-    }
 
     bool fVerbose = true;
     if (!request.params[1].isNull()) {
