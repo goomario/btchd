@@ -748,7 +748,6 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
-            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
@@ -816,7 +815,6 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
                 ExtractDestination(coin.out.scriptPubKey, fromDest);
                 item.push_back(Pair("address", EncodeDestination(fromDest)));
             }
-            item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("plotterId", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
             item.push_back(Pair("txid", it->first.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
@@ -1143,13 +1141,13 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             "getpledgeofaddress address (plotterId)\n"
-            "Get mortage amount of address.\n"
+            "Get pledge information of address.\n"
             "\nArguments:\n"
             "1. address         (string, required) The BitcoinHD address.\n"
             "2. plotterId       (string, optional) DEPRECTED after BHDIP006. Plotter ID\n"
             "3. verbose         (bool, optional, default=true) If true, return detail pledge\n"
             "\nResult:\n"
-            "The mortage information of address\n"
+            "The pledge information of address\n"
             "\n"
             "\nExample:\n"
             + HelpExampleCli("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"0\" true")

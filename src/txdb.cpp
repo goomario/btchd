@@ -549,13 +549,11 @@ size_t CCoinsViewDB::EstimateSize() const {
 CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
     CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
 {
-    std::unique_ptr<CDBIterator> pcursor;
+    std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     CAmount availableBalance = 0;
 
     // Read from database
     {
-        if (!pcursor) pcursor.reset(db.NewIterator());
-
         CAmount value;
         AccountCoinEntry entry(accountID, COutPoint(uint256(), 0));
         pcursor->Seek(entry);
@@ -590,8 +588,6 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            if (!pcursor) pcursor.reset(db.NewIterator());
-
             BindPlotterEntry entry(accountID, 0, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
             while (pcursor->Valid()) {
@@ -626,8 +622,6 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            if (!pcursor) pcursor.reset(db.NewIterator());
-
             CAmount value;
             PledgeLoanEntry entry(accountID, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
@@ -664,8 +658,6 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            if (!pcursor) pcursor.reset(db.NewIterator());
-
             CAmount value;
             PledgeDebitEntry entry(accountID, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
