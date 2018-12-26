@@ -491,7 +491,8 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
 
     LOCK(cs_main);
     CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
-    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
+    int lastActiveHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
+    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), lastActiveHeight);
     if (script.empty())
         return;
     // Check
