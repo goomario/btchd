@@ -428,9 +428,20 @@ bool IsValidPassphrase(const std::string& passphrase) {
         else
             type |= CharMask_Unknown;
     }
-    if (type & CharMask_Unknown || !(type & CharMask_Char) || !(type & CharMask_Space))
+    if ((type & CharMask_Unknown) || !(type & CharMask_Char) || !(type & CharMask_Space))
         return false;
 
+    return true;
+}
+
+bool IsValidPlotterID(const std::string& strPlotterId, uint64_t *id) {
+    if (strPlotterId.empty() || strPlotterId.size() > 20 || strPlotterId[0] == '0')
+        return false;
+
+    if (strPlotterId.find_first_not_of("0123456789") != std::string::npos)
+        return false;
+
+    if (id) *id = static_cast<uint64_t>(std::stoull(strPlotterId));
     return true;
 }
 

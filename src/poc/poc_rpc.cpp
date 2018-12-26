@@ -77,7 +77,7 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nAccountId, int nTargetHeight, const std::string &address, bool fCheckBind)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nPlotterId, int nTargetHeight, const std::string &address, bool fCheckBind)
 {
     if (IsInitialBlockDownload()) {
         throw std::runtime_error("Is initial block downloading!");
@@ -90,7 +90,7 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
     }
 
     uint64_t bestDeadline = 0;
-    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nAccountId, address, fCheckBind, Params().GetConsensus());
+    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nPlotterId, address, fCheckBind, Params().GetConsensus());
     if (deadline == poc::INVALID_DEADLINE) {
         result.pushKV("result", "error");
         result.pushKV("errorCode", "001");
@@ -111,11 +111,11 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "submitNonceToPool \"nonce\" \"accountId\" (height \"address\" checkBind)\n"
+            "submitNonceToPool \"nonce\" \"plotterId\" (height \"address\" checkBind)\n"
             "\nSubmit mining nonce.\n"
             "\nArguments:\n"
-            "1. \"nonce\"           (string, required) The digit string of the brust nonce\n"
-            "2. \"accountId\"       (string, required) The digit string of the brust account ID\n"
+            "1. \"nonce\"           (string, required) Nonce\n"
+            "2. \"plotterId\"       (string, required) Plotter ID\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
             "4. \"address\"         (string, optional) Target address for mining\n"
             "5. \"checkBind\"       (boolean, optional, true) Check bind for BHDIP006\n"
@@ -135,7 +135,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
     }
 
     uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-    uint64_t nAccountId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
+    uint64_t nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
 
     int nTargetHeight = 0;
     if (request.params.size() >= 3) {
@@ -152,7 +152,7 @@ static UniValue submitNonceToPool(const JSONRPCRequest& request)
         fCheckBind = request.params[4].get_bool();
     }
 
-    SubmitNonce(result, nNonce, nAccountId, nTargetHeight, address, fCheckBind);
+    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, address, fCheckBind);
     return result;
 }
 
@@ -209,22 +209,22 @@ static UniValue getConstants(const JSONRPCRequest& request)
 {
     UniValue result(UniValue::VOBJ);
 
-    uint64_t blockId = 0, accountId = 0; 
+    uint64_t blockId = 0, plotterId = 0; 
     int height = 0;
     CBlockIndex * pBlockIndex = chainActive[height];
 
     if (pBlockIndex) {
         blockId = poc::GetBlockId(*pBlockIndex);
-        accountId = pBlockIndex->GetBlockHeader().nPlotterId;
+        plotterId = pBlockIndex->GetBlockHeader().nPlotterId;
     } else {
         LogPrintf("Not find BitcoinHD fork height block:%ld\n", height);
         auto genesis = Params().GenesisBlock();
         blockId = poc::GetBlockId(genesis);
-        accountId = genesis.nPlotterId;
+        plotterId = genesis.nPlotterId;
     }
 
     result.pushKV("genesisBlockId", std::to_string(blockId));
-    result.pushKV("genesisAccountId", std::to_string(accountId));
+    result.pushKV("genesisAccountId", std::to_string(plotterId));
     return result;
 }
 
@@ -407,7 +407,7 @@ static const CRPCCommand commands[] =
     { "hidden",           "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMinerAccount",          &poc::rpc::getMinerAccount,       { } },
     { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "accountId", "height", "address", "checkBind" } },
+    { "hidden",           "submitNonceToPool",        &poc::rpc::submitNonceToPool,     { "nonce", "plotterId", "height", "address", "checkBind" } },
     { "hidden",           "submitNonceAsSolo",        &poc::rpc::submitNonceAsSolo,     { "nonce", "secretPhrase", "height", "address", "checkBind" } },
     { "hidden",           "getConstants",             &poc::rpc::getConstants,          { } },
     { "hidden",           "getBlockchainStatus",      &poc::rpc::getBlockchainStatus,   { } },

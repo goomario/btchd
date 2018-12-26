@@ -3917,15 +3917,8 @@ UniValue getpledge(const JSONRPCRequest& request)
     }
 
     uint64_t nPlotterId = 0;
-    if (!request.params[0].isNull()) {
-        if (!request.params[0].isStr())
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-        try {
-            nPlotterId = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
-        } catch(...) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
-        }
-    }
+    if (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &nPlotterId))
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
 
     bool fVerbose = true;
     if (!request.params[1].isNull()) {
