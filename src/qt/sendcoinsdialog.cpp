@@ -491,8 +491,8 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
 
     LOCK(cs_main);
     CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
-    int lastActiveHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height) + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
-    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), lastActiveHeight);
+    int activeHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
+    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     if (script.empty())
         return;
     // Check
@@ -501,7 +501,7 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
     dummyTx.vin.push_back(CTxIn());
     dummyTx.vout.push_back(CTxOut(PROTOCOL_BINDPLOTTER_AMOUNT, GetScriptForDestination(bindToDest)));
     dummyTx.vout.push_back(CTxOut(0, script));
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(CTransaction(dummyTx), chainActive.Height());
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(CTransaction(dummyTx), activeHeight);
     if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER)
         return;
 
