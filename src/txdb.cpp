@@ -719,8 +719,9 @@ void CCoinsViewDB::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::
     BindPlotterEntry entry(0, 0, COutPoint(uint256(), 0));
     pcursor->Seek(entry);
     while (pcursor->Valid()) {
-        if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.plotterId == plotterId) {
-            outpoints.insert(entry.outpoint);
+        if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER) {
+            if (entry.plotterId == plotterId)
+                outpoints.insert(entry.outpoint);
         } else {
             break;
         }
