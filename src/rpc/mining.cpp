@@ -859,11 +859,15 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
     if (request.params.size() >= 3)
         lastActiveHeight = request.params[2].get_int();
 
-    LOCK(cs_main);
+    int activeHeight;
+    {
+        LOCK(cs_main);
+        activeHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
+    }
     if (lastActiveHeight == 0)
-        lastActiveHeight = chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
-    if (lastActiveHeight > chainActive.Height() + PROTOCOL_BINDPLOTTER_MAXALIVE)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height to large (limit %d)", chainActive.Height() + PROTOCOL_BINDPLOTTER_MAXALIVE));
+        lastActiveHeight = activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
+    if (lastActiveHeight > activeHeight + PROTOCOL_BINDPLOTTER_MAXALIVE)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height too large and unsafe (limit %d)", activeHeight + PROTOCOL_BINDPLOTTER_MAXALIVE));
 
     CScript script = GetBindPlotterScriptForDestination(DecodeDestination(request.params[0].get_str()), request.params[1].get_str(), lastActiveHeight);
     if (script.empty())
@@ -912,7 +916,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
     int nHeight = 0;
     {
         LOCK(cs_main);
-        nHeight = chainActive.Height();
+        nHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height)
     }
     bool fReject = false;
     int lastActiveHeight = 0;
