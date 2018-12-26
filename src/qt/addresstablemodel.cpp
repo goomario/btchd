@@ -330,7 +330,7 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         case LockedAmount:
         case LoanAmount:
         case DebitAmount:
-            return tr("Amount: %1\nLocked: %2\nLoan: %3\nDebit: %4\nAvailable pledge: %5")
+            return tr("Spendable: %1\nLocked: %2\nLoan: %3\nDebit: %4\nAvailable pledge: %5")
                     .arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->bindPlotterAmount - rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
                         BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
                         BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),

@@ -738,7 +738,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
         throw std::runtime_error(
-            "listbindplotterofaddress address (plotterId count)\n"
+            "listbindplotterofaddress \"address\" (plotterId count)\n"
             "\nReturns up to binded plotter of address.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
@@ -835,7 +835,7 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
         throw std::runtime_error(
-            "createbindplotterdata address passphrase (lastActiveHeight)\n"
+            "createbindplotterdata \"address\" \"passphrase\" (lastActiveHeight)\n"
             "\nReturn bind plotter hex data.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
@@ -879,7 +879,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
-            "verifybindplotterdata address hexdata\n"
+            "verifybindplotterdata \"address\" \"hexdata\"\n"
             "\nVerify plotter hex data.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
@@ -1028,8 +1028,8 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     result.pushKV("balance", ValueFromAmount(totalBalance));
     //! This balance freeze in bind plotter and pledge loan
     result.pushKV("lockedBalance", ValueFromAmount(bindPlotterBalance + pledgeLoanBalance));
-    //! This balance available spend
-    result.pushKV("availableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeLoanBalance));
+    //! This balance spendable spend
+    result.pushKV("spendableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeLoanBalance));
     //! This balance freeze in pledge loan
     result.pushKV("pledgeLoanBalance", ValueFromAmount(pledgeLoanBalance));
     //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
@@ -1147,8 +1147,19 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "2. plotterId       (string, optional) DEPRECTED after BHDIP006. Plotter ID\n"
             "3. verbose         (bool, optional, default=true) If true, return detail pledge\n"
             "\nResult:\n"
-            "The pledge information of address\n"
-            "\n"
+            "[\n"
+            "  {\n"
+            "    \"balance\": xxx,                     (numeric) All amounts belonging to this address\n"
+            "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and pledge loan\n"
+            "    \"spendableBalance\": xxx,            (numeric) Spendable amount. Include immarture and exclude locked amount\n"
+            "    \"pledgeLoanBalance\": xxx,           (numeric) Pledge loan amount\n"
+            "    \"pledgeDebitBalance\": xxx,          (numeric) Pledge debit amount\n"
+            "    \"availablePledgeBalance\": xxx,      (numeric) Available for mining pledge amount. balance + pledgeDebitBalance - pledgeLoanBalance\n"
+            "    \"pledge\": xxx,                      (numeric) Require mining pledge for next block\n"
+            "    \"capacity\": \"xxx TB\",                (numeric) The address capacity\n"
+            "    ...\n"
+            "  }\n"
+            "]\n"
             "\nExample:\n"
             + HelpExampleCli("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"0\" true")
             + HelpExampleRpc("getpledgeofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"0\", true")
@@ -1312,7 +1323,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "listpledgeloanofaddress address\n"
+            "listpledgeloanofaddress \"address\"\n"
             "\nReturns up to pledge loan coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
@@ -1351,7 +1362,7 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "listpledgedebitofaddress address\n"
+            "listpledgedebitofaddress \"address\"\n"
             "\nReturns up to pledge debit coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"

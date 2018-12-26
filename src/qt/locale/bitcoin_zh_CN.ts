@@ -116,7 +116,7 @@
     </message>
     <message>
         <source>Amount</source>
-        <translation>总额</translation>
+        <translation>可花費总额</translation>
     </message>
     <message>
         <source>Loan</source>
@@ -143,12 +143,12 @@
         <translation>仅观察地址</translation>
     </message>
     <message>
-        <source>Amount: %1
+        <source>Spendable: %1
 Locked: %2
 Loan: %3
 Debit: %4
 Available pledge: %5</source>
-        <translation>总的金额: %1
+        <translation>可花费的余额: %1
 锁定的金额: %2
 借出抵押金额: %3
 借入抵押金额: %4
