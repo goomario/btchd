@@ -3772,7 +3772,6 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"address\":\"address\",               (string) The BitcoinHD address of the binded.\n"
-            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
@@ -3869,7 +3868,6 @@ UniValue listbindplotters(const JSONRPCRequest& request)
 
         UniValue item(UniValue::VOBJ);
         item.push_back(Pair("txid", wtx.GetHash().GetHex()));
-        item.push_back(Pair("amount", ValueFromAmount(wtx.tx->vout[0].nValue)));
         item.push_back(Pair("address", EncodeDestination(it->second.address)));
         item.push_back(Pair("plotterId", std::to_string(it->second.plotterId)));
         if (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) {

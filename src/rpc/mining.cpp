@@ -705,19 +705,19 @@ UniValue submitblock(const JSONRPCRequest& request)
     return BIP22ValidationResult(sc.state);
 }
 
-UniValue getactivebindplotteradress(const JSONRPCRequest& request)
+UniValue getactivebindplotteraddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "getactivebindplotteradress plotterId\n"
+            "getactivebindplotteraddress plotterId\n"
             "\nReturn active binded address of plotter ID.\n"
             "\nArguments:\n"
             "1. plotterId           (string, required) The plotter ID\n"
             "\nResult:\n"
             "\"address\"    (string) The active binded BitcoinHD address\n"
             "\nExamples:\n"
-            + HelpExampleCli("getactivebindplotteradress", "\"11529889285493050610\"")
-            + HelpExampleRpc("getactivebindplotteradress", "\"11529889285493050610\"")
+            + HelpExampleCli("getactivebindplotteraddress", "\"11529889285493050610\"")
+            + HelpExampleRpc("getactivebindplotteraddress", "\"11529889285493050610\"")
         );
 
     uint64_t plotterId = 0;
@@ -818,6 +818,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             }
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("plotterId", std::to_string(BindPlotterPayload::As(coin.extraData)->GetId())));
+            item.push_back(Pair("txid", it->first.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
@@ -916,7 +917,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
     int nHeight = 0;
     {
         LOCK(cs_main);
-        nHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height)
+        nHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
     }
     bool fReject = false;
     int lastActiveHeight = 0;
@@ -1627,7 +1628,7 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",        &prioritisetransaction,     {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",             &getblocktemplate,          {"template_request"} },
     { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
-    { "mining",             "getactivebindplotteradress",   &getactivebindplotteradress,{"plotterId"} },
+    { "mining",             "getactivebindplotteraddress",  &getactivebindplotteraddress,{"plotterId"} },
     { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,  {"address", "plotterId", "count"} },
     { "mining",             "createbindplotterdata",        &createbindplotterdata,     {"address", "passphrase", "lastActiveHeight"} },
     { "mining",             "verifybindplotterdata",        &verifybindplotterdata,     {"address", "hexdata"} },
