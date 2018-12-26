@@ -116,7 +116,7 @@
     </message>
     <message>
         <source>Amount</source>
-        <translation>金額</translation>
+        <translation>可花費金額</translation>
     </message>
     <message>
         <source>Loan</source>
@@ -143,12 +143,12 @@
         <translation>僅觀察位址</translation>
     </message>
         <message>
-        <source>Amount: %1
+        <source>Spendable: %1
 Locked: %2
 Loan: %3
 Debit: %4
 Available pledge: %5</source>
-        <translation>總的金額: %1
+        <translation>可花費的金額: %1
 鎖定的金額: %2
 借出抵押金額: %3
 借入抵押金額: %4

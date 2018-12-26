@@ -3515,12 +3515,12 @@ UniValue bindplotter(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
         throw std::runtime_error(
-            "bindplotter \"address\" passphrase_or_id_or_hex ( \"comment\" \"comment_to\" replaceable conf_target \"estimate_mode\")\n"
+            "bindplotter \"address\" passphrase_or_hex ( \"comment\" \"comment_to\" replaceable conf_target \"estimate_mode\")\n"
             "\nBind plotter to mine address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"address\"                 (string, required) The BitcoinHD address to bind to.\n"
-            "2. \"passphrase_or_id_or_hex\" (string, required) The passphrase or plotter id or bind data.\n"
+            "2. \"passphrase_or_hex\"       (string, required) The passphrase or hex bind data.\n"
             "3. \"comment\"                 (string, optional) A comment used to store what the transaction is for. \n"
             "                                   This is not part of the transaction, just kept in your wallet.\n"
             "4. \"comment_to\"              (string, optional) A comment to store the name of the person or organization \n"
@@ -3902,8 +3902,19 @@ UniValue getpledge(const JSONRPCRequest& request)
             "1. plotterId       (string, optional) Plotter ID\n"
             "2. verbose         (bool, optional, default=true) If true, return detail pledge\n"
             "\nResult:\n"
-            "The mortage information of wallet master address\n"
-            "\n"
+            "[\n"
+            "  {\n"
+            "    \"balance\": xxx,                     (numeric) All amounts belonging to this address\n"
+            "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and pledge loan\n"
+            "    \"spendableBalance\": xxx,            (numeric) Spendable amount. Include immarture and exclude locked amount\n"
+            "    \"pledgeLoanBalance\": xxx,           (numeric) Pledge loan amount\n"
+            "    \"pledgeDebitBalance\": xxx,          (numeric) Pledge debit amount\n"
+            "    \"availablePledgeBalance\": xxx,      (numeric) Available for mining pledge amount. balance + pledgeDebitBalance - pledgeLoanBalance\n"
+            "    \"pledge\": xxx,                      (numeric) Require mining pledge for next block\n"
+            "    \"capacity\": \"xxx TB\",                (numeric) The address capacity\n"
+            "    ...\n"
+            "  }\n"
+            "]\n"
             "\nExample:\n"
             + HelpExampleCli("getpledge", "\"0\" true")
             + HelpExampleRpc("getpledge", "\"0\", true")
@@ -3915,7 +3926,7 @@ UniValue getpledge(const JSONRPCRequest& request)
     }
 
     uint64_t nPlotterId = 0;
-    if (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &nPlotterId))
+    if (!request.params[0].isNull() && (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &nPlotterId)))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
 
     bool fVerbose = true;
@@ -4383,7 +4394,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "removeprunedfunds",        &removeprunedfunds,        {"txid"} },
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height","stop_height"} },
 
-    { "wallet",             "bindplotter",              &bindplotter,              {"address","passphrase_or_id_or_hex","comment","comment_to","replaceable","conf_target","estimate_mode"} },
+    { "wallet",             "bindplotter",              &bindplotter,              {"address","passphrase_or_hex","comment","comment_to","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "unbindplotter",            &unbindplotter,            {"txid","comment","comment_to","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "listbindplotters",         &listbindplotters,         {"count","skip","include_watchonly","include_invalid"} },
 
