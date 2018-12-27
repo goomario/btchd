@@ -3122,6 +3122,10 @@ Available pledge: %5</source>
         <translation>绑定算力</translation>
     </message>
     <message>
+        <source>Unbinded plotter</source>
+        <translation>解绑算力</translation>
+    </message>
+    <message>
         <source>Sent pledge to</source>
         <translation>借出抵押</translation>
     </message>
