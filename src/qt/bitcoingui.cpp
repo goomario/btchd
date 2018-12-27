@@ -1212,9 +1212,9 @@ void BitcoinGUI::genMinerAccount()
     uint64_t plotterId = PocLegacy::GeneratePlotterId(passphrase);
 
     QString information;
-    information += tr("Please save your mining account.") + "\n\n";
-    information += tr("Passphrase: %1").arg(QString::fromStdString(passphrase)) + "\n";
-    information += tr("Plotter Id: %1").arg(QString::number(plotterId));
+    information += "<span style='color:#aa0000;'>" + tr("Please save your mining account.") + "</span><br/><br/>";
+    information += tr("Passphrase: %1").arg(QString::fromStdString(passphrase)) + "<br/>";
+    information += tr("ID: %1").arg(QString::number(plotterId));
 
     QMessageBox messageBox(QMessageBox::Information, tr("Generate mining account"), information, QMessageBox::Ok, this);
     messageBox.setTextInteractionFlags(Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse);

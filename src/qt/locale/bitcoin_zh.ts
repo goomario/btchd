@@ -208,4 +208,53 @@
         <translation>错误</translation>
     </message>
 </context>
+
+<!-- qtbase_zh.ts -->
+<context>
+    <name>QPlatformTheme</name>
+    <message>
+        <source>OK</source>
+        <translation>确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>应用</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>重置</translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation>帮助</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>抛弃</translation>
+    </message>
+    <message>
+        <source>Abort</source>
+        <translation>放弃</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>重试</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation>忽略</translation>
+    </message>
+    <message>
+        <source>Restore Defaults</source>
+        <translation>恢复默认</translation>
+    </message>
+</context>
 </TS>
