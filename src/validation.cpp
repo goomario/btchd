@@ -1995,7 +1995,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // Check bind
     if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight &&
-            !pcoinsTip->HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
+            !view.HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
         CTxDestination dest = CNoDestination();
         ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
         std::string address = EncodeDestination(dest);
