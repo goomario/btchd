@@ -620,8 +620,8 @@ Available pledge: %5</source>
         <translation>脑密码: %1</translation>
     </message>
     <message>
-        <source>Plotter Id: %1</source>
-        <translation>算力ID: %1</translation>
+        <source>ID: %1</source>
+        <translation>算力 ID: %1</translation>
     </message>
 </context>
 <context>
@@ -3120,6 +3120,10 @@ Available pledge: %5</source>
     <message>
         <source>Binded plotter</source>
         <translation>绑定算力</translation>
+    </message>
+    <message>
+        <source>Unbinded plotter</source>
+        <translation>解绑算力</translation>
     </message>
     <message>
         <source>Sent pledge to</source>
