@@ -582,6 +582,8 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
             if (plotters.count(pblockIndex->nPlotterId))
                 ++nTotalForgeCount;
         }
+        if (nTotalForgeCount < nMiningHeight - nBeginHeight)
+            nTotalForgeCount++;
     }
     if (nTotalForgeCount == 0)
         return 0;
