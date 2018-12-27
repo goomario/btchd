@@ -898,9 +898,6 @@ void RPCConsole::updatePledge()
 
         // Primary address capacity and pledge
         CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, Params().GetConsensus());
-        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
-        ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
-        ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
 
         // Binded plotter
         QString strBindPlotters;
@@ -927,7 +924,13 @@ void RPCConsole::updatePledge()
                 strBindPlotters += QString::number(id);
             }
         }
+        if (strBindPlotters.isEmpty())
+            nPledgeAmount = 0;
         ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
+
+        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
+        ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
+        ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
     } else {
         // Pending
         ui->primaryAddressBalance->setText("N/A");
