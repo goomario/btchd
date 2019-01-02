@@ -2305,6 +2305,10 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
         SetBannedSetDirty(true); // force write
         DumpBanlist();
     }
+    if (gArgs.GetBoolArg("-clearbanned", false)) {
+        ClearBanned();
+        LogPrint(BCLog::NET, "Cleared banlist\n");
+    }
 
     uiInterface.InitMessage(_("Starting network threads..."));
 
