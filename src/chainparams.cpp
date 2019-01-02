@@ -85,7 +85,7 @@ public:
         // See https://btchd.org/wiki/fund-address-pool
         consensus.BHDFundAddressPool = {
             "3F26JRhiGjc8z8pRKJvLXBEkdE6nLDAA3y", //!< 0x20000000, Deprecated!. Last use on v1.1.0.1-30849da
-            "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000004
+            "32B86ghqRTJkh2jvyhRWFugX7YWoqHPqVE", //!< 0x20000004, 0x20000000
             "39Vb1GNSurGoHcQ4aTKrTYC1oNmPppGea3",
             "3Maw3PdwSvtXgBKJ9QPGwRSQW8AgQrGK3W",
             "3Hy3V3sPVpuQaG6ttihfQNh4vcDXumLQq9",
@@ -113,9 +113,9 @@ public:
 
         consensus.BHDIP004ActiveHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
-        consensus.BHDIP006Height = 129100; // BHDIP006. Active about on Wed, 02 Jan 2019 10:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter active at 131116 about when Wed, 09 Jan 2019 10:00:00 GMT
-        assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 288 * 3);
+        consensus.BHDIP006Height = 129100; // BHDIP006. Active about on Wed, 02 Jan 2019 2:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter active at 131116 about when Wed, 09 Jan 2019 2:00:00 GMT
+        consensus.BHDIP006FirstForkBlockHash = uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25");
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -474,7 +474,7 @@ public:
         consensus.BHDIP004InActiveHeight = 21000;
         consensus.BHDIP006Height = 41290; // BHDIP006
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active at 41296
-        assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 5);
+        consensus.BHDIP006FirstForkBlockHash = uint256S("0x44fe5f2d3e7b9fbf771c1fc2ae400daf0ef31665c3eac3cac3a0e3ba7a968f32");
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -750,7 +750,7 @@ public:
         consensus.BHDIP004InActiveHeight = 0;
         consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200;
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50;
-        assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 5);
+        consensus.BHDIP006FirstForkBlockHash = uint256S("0x00");
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
