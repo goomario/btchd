@@ -1595,27 +1595,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         if (nVersion < MIN_PEER_PROTO_VERSION) {
             // disconnect from peers older than this proto version
-            LogPrintf("peer=%d using obsolete version %i; disconnecting\n", pfrom->GetId(), nVersion);
+            LogPrint(BCLog::NET, "peer=%d using obsolete version %i; disconnecting\n", pfrom->GetId(), nVersion);
             connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
                                 strprintf("Version must be %d or greater", MIN_PEER_PROTO_VERSION)));
             pfrom->fDisconnect = true;
             return false;
         }
-        {
-            LOCK(cs_main);
-            if (nVersion < BHD_BHDIP006 && chainActive.Height() > chainparams.GetConsensus().BHDIP006Height + 12) {
-                // disconnect from peers older than this proto version
-                LogPrintf("peer=%d using obsolete version %i; disconnecting\n", pfrom->GetId(), nVersion);
-                connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
-                                    strprintf("Version must be %d or greater", BHD_BHDIP006)));
-                pfrom->fDisconnect = true;
-                return false;
-            }
-        }
 
         if (nTimeOffset <= -DEFAULT_MAX_TIME_ADJUSTMENT || nTimeOffset >= DEFAULT_MAX_TIME_ADJUSTMENT) {
             // disconnect from peers time offset not between [-DEFAULT_MAX_TIME_ADJUSTMENT,DEFAULT_MAX_TIME_ADJUSTMENT]
-            LogPrintf("peer=%d time offset %d not between [-%d,%d]; disconnecting\n", pfrom->GetId(), nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT, DEFAULT_MAX_TIME_ADJUSTMENT);
+            LogPrint(BCLog::NET, "peer=%d time offset %d not between [-%d,%d]; disconnecting\n", pfrom->GetId(), nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT, DEFAULT_MAX_TIME_ADJUSTMENT);
             connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
                                 strprintf("Time offset %d not between [-%d,%d]", nTimeOffset, DEFAULT_MAX_TIME_ADJUSTMENT, DEFAULT_MAX_TIME_ADJUSTMENT)));
             pfrom->fDisconnect = true;

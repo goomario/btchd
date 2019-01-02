@@ -1515,38 +1515,56 @@ bool AppInitMain()
                     assert(chainActive.Tip() != nullptr);
 
                     // Reconnect new consensus block
-                    if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1) {
+                    if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height) {
                         // Clear banned
                         gArgs.SoftSetBoolArg("-clearbanned", true);
 
-                        CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006Height - 1];
-                        // Invalidate block
-                        {
-                            CValidationState state;
+                        CBlockIndex *pFirstForkIndex = chainActive[chainparams.GetConsensus().BHDIP006Height];
+                        if (pFirstForkIndex->GetBlockHash() != uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25")) {
+                            // Invalidate bad fork block
                             {
-                                LOCK(cs_main);
-                                InvalidateBlock(state, chainparams, pAnchorIndex);
-                            }
-                            if (state.IsValid())
-                                ActivateBestChain(state, Params());
-                            if (!state.IsValid()) {
-                                strLoadError = _("Error initializing block database");
-                                break;
-                            }
-                        }
-
-                        // Reconsider block
-                        {
-                            {
-                                LOCK(cs_main);
-                                ResetBlockFailureFlags(pAnchorIndex);
+                                CValidationState state;
+                                {
+                                    LOCK(cs_main);
+                                    InvalidateBlock(state, chainparams, pFirstForkIndex);
+                                }
+                                if (state.IsValid())
+                                    ActivateBestChain(state, Params());
+                                if (!state.IsValid()) {
+                                    strLoadError = _("Error initializing block database");
+                                    break;
+                                }
                             }
 
-                            CValidationState state;
-                            ActivateBestChain(state, chainparams);
-                            if (!state.IsValid()) {
-                                strLoadError = _("Error initializing block database");
-                                break;
+                            // Invalidate block
+                            CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006Height - 1];
+                            {
+                                CValidationState state;
+                                {
+                                    LOCK(cs_main);
+                                    InvalidateBlock(state, chainparams, pAnchorIndex);
+                                }
+                                if (state.IsValid())
+                                    ActivateBestChain(state, Params());
+                                if (!state.IsValid()) {
+                                    strLoadError = _("Error initializing block database");
+                                    break;
+                                }
+                            }
+
+                            // Reconsider block
+                            {
+                                {
+                                    LOCK(cs_main);
+                                    ResetBlockFailureFlags(pAnchorIndex);
+                                }
+
+                                CValidationState state;
+                                ActivateBestChain(state, chainparams);
+                                if (!state.IsValid()) {
+                                    strLoadError = _("Error initializing block database");
+                                    break;
+                                }
                             }
                         }
                     }
