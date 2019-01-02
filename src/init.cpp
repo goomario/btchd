@@ -1516,6 +1516,9 @@ bool AppInitMain()
 
                     // Reconnect new consensus block
                     if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height - 1) {
+                        // Clear banned
+                        gArgs.SoftSetBoolArg("-clearbanned", true);
+
                         CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006Height - 1];
                         // Invalidate block
                         {
