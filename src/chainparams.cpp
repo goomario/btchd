@@ -113,8 +113,8 @@ public:
 
         consensus.BHDIP004ActiveHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
-        consensus.BHDIP006Height = 129100; // BHDIP006. Active about on Wed, 03 Jan 2019 10:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter active at 131116 about when Wed, 10 Jan 2019 10:00:00 GMT
+        consensus.BHDIP006Height = 129100; // BHDIP006. Active about on Wed, 02 Jan 2019 10:00:00 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter active at 131116 about when Wed, 09 Jan 2019 10:00:00 GMT
         assert(consensus.BHDIP006BindPlotterActiveHeight > consensus.BHDIP006Height + 288 * 3);
 
         // TestDummy
@@ -414,6 +414,20 @@ public:
                 { 126000, uint256S("0xb4a81eb95d4ea3028b489bd77b045c4278058a6889558967949b4694967302c6") },
                 { 126200, uint256S("0x2fae552575ddcd2f280b6a3fa362797ae72de216b4eb044e8c8fe46fe1d074eb") },
                 { 126400, uint256S("0x8da82992bdabfdbfeceaaa9f691c6e0c5f23823a463538da752ecfa77f23cee2") },
+                { 126600, uint256S("0x96979bb89d506daeec90e4edd8ef2280692cf02e108acd357401b89a64b747e2") },
+                { 126800, uint256S("0x183e0ab5c48d3c7f332c7d98bb3c8418c3dfed386ca5e3f4f424c3943d3f7937") },
+                { 127000, uint256S("0x323e69f9713a0d5c0a83427e70e4fa5c5e2693cc8ee0e5d4c4e91adb6f982633") },
+                { 127200, uint256S("0x4b853cc3acd2ffa7f5f70c5d261ccaa701f200fc8ee12c07581aa184078a9450") },
+                { 127400, uint256S("0x2c2178a07dc3a0bbd6434da620817c1f5c55e65c1f281ef16b10b9933270763b") },
+                { 127600, uint256S("0x69b2b86cf0afb480a1169edde2814dc55b66e6c4b10452f78cc2089d12c37173") },
+                { 127800, uint256S("0xafe0af1e9c119074f5ce6e952c1687219da1a5fa1a2d2305d1a8aba6439495fa") },
+                { 128000, uint256S("0x94ebf25c1db0e170e5d3c6529f2e453ce2edac11984ac9b94c1c61eda76d7d42") },
+                { 128200, uint256S("0x57c1f48e18c27a6a9cca18b80d0d86e5a71bc93ce88530296160dccbc6ae0f2d") },
+                { 128400, uint256S("0xb007a6b1f649208aba2c928af1ecc7c17c77e6e4d80a6d27e8159ee2407a1fd0") },
+                { 128600, uint256S("0x6a1bf6195b9111f3238256e954140b23afb6bebfb53599d4917b8894252b2efd") },
+                { 128800, uint256S("0x593194a6f6caf0ea808bfe583dbe164abdd5e039c107a9d801c295506e52a2b5") },
+                { 129000, uint256S("0xc58f6d8bc07ca5e899440bf487474b09f4e139de83defb6b6f36b8e1c49954ec") },
+                { 129100, uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25") },
             }
         };
 
