@@ -1515,12 +1515,12 @@ bool AppInitMain()
                     assert(chainActive.Tip() != nullptr);
 
                     // Reconnect new consensus block
-                    if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height) {
+                    if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height && !chainparams.GetConsensus().BHDIP006FirstForkBlockHash.IsNull()) {
                         // Clear banned
                         gArgs.SoftSetBoolArg("-clearbanned", true);
 
                         CBlockIndex *pFirstForkIndex = chainActive[chainparams.GetConsensus().BHDIP006Height];
-                        if (pFirstForkIndex->GetBlockHash() != uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25")) {
+                        if (pFirstForkIndex->GetBlockHash() != chainparams.GetConsensus().BHDIP006FirstForkBlockHash) {
                             // Invalidate bad fork block
                             {
                                 CValidationState state;
