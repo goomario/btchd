@@ -2534,6 +2534,10 @@ Available pledge: %5</source>
         <source>The valid amount to pledge loan must be larger than %1 on exclude fee %2.</source>
         <translation>有效的抵押借出額除去交易費用 %2 後必須大於 %1 。</translation>
     </message>
+    <message>
+        <source>Copy bind data</source>
+        <translation>拷貝</translation>
+    </message>
 </context>
 <context>
     <name>SendCoinsEntry</name>

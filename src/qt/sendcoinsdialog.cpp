@@ -518,13 +518,15 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
     information += tr("%1 bind to %2").arg(plotterId, address) + "<br /><br />";
     information += tr("You can copy and send below signature bind data to %1 owner, and let the bind active:").arg(address);
     information += "<hr />";
-    information += "<span>";
-    information += QString::fromStdString(HexStr(script.begin(), script.end()));
-    information += "</span>";
+    information += "<p>";
+    information += QString::fromStdString(HexStr(script.begin(), script.end())).insert(144, "<br />").insert(72, "<br />");
+    information += "</p>";
 
-    QMessageBox messageBox(QMessageBox::Information, tr("Bind plotter data"), information, QMessageBox::Ok, this);
-    messageBox.setTextInteractionFlags(Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse);
-    messageBox.exec();
+    QMessageBox messageBox(QMessageBox::Information, tr("Bind plotter data"), information, QMessageBox::Ok|QMessageBox::Close, this);
+    messageBox.button(QMessageBox::Ok)->setText(tr("Copy bind data"));
+    if (messageBox.exec() == QMessageBox::Ok) {
+        GUIUtil::setClipboard(QString::fromStdString(HexStr(script.begin(), script.end())));
+    }
 }
 
 void SendCoinsDialog::clear()
