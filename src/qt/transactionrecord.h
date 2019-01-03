@@ -34,7 +34,8 @@ public:
         Confirming,         /**< Confirmed, but waiting for the recommended number of confirmations **/
         Conflicted,         /**< Conflicts with other transaction or mempool **/
         Abandoned,          /**< Abandoned from the wallet **/
-        Inactived,          /**< Transaction inactived **/
+        Inactived,          /**< Transaction inactived for bind plotter **/
+        Disabled,           /**< Transaction disabled **/
         /// Generated (mined) transactions
         Immature,           /**< Mined but waiting for maturity */
         MaturesWarning,     /**< Transaction will likely not mature because no nodes have confirmed */

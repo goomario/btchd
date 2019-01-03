@@ -3777,6 +3777,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"active\": true|false,              (bool, default false) The bind active status.\n"
             "    \"valid\": valid,                    (bool) The bind valid (Maybe not last bind for plotterId).\n"
             "    \"watchonly\": watchonly,            (bool) The bind to watchonly address.\n"
             "  }\n"
@@ -3875,6 +3876,9 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
             item.push_back(Pair("height", pblockIndex->nHeight));
+            item.push_back(Pair("active", pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(it->second.address), it->second.plotterId, pblockIndex->nHeight)));
+        } else {
+            item.push_back(Pair("active", false));
         }
         item.push_back(Pair("valid", it->second.fValid));
         if (filter & ISMINE_WATCH_ONLY) {

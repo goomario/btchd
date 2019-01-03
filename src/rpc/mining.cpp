@@ -730,8 +730,73 @@ UniValue getactivebindplotteraddress(const JSONRPCRequest& request)
         CTxDestination dest;
         ExtractDestination(coin.out.scriptPubKey, dest);
         return EncodeDestination(dest);
+    } else {
+        return UniValue();
     }
-    return UniValue();
+}
+
+UniValue getactivebindplotter(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "getactivebindplotter plotterId\n"
+            "\nReturn active binded information of plotter ID.\n"
+            "\nArguments:\n"
+            "1. plotterId           (string, required) The plotter ID\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"address\":\"address\",           (string) The BitcoinHD address of the binded.\n"
+            "    \"txid\":\"txid\",                 (string) The last binded transaction id.\n"
+            "    \"blockhash\":\"blockhash\",       (string) The binded transaction included block hash.\n"
+            "    \"blockheight\":height,            (numeric) The binded transaction included block height.\n"
+            "    \"lastBlock\": {                   (object) The plotter last generated block. Maybe not exist.\n"
+            "        \"blockhash\":\"blockhash\"    (string) The plotter last generated block hash.\n"
+            "        \"blockheight\":blockheight    (numeric) The plotter last generated block height.\n"
+            "        \"unbindheight\":unbindheight  (numeric) The plotter unbind limit height.\n"
+            "     }\n"
+            "  }\n"
+            "]\n"
+
+            "\nExamples:\n"
+            + HelpExampleCli("getactivebindplotter", "\"11529889285493050610\"")
+            + HelpExampleRpc("getactivebindplotter", "\"11529889285493050610\"")
+        );
+
+    uint64_t plotterId = 0;
+    if (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &plotterId))
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
+
+    LOCK(cs_main);
+    COutPoint outpoint;
+    const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId, &outpoint);
+    if (!coin.IsSpent()) {
+        UniValue item(UniValue::VOBJ);
+        {
+            CTxDestination dest;
+            ExtractDestination(coin.out.scriptPubKey, dest);
+            item.push_back(Pair("address", EncodeDestination(dest)));
+        }
+        item.push_back(Pair("txid", outpoint.hash.GetHex()));
+        item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
+        item.push_back(Pair("blockheight", (int)coin.nHeight));
+
+        // Last generate block
+        int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, chainActive.Height() - (int)Params().GetConsensus().nMinerConfirmationWindow);
+        for (int nHeight = chainActive.Height(); nHeight > lastPeriodHeight; nHeight--) {
+            if (chainActive[nHeight]->nPlotterId == plotterId) {
+                UniValue lastBlock(UniValue::VOBJ);
+                lastBlock.push_back(Pair("blockhash", chainActive[nHeight]->GetBlockHash().GetHex()));
+                lastBlock.push_back(Pair("blockheight", nHeight));
+                lastBlock.push_back(Pair("unbindheight", nHeight + (int)Params().GetConsensus().nMinerConfirmationWindow));
+                item.push_back(Pair("lastBlock", lastBlock));
+                break;
+            }
+        }
+        return item;
+    } else {
+        return UniValue();
+    }
 }
 
 UniValue listbindplotterofaddress(const JSONRPCRequest& request)
@@ -753,6 +818,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"active\": true|false,              (bool, default false) The bind active status.\n"
             "  }\n"
             "]\n"
 
@@ -782,12 +848,13 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     if (count == 0)
         return ret;
 
+    LOCK(cs_main);
+
     // Load all relation coins
     typedef std::map<COutPoint,Coin> CCoinsOrderMap;
     typedef std::map<uint32_t,CCoinsOrderMap,std::greater<uint32_t> > CCoinsOrderByHeightMap;
     CCoinsOrderByHeightMap mapOrderedCoins;
     {
-        LOCK(cs_main);
         std::set<COutPoint> outpoints;
         pcoinsTip->GetAccountBindPlotterEntries(accountID, plotterId, outpoints);
         for (auto it = outpoints.cbegin(); it != outpoints.cend(); ++it) {
@@ -820,7 +887,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
-
+            item.push_back(Pair("active", pcoinsTip->HaveActiveBindPlotter(accountID, BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight)));
             ret.push_back(item);
 
             if (--count <= 0)
@@ -865,8 +932,8 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
     }
     if (lastActiveHeight == 0)
         lastActiveHeight = activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE;
-    if (lastActiveHeight > activeHeight + PROTOCOL_BINDPLOTTER_MAXALIVE)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height too large and unsafe (limit %d)", activeHeight + PROTOCOL_BINDPLOTTER_MAXALIVE));
+    if (lastActiveHeight > activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Last active height too large and unsafe (limit %d)", activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE));
 
     CScript script = GetBindPlotterScriptForDestination(DecodeDestination(request.params[0].get_str()), request.params[1].get_str(), lastActiveHeight);
     if (script.empty())
@@ -892,6 +959,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
             "    \"lastActiveHeight\":lastActiveHeight,   (numeric) The bind last active height for tx package.\n"
             "    \"address\":\"address\",                   (string) The BitcoinHD address of the binded.\n"
             "  }\n"
+            "]\n"
 
             "\nExamples:\n"
             "\nVerify bind plotter hex data\n"
@@ -1631,28 +1699,29 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
 }
 
 static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         argNames
-  //  --------------------- ------------------------  -----------------------  ----------
-    { "mining",             "getmininginfo",                &getmininginfo,             {} },
-    { "mining",             "prioritisetransaction",        &prioritisetransaction,     {"txid","dummy","fee_delta"} },
-    { "mining",             "getblocktemplate",             &getblocktemplate,          {"template_request"} },
-    { "mining",             "submitblock",                  &submitblock,               {"hexdata","dummy"} },
-    { "mining",             "getactivebindplotteraddress",  &getactivebindplotteraddress,{"plotterId"} },
-    { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,  {"address", "plotterId", "count"} },
-    { "mining",             "createbindplotterdata",        &createbindplotterdata,     {"address", "passphrase", "lastActiveHeight"} },
-    { "mining",             "verifybindplotterdata",        &verifybindplotterdata,     {"address", "hexdata"} },
-    { "mining",             "getpledgeofaddress",           &getpledgeofaddress,        {"address", "plotterId", "verbose"} },
-    { "mining",             "getplottermininginfo",         &getplottermininginfo,      {"plotterId", "verbose"} },
-    { "mining",             "listpledgeloanofaddress",      &listpledgeloanofaddress,   {"address"} },
-    { "mining",             "listpledgedebitofaddress",     &listpledgedebitofaddress,  {"address"} },
+{ //  category              name                            actor (function)                argNames
+  //  --------------------- ------------------------------  ------------------------------  ----------
+    { "mining",             "getmininginfo",                &getmininginfo,                 {} },
+    { "mining",             "prioritisetransaction",        &prioritisetransaction,         {"txid","dummy","fee_delta"} },
+    { "mining",             "getblocktemplate",             &getblocktemplate,              {"template_request"} },
+    { "mining",             "submitblock",                  &submitblock,                   {"hexdata","dummy"} },
+    { "mining",             "getactivebindplotteraddress",  &getactivebindplotteraddress,   {"plotterId"} },
+    { "mining",             "getactivebindplotter",         &getactivebindplotter,          {"plotterId"} },
+    { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,      {"address", "plotterId", "count"} },
+    { "mining",             "createbindplotterdata",        &createbindplotterdata,         {"address", "passphrase", "lastActiveHeight"} },
+    { "mining",             "verifybindplotterdata",        &verifybindplotterdata,         {"address", "hexdata"} },
+    { "mining",             "getpledgeofaddress",           &getpledgeofaddress,            {"address", "plotterId", "verbose"} },
+    { "mining",             "getplottermininginfo",         &getplottermininginfo,          {"plotterId", "verbose"} },
+    { "mining",             "listpledgeloanofaddress",      &listpledgeloanofaddress,       {"address"} },
+    { "mining",             "listpledgedebitofaddress",     &listpledgedebitofaddress,      {"address"} },
 
-    { "generating",         "generatetoaddress",            &generatetoaddress,         {"nblocks","address","maxtries"} },
+    { "generating",         "generatetoaddress",            &generatetoaddress,             {"nblocks","address","maxtries"} },
 
-    { "util",               "estimatefee",                  &estimatefee,               {"nblocks"} },
-    { "util",               "estimatesmartfee",             &estimatesmartfee,          {"conf_target", "estimate_mode"} },
-    { "util",               "getbalanceofheight",           &getbalanceofheight,        {"address", "height"} },
+    { "util",               "estimatefee",                  &estimatefee,                   {"nblocks"} },
+    { "util",               "estimatesmartfee",             &estimatesmartfee,              {"conf_target", "estimate_mode"} },
+    { "util",               "getbalanceofheight",           &getbalanceofheight,            {"address", "height"} },
 
-    { "hidden",             "estimaterawfee",               &estimaterawfee,            {"conf_target", "threshold"} },
+    { "hidden",             "estimaterawfee",               &estimaterawfee,                {"conf_target", "threshold"} },
 };
 
 void RegisterMiningRPCCommands(CRPCTable &t)

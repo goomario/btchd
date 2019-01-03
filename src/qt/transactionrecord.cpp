@@ -339,9 +339,16 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
             if (type == TransactionRecord::BindPlotter || type == TransactionRecord::SendPledge ||
                 type == TransactionRecord::RecvPledge || type == TransactionRecord::SelfPledge)
             {
-                if (pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0)).IsSpent())
+                const Coin &coin = pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0));
+                if (coin.IsSpent())
                 {
-                    status.status = TransactionStatus::Inactived;
+                    status.status = TransactionStatus::Disabled;
+                }
+                else if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER)
+                {
+
+                    if (!pcoinsTip->HaveActiveBindPlotter(GetAccountIDByScriptPubKey(coin.out.scriptPubKey), BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight))
+                        status.status = TransactionStatus::Inactived;
                 }
             }
         }

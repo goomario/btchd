@@ -73,13 +73,17 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     CAmount nNet = nCredit - nDebit;
 
     if ((rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge) &&
-        rec->status.status == TransactionStatus::Inactived)
+        rec->status.status == TransactionStatus::Disabled)
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Withdrawn") + " (" + FormatTxStatus(wtx) + ")";
     }
-    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Inactived)
+    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Disabled)
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Unbinded Plotter ID") + " (" + FormatTxStatus(wtx) + ")";
+    }
+    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Inactived)
+    {
+        strHTML += "<b>" + tr("Status") + ":</b> " + tr("Inactived Binded Plotter ID") + " (" + FormatTxStatus(wtx) + ")";
     }
     else
     {

@@ -339,11 +339,11 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount 
     return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 
-const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId) const {
+const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint) const {
     if (plotterId == 0)
         return coinEmpty;
 
-    // Find all bind plotter outpoint
+    // Find all bind plotter outpoint. Must order by COutPoint ascent
     std::set<COutPoint> outpoints;
     GetBindPlotterAccountEntries(plotterId, outpoints);
     if (!outpoints.empty()) {
@@ -369,6 +369,7 @@ const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId)
             assert(coin.extraData);
             assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
             assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
+            if (outpoint) *outpoint = *lastOutPoint;
             return coin;
         }
     }
@@ -377,8 +378,11 @@ const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId)
     return coinEmpty;
 }
 
-bool CCoinsViewCache::HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const {
-    return accountID != 0 && GetActiveBindPlotterCoin(plotterId).refOutAccountID == accountID;
+bool CCoinsViewCache::HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId, int nLimitHeight) const {
+    if (accountID == 0)
+        return false;
+    const Coin &coin = GetActiveBindPlotterCoin(plotterId);
+    return coin.refOutAccountID == accountID && (nLimitHeight == 0 || nLimitHeight >= (int)coin.nHeight);
 }
 
 void CCoinsViewCache::GetAccountBindPlotters(const CAccountID &accountID, std::set<uint64_t> &plotters) const {

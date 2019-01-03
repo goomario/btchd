@@ -3002,6 +3002,10 @@ Available pledge: %5</source>
         <translation>已解綁 ID</translation>
     </message>
     <message>
+        <source>Inactived Binded Plotter ID</source>
+        <translation>綁定已經無效</translation>
+    </message>
+    <message>
         <source>Withdrawn</source>
         <translation>已贖回</translation>
     </message>
@@ -3120,6 +3124,14 @@ Available pledge: %5</source>
     <message>
         <source>Unbinded plotter</source>
         <translation>解綁算力</translation>
+    </message>
+    <message>
+        <source>This bind plotter has inactived</source>
+        <translation>此綁定已無效</translation>
+    </message>
+    <message>
+        <source>This bind plotter has unbinded</source>
+        <translation>此綁定已解除</translation>
     </message>
     <message>
         <source>Sent pledge to</source>
