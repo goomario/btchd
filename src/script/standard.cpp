@@ -412,26 +412,7 @@ std::vector<unsigned char> ToByteVector(DatacarrierType type) {
 }
 
 bool IsValidPassphrase(const std::string& passphrase) {
-    static const uint32_t CharMask_Char     = (1u << 0);
-    static const uint32_t CharMask_Space    = (1u << 1);
-    static const uint32_t CharMask_Unknown  = (1u << 2);
-
-    if (passphrase.size() < 20)
-        return false;
-
-    uint32_t type = 0x00000000;
-    for (const char &ch : passphrase) {
-        if (ch == ' ')
-            type |= CharMask_Space;
-        else if (ch >= 'a' && ch <= 'z')
-            type |= CharMask_Char;
-        else
-            type |= CharMask_Unknown;
-    }
-    if ((type & CharMask_Unknown) || !(type & CharMask_Char) || !(type & CharMask_Space))
-        return false;
-
-    return true;
+    return !passphrase.empty();
 }
 
 bool IsValidPlotterID(const std::string& strPlotterId, uint64_t *id) {
