@@ -1490,8 +1490,7 @@ bool AppInitMain()
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                bool fDoUpgrade = false;
-                if (!pcoinsdbview->Upgrade(fDoUpgrade)) {
+                if (!pcoinsdbview->Upgrade()) {
                     strLoadError = _("Error upgrading chainstate database");
                     break;
                 }
@@ -1515,56 +1514,58 @@ bool AppInitMain()
                     assert(chainActive.Tip() != nullptr);
 
                     // Reconnect new consensus block
-                    if (fDoUpgrade && chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height && !chainparams.GetConsensus().BHDIP006FirstForkBlockHash.IsNull()) {
+                    if (!chainparams.GetConsensus().BHDIP006FirstForkBlockHash.IsNull() &&
+                        chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height &&
+                        chainActive[chainparams.GetConsensus().BHDIP006Height]->GetBlockHash() != chainparams.GetConsensus().BHDIP006FirstForkBlockHash)
+                    {
                         // Clear banned
                         gArgs.SoftSetBoolArg("-clearbanned", true);
 
-                        CBlockIndex *pFirstForkIndex = chainActive[chainparams.GetConsensus().BHDIP006Height];
-                        if (pFirstForkIndex->GetBlockHash() != chainparams.GetConsensus().BHDIP006FirstForkBlockHash) {
-                            // Invalidate bad fork block
+                        // Invalidate block
+                        CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006Height - 1];
+                        {
+                            CValidationState state;
                             {
-                                CValidationState state;
-                                {
-                                    LOCK(cs_main);
-                                    InvalidateBlock(state, chainparams, pFirstForkIndex);
-                                }
-                                if (state.IsValid())
-                                    ActivateBestChain(state, Params());
-                                if (!state.IsValid()) {
-                                    strLoadError = _("Error initializing block database");
-                                    break;
-                                }
+                                LOCK(cs_main);
+                                InvalidateBlock(state, chainparams, pAnchorIndex);
                             }
-
-                            // Invalidate block
-                            CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006Height - 1];
-                            {
-                                CValidationState state;
-                                {
-                                    LOCK(cs_main);
-                                    InvalidateBlock(state, chainparams, pAnchorIndex);
-                                }
-                                if (state.IsValid())
-                                    ActivateBestChain(state, Params());
-                                if (!state.IsValid()) {
-                                    strLoadError = _("Error initializing block database");
-                                    break;
-                                }
-                            }
-
-                            // Reconsider block
-                            {
-                                {
-                                    LOCK(cs_main);
-                                    ResetBlockFailureFlags(pAnchorIndex);
-                                }
-
-                                CValidationState state;
+                            if (state.IsValid())
                                 ActivateBestChain(state, chainparams);
-                                if (!state.IsValid()) {
-                                    strLoadError = _("Error initializing block database");
-                                    break;
-                                }
+                            if (!state.IsValid()) {
+                                strLoadError = _("Error initializing block database");
+                                break;
+                            }
+                        }
+
+                        // Reconsider block
+                        {
+                            {
+                                LOCK(cs_main);
+                                ResetBlockFailureFlags(pAnchorIndex);
+                            }
+
+                            CValidationState state;
+                            ActivateBestChain(state, chainparams);
+                            if (!state.IsValid()) {
+                                strLoadError = _("Error initializing block database");
+                                break;
+                            }
+                        }
+
+                        // Invalidate bad fork block
+                        if (chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height &&
+                            chainActive[chainparams.GetConsensus().BHDIP006Height]->GetBlockHash() != chainparams.GetConsensus().BHDIP006FirstForkBlockHash)
+                        {
+                            CValidationState state;
+                            {
+                                LOCK(cs_main);
+                                InvalidateBlock(state, chainparams, chainActive[chainparams.GetConsensus().BHDIP006Height]);
+                            }
+                            if (state.IsValid())
+                                ActivateBestChain(state, chainparams);
+                            if (!state.IsValid()) {
+                                strLoadError = _("Error initializing block database");
+                                break;
                             }
                         }
                     }
