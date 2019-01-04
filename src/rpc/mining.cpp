@@ -976,7 +976,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
     CMutableTransaction dummyTx;
     dummyTx.nVersion = CTransaction::UNIFORM_VERSION;
     dummyTx.vin.push_back(CTxIn());
-    dummyTx.vout.push_back(CTxOut(PROTOCOL_BINDPLOTTER_AMOUNT, GetScriptForDestination(bindToDest)));
+    dummyTx.vout.push_back(CTxOut(PROTOCOL_BINDPLOTTER_LOCKAMOUNT, GetScriptForDestination(bindToDest)));
     dummyTx.vout.push_back(CTxOut(0, CScript(bindData.cbegin(), bindData.cend())));
 
     UniValue result(UniValue::VOBJ);

@@ -3591,6 +3591,12 @@ UniValue bindplotter(const JSONRPCRequest& request)
             strprintf("The bind plotter inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
 
+    // Fixed bind plotter fee
+    if (chainActive.Height() + 1 >= Params().GetConsensus().BHDIP006CheckRelayHeight) {
+        coin_control.m_fee_mode = FeeEstimateMode::FIXED;
+        coin_control.fixedFee = PROTOCOL_BINDPLOTTER_MINFEE;
+    }
+
     EnsureWalletIsUnlocked(pwallet);
 
     if (pwallet->GetBroadcastTransactions() && !g_connman) {
@@ -3602,7 +3608,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
     CAmount nFeeRequired = 0;
     std::string strError;
     std::vector<CRecipient> vecSend = {
-        {GetScriptForDestination(bindToDest), PROTOCOL_BINDPLOTTER_AMOUNT, false}, //! Real output to self
+        {GetScriptForDestination(bindToDest), PROTOCOL_BINDPLOTTER_LOCKAMOUNT, false}, //! Real output to self
         {CScript(), 0, false}, //! Tx datacarrier
     };
     if (fBindHexData) {
@@ -3721,12 +3727,19 @@ UniValue unbindplotter(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not bind");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The bind plotter transaction not mine");
-        
+
         CTxDestination dest;
         if (!ExtractDestination(coin.out.scriptPubKey, dest))
             throw JSONRPCError(RPC_WALLET_ERROR, "The bind plotter transaction coin destination cannot extract");
-
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
+
+        // Check lock time
+        int activeHeight = GetUnbindPlotterActiveHeight(BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
+        if (activeHeight > chainActive.Height() + 1) {
+            throw JSONRPCError(RPC_WALLET_ERROR,
+                strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
+                    activeHeight, activeHeight - chainActive.Height() - 1, (activeHeight - chainActive.Height() - 1)*Params().GetConsensus().nPowTargetSpacing/60));
+        }
     }
     CAmount nFeeOut = 0;
     int changePosition = -1;

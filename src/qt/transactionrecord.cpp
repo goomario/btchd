@@ -42,7 +42,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
         if (itType->second == "bindplotter")
         {
             TransactionRecord sub(hash, nTime);
-            sub.credit = wtx.tx->vout[0].nValue;
+            sub.debit = -wtx.tx->vout[0].nValue + nNet;
             sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
             sub.type = TransactionRecord::BindPlotter;
             sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
@@ -66,7 +66,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             isminetype sendIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["from"]));
             isminetype toIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["to"]));
             TransactionRecord sub(hash, nTime);
-            sub.credit = wtx.tx->vout[0].nValue;
+            sub.debit = -wtx.tx->vout[0].nValue + nNet;
             if ((sendIsmine & ISMINE_SPENDABLE) && (toIsmine & ISMINE_SPENDABLE)) {
                 // Mine -> Mine
                 sub.involvesWatchAddress = false;

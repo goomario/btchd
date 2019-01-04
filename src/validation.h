@@ -292,6 +292,9 @@ typedef struct {
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
     const CCoinsViewCache &view, const Consensus::Params& consensusParams);
 
+/** Get unbind plotter transaction lock time. */
+int GetUnbindPlotterActiveHeight(const uint64_t& nPlotterId, const Consensus::Params& consensusParams);
+
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);
 

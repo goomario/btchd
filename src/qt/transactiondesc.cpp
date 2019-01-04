@@ -72,8 +72,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
 
-    if ((rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge) &&
-        rec->status.status == TransactionStatus::Disabled)
+    if ((rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge) && rec->status.status == TransactionStatus::Disabled)
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Withdrawn") + " (" + FormatTxStatus(wtx) + ")";
     }
@@ -89,6 +88,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + FormatTxStatus(wtx);
     }
+
     int nRequests = wtx.GetRequestCount();
     if (nRequests != -1)
     {

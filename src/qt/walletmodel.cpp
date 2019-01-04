@@ -344,6 +344,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         LOCK2(cs_main, wallet->cs_wallet);
         if (chainActive.Height() < Params().GetConsensus().BHDIP006Height)
             return InactivedBHDIP006;
+        if (chainActive.Height() + 1 >= Params().GetConsensus().BHDIP006CheckRelayHeight &&
+                (coinControl.m_fee_mode != FeeEstimateMode::FIXED || coinControl.fixedFee < PROTOCOL_BINDPLOTTER_MINFEE))
+            return InvalidBindPlotterAmount;
 
         const SendCoinsRecipient &rcp = recipients[0];
         if (!validateAddress(rcp.address) || coinControl.destPick != DecodeDestination(rcp.address.toStdString()))
@@ -352,7 +355,12 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         fSubtractFeeFromAmount = rcp.fSubtractFeeFromAmount;
 
         vecSend.push_back({GetScriptForDestination(coinControl.destPick), rcp.amount, rcp.fSubtractFeeFromAmount});
-        vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE), 0, false});
+        if (rcp.plotterPassphrase.size() == PROTOCOL_BINDPLOTTER_SCRIPTSIZE * 2 && IsHex(rcp.plotterPassphrase.toStdString())) {
+            std::vector<unsigned char> bindData(ParseHex(rcp.plotterPassphrase.toStdString()));
+            vecSend.push_back({CScript(bindData.cbegin(), bindData.cend()), 0, false});
+        } else {
+            vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE), 0, false});
+        }
 
         total += rcp.amount;
     }
@@ -391,7 +399,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
 
         // Check bind plotter amount
-        if (payOperateMethod == PayOperateMethod::BindPlotter && newTx->tx->vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
+        if (payOperateMethod == PayOperateMethod::BindPlotter && newTx->tx->vout[0].nValue != PROTOCOL_BINDPLOTTER_LOCKAMOUNT)
             return InvalidBindPlotterAmount;
         // Check pledge amount
         if (payOperateMethod == PayOperateMethod::SendPledge && newTx->tx->vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
@@ -859,7 +867,7 @@ bool WalletModel::transactionCanBeUnlock(uint256 hash, DatacarrierType type) con
         auto itTx = it->second.mapValue.find("relevant_txid");
         if (itType != it->second.mapValue.end() && itTx != it->second.mapValue.end() &&
             (itType->second == "unbindplotter" || itType->second == "withdrawpledge") &&
-            itTx->second == txid && it->second.InMempool() && !it->second.isAbandoned())
+                itTx->second == txid && it->second.InMempool() && !it->second.isAbandoned())
         {
             return false;
         }
@@ -875,6 +883,20 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
     if (coin.IsSpent() || !coin.extraData || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN))
         return false;
+
+    if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+        int activeHeight = GetUnbindPlotterActiveHeight(BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
+        if (activeHeight > chainActive.Height() + 1) {
+            QString information = tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
+                arg(QString::number(activeHeight),
+                    QString::number(activeHeight-chainActive.Height()-1),
+                    QString::number((activeHeight-chainActive.Height()-1)*Params().GetConsensus().nPowTargetSpacing/60));
+
+            QMessageBox msgBox(QMessageBox::Information, tr("Unbind plotter"), information, QMessageBox::Ok);
+            msgBox.exec();
+            return false;
+        }
+    }
 
     CCoinControl coin_control;
     coin_control.signalRbf = true;
@@ -920,15 +942,13 @@ bool WalletModel::unlockTransaction(uint256 hash) {
         QString questionString = tr("Are you sure you want to unbind plotter?");
         questionString.append("<br />");
         questionString.append("<table style=\"text-align: left;\">");
-        questionString.append("<tr><td>").append(tr("Binded address:")).append("</td><td>").
-            append(QString::fromStdString(EncodeDestination(lockedDest)));
+        questionString.append("<tr><td>").append(tr("Binded address:")).append("</td><td>").append(QString::fromStdString(EncodeDestination(lockedDest)));
         if (wallet->mapAddressBook.count(lockedDest) && !wallet->mapAddressBook[lockedDest].name.empty())
             questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
         questionString.append("</td></tr>");
-        questionString.append("<tr><td>").append(tr("Plotter ID:")).append("</td><td>").
-            append(QString::number(BindPlotterPayload::As(coin.extraData)->GetId())).append("</td></tr>");
-        questionString.append("<tr><td>").append(tr("Transaction fee:")).append("</td><td>").
-            append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
+        questionString.append("<tr><td>").append(tr("Plotter ID:")).append("</td><td>").append(QString::number(BindPlotterPayload::As(coin.extraData)->GetId())).append("</td></tr>");
+        questionString.append("<tr><td>").append(tr("Amount:")).append("</td><td>").append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), coin.out.nValue)).append("</td></tr>");
+        questionString.append("<tr style='color:#aa0000;'><td>").append(tr("Transaction fee:")).append("</td><td>").append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
         questionString.append("</table>");
 
         SendConfirmationDialog confirmationDialog(tr("Unbind plotter"), questionString);
@@ -938,8 +958,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
         QString questionString = tr("Are you sure you want to withdraw pledge?");
         questionString.append("<br />");
         questionString.append("<table style=\"text-align: left;\">");
-        questionString.append("<tr><td>").append(tr("From address:")).append("</td><td>").
-            append(QString::fromStdString(EncodeDestination(lockedDest)));
+        questionString.append("<tr><td>").append(tr("From address:")).append("</td><td>").append(QString::fromStdString(EncodeDestination(lockedDest)));
         if (wallet->mapAddressBook.count(lockedDest) && !wallet->mapAddressBook[lockedDest].name.empty())
             questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
         questionString.append("</td></tr>");
@@ -950,10 +969,8 @@ bool WalletModel::unlockTransaction(uint256 hash) {
                 questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[dest].name)).append(")");
             questionString.append("</td></tr>");
         }
-        questionString.append("<tr><td>").append(tr("Amount:")).append("</td><td>").
-            append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), coin.out.nValue)).append("</td></tr>");
-        questionString.append("<tr><td>").append(tr("Transaction fee:")).append("</td><td>").
-            append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
+        questionString.append("<tr><td>").append(tr("Amount:")).append("</td><td>").append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), coin.out.nValue)).append("</td></tr>");
+        questionString.append("<tr style='color:#aa0000;'><td>").append(tr("Transaction fee:")).append("</td><td>").append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), nFeeOut)).append("</td></tr>");
         questionString.append("</table>");
 
         SendConfirmationDialog confirmationDialog(tr("Withdraw pledge"), questionString);

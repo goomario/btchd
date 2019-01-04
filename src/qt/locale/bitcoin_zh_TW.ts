@@ -2343,6 +2343,14 @@ Available pledge: %5</source>
         <translation>綁定數據</translation>
     </message>
     <message>
+        <source>Invalid bind plotter data!</source>
+        <translation>無效的綁定數據！</translation>
+    </message>
+    <message>
+        <source>This string look like signatured bind plotter data!</source>
+        <translation>這串字符看起來像是已經簽名的綁定數據！</translation>
+    </message>
+    <message>
         <source>You can copy and send below signature bind data to %1 owner, and let the bind active:</source>
         <translation>你可以安全的拷貝並發送下面已簽名的綁定數據給 %1 地址的擁有者以激活綁定:</translation>
     </message>
@@ -3468,6 +3476,10 @@ Available pledge: %5</source>
     <message>
         <source>Plotter ID:</source>
         <translation>算力 ID：</translation>
+    </message>
+    <message>
+        <source>Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).</source>
+        <translation>解綁生效的區塊高度為 %1 （%2 個區塊之後，大約需要 %3 分鐘）。</translation>
     </message>
     <message>
         <source>From address:</source>

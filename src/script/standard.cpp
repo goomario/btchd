@@ -451,7 +451,7 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
     script << std::vector<unsigned char>(publicKey, publicKey+32);
     script << std::vector<unsigned char>(signature, signature+64);
 
-    assert(script.size() == 109);
+    assert(script.size() == PROTOCOL_BINDPLOTTER_SCRIPTSIZE);
 
     return script;
 }
@@ -466,7 +466,7 @@ CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
         script << ToByteVector(*scriptID);
     }
 
-    assert(script.empty() || script.size() == 27);
+    assert(script.empty() || script.size() == PROTOCOL_PLEDGELOAN_SCRIPTSIZE);
     return script;
 }
 
@@ -497,7 +497,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
     unsigned int type = (vData[0] << 0) | (vData[1] << 8) | (vData[2] << 16) | (vData[3] << 24);
     if (type == DATACARRIER_TYPE_BINDPLOTTER) {
         // Bind plotter transaction
-        if (scriptPubKey.size() != 109 || tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_AMOUNT)
+        if (scriptPubKey.size() != PROTOCOL_BINDPLOTTER_SCRIPTSIZE || tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_LOCKAMOUNT)
             return nullptr;
         // Check destination
         CTxDestination dest;
@@ -537,7 +537,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         return payload;
     } else if (type == DATACARRIER_TYPE_PLEDGELOAN) {
         // Plege transaction
-        if (tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != 27)
+        if (tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != PROTOCOL_PLEDGELOAN_SCRIPTSIZE)
             return nullptr;
 
         // Debit account

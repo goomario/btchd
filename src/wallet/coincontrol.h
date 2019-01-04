@@ -42,6 +42,8 @@ public:
     bool signalRbf;
     //! Fee estimation mode to control arguments to estimateSmartFee
     FeeEstimateMode m_fee_mode;
+    //! Use fixed fee on m_fee_mode=FeeEstimateMode::FIXED
+    CAmount fixedFee;
     //! Coin pick policy
     CoinPickPolicy coinPickPolicy;
     //! Custom pick destination, if not set unlimit select
@@ -64,6 +66,7 @@ public:
         m_confirm_target.reset();
         signalRbf = fWalletRbf;
         m_fee_mode = FeeEstimateMode::UNSET;
+        fixedFee = 0;
         coinPickPolicy = CoinPickPolicy::IncludeIfSet;
         destPick = CNoDestination();
     }

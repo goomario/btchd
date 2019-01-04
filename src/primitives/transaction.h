@@ -412,6 +412,11 @@ struct CMutableTransaction
         }
         return false;
     }
+
+    bool IsUniform() const
+    {
+        return nVersion == CTransaction::UNIFORM_VERSION;
+    }
 };
 
 typedef std::shared_ptr<const CTransaction> CTransactionRef;

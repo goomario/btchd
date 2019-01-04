@@ -85,6 +85,7 @@ struct Params {
     int BHDIP006Height;
     /** Block height at which BHDIP006 bind plotter becomes active */
     int BHDIP006BindPlotterActiveHeight;
+    int BHDIP006CheckRelayHeight;
     uint256 BHDIP006FirstForkBlockHash;
 
     /**
