@@ -213,6 +213,14 @@
 <context>
     <name>QPlatformTheme</name>
     <message>
+        <source>Yes</source>
+        <translation>是</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>否</translation>
+    </message>
+    <message>
         <source>OK</source>
         <translation>确定</translation>
     </message>

@@ -137,7 +137,7 @@ void SendCoinsEntry::clear()
 
     // Update for bind plotter
     if (payOperateMethod == PayOperateMethod::BindPlotter) {
-        ui->payAmount->setValue(PROTOCOL_BINDPLOTTER_AMOUNT);
+        ui->payAmount->setValue(PROTOCOL_BINDPLOTTER_LOCKAMOUNT);
         ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
     }
 }

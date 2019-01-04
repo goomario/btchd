@@ -261,13 +261,19 @@ struct PledgeLoanPayload : public DatacarrierPayload
 };
 
 /** The bind plotter lock amount */
-static const CAmount PROTOCOL_BINDPLOTTER_AMOUNT = 10 * CENT;
+static const CAmount PROTOCOL_BINDPLOTTER_LOCKAMOUNT = 10 * CENT;
+
+/** The bind plotter transaction fee */
+static const CAmount PROTOCOL_BINDPLOTTER_MINFEE = 10 * CENT;
 
 /** The height for bind plotter default maximum relative tip height */
-static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 288;
+static const int PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE = 24;
 
 /** The height for bind plotter maximum relative tip height */
 static const int PROTOCOL_BINDPLOTTER_MAXALIVE = 288 * 7;
+
+/** The bind plotter script size */
+static const int PROTOCOL_BINDPLOTTER_SCRIPTSIZE = 109;
 
 /** Check whether a string is a valid passphrase. */
 bool IsValidPassphrase(const std::string& passphrase);
@@ -280,6 +286,9 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
 
 /** The minimal pledge loan amount */
 static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
+
+/** The pledge loan script size */
+static const int PROTOCOL_PLEDGELOAN_SCRIPTSIZE = 27;
 
 /** Generate a pledge script. */
 CScript GetPledgeScriptForDestination(const CTxDestination& dest);

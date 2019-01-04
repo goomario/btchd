@@ -338,6 +338,11 @@ QString TransactionTableModel::formatTxStatus(const TransactionRecord *wtx) cons
     case TransactionStatus::Inactived:
         if (wtx->type == TransactionRecord::BindPlotter) {
             status = tr("This bind plotter has inactived");
+        }
+        break;
+    case TransactionStatus::Disabled:
+        if (wtx->type == TransactionRecord::BindPlotter) {
+            status = tr("This bind plotter has unbinded");
         } else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge) {
             status = tr("This pledge has withdraw");
         }
@@ -541,6 +546,11 @@ QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx)
     case TransactionStatus::Inactived:
         if (wtx->type == TransactionRecord::BindPlotter)
             return QIcon(":/icons/tx_unbindplotter");
+        else
+            return COLOR_BLACK;
+    case TransactionStatus::Disabled:
+        if (wtx->type == TransactionRecord::BindPlotter)
+            return QIcon(":/icons/tx_unbindplotter");
         else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge)
             return QIcon(":/icons/tx_pledge_withdraw");
         else
@@ -646,8 +656,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         {
             return COLOR_NEGATIVE;
         }
-        // Inactive tx
-        if(rec->status.status == TransactionStatus::Inactived)
+        // Disabled tx
+        if(rec->status.status == TransactionStatus::Disabled)
         {
             return COLOR_TX_STATUS_OFFLINE;
         }
@@ -708,6 +718,12 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         }
     case ConfirmedRole:
         if (rec->status.status == TransactionStatus::Inactived) {
+            if (rec->type == TransactionRecord::BindPlotter)
+            {
+                return tr("Inactived binded plotter");
+            }
+        }
+        else if (rec->status.status == TransactionStatus::Disabled) {
             if (rec->type == TransactionRecord::BindPlotter)
             {
                 return tr("Unbinded plotter");

@@ -676,9 +676,29 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         if (!CheckSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
 
+        int nSpendHeight = GetSpendHeight(view);
         CAmount nFees = 0;
-        if (!Consensus::CheckTxInputs(tx, state, view, GetSpendHeight(view), nFees, chainparams.GetConsensus())) {
+        if (!Consensus::CheckTxInputs(tx, state, view, nSpendHeight, nFees, chainparams.GetConsensus())) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
+        }
+
+        // Check for bind plotter fee and unbind plotter
+        if (fRequireStandard && nSpendHeight >= chainparams.GetConsensus().BHDIP006CheckRelayHeight && tx.IsUniform() && tx.vin.size() == 1) {
+            if (tx.vout.size() == 1) {
+                // Unbind plotter
+                const Coin& coin = view.AccessCoin(tx.vin[0].prevout);
+                if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                    if (nSpendHeight < GetUnbindPlotterActiveHeight(BindPlotterPayload::As(coin.extraData)->GetId(), chainparams.GetConsensus())) {
+                        return state.Invalid(false, REJECT_NONSTANDARD, "bad-unbindplotter-locktime");
+                    }
+                }
+            } else {
+                // Bind plotter
+                CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nSpendHeight);
+                if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER && nFees < PROTOCOL_BINDPLOTTER_MINFEE) {
+                    return state.Invalid(false, REJECT_NONSTANDARD, "bad-bindplotter-lowfee");
+                }
+            }
         }
 
         // Check for non-standard pay-to-script-hash in inputs
@@ -1204,6 +1224,30 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
 
     assert(reward.miner + reward.minerBHDIP004Compatiable + reward.fund == nSubsidy + nFees);
     return reward;
+}
+
+int GetUnbindPlotterActiveHeight(const uint64_t& nPlotterId, const Consensus::Params& consensusParams)
+{
+    AssertLockHeld(cs_main);
+
+    int activeHeight = 0;
+    if (chainActive.Height() + 1 >= consensusParams.BHDIP006CheckRelayHeight) {
+        int totalForge = 0;
+        int lastPeriodHeight = std::max(consensusParams.BHDIP001StartMingingHeight, chainActive.Height() - (int)consensusParams.nMinerConfirmationWindow);
+        for (int nHeight = chainActive.Height(); nHeight > lastPeriodHeight; nHeight--) {
+            if (chainActive[nHeight]->nPlotterId == nPlotterId) {
+                if (activeHeight == 0)
+                    activeHeight = nHeight + (int) consensusParams.nMinerConfirmationWindow;
+
+                if (++totalForge > 50) { // 2.5%
+                    activeHeight = 0;
+                    break;
+                }
+            }
+        }
+    }
+
+    return activeHeight;
 }
 
 bool IsInitialBlockDownload()

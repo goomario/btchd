@@ -592,7 +592,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             pcursor->Seek(entry);
             while (pcursor->Valid()) {
                 if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.accountID == accountID) {
-                    *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_AMOUNT;
+                    *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 } else {
                     break;
                 }
@@ -606,10 +606,10 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
                     it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
-                        *pBindPlotterBalance -= PROTOCOL_BINDPLOTTER_AMOUNT;
+                        *pBindPlotterBalance -= PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 } else {
                     if (!db.Exists(CoinEntry(&it->first)))
-                        *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_AMOUNT;
+                        *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 }
             }
         }
@@ -821,9 +821,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 }
 
 /** Upgrade the database from older formats */
-bool CCoinsViewDB::Upgrade(bool &fDoUpgrade) {
-    fDoUpgrade = false;
-
+bool CCoinsViewDB::Upgrade() {
     const uint32_t currentCoinDbVersion = 0x20190103;
 
     // Check coin database version
@@ -975,8 +973,6 @@ bool CCoinsViewDB::Upgrade(bool &fDoUpgrade) {
     #else
         unlink((GetDataDir() / "chainstate/account.db3").c_str());
     #endif
-
-    fDoUpgrade = true;
 
     return !ShutdownRequested();
 }

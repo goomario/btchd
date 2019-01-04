@@ -80,7 +80,7 @@ public:
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
-    bool Upgrade(bool &fDoUpgrade);
+    bool Upgrade();
     size_t EstimateSize() const override;
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,

@@ -42,7 +42,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
         if (itType->second == "bindplotter")
         {
             TransactionRecord sub(hash, nTime);
-            sub.credit = wtx.tx->vout[0].nValue;
+            sub.debit = -wtx.tx->vout[0].nValue + nNet;
             sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
             sub.type = TransactionRecord::BindPlotter;
             sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
@@ -66,7 +66,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             isminetype sendIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["from"]));
             isminetype toIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["to"]));
             TransactionRecord sub(hash, nTime);
-            sub.credit = wtx.tx->vout[0].nValue;
+            sub.debit = -wtx.tx->vout[0].nValue + nNet;
             if ((sendIsmine & ISMINE_SPENDABLE) && (toIsmine & ISMINE_SPENDABLE)) {
                 // Mine -> Mine
                 sub.involvesWatchAddress = false;
@@ -339,9 +339,16 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
             if (type == TransactionRecord::BindPlotter || type == TransactionRecord::SendPledge ||
                 type == TransactionRecord::RecvPledge || type == TransactionRecord::SelfPledge)
             {
-                if (pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0)).IsSpent())
+                const Coin &coin = pcoinsTip->AccessCoin(COutPoint(wtx.tx->GetHash(), 0));
+                if (coin.IsSpent())
                 {
-                    status.status = TransactionStatus::Inactived;
+                    status.status = TransactionStatus::Disabled;
+                }
+                else if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER)
+                {
+
+                    if (!pcoinsTip->HaveActiveBindPlotter(GetAccountIDByScriptPubKey(coin.out.scriptPubKey), BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight))
+                        status.status = TransactionStatus::Inactived;
                 }
             }
         }

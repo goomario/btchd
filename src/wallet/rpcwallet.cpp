@@ -3591,6 +3591,12 @@ UniValue bindplotter(const JSONRPCRequest& request)
             strprintf("The bind plotter inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
 
+    // Fixed bind plotter fee
+    if (chainActive.Height() + 1 >= Params().GetConsensus().BHDIP006CheckRelayHeight) {
+        coin_control.m_fee_mode = FeeEstimateMode::FIXED;
+        coin_control.fixedFee = PROTOCOL_BINDPLOTTER_MINFEE;
+    }
+
     EnsureWalletIsUnlocked(pwallet);
 
     if (pwallet->GetBroadcastTransactions() && !g_connman) {
@@ -3602,7 +3608,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
     CAmount nFeeRequired = 0;
     std::string strError;
     std::vector<CRecipient> vecSend = {
-        {GetScriptForDestination(bindToDest), PROTOCOL_BINDPLOTTER_AMOUNT, false}, //! Real output to self
+        {GetScriptForDestination(bindToDest), PROTOCOL_BINDPLOTTER_LOCKAMOUNT, false}, //! Real output to self
         {CScript(), 0, false}, //! Tx datacarrier
     };
     if (fBindHexData) {
@@ -3721,12 +3727,19 @@ UniValue unbindplotter(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not bind");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The bind plotter transaction not mine");
-        
+
         CTxDestination dest;
         if (!ExtractDestination(coin.out.scriptPubKey, dest))
             throw JSONRPCError(RPC_WALLET_ERROR, "The bind plotter transaction coin destination cannot extract");
-
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
+
+        // Check lock time
+        int activeHeight = GetUnbindPlotterActiveHeight(BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
+        if (activeHeight > chainActive.Height() + 1) {
+            throw JSONRPCError(RPC_WALLET_ERROR,
+                strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
+                    activeHeight, activeHeight - chainActive.Height() - 1, (activeHeight - chainActive.Height() - 1)*Params().GetConsensus().nPowTargetSpacing/60));
+        }
     }
     CAmount nFeeOut = 0;
     int changePosition = -1;
@@ -3777,6 +3790,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"active\": true|false,              (bool, default false) The bind active status.\n"
             "    \"valid\": valid,                    (bool) The bind valid (Maybe not last bind for plotterId).\n"
             "    \"watchonly\": watchonly,            (bool) The bind to watchonly address.\n"
             "  }\n"
@@ -3875,6 +3889,9 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
             item.push_back(Pair("height", pblockIndex->nHeight));
+            item.push_back(Pair("active", pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(it->second.address), it->second.plotterId, pblockIndex->nHeight)));
+        } else {
+            item.push_back(Pair("active", false));
         }
         item.push_back(Pair("valid", it->second.fValid));
         if (filter & ISMINE_WATCH_ONLY) {
