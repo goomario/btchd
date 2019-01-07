@@ -19,6 +19,7 @@
 #include <base58.h>
 #include <script/standard.h>
 #include <sync.h>
+#include <util.h>
 #include <wallet/wallet.h>
 
 #include <QList>
@@ -154,19 +155,33 @@ void AddressBookPage::setModel(AddressTableModel *_model)
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+    if (tab == ReceivingTab || gArgs.GetBoolArg("-showalladdressamount", false)) {
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+    } else {
+        ui->tableView->setColumnHidden(AddressTableModel::Amount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::LockedAmount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::LoanAmount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::DebitAmount, true);
+    }
 #else
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+    if (tab == ReceivingTab || gArgs.GetBoolArg("-showalladdressamount", false)) {
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+    } else {
+        ui->tableView->setColumnHidden(AddressTableModel::Amount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::LockedAmount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::LoanAmount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::DebitAmount, true);
+    }
 #endif
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
