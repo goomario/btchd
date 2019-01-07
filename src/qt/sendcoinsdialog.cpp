@@ -341,7 +341,7 @@ void SendCoinsDialog::on_sendButton_clicked()
         LOCK(cs_main);
         if (operateMethod == PayOperateMethod::SendPledge) {
             payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
-            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAD) {
+            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN) {
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
             }
         } else if (operateMethod == PayOperateMethod::BindPlotter) {
