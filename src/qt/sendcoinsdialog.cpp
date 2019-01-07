@@ -335,19 +335,28 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     prepareStatus = model->prepareTransaction(currentTransaction, ctrl, operateMethod);
 
-    // Check plotter bind
+    // Check special tx
     CDatacarrierPayloadRef payload;
-    if (prepareStatus.status == WalletModel::OK && operateMethod == PayOperateMethod::BindPlotter) {
+    if (prepareStatus.status == WalletModel::OK) {
         LOCK(cs_main);
-        payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
-        if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
-            QMessageBox msgBox(QMessageBox::Warning, tr("Bind plotter data"), tr("Invalid bind plotter data!"), QMessageBox::Close, this);
-            msgBox.exec();
-            return;
+        if (operateMethod == PayOperateMethod::SendPledge) {
+            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
+            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAD) {
+                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
+            }
+        } else if (operateMethod == PayOperateMethod::BindPlotter) {
+            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
+            if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
+                fNewRecipientAllowed = true;
+                QMessageBox msgBox(QMessageBox::Warning, tr("Bind plotter data"), tr("Invalid bind plotter data!"), QMessageBox::Close, this);
+                msgBox.exec();
+                return;
+            }
+
+            if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
+                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
+                                    QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
         }
-        if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
-            prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
-                                QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
     }
 
     // process prepareStatus and on error generate message shown to user
