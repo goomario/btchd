@@ -974,7 +974,7 @@ void SendCoinsDialog::coinControlClipboardChange()
 // Coin Control: settings menu - coin control enabled/disabled by user
 void SendCoinsDialog::coinControlFeatureChanged(bool checked)
 {
-    ui->frameCoinControl->setVisible(checked && getPayOperateMethod() != PayOperateMethod::Pay);
+    ui->frameCoinControl->setVisible(checked && getPayOperateMethod() == PayOperateMethod::Pay);
 
     if (!checked && model) // coin control features disabled
         CoinControlDialog::coinControl()->SetNull();
