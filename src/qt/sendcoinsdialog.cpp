@@ -139,6 +139,11 @@ void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
 
     if (_clientModel) {
         connect(_clientModel, SIGNAL(numBlocksChanged(int,QDateTime,double,bool)), this, SLOT(updateSmartFeeLabel()));
+
+    #ifdef ENABLE_WALLET
+        connect(_clientModel, SIGNAL(walletChanged(CWallet*)), this, SLOT(currentWalletPrimaryAddressChanged(CWallet*)));
+        connect(_clientModel, SIGNAL(walletPrimaryAddressChanged(CWallet*)), this, SLOT(currentWalletPrimaryAddressChanged(CWallet*)));
+    #endif
     }
 }
 
@@ -212,7 +217,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         ui->operateMethodComboBox->setCurrentIndex(0);
         QMetaObject::invokeMethod(ui->operateMethodComboBox, "currentIndexChanged", Qt::QueuedConnection,
             Q_ARG(int, ui->operateMethodComboBox->currentIndex()));
- 
+
     }
 }
 
@@ -227,6 +232,14 @@ SendCoinsDialog::~SendCoinsDialog()
 
     delete ui;
 }
+
+#ifdef ENABLE_WALLET
+void SendCoinsDialog::currentWalletPrimaryAddressChanged(CWallet *wallet)
+{
+    QMetaObject::invokeMethod(ui->operateMethodComboBox, "currentIndexChanged", Qt::QueuedConnection,
+        Q_ARG(int, ui->operateMethodComboBox->currentIndex()));
+}
+#endif
 
 void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
 {

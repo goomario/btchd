@@ -16,6 +16,7 @@ class ClientModel;
 class PlatformStyle;
 class SendCoinsEntry;
 class SendCoinsRecipient;
+class CWallet;
 
 namespace Ui {
     class SendCoinsDialog;
@@ -55,6 +56,11 @@ public Q_SLOTS:
                     const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
                     const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
                     const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
+
+#ifdef ENABLE_WALLET
+    /** Current wallet primary address changed */
+    void currentWalletPrimaryAddressChanged(CWallet *wallet);
+#endif
 
 private:
     Ui::SendCoinsDialog *ui;

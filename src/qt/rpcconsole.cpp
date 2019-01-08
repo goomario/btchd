@@ -33,6 +33,7 @@
 
 #include <QDesktopWidget>
 #include <QKeyEvent>
+#include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QScrollBar>
@@ -481,6 +482,7 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     connect(ui->fontBiggerButton, SIGNAL(clicked()), this, SLOT(fontBigger()));
     connect(ui->fontSmallerButton, SIGNAL(clicked()), this, SLOT(fontSmaller()));
     connect(ui->btnClearTrafficGraph, SIGNAL(clicked()), ui->trafficGraph, SLOT(clear()));
+    connect(ui->promptIcon, SIGNAL(clicked()), this, SLOT(inputLargeCommand()));
 
     // set library version labels
 #ifdef ENABLE_WALLET
@@ -1316,4 +1318,15 @@ void RPCConsole::showOrHideBanTableIfRequired()
 void RPCConsole::setTabFocus(enum TabTypes tabType)
 {
     ui->tabWidget->setCurrentIndex(tabType);
+}
+
+void RPCConsole::inputLargeCommand()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 2, 0))
+    bool fOk = false;
+    QString cmd = QInputDialog::getMultiLineText(this, this->windowTitle(), "", "", &fOk);
+    if (fOk) {
+        ui->lineEdit->setText(cmd.replace("\n", " ").trimmed());
+    }
+#endif
 }
