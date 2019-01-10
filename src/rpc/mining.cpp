@@ -1103,7 +1103,6 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     result.pushKV("availablePledgeBalance", ValueFromAmount(totalBalance - pledgeLoanBalance + pledgeDebitBalance));
     if (nTotalForgeCount == 0) {
         result.pushKV("pledge", ValueFromAmount(0));
-        result.pushKV("maxAdditionalPledge", ValueFromAmount(0));
         result.pushKV("capacity", "0 TB");
     } else {
         assert(nMiningHeight > nBeginHeight);
