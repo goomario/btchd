@@ -1051,30 +1051,32 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
             // Bind plotter actived
             std::set<uint64_t> plotters;
             pcoinsTip->GetAccountBindPlotters(accountID, plotters);
-            for (auto it = plotters.cbegin(); it != plotters.cend(); it++) {
-                mapBindPlotter.insert(std::make_pair(*it, PlotterItem{0,0}));
-            }
-            for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
-                CBlockIndex *pblockIndex = chainActive[index];
-                nAvgBaseTarget += pblockIndex->nBaseTarget;
-
-                if (plotters.count(pblockIndex->nPlotterId)) {
-                    ++nTotalForgeCount;
-                    
-                    // Forge
-                    auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
-                    if (itPlotter->second.lastForgeHeight == 0)
-                        itPlotter->second.lastForgeHeight = index;
-                    itPlotter->second.forgeCount++;
+            if (!plotters.empty()) {
+                for (auto it = plotters.cbegin(); it != plotters.cend(); it++) {
+                    mapBindPlotter.insert(std::make_pair(*it, PlotterItem{0,0}));
                 }
-            }
+                for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
+                    CBlockIndex *pblockIndex = chainActive[index];
+                    nAvgBaseTarget += pblockIndex->nBaseTarget;
 
-            if (nTotalForgeCount < nMiningHeight - nBeginHeight)
-                ++nTotalForgeCount;
+                    if (plotters.count(pblockIndex->nPlotterId)) {
+                        ++nTotalForgeCount;
+                        
+                        // Forge
+                        auto itPlotter = mapBindPlotter.find(pblockIndex->nPlotterId);
+                        if (itPlotter->second.lastForgeHeight == 0)
+                            itPlotter->second.lastForgeHeight = index;
+                        itPlotter->second.forgeCount++;
+                    }
+                }
 
-            for (auto itPlotter = mapBindPlotter.begin(); itPlotter != mapBindPlotter.end(); itPlotter++) {
-                if (itPlotter->second.forgeCount < nMiningHeight - nBeginHeight)
-                    itPlotter->second.forgeCount++;
+                if (nTotalForgeCount < nMiningHeight - nBeginHeight)
+                    ++nTotalForgeCount;
+
+                for (auto itPlotter = mapBindPlotter.begin(); itPlotter != mapBindPlotter.end(); itPlotter++) {
+                    if (itPlotter->second.forgeCount < nMiningHeight - nBeginHeight)
+                        itPlotter->second.forgeCount++;
+                }
             }
         }
 
