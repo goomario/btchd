@@ -162,7 +162,8 @@ void ReceiveRequestDialog::update()
         {
             ui->lblQRCode->setText(tr("Resulting URI too long, try to reduce the text for label / message."));
         } else {
-            QRcode *code = QRcode_encodeString(uri.toUtf8().constData(), 0, QR_ECLEVEL_L, QR_MODE_8, 1);
+            QString shortURI = (uri.contains('?') || uri.contains('&')) ? uri : uri.mid(6);
+            QRcode *code = QRcode_encodeString(shortURI.toUtf8().constData(), 0, QR_ECLEVEL_L, QR_MODE_8, 1);
             if (!code)
             {
                 ui->lblQRCode->setText(tr("Error encoding URI into QR Code."));
