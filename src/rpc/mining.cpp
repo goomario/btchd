@@ -1078,6 +1078,8 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                         itPlotter->second.forgeCount++;
                 }
             }
+        }
+        if (nAvgBaseTarget != 0) {
             nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
             nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
         }
