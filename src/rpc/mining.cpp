@@ -1078,10 +1078,9 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                         itPlotter->second.forgeCount++;
                 }
             }
+            nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
+            nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
         }
-
-        nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
-        nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
     }
 
     CAmount totalBalance = 0, bindPlotterBalance = 0, pledgeLoanBalance = 0, pledgeDebitBalance = 0;
