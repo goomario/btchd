@@ -66,39 +66,44 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             isminetype sendIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["from"]));
             isminetype toIsmine = ::IsMine(*wallet, DecodeDestination(mapValue["to"]));
             TransactionRecord sub(hash, nTime);
-            sub.debit = -wtx.tx->vout[0].nValue + nNet;
             if ((sendIsmine & ISMINE_SPENDABLE) && (toIsmine & ISMINE_SPENDABLE)) {
                 // Mine -> Mine
+                sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = false;
                 sub.type = TransactionRecord::SelfPledge;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (sendIsmine & ISMINE_SPENDABLE) {
                 // Mine -> Other
+                sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = false;
                 sub.type = TransactionRecord::SendPledge;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (toIsmine & ISMINE_SPENDABLE) {
                 // Other -> Mine
+                sub.credit = wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = false;
                 sub.type = TransactionRecord::RecvPledge;
                 sub.address = mapValue["from"];
                 parts.append(sub);
             } else if ((sendIsmine & ISMINE_WATCH_ONLY) && (toIsmine & ISMINE_WATCH_ONLY)) {
                 // WatchOnly -> WatchOnly
+                sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = true;
                 sub.type = TransactionRecord::SelfPledge;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (sendIsmine & ISMINE_WATCH_ONLY) {
                 // WatchOnly -> Other
+                sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = true;
                 sub.type = TransactionRecord::SendPledge;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (toIsmine & ISMINE_WATCH_ONLY) {
                 // Other -> WatchOnly
+                sub.credit = wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = true;
                 sub.type = TransactionRecord::RecvPledge;
                 sub.address = mapValue["from"];
