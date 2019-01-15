@@ -45,7 +45,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             sub.debit = -wtx.tx->vout[0].nValue + nNet;
             sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
             sub.type = TransactionRecord::BindPlotter;
-            sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
+            sub.address = mapValue["from"];
+            sub.comment = mapValue["plotter_id"];
 
             parts.append(sub);
             return parts;
@@ -56,7 +57,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             sub.credit = wtx.tx->vout[0].nValue;
             sub.involvesWatchAddress = wallet->IsMine(wtx.tx->vout[0]) & ISMINE_WATCH_ONLY;
             sub.type = TransactionRecord::UnbindPlotter;
-            sub.address = mapValue["from"] + " [" + mapValue["plotter_id"] + "]";
+            sub.address = mapValue["from"];
+            sub.comment = mapValue["plotter_id"];
 
             parts.append(sub);
             return parts;

@@ -448,10 +448,14 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
         watchAddress = wtx->involvesWatchAddress ? QString(" (") + tr("watch-only") + QString(")") : "";
     }
 
+    QString comment;
+    if (!wtx->comment.empty())
+        comment = " (" + QString::fromStdString(wtx->comment) + ")";
+
     switch(wtx->type)
     {
     case TransactionRecord::RecvFromOther:
-        return QString::fromStdString(wtx->address) + watchAddress;
+        return QString::fromStdString(wtx->address) + watchAddress + comment;
     case TransactionRecord::RecvWithAddress:
     case TransactionRecord::SendToAddress:
     case TransactionRecord::Generated:
@@ -461,12 +465,12 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     case TransactionRecord::RecvPledge:
     case TransactionRecord::SelfPledge:
     case TransactionRecord::WithdrawPledge:
-        return lookupAddress(wtx->address, tooltip) + watchAddress;
+        return lookupAddress(wtx->address, tooltip) + watchAddress + comment;
     case TransactionRecord::SendToOther:
-        return QString::fromStdString(wtx->address) + watchAddress;
+        return QString::fromStdString(wtx->address) + watchAddress + comment;
     case TransactionRecord::SendToSelf:
     default:
-        return tr("(n/a)") + watchAddress;
+        return tr("(n/a)") + watchAddress + comment;
     }
 }
 
@@ -679,7 +683,11 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
     case AddressRole:
         return QString::fromStdString(rec->address);
     case LabelRole:
-        return walletModel->getAddressTableModel()->labelForAddress(QString::fromStdString(rec->address));
+        if (rec->comment.empty()) {
+            return walletModel->getAddressTableModel()->labelForAddress(QString::fromStdString(rec->address));
+        } else {
+            return walletModel->getAddressTableModel()->labelForAddress(QString::fromStdString(rec->address)) + " " + QString::fromStdString(rec->comment);
+        }
     case AmountRole:
         return qint64(rec->credit + rec->debit);
     case TxIDRole:
