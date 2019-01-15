@@ -207,6 +207,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
+int GetUnbindPlotterActiveHeight(int nHeight, const uint64_t& nPlotterId, const Consensus::Params& consensusParams);
 bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params)
 {
     // are the actual inputs available?
@@ -264,6 +265,26 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     const CAmount txfee_aux = nValueIn - value_out;
     if (!MoneyRange(txfee_aux)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
+    }
+
+    // Check for bind plotter fee and unbind plotter limit
+    if (nSpendHeight >= params.BHDIP006CheckRelayHeight && tx.IsUniform() && tx.vin.size() == 1) {
+        if (tx.vout.size() == 1) {
+            // Unbind plotter
+            const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
+            if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                // Process repackaging
+                if (nSpendHeight + 6 < GetUnbindPlotterActiveHeight(nSpendHeight, BindPlotterPayload::As(coin.extraData)->GetId(), params)) {
+                    return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
+                }
+            }
+        } else {
+            // Bind plotter
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nSpendHeight);
+            if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER && txfee_aux < PROTOCOL_BINDPLOTTER_MINFEE) {
+                return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-lowfee");
+            }
+        }
     }
 
     txfee = txfee_aux;

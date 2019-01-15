@@ -114,9 +114,9 @@ public:
         consensus.BHDIP004ActiveHeight = 96264; // BHDIP004. BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
 
-        consensus.BHDIP006Height = 129100; // BHDIP006. Active about on Wed, 02 Jan 2019 2:00:00 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter active at 131116 about when Wed, 09 Jan 2019 2:00:00 GMT
-        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow * 2;
+        consensus.BHDIP006Height = 129100; // BHDIP006. Actived on Wed, 02 Jan 2019 02:17:19 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter actived at 131116 and Tue, 08 Jan 2019 23:14:57 GMT
+        consensus.BHDIP006CheckRelayHeight = 133000; // BHDIP006. 2 weeks after bind/unbind plotter limit. Active at 133000 about when Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006FirstForkBlockHash = uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25");
 
         // TestDummy

@@ -9,7 +9,7 @@
  * network protocol versioning
  */
 
-static const int PROTOCOL_VERSION = 80020;
+static const int PROTOCOL_VERSION = 80021;
 
 //! BitcoinHD BHDIP006 version. Bind plotter & pledge loan
 static const int BHD_BHDIP006 = 80020;
