@@ -273,7 +273,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             // Unbind plotter
             const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                if (nSpendHeight < GetUnbindPlotterActiveHeight(nSpendHeight, BindPlotterPayload::As(coin.extraData)->GetId(), params)) {
+                // Process repackaging
+                if (nSpendHeight + 6 < GetUnbindPlotterActiveHeight(nSpendHeight, BindPlotterPayload::As(coin.extraData)->GetId(), params)) {
                     return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                 }
             }
