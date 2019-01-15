@@ -682,25 +682,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
-        // Check for bind plotter fee and unbind plotter
-        if (fRequireStandard && nSpendHeight >= chainparams.GetConsensus().BHDIP006CheckRelayHeight && tx.IsUniform() && tx.vin.size() == 1) {
-            if (tx.vout.size() == 1) {
-                // Unbind plotter
-                const Coin& coin = view.AccessCoin(tx.vin[0].prevout);
-                if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                    if (nSpendHeight < GetUnbindPlotterActiveHeight(BindPlotterPayload::As(coin.extraData)->GetId(), chainparams.GetConsensus())) {
-                        return state.Invalid(false, REJECT_NONSTANDARD, "bad-unbindplotter-locktime");
-                    }
-                }
-            } else {
-                // Bind plotter
-                CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nSpendHeight);
-                if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER && nFees < PROTOCOL_BINDPLOTTER_MINFEE) {
-                    return state.Invalid(false, REJECT_NONSTANDARD, "bad-bindplotter-lowfee");
-                }
-            }
-        }
-
         // Check for non-standard pay-to-script-hash in inputs
         if (fRequireStandard && !AreInputsStandard(tx, view))
             return state.Invalid(false, REJECT_NONSTANDARD, "bad-txns-nonstandard-inputs");
@@ -1226,27 +1207,24 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     return reward;
 }
 
-int GetUnbindPlotterActiveHeight(const uint64_t& nPlotterId, const Consensus::Params& consensusParams)
+int GetUnbindPlotterActiveHeight(int nHeight, const uint64_t& nPlotterId, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
+    if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
+        return 0;
 
     int activeHeight = 0;
-    if (chainActive.Height() + 1 >= consensusParams.BHDIP006CheckRelayHeight) {
-        int totalForge = 0;
-        int lastPeriodHeight = std::max(consensusParams.BHDIP001StartMingingHeight, chainActive.Height() - (int)consensusParams.nMinerConfirmationWindow);
-        for (int nHeight = chainActive.Height(); nHeight > lastPeriodHeight; nHeight--) {
-            if (chainActive[nHeight]->nPlotterId == nPlotterId) {
-                if (activeHeight == 0)
-                    activeHeight = nHeight + (int) consensusParams.nMinerConfirmationWindow;
+    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
+    for (int index = nHeight - 1, totalForge = 0; index > nBeginHeight; index--) {
+        if (chainActive[index]->nPlotterId == nPlotterId) {
+            if (activeHeight == 0)
+                activeHeight = index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
 
-                if (++totalForge > 50) { // 2.5%
-                    activeHeight = 0;
-                    break;
-                }
+            if (++totalForge > 50) { // 2.5%
+                activeHeight = 0;
+                break;
             }
         }
     }
-
     return activeHeight;
 }
 
@@ -2038,8 +2016,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
 
     // Check bind
-    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight &&
-            !view.HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
+    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight && !view.HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
         CTxDestination dest = CNoDestination();
         ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
         std::string address = EncodeDestination(dest);

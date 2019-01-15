@@ -780,7 +780,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("txid", outpoint.hash.GetHex()));
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
         item.push_back(Pair("blockheight", (int)coin.nHeight));
-        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterActiveHeight(plotterId, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterActiveHeight(chainActive.Height() + 1, plotterId, Params().GetConsensus())));
 
         // Last generate block
         int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, chainActive.Height() - (int)Params().GetConsensus().nMinerConfirmationWindow);

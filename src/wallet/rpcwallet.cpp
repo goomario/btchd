@@ -3734,7 +3734,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
 
         // Check lock time
-        int activeHeight = GetUnbindPlotterActiveHeight(BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
+        int activeHeight = GetUnbindPlotterActiveHeight(chainActive.Height() + 1, BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
         if (activeHeight > chainActive.Height() + 1) {
             throw JSONRPCError(RPC_WALLET_ERROR,
                 strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
