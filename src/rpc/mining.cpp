@@ -1313,38 +1313,55 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
         result.push_back(Pair("capacity", std::to_string(nCapacityTB) + " TB"));
         result.push_back(Pair("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB)));
 
-        // Active bind
         if (fVerbose) {
-            UniValue objBindAddress(UniValue::VOBJ);
-            COutPoint outpoint;
-            const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(nPlotterId, &outpoint);
-            if (!coin.IsSpent()) {
-                UniValue item(UniValue::VOBJ);
-                item.push_back(Pair("capacity", std::to_string(nCapacityTB) + " TB"));
-                item.push_back(Pair("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB)));
-                item.push_back(Pair("txid", outpoint.hash.GetHex()));
-                item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
-                item.push_back(Pair("blockheight", (int)coin.nHeight));
+            // Active bind
+            {
+                UniValue objBindAddress(UniValue::VOBJ);
+                COutPoint outpoint;
+                const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(nPlotterId, &outpoint);
+                if (!coin.IsSpent()) {
+                    UniValue item(UniValue::VOBJ);
+                    item.push_back(Pair("capacity", std::to_string(nCapacityTB) + " TB"));
+                    item.push_back(Pair("pledge", ValueFromAmount(Params().GetConsensus().BHDIP001PledgeAmountPerTB * nCapacityTB)));
+                    item.push_back(Pair("txid", outpoint.hash.GetHex()));
+                    item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
+                    item.push_back(Pair("blockheight", (int)coin.nHeight));
 
-                // Last generate block
+                    // Last generate block
+                    for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                        CBlockIndex *pblockIndex = chainActive[index];
+                        if (pblockIndex->nPlotterId == nPlotterId) {
+                            UniValue lastBlock(UniValue::VOBJ);
+                            lastBlock.push_back(Pair("blockhash", pblockIndex->GetBlockHash().GetHex()));
+                            lastBlock.push_back(Pair("blockheight", pblockIndex->nHeight));
+                            item.push_back(Pair("lastBlock", lastBlock));
+                            break;
+                        }
+                    }
+
+                    {
+                        CTxDestination dest;
+                        ExtractDestination(coin.out.scriptPubKey, dest);
+                        objBindAddress.pushKV(EncodeDestination(dest), item);
+                    }
+                }
+                result.pushKV("bindAddresses", objBindAddress);
+            }
+
+            // Forged
+            {
+                UniValue arrForged(UniValue::VARR);
                 for (int index = nEndHeight; index >= nBeginHeight; index--) {
                     CBlockIndex *pblockIndex = chainActive[index];
                     if (pblockIndex->nPlotterId == nPlotterId) {
-                        UniValue lastBlock(UniValue::VOBJ);
-                        lastBlock.push_back(Pair("blockhash", pblockIndex->GetBlockHash().GetHex()));
-                        lastBlock.push_back(Pair("blockheight", pblockIndex->nHeight));
-                        item.push_back(Pair("lastBlock", lastBlock));
-                        break;
+                        UniValue item(UniValue::VOBJ);
+                        item.push_back(Pair("blockhash", pblockIndex->GetBlockHash().GetHex()));
+                        item.push_back(Pair("blockheight", pblockIndex->nHeight));
+                        arrForged.push_back(item);
                     }
                 }
-
-                {
-                    CTxDestination dest;
-                    ExtractDestination(coin.out.scriptPubKey, dest);
-                    objBindAddress.pushKV(EncodeDestination(dest), item);
-                }
+                result.pushKV("forged", arrForged);
             }
-            result.pushKV("bindAddresses", objBindAddress);
         }
     }
 
