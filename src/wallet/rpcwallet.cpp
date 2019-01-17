@@ -3513,22 +3513,23 @@ UniValue bindplotter(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 8)
         throw std::runtime_error(
-            "bindplotter \"address\" passphrase_or_hex ( \"comment\" \"comment_to\" replaceable conf_target \"estimate_mode\")\n"
+            "bindplotter \"address\" \"passphrase_or_hex\" allow_high_fee ( \"comment\" \"comment_to\" replaceable conf_target \"estimate_mode\")\n"
             "\nBind plotter to mine address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"address\"                 (string, required) The BitcoinHD address to bind to.\n"
             "2. \"passphrase_or_hex\"       (string, required) The passphrase or hex bind data.\n"
-            "3. \"comment\"                 (string, optional) A comment used to store what the transaction is for. \n"
+            "3. \"allow_high_fee\"          (boolean, optional, default false) The bind allow high transaction fee.\n"
+            "4. \"comment\"                 (string, optional) A comment used to store what the transaction is for. \n"
             "                                   This is not part of the transaction, just kept in your wallet.\n"
-            "4. \"comment_to\"              (string, optional) A comment to store the name of the person or organization \n"
+            "5. \"comment_to\"              (string, optional) A comment to store the name of the person or organization \n"
             "                                   to which you're sending the transaction. This is not part of the \n"
             "                                   transaction, just kept in your wallet.\n"
-            "5. replaceable               (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
-            "6. conf_target               (numeric, optional) Confirmation target (in blocks)\n"
-            "7. \"estimate_mode\"           (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+            "6. replaceable               (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
+            "7. conf_target               (numeric, optional) Confirmation target (in blocks)\n"
+            "8. \"estimate_mode\"           (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
             "       \"UNSET\"\n"
             "       \"ECONOMICAL\"\n"
             "       \"CONSERVATIVE\"\n"
@@ -3536,9 +3537,9 @@ UniValue bindplotter(const JSONRPCRequest& request)
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
             + HelpExampleCli("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\" xxxxx")
-            + HelpExampleCli("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\" xxxxx \"mining\" \"seans outpost\"")
-            + HelpExampleCli("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\" xxxxx \"\" \"\" true")
-            + HelpExampleRpc("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\", xxxxx, \"mining\", \"seans outpost\"")
+            + HelpExampleCli("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\" xxxxx false \"bind\" \"seans outpost\"")
+            + HelpExampleCli("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\" xxxxx true \"\" \"\" true")
+            + HelpExampleRpc("bindplotter", "\"" + Params().GetConsensus().BHDFundAddress + "\", xxxxx, false, \"bind\", \"seans outpost\"")
         );
 
     ObserveSafeMode();
@@ -3557,26 +3558,31 @@ UniValue bindplotter(const JSONRPCRequest& request)
     if (!request.params[1].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter passphrase");
     const std::string bindParamString = request.params[1].get_str();
-    bool fBindHexData = IsHex(bindParamString);
+    bool fBindHexData = bindParamString.size() == PROTOCOL_BINDPLOTTER_SCRIPTSIZE * 2 && IsHex(bindParamString);
+
+    bool fAllowHighFee = false;
+    if (!request.params[2].isNull()) {
+        fAllowHighFee = request.params[2].get_bool();
+    }
 
     // Wallet comments
     CWalletTx wtx;
-    if (!request.params[2].isNull() && !request.params[2].get_str().empty())
-        wtx.mapValue["comment"] = request.params[2].get_str();
     if (!request.params[3].isNull() && !request.params[3].get_str().empty())
-        wtx.mapValue["to"]      = request.params[3].get_str();
+        wtx.mapValue["comment"] = request.params[3].get_str();
+    if (!request.params[4].isNull() && !request.params[4].get_str().empty())
+        wtx.mapValue["to"]      = request.params[4].get_str();
 
     CCoinControl coin_control;
-    if (!request.params[4].isNull()) {
+    if (!request.params[5].isNull()) {
         coin_control.signalRbf = request.params[5].get_bool();
     }
 
-    if (!request.params[5].isNull()) {
-        coin_control.m_confirm_target = ParseConfirmTarget(request.params[5]);
+    if (!request.params[6].isNull()) {
+        coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
     }
 
-    if (!request.params[6].isNull()) {
-        if (!FeeModeFromString(request.params[6].get_str(), coin_control.m_fee_mode)) {
+    if (!request.params[7].isNull()) {
+        if (!FeeModeFromString(request.params[7].get_str(), coin_control.m_fee_mode)) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid estimate_mode parameter");
         }
     }
@@ -3585,14 +3591,16 @@ UniValue bindplotter(const JSONRPCRequest& request)
     coin_control.destPick = bindToDest;
     coin_control.destChange = bindToDest;
 
+    const Consensus::Params& params = Params().GetConsensus();
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
+
     // Check active state
-    if (chainActive.Height() < Params().GetConsensus().BHDIP006Height) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER,
-            strprintf("The bind plotter inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
+    if (nSpendHeight < params.BHDIP006Height) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The bind plotter inactive (Will active on %d)", params.BHDIP006Height));
     }
 
     // Fixed bind plotter fee
-    if (chainActive.Height() + 1 >= Params().GetConsensus().BHDIP006CheckRelayHeight) {
+    if (nSpendHeight >= params.BHDIP006CheckRelayHeight) {
         coin_control.m_fee_mode = FeeEstimateMode::FIXED;
         coin_control.fixedFee = PROTOCOL_BINDPLOTTER_MINFEE;
     }
@@ -3615,10 +3623,28 @@ UniValue bindplotter(const JSONRPCRequest& request)
         std::vector<unsigned char> bindData(ParseHex(bindParamString));
         vecSend[1].scriptPubKey = CScript(bindData.cbegin(), bindData.cend());
     } else {
-        vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
+        vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, nSpendHeight - 1 + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     }
     if (vecSend[1].scriptPubKey.empty() || !vecSend[1].scriptPubKey.IsUnspendable())
         throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
+    // Calculate bind transaction fee
+    if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
+        uint64_t plotterId = GetBindPlotterIdFromScript(vecSend[1].scriptPubKey);
+        if (plotterId == 0)
+            throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
+
+        const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
+        if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, plotterId, (int)coin.nHeight, params)) {
+            CAmount fee = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+            if (fee > 0) {
+                if (!fAllowHighFee)
+                    throw JSONRPCError(RPC_WALLET_ERROR, "High bind transaction fee");
+
+                coin_control.m_fee_mode = FeeEstimateMode::FIXED;
+                coin_control.fixedFee = std::max(coin_control.fixedFee, fee + PROTOCOL_BINDPLOTTER_MINFEE);
+            }
+        }
+    }
     int nChangePosRet = 1;
     if (!pwallet->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, CTransaction::UNIFORM_VERSION)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -3690,6 +3716,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
     pwallet->BlockUntilSyncedToCurrentChain();
 
     LOCK2(cs_main, pwallet->cs_wallet);
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
 
     // Transaction id
     uint256 txid = ParseHashV(request.params[0], "transaction id");
@@ -3719,7 +3746,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
     // Create transaction
     CMutableTransaction txNew;
     txNew.nVersion = CTransaction::UNIFORM_VERSION;
-    txNew.nLockTime = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
+    txNew.nLockTime = std::max(nSpendHeight - 1, Params().GetConsensus().BHDIP006Height);
     txNew.vin.push_back(CTxIn(COutPoint(txid, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
         const Coin &coin = pcoinsTip->AccessCoin(COutPoint(txid, 0));
@@ -3734,11 +3761,12 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
 
         // Check lock time
-        int activeHeight = GetUnbindPlotterActiveHeight(chainActive.Height() + 1, BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
-        if (activeHeight > chainActive.Height() + 1) {
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight, Params().GetConsensus());
+        if (activeHeight > nSpendHeight) {
             throw JSONRPCError(RPC_WALLET_ERROR,
                 strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
-                    activeHeight, activeHeight - chainActive.Height() - 1, (activeHeight - chainActive.Height() - 1)*Params().GetConsensus().nPowTargetSpacing/60));
+                    activeHeight, activeHeight - nSpendHeight,
+                    (activeHeight - nSpendHeight)*Params().GetConsensus().nPowTargetSpacing/60));
         }
     }
     CAmount nFeeOut = 0;
@@ -3889,7 +3917,13 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
             item.push_back(Pair("height", pblockIndex->nHeight));
-            item.push_back(Pair("active", pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(it->second.address), it->second.plotterId, pblockIndex->nHeight)));
+
+            COutPoint outpoint;
+            if (pcoinsTip->GetActiveBindPlotterEntry(it->second.plotterId, outpoint) && outpoint.n == 0 && outpoint.hash == wtx.GetHash()) {
+                item.push_back(Pair("active", true));
+            } else {
+                item.push_back(Pair("active", false));
+            }
         } else {
             item.push_back(Pair("active", false));
         }
@@ -4411,7 +4445,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "removeprunedfunds",        &removeprunedfunds,        {"txid"} },
     { "wallet",             "rescanblockchain",         &rescanblockchain,         {"start_height","stop_height"} },
 
-    { "wallet",             "bindplotter",              &bindplotter,              {"address","passphrase_or_hex","comment","comment_to","replaceable","conf_target","estimate_mode"} },
+    { "wallet",             "bindplotter",              &bindplotter,              {"address","passphrase_or_hex","allow_high_fee","comment","comment_to","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "unbindplotter",            &unbindplotter,            {"txid","comment","comment_to","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "listbindplotters",         &listbindplotters,         {"count","skip","include_watchonly","include_invalid"} },
 

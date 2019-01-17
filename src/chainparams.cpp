@@ -116,7 +116,8 @@ public:
 
         consensus.BHDIP006Height = 129100; // BHDIP006. Actived on Wed, 02 Jan 2019 02:17:19 GMT
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter actived at 131116 and Tue, 08 Jan 2019 23:14:57 GMT
-        consensus.BHDIP006CheckRelayHeight = 133000; // BHDIP006. 2 weeks after bind/unbind plotter limit. Active at 133000 about when Tue, 15 Jan 2019 11:00:00 GMT
+        consensus.BHDIP006CheckRelayHeight = 133000; // BHDIP006. Bind/unbind plotter limit. Active at 133000 about when Tue, 15 Jan 2019 11:00:00 GMT
+        consensus.BHDIP006LimitBindPlotterHeight = 134070; // BHDIP006. Bind/unbind plotter limit. Active at 134070 about when Tue, 19 Jan 2019 9:00:00 GMT
         consensus.BHDIP006FirstForkBlockHash = uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25");
 
         // TestDummy
@@ -477,7 +478,9 @@ public:
 
         consensus.BHDIP006Height = 41290; // BHDIP006
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active at 41296
-        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow * 2;
+        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow * 2; // 45328
+        //consensus.BHDIP006LimitBindPlotterHeight = 48236;
+        consensus.BHDIP006LimitBindPlotterHeight = 48381;
         consensus.BHDIP006FirstForkBlockHash = uint256S("0x44fe5f2d3e7b9fbf771c1fc2ae400daf0ef31665c3eac3cac3a0e3ba7a968f32");
 
         // TestDummy
@@ -736,7 +739,7 @@ public:
         consensus.BHDIP001StartMingingHeight = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BHDIP001FundRoyaltyPercent = 5; // 5%
         consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
-        consensus.BHDIP001NoPledgeHeight = consensus.BHDIP001StartMingingHeight + 10;
+        consensus.BHDIP001NoPledgeHeight = consensus.BHDIP001StartMingingHeight + 10; // 94
         consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 300;
@@ -752,9 +755,10 @@ public:
 
         consensus.BHDIP004ActiveHeight = 0;
         consensus.BHDIP004InActiveHeight = 0;
-        consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200;
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50;
-        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow;
+        consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200; // 294
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50; // 345
+        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow; // 489
+        consensus.BHDIP006LimitBindPlotterHeight = consensus.BHDIP006CheckRelayHeight + 5; // 494
         consensus.BHDIP006FirstForkBlockHash = uint256S("0x00");
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;

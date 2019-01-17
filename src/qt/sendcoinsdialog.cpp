@@ -267,6 +267,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             break;
         }
 
+        ui->frameFee->setVisible((PayOperateMethod)opMethodValue != PayOperateMethod::BindPlotter);
         ui->genBindDataButton->setVisible((PayOperateMethod)opMethodValue == PayOperateMethod::BindPlotter);
 
         clear();
@@ -316,6 +317,11 @@ void SendCoinsDialog::on_sendButton_clicked()
     WalletModelTransaction currentTransaction(recipients);
     WalletModel::SendCoinsReturn prepareStatus;
 
+    const Consensus::Params& params = Params().GetConsensus();
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
+
+    int bindLimitHeight = 0;
+
     // Always use a CCoinControl instance, use the CoinControlDialog instance if CoinControl has been enabled
     CCoinControl ctrl;
     switch (operateMethod)
@@ -327,24 +333,52 @@ void SendCoinsDialog::on_sendButton_clicked()
         ctrl.coinPickPolicy = CoinControlDialog::coinControl()->coinPickPolicy;
         if (operateMethod == PayOperateMethod::SendPledge) {
             ctrl.destPick = ctrl.destChange = CoinControlDialog::coinControl()->destPick;
+            updateCoinControlState(ctrl);
         } else {
+            ctrl.signalRbf = false;
             ctrl.destPick = ctrl.destChange = DecodeDestination(recipients[0].address.toStdString());
 
             // Fixed bind plotter fee
             LOCK(cs_main);
-            if (chainActive.Height() + 1 >= Params().GetConsensus().BHDIP006CheckRelayHeight) {
+            if (nSpendHeight >= params.BHDIP006CheckRelayHeight) {
                 ctrl.m_fee_mode = FeeEstimateMode::FIXED;
                 ctrl.fixedFee = PROTOCOL_BINDPLOTTER_MINFEE;
+            }
+            if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
+                uint64_t plotterId;
+                if (recipients[0].plotterPassphrase.size() == PROTOCOL_BINDPLOTTER_SCRIPTSIZE * 2 && IsHex(recipients[0].plotterPassphrase.toStdString())) {
+                    std::vector<unsigned char> bindData(ParseHex(recipients[0].plotterPassphrase.toStdString()));
+                    plotterId = GetBindPlotterIdFromScript(CScript(bindData.cbegin(), bindData.cend()));
+                } else {
+                    plotterId = PocLegacy::GeneratePlotterId(recipients[0].plotterPassphrase.toStdString());
+                }
+                if (plotterId == 0) {
+                    fNewRecipientAllowed = true;
+                    QMessageBox msgBox(QMessageBox::Warning, tr("Bind plotter data"), tr("Invalid bind plotter data!"), QMessageBox::Close, this);
+                    msgBox.exec();
+                    return;
+                }
+                {
+                    LOCK(cs_main);
+                    const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
+                    if (!coin.IsSpent())
+                        bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, plotterId, (int)coin.nHeight, params);
+                    if (nSpendHeight < bindLimitHeight) {
+                        CAmount fee = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+                        ctrl.m_fee_mode = FeeEstimateMode::FIXED;
+                        ctrl.fixedFee = std::max(ctrl.fixedFee, fee + PROTOCOL_BINDPLOTTER_MINFEE);
+                    }
+                }
             }
         }
         break;
     default:
         if (model->getOptionsModel()->getCoinControlFeatures())
             ctrl = *CoinControlDialog::coinControl();
+        updateCoinControlState(ctrl);
         break;
     }
 
-    updateCoinControlState(ctrl);
 
     prepareStatus = model->prepareTransaction(currentTransaction, ctrl, operateMethod);
 
@@ -353,12 +387,12 @@ void SendCoinsDialog::on_sendButton_clicked()
     if (prepareStatus.status == WalletModel::OK) {
         LOCK(cs_main);
         if (operateMethod == PayOperateMethod::SendPledge) {
-            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
+            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
             if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN) {
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
             }
         } else if (operateMethod == PayOperateMethod::BindPlotter) {
-            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, chainActive.Height() + 1);
+            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
             if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
                 fNewRecipientAllowed = true;
                 QMessageBox msgBox(QMessageBox::Warning, tr("Bind plotter data"), tr("Invalid bind plotter data!"), QMessageBox::Close, this);
@@ -368,7 +402,7 @@ void SendCoinsDialog::on_sendButton_clicked()
 
             if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
-                                    QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
+                    QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
         }
     }
 
@@ -456,16 +490,30 @@ void SendCoinsDialog::on_sendButton_clicked()
     }
     questionString.append("<br /><br />%1");
 
-    if(txFee > 0)
+    if (txFee > 0)
     {
+        questionString.append("<hr />");
         // append fee string if a fee is required
-        questionString.append("<hr /><span style='color:#aa0000;'>");
-        questionString.append(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee));
-        questionString.append("</span> ");
-        questionString.append(tr("added as transaction fee"));
-
+        questionString.append("<span style='color:#aa0000;'>").append(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee)).append("</span>");
         // append transaction size
-        questionString.append(" (" + QString::number((double)currentTransaction.getTransactionSize() / 1000) + " kB)");
+        questionString.append(" ").append(tr("added as transaction fee")).append(" (" + QString::number((double)currentTransaction.getTransactionSize() / 1000) + " kB)");
+        // append
+        if (operateMethod == PayOperateMethod::BindPlotter && nSpendHeight < bindLimitHeight && txFee > PROTOCOL_BINDPLOTTER_MINFEE) {
+            questionString.append("<br />").append(tr("%1 of this transaction fee is a package reward for miners, and %2 is directly destroyed.").
+                arg("<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_BINDPLOTTER_MINFEE) + "</span>",
+                    "<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee - PROTOCOL_BINDPLOTTER_MINFEE) + "</span>"));
+            questionString.append("<br />").
+                append("<span style='color:#aa0000;'>").
+                append(tr("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.").
+                    arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee))).
+                append("</span>");
+            questionString.append("<br />").
+                append(tr("%1 small bind plotter fee active on %2 block height (%3 blocks after, about %4 minute).").
+                        arg("<b>" + QString::number(BindPlotterPayload::As(payload)->GetId()) + "</b>",
+                            QString::number(bindLimitHeight),
+                            QString::number(bindLimitHeight - nSpendHeight),
+                            QString::number((bindLimitHeight - nSpendHeight) * params.nPowTargetSpacing / 60)));
+        }
     }
 
     // add total amount in all subdivision units
@@ -482,14 +530,15 @@ void SendCoinsDialog::on_sendButton_clicked()
     questionString.append(QString("<span style='font-size:10pt;font-weight:normal;'><br />(=%1)</span>")
         .arg(alternativeUnits.join(" " + tr("or") + "<br />")));
 
-    questionString.append("<hr /><span>");
-    if (ui->optInRBF->isChecked()) {
-        questionString.append(tr("You can increase the fee later (signals Replace-By-Fee, BIP-125)."));
-    } else {
-        questionString.append(tr("Not signalling Replace-By-Fee, BIP-125."));
+    if (ui->frameFee->isVisible()) {
+        questionString.append("<hr /><span>");
+        if (ui->optInRBF->isChecked()) {
+            questionString.append(tr("You can increase the fee later (signals Replace-By-Fee, BIP-125)."));
+        } else {
+            questionString.append(tr("Not signalling Replace-By-Fee, BIP-125."));
+        }
+        questionString.append("</span>");
     }
-    questionString.append("</span>");
-
 
     SendConfirmationDialog confirmationDialog(titleString, questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
     confirmationDialog.exec();
@@ -499,6 +548,18 @@ void SendCoinsDialog::on_sendButton_clicked()
     {
         fNewRecipientAllowed = true;
         return;
+    }
+    if (operateMethod == PayOperateMethod::BindPlotter && nSpendHeight < bindLimitHeight && txFee > PROTOCOL_BINDPLOTTER_MINFEE) {
+        QString information = tr("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.").arg(
+            "<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee) + "</span>");
+        information.append("<br />").append(tr("Are you sure continue send this transaction?"));
+
+        QMessageBox msgBox(QMessageBox::Information, titleString, information, QMessageBox::Yes|QMessageBox::No, this);
+        if (msgBox.exec() != QMessageBox::Yes)
+        {
+            fNewRecipientAllowed = true;
+            return;
+        }
     }
 
     // now send the prepared transaction
@@ -534,8 +595,9 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
     }
 
     LOCK(cs_main);
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
     CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
-    int activeHeight = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
+    int activeHeight = std::max(nSpendHeight - 1, Params().GetConsensus().BHDIP006Height);
     CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     if (script.empty())
         return;

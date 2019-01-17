@@ -456,6 +456,14 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
     return script;
 }
 
+uint64_t GetBindPlotterIdFromScript(const CScript &script)
+{
+    if (script.size() != PROTOCOL_BINDPLOTTER_SCRIPTSIZE)
+        return 0;
+
+    return PocLegacy::ToPlotterId(&script[44]);
+}
+
 CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     CScript script;
 

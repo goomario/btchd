@@ -678,7 +678,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
         int nSpendHeight = GetSpendHeight(view);
         CAmount nFees = 0;
-        if (!Consensus::CheckTxInputs(tx, state, view, nSpendHeight, nFees, chainparams.GetConsensus())) {
+        if (!Consensus::CheckTxInputs(tx, state, view, *pcoinsTip, nSpendHeight, nFees, chainparams.GetConsensus())) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
@@ -1143,8 +1143,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
-    const CCoinsViewCache &view, const Consensus::Params& consensusParams)
+CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy;
 
@@ -1157,6 +1156,13 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
         nSubsidy >>= halvings;
     }
+
+    return nSubsidy;
+}
+
+BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId, const CCoinsViewCache &view, const Consensus::Params& consensusParams)
+{
+    const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     // Calc miner reward and fund royalty
     BlockReward reward = { 0, 0, 0 };
@@ -1207,24 +1213,55 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     return reward;
 }
 
-int GetUnbindPlotterActiveHeight(int nHeight, const uint64_t& nPlotterId, const Consensus::Params& consensusParams)
+int GetBindPlotterLimitHeight(int nHeight, const uint64_t& nPlotterId, int activedBindHeight, const Consensus::Params& consensusParams)
 {
-    if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
-        return 0;
+    if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight)
+        return consensusParams.BHDIP006Height;
 
-    int activeHeight = 0;
-    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
-    for (int index = nHeight - 1, totalForge = 0; index > nBeginHeight; index--) {
-        if (chainActive[index]->nPlotterId == nPlotterId) {
-            if (activeHeight == 0)
-                activeHeight = index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
-
-            if (++totalForge > 50) { // 2.5%
-                activeHeight = 0;
+    int activeHeight = activedBindHeight + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+    if (nHeight < activeHeight) {
+        int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
+        for (int index = nHeight - 1, totalForge = 0; index >= nBeginHeight; index--) {
+            if (chainActive[index]->nPlotterId == nPlotterId) {
+                activeHeight = index + 1;
                 break;
             }
         }
     }
+
+    return activeHeight;
+}
+
+int GetUnbindPlotterLimitHeight(int nHeight, const uint64_t& nPlotterId, int bindedHeight, const Consensus::Params& consensusParams)
+{
+    int activeHeight = consensusParams.BHDIP006Height;
+    if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
+        return activeHeight;
+
+    const int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
+    
+    // Mining block ID delay unbind 2016 blocks
+    for (int index = nHeight - 1; index > nBeginHeight; index--) {
+        if (chainActive[index]->nPlotterId == nPlotterId) {
+            activeHeight = index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            break;
+        }
+    }
+
+    // Limit unbind for query information
+    if (nHeight >= consensusParams.BHDIP006LimitBindPlotterHeight)
+        activeHeight = std::max(activeHeight, bindedHeight + static_cast<int>(consensusParams.nMinerConfirmationWindow));
+    
+    // 2.5%, Large capacity ID unlimit
+    for (int index = nBeginHeight + 1, totalForge = 0; index < nHeight; index++) {
+        if (chainActive[index]->nPlotterId == nPlotterId) {
+            if (++totalForge > 50) {
+                activeHeight = index;
+                break;
+            }
+        }
+    }
+
     return activeHeight;
 }
 
@@ -1956,7 +1993,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if (!tx.IsCoinBase())
         {
             CAmount txfee = 0;
-            if (!Consensus::CheckTxInputs(tx, state, tempView, pindex->nHeight, txfee, chainparams.GetConsensus())) {
+            if (!Consensus::CheckTxInputs(tx, state, tempView, view, pindex->nHeight, txfee, chainparams.GetConsensus())) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
             nFees += txfee;

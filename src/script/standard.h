@@ -284,6 +284,8 @@ bool IsValidPlotterID(const std::string& strPlotterId, uint64_t *id = nullptr);
 /** Generate a bind plotter script. */
 CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std::string& passphrase, int lastActiveHeight);
 
+uint64_t GetBindPlotterIdFromScript(const CScript &script);
+
 /** The minimal pledge loan amount */
 static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
 

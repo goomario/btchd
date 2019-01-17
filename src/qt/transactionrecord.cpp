@@ -353,8 +353,8 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
                 }
                 else if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER)
                 {
-
-                    if (!pcoinsTip->HaveActiveBindPlotter(GetAccountIDByScriptPubKey(coin.out.scriptPubKey), BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight))
+                    COutPoint outpoint;
+                    if (!pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId(), outpoint) || outpoint.n != 0 || outpoint.hash != wtx.tx->GetHash())
                         status.status = TransactionStatus::Inactived;
                 }
             }

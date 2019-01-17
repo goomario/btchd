@@ -750,6 +750,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
             "    \"txid\":\"txid\",                 (string) The last binded transaction id.\n"
             "    \"blockhash\":\"blockhash\",       (string) The binded transaction included block hash.\n"
             "    \"blockheight\":height,            (numeric) The binded transaction included block height.\n"
+            "    \"bindheightlimit\":height,      (numeric) The plotter bind small fee limit height. Other require high fee.\n"
             "    \"unbindheightlimit\":height,    (numeric) The plotter unbind limit height.\n"
             "    \"lastBlock\": {                   (object) The plotter last generated block. Maybe not exist.\n"
             "        \"blockhash\":\"blockhash\",   (string) The plotter last generated block hash.\n"
@@ -780,7 +781,8 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("txid", outpoint.hash.GetHex()));
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
         item.push_back(Pair("blockheight", (int)coin.nHeight));
-        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterActiveHeight(chainActive.Height() + 1, plotterId, Params().GetConsensus())));
+        item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, plotterId, (int)coin.nHeight, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, plotterId, (int)coin.nHeight, Params().GetConsensus())));
 
         // Last generate block
         int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, chainActive.Height() - (int)Params().GetConsensus().nMinerConfirmationWindow);
@@ -887,7 +889,14 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
-            item.push_back(Pair("active", pcoinsTip->HaveActiveBindPlotter(accountID, BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight)));
+
+            COutPoint outpoint;
+            if (pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId(), outpoint) && outpoint.n == 0 && outpoint.hash == it->first.hash) {
+                item.push_back(Pair("active", true));
+            } else {
+                item.push_back(Pair("active", false));
+            }
+
             ret.push_back(item);
 
             if (--count <= 0)

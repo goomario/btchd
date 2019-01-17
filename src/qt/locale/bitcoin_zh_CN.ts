@@ -2407,6 +2407,10 @@ Available pledge: %5</source>
         <translation>已添加交易费</translation>
     </message>
     <message>
+        <source>%1 of this transaction fee is a package reward for miners, and %2 is directly destroyed.</source>
+        <translation>此交易费中 %1 为给矿工的打包奖励，%2 直接销毁。</translation>
+    </message>
+    <message>
         <source>Total Amount %1</source>
         <translation>总金额 %1</translation>
     </message>
@@ -2525,6 +2529,18 @@ Available pledge: %5</source>
     <message>
         <source>The operation will lock %1 in %2.</source>
         <translation>此操作将会在 %2 锁定 %1。</translation>
+    </message>
+    <message>
+        <source>This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.</source>
+        <translation>此绑定操作触发了抵押防作弊机制，因此需要巨额的交易费 %1。</translation>
+    </message>
+    <message>
+        <source>%1 small bind plotter fee active on %2 block height (%3 blocks after, about %4 minute).</source>
+        <translation>%1 的低绑定手续费在 %2 高度之后起效（%3 个区块之后，大约需要 %4 分钟）。</translation>
+    </message>
+    <message>
+        <source>Are you sure continue send this transaction?</source>
+        <translation>你确定继续发送这笔交易吗？</translation>
     </message>
     <message>
         <source>The bind plotter consensus active on %1 after.</source>
@@ -2654,8 +2670,8 @@ Available pledge: %5</source>
         <translation>为这个地址输入一个标签，以便将它添加到您的地址簿</translation>
     </message>
     <message>
-        <source>Enter your plotter passphrase</source>
-        <translation>请输入您算力的脑密码</translation>
+        <source>Enter your plotter passphrase or bind hex data</source>
+        <translation>请输入您算力的脑密码或绑定的数据</translation>
     </message>
 </context>
 <context>

@@ -61,14 +61,15 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
         ui->payToLabel->setText(tr("Bind &To:"));
         ui->labellLabel->setVisible(false);
         ui->addAsLabel->setVisible(false);
+        ui->amountLabel->setVisible(false);
+        ui->payAmount->setVisible(false);
+        ui->checkboxSubtractFeeFromAmount->setVisible(false);
+        ui->useAvailableBalanceButton->setVisible(false);
         ui->plotterPassphraseLabel->setVisible(true);
         ui->plotterPassphrase->setVisible(true);
     #if QT_VERSION >= 0x040700
-        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase"));
+        ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase or bind hex data"));
     #endif
-        ui->payAmount->setReadOnly(true);
-        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
-        ui->useAvailableBalanceButton->setEnabled(false);
     }
 }
 

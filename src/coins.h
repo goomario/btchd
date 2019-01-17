@@ -366,10 +366,11 @@ public:
         CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
     /** Return a reference to lastest bind plotter Coin in the cache, or a pruned one if not found. */
+    bool GetActiveBindPlotterEntry(const uint64_t &plotterId, COutPoint &outpoint) const;
     const Coin& GetActiveBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint = nullptr) const;
 
     /** Just check whether a given <accountID,plotterId> exist and lastest binded of plotterId. */
-    bool HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId, int nLimitHeight = 0) const;
+    bool HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const;
 
     /** Find accont revelate plotters */
     void GetAccountBindPlotters(const CAccountID &accountID, std::set<uint64_t> &plotters) const;
