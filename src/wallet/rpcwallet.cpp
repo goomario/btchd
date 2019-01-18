@@ -3773,7 +3773,8 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
-                    activeHeight, activeHeight - nSpendHeight,
+                    activeHeight,
+                    activeHeight - nSpendHeight,
                     (activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
         }
     }

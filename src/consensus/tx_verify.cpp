@@ -279,6 +279,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                     }
                 } else {
+                    // Strict check
                     bool fActiveBind = prevInputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()) == tx.vin[0].prevout;
                     const Coin &activeBindCoin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(coin.extraData)->GetId());
                     if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, params)) {

@@ -118,7 +118,7 @@ public:
         consensus.BHDIP006FirstForkBlockHash = uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25"); // 129100 block hash
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter actived at 131116 and Tue, 08 Jan 2019 23:14:57 GMT
         consensus.BHDIP006CheckRelayHeight = 133000; // BHDIP006. Bind/unbind plotter limit. Active at 133000 about when Tue, 15 Jan 2019 11:00:00 GMT
-        consensus.BHDIP006LimitBindPlotterHeight = 134100; // BHDIP006. Bind plotter limit. Active at 134100 about when Tue, 19 Jan 2019 9:00:00 GMT
+        consensus.BHDIP006LimitBindPlotterHeight = 134650; // BHDIP006. Bind plotter limit. Active at 134100 about when Tue, 21 Jan 2019 9:00:00 GMT
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
