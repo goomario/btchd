@@ -1452,6 +1452,66 @@ UniValue preciousblock(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue listunspentofaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "listunspentofaddress \"address\"\n"
+            "\nGet UTXOs of address.\n"
+            "\nArguments:\n"
+            "1. \"address\"   (string, required) The BitcoinHD address\n"
+            "\nResult\n"
+            "[                   (array of json object)\n"
+            "  {\n"
+            "    \"txid\" : \"txid\",          (string) the transaction id \n"
+            "    \"vout\" : n,               (numeric) the vout value\n"
+            "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
+            "    \"height\" : x,             (numeric) the coin include in block height\n"
+            "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
+            "    \"coinbase\" : x,           (bool) the coin is coinbase\n"
+            "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
+            "  }\n"
+            "  ,...\n"
+            "]\n"
+
+            "\nExamples:\n"
+            + HelpExampleCli("listunspentofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+            + HelpExampleRpc("listunspentofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
+        );
+
+    const CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
+
+    LOCK(cs_main);
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
+
+    UniValue results(UniValue::VARR);
+
+    FlushStateToDisk();
+    for (CCoinsViewCursorRef pcursor = pcoinsdbview->Cursor(); pcursor->Valid(); pcursor->Next()) {
+        boost::this_thread::interruption_point();
+
+        COutPoint key;
+        Coin coin;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            if (coin.refOutAccountID == accountID && !coin.extraData) {
+                UniValue entry(UniValue::VOBJ);
+                entry.push_back(Pair("txid", key.hash.GetHex()));
+                entry.push_back(Pair("vout", (int)key.n));
+                entry.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
+                entry.push_back(Pair("height", (int)coin.nHeight));
+                entry.push_back(Pair("scriptPubKey", HexStr(coin.out.scriptPubKey.begin(), coin.out.scriptPubKey.end())));
+                entry.push_back(Pair("coinbase", coin.fCoinBase != 0));
+                entry.push_back(Pair("confirmations", nSpendHeight - (int)coin.nHeight));
+                results.push_back(entry);
+            }
+        } else {
+            return error("%s: unable to read value", __func__);
+        }
+    }
+
+    return results;
+}
+
 UniValue invalidateblock(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -1676,6 +1736,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "verifychain",            &verifychain,            {"checklevel","nblocks"} },
 
     { "blockchain",         "preciousblock",          &preciousblock,          {"blockhash"} },
+    { "blockchain",         "listunspentofaddress",   &listunspentofaddress,   {"address"} },
 
     /* Not shown in help */
     { "hidden",             "invalidateblock",        &invalidateblock,        {"blockhash"} },
