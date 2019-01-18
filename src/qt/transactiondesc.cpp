@@ -318,17 +318,19 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     if (rec->type == TransactionRecord::BindPlotter && rec->status.status != TransactionStatus::Disabled)
     {
         uint64_t plotterId = 0;
-        if (IsValidPlotterID(wtx.mapValue["plotter_id"], &plotterId)) {
-            const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
-            if (!coin.IsSpent()) {
-                const int nSpendHeight = GetSpendHeight(*pcoinsTip);
-                int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus());
-                if (nSpendHeight < activeHeight) {
-                    strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
-                                            arg(QString::number(activeHeight),
-                                                QString::number(activeHeight - nSpendHeight),
-                                                QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
-                }
+        IsValidPlotterID(wtx.mapValue["plotter_id"], &plotterId);
+
+        COutPoint coinEntry(wtx.tx->GetHash(), 0);
+        const Coin &bindCoin = pcoinsTip->AccessCoin(coinEntry);
+        if (!bindCoin.IsSpent() && bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            bool fActiveBind = pcoinsTip->GetActiveBindPlotterEntry(plotterId) == coinEntry;
+            int nSpendHeight = GetSpendHeight(*pcoinsTip);
+            int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, bindCoin, fActiveBind, Params().GetConsensus());
+            if (nSpendHeight < activeHeight) {
+                strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
+                                        arg(QString::number(activeHeight),
+                                            QString::number(activeHeight - nSpendHeight),
+                                            QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
             }
         }
     }

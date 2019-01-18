@@ -3749,13 +3749,15 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         }
     }
 
+    COutPoint coinEntry(txid, 0);
+
     // Create transaction
     CMutableTransaction txNew;
     txNew.nVersion = CTransaction::UNIFORM_VERSION;
     txNew.nLockTime = std::max(nSpendHeight - 1, Params().GetConsensus().BHDIP006Height);
-    txNew.vin.push_back(CTxIn(COutPoint(txid, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
+    txNew.vin.push_back(CTxIn(coinEntry, CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
-        const Coin &coin = pcoinsTip->AccessCoin(COutPoint(txid, 0));
+        const Coin &coin = pcoinsTip->AccessCoin(coinEntry);
         if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not bind");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
@@ -3767,7 +3769,8 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
 
         // Check lock time
-        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus());
+        bool fActiveBind = pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()) == coinEntry;
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
                     activeHeight, activeHeight - nSpendHeight,
@@ -3922,13 +3925,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
             item.push_back(Pair("height", pblockIndex->nHeight));
-
-            COutPoint outpoint;
-            if (pcoinsTip->GetActiveBindPlotterEntry(it->second.plotterId, outpoint) && outpoint.n == 0 && outpoint.hash == wtx.GetHash()) {
-                item.push_back(Pair("active", true));
-            } else {
-                item.push_back(Pair("active", false));
-            }
+            item.push_back(Pair("active", pcoinsTip->GetActiveBindPlotterEntry(it->second.plotterId) == COutPoint(wtx.GetHash(), 0)));
         } else {
             item.push_back(Pair("active", false));
         }

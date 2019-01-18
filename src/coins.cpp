@@ -339,9 +339,9 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount 
     return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 
-bool CCoinsViewCache::GetActiveBindPlotterEntry(const uint64_t &plotterId, COutPoint &outpoint) const {
+COutPoint CCoinsViewCache::GetActiveBindPlotterEntry(const uint64_t &plotterId) const {
     if (plotterId == 0)
-        return false;
+        return COutPoint();
 
     // Find all bind plotter outpoint. Must order by COutPoint ascent
     std::set<COutPoint> outpoints;
@@ -364,17 +364,16 @@ bool CCoinsViewCache::GetActiveBindPlotterEntry(const uint64_t &plotterId, COutP
             }
         }
         if (lastOutPoint) {
-            outpoint = *lastOutPoint;
-            return true;
+            return *lastOutPoint;
         }
     }
 
-    return false;
+    return COutPoint();
 }
 
 const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint) const {
-    COutPoint entry;
-    if (!GetActiveBindPlotterEntry(plotterId, entry))
+    COutPoint entry = GetActiveBindPlotterEntry(plotterId);
+    if (entry.IsNull())
         return coinEmpty;
 
     const Coin &coin = AccessCoin(entry);

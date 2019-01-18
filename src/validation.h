@@ -297,7 +297,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
 
 /** Get bind/unbind plotter transaction lock time. */
 int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consensus::Params& consensusParams);
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin &unbindCoin, const Consensus::Params& consensusParams);
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin &unbindCoin, bool fActiveBind, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);
