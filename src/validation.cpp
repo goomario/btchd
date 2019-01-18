@@ -1232,7 +1232,7 @@ int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consens
 
     // I participate in some blocks mined
     const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(activeCoin.nHeight));
-    for (int index = nHeight - 1; index > nWalletMinedBeginHeight; index--) {
+    for (int index = nHeight - 1; index >= nWalletMinedBeginHeight; index--) {
         if (chainActive[index]->minerAccountID == activeCoin.refOutAccountID) {
             // Bind after mined block will lock in wallet <bindheight + 2016>
             return static_cast<int>(activeCoin.nHeight) + static_cast<int>(consensusParams.nMinerConfirmationWindow);
@@ -1279,7 +1279,7 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &a
         const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(bindCoin.nHeight));
 
         // I mined last block in this wallet
-        for (int index = nLastActiveBindHeight; index > nWalletMinedBeginHeight; index--) {
+        for (int index = nLastActiveBindHeight; index >= nWalletMinedBeginHeight; index--) {
             CBlockIndex *pindex = chainActive[index];
             if (pindex->nPlotterId == nPlotterId && pindex->minerAccountID == bindCoin.refOutAccountID) {
                 // Delay unbind 2016 blocks when mined block in this wallet
@@ -1288,7 +1288,7 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &a
         }
 
         // I participate in some blocks mined
-        for (int index = nLastActiveBindHeight; index > nWalletMinedBeginHeight; index--) {
+        for (int index = nLastActiveBindHeight; index >= nWalletMinedBeginHeight; index--) {
             if (chainActive[index]->minerAccountID == bindCoin.refOutAccountID) {
                 // Bind after mined block will lock in wallet <bindheight + 2016>
                 return static_cast<int>(bindCoin.nHeight) + static_cast<int>(consensusParams.nMinerConfirmationWindow);
