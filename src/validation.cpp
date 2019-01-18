@@ -1275,7 +1275,7 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &a
             }
         }
     } else {
-        const int nLastActiveBindHeight = (&bindCoin == &activeCoin ? nHeight : static_cast<int>(activeCoin.nHeight)) - 1;
+        const int nLastActiveBindHeight = (&bindCoin == &activeCoin) ? (nHeight - 1) : static_cast<int>(activeCoin.nHeight);
         const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(bindCoin.nHeight));
 
         // I mined last block in this wallet
