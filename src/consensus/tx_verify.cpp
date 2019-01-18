@@ -274,8 +274,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 // Delay check. Old consensus flexiable 6 blocks active check
-                const uint64_t &plotterId = BindPlotterPayload::As(coin.extraData)->GetId();
-                if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, plotterId, (int)coin.nHeight, params)) {
+                if (nSpendHeight + (nSpendHeight < params.BHDIP006LimitBindPlotterHeight ? 6 : 0) < GetUnbindPlotterLimitHeight(nSpendHeight, coin, params)) {
                     return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                 }
             }
@@ -292,9 +291,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
                 // Bind limit
                 if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
-                    const uint64_t &plotterId = BindPlotterPayload::As(payload)->GetId();
-                    const Coin &coin = prevInputs.GetActiveBindPlotterCoin(plotterId);
-                    if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, plotterId, (int)coin.nHeight, params)) {
+                    const Coin &coin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(payload)->GetId());
+                    if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
                         // Change bind require high transaction fee. Diff reward between full pledge and low pledge reward.
                         // Example transaction fee require 16.25BHD.
                         // See https://btchd.org/wiki/pledge-cheat#bind-unbind-plotter

@@ -358,15 +358,21 @@ void SendCoinsDialog::on_sendButton_clicked()
                     msgBox.exec();
                     return;
                 }
-                {
-                    LOCK(cs_main);
-                    const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
-                    if (!coin.IsSpent())
-                        bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, plotterId, (int)coin.nHeight, params);
+
+                const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
+                if (!coin.IsSpent()) {
+                    bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, coin, params);
                     if (nSpendHeight < bindLimitHeight) {
-                        CAmount fee = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
-                        ctrl.m_fee_mode = FeeEstimateMode::FIXED;
-                        ctrl.fixedFee = std::max(ctrl.fixedFee, fee + PROTOCOL_BINDPLOTTER_MINFEE);
+                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+                        if (diffReward > 0) {
+                            ctrl.m_fee_mode = FeeEstimateMode::FIXED;
+                            ctrl.fixedFee = std::max(ctrl.fixedFee, diffReward + PROTOCOL_BINDPLOTTER_MINFEE);
+
+                            QString information = tr("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.")
+                                .arg("<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), ctrl.fixedFee) + "</span>");
+                            QMessageBox msgBox(QMessageBox::Warning, tr("Confirm bind plotter"), information, QMessageBox::Ok, this);
+                            msgBox.exec();
+                        }
                     }
                 }
             }
@@ -548,18 +554,6 @@ void SendCoinsDialog::on_sendButton_clicked()
     {
         fNewRecipientAllowed = true;
         return;
-    }
-    if (operateMethod == PayOperateMethod::BindPlotter && nSpendHeight < bindLimitHeight && txFee > PROTOCOL_BINDPLOTTER_MINFEE) {
-        QString information = tr("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.").arg(
-            "<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee) + "</span>");
-        information.append("<br />").append(tr("Are you sure continue send this transaction?"));
-
-        QMessageBox msgBox(QMessageBox::Information, titleString, information, QMessageBox::Yes|QMessageBox::No, this);
-        if (msgBox.exec() != QMessageBox::Yes)
-        {
-            fNewRecipientAllowed = true;
-            return;
-        }
     }
 
     // now send the prepared transaction

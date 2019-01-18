@@ -3626,22 +3626,23 @@ UniValue bindplotter(const JSONRPCRequest& request)
         vecSend[1].scriptPubKey = GetBindPlotterScriptForDestination(bindToDest, bindParamString, nSpendHeight - 1 + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
     }
     if (vecSend[1].scriptPubKey.empty() || !vecSend[1].scriptPubKey.IsUnspendable())
-        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind plotter script");
     // Calculate bind transaction fee
     if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
         uint64_t plotterId = GetBindPlotterIdFromScript(vecSend[1].scriptPubKey);
         if (plotterId == 0)
-            throw JSONRPCError(RPC_WALLET_ERROR, "Invalid bind plotter script");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind plotter script");
 
         const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
-        if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, plotterId, (int)coin.nHeight, params)) {
-            CAmount fee = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
-            if (fee > 0) {
-                if (!fAllowHighFee)
-                    throw JSONRPCError(RPC_WALLET_ERROR, "High bind transaction fee");
-
+        if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
+            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+            if (diffReward > 0) {
                 coin_control.m_fee_mode = FeeEstimateMode::FIXED;
-                coin_control.fixedFee = std::max(coin_control.fixedFee, fee + PROTOCOL_BINDPLOTTER_MINFEE);
+                coin_control.fixedFee = std::max(coin_control.fixedFee, diffReward + PROTOCOL_BINDPLOTTER_MINFEE);
+
+                if (!fAllowHighFee)
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %s BHD. You can enable high bind fee param on call \"bindplotter\"",
+                            ValueFromAmount(coin_control.fixedFee).getValStr()));
             }
         }
     }
@@ -3651,22 +3652,27 @@ UniValue bindplotter(const JSONRPCRequest& request)
     }
 
     // Check
-    bool fReject = false;
-    int lastActiveHeight = 0;
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1, &fReject, &lastActiveHeight);
-    if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
-        if (fReject)
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Not for current address");
-        else if (lastActiveHeight != 0 && lastActiveHeight < chainActive.Height() + 1)
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid active height. Last active height is %d", lastActiveHeight));
-        else if (fBindHexData)
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data");
-        else
-            throw JSONRPCError(RPC_WALLET_ERROR, "Error on create bind data");
+    {
+        bool fReject = false;
+        int lastActiveHeight = 0;
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1, &fReject, &lastActiveHeight);
+        if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
+            if (fReject)
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Not for current address");
+            else if (lastActiveHeight != 0 && lastActiveHeight < chainActive.Height() + 1)
+                throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid active height. Last active height is %d", lastActiveHeight));
+            else if (fBindHexData)
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind hex data");
+            else
+                throw JSONRPCError(RPC_WALLET_ERROR, "Error on create bind data");
+        }
+
+        // Active
+        const CAccountID account = GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey);
+        const uint64_t &plotterId = BindPlotterPayload::As(payload)->GetId();
+        if (pcoinsTip->HaveActiveBindPlotter(account, plotterId))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s and actived.", std::to_string(plotterId), EncodeDestination(bindToDest)));
     }
-    if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey), BindPlotterPayload::As(payload)->GetId()))
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s.",
-                std::to_string(BindPlotterPayload::As(payload)->GetId()), EncodeDestination(bindToDest)));
 
     CValidationState state;
     if (!pwallet->CommitTransaction(wtx, reservekey, g_connman.get(), state)) {
@@ -3761,12 +3767,11 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
 
         // Check lock time
-        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight, Params().GetConsensus());
-        if (activeHeight > nSpendHeight) {
-            throw JSONRPCError(RPC_WALLET_ERROR,
-                strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus());
+        if (nSpendHeight < activeHeight) {
+            throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
                     activeHeight, activeHeight - nSpendHeight,
-                    (activeHeight - nSpendHeight)*Params().GetConsensus().nPowTargetSpacing/60));
+                    (activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
         }
     }
     CAmount nFeeOut = 0;

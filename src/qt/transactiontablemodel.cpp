@@ -337,7 +337,7 @@ QString TransactionTableModel::formatTxStatus(const TransactionRecord *wtx) cons
         break;
     case TransactionStatus::Inactived:
         if (wtx->type == TransactionRecord::BindPlotter) {
-            status = tr("This bind plotter has inactived");
+            status = tr("This binding has been unable to mine");
         }
         break;
     case TransactionStatus::Disabled:

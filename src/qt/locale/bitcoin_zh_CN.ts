@@ -2539,10 +2539,6 @@ Available pledge: %5</source>
         <translation>%1 的低绑定手续费在 %2 高度之后起效（%3 个区块之后，大约需要 %4 分钟）。</translation>
     </message>
     <message>
-        <source>Are you sure continue send this transaction?</source>
-        <translation>你确定继续发送这笔交易吗？</translation>
-    </message>
-    <message>
         <source>The bind plotter consensus active on %1 after.</source>
         <translation>绑定算力共识将在 %1 高度之后启用。</translation>
     </message>
@@ -3026,16 +3022,20 @@ Available pledge: %5</source>
         <translation>否</translation>
     </message>
     <message>
+        <source>This binding has been unable to mine</source>
+        <translation>此绑定已经不能挖矿</translation>
+    </message>
+    <message>
+        <source>Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).</source>
+        <translation>解绑生效的区块高度为 %1 （%2 个区块之后，大约需要 %3 分钟）。</translation>
+    </message>
+    <message>
         <source>Plotter ID</source>
         <translation>算力 ID</translation>
     </message>
     <message>
         <source>Unbinded Plotter ID</source>
         <translation>已解绑 ID</translation>
-    </message>
-    <message>
-        <source>Inactived Binded Plotter ID</source>
-        <translation>绑定已经无效</translation>
     </message>
     <message>
         <source>Withdrawn</source>
@@ -3158,12 +3158,12 @@ Available pledge: %5</source>
         <translation>解绑算力</translation>
     </message>
     <message>
-        <source>This bind plotter has inactived</source>
-        <translation>此绑定已无效</translation>
-    </message>
-    <message>
         <source>This bind plotter has unbinded</source>
         <translation>此绑定已解除</translation>
+    </message>
+    <message>
+        <source>This binding has been unable to mine</source>
+        <translation>此绑定已经不能挖矿</translation>
     </message>
     <message>
         <source>Sent pledge to</source>
@@ -3263,10 +3263,6 @@ Available pledge: %5</source>
     <message>
         <source>Unbinded plotter</source>
         <translation>解绑算力</translation>
-    </message>
-    <message>
-        <source>This bind plotter has inactived</source>
-        <translation>此绑定已无效</translation>
     </message>
     <message>
         <source>Sent pledge to</source>

@@ -769,6 +769,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
 
     LOCK(cs_main);
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
     COutPoint outpoint;
     const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId, &outpoint);
     if (!coin.IsSpent()) {
@@ -781,12 +782,12 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("txid", outpoint.hash.GetHex()));
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
         item.push_back(Pair("blockheight", (int)coin.nHeight));
-        item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, plotterId, (int)coin.nHeight, Params().GetConsensus())));
-        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, plotterId, (int)coin.nHeight, Params().GetConsensus())));
+        item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus())));
 
         // Last generate block
-        int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, chainActive.Height() - (int)Params().GetConsensus().nMinerConfirmationWindow);
-        for (int nHeight = chainActive.Height(); nHeight > lastPeriodHeight; nHeight--) {
+        int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, nSpendHeight - 1 - (int)Params().GetConsensus().nMinerConfirmationWindow);
+        for (int nHeight = nSpendHeight - 1; nHeight > lastPeriodHeight; nHeight--) {
             if (chainActive[nHeight]->nPlotterId == plotterId) {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.push_back(Pair("blockhash", chainActive[nHeight]->GetBlockHash().GetHex()));
@@ -820,6 +821,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"unbindheightlimit\": xxx,          (numeric) The plotter unbind limit height.\n"
             "    \"active\": true|false,              (bool, default false) The bind active status.\n"
             "  }\n"
             "]\n"
@@ -851,6 +853,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         return ret;
 
     LOCK(cs_main);
+
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
 
     // Load all relation coins
     typedef std::map<COutPoint,Coin> CCoinsOrderMap;
@@ -889,6 +893,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
+            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus())));
 
             COutPoint outpoint;
             if (pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId(), outpoint) && outpoint.n == 0 && outpoint.hash == it->first.hash) {

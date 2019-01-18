@@ -362,7 +362,7 @@ public:
     bool HaveInputs(const CTransaction& tx) const;
 
     /** Scan UTXO for the account. Return total balance. */
-    CAmount GetAccountBalance(const CAccountID &accountID, 
+    CAmount GetAccountBalance(const CAccountID &accountID,
         CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
     /** Return a reference to lastest bind plotter Coin in the cache, or a pruned one if not found. */
