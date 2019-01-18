@@ -886,14 +886,14 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     const int nSpendHeight = GetSpendHeight(*pcoinsTip);
 
     // Coin
-    COutPoint coinEntry(hash, 0);
+    const COutPoint coinEntry(hash, 0);
     const Coin &coin = pcoinsTip->AccessCoin(coinEntry);
     if (coin.IsSpent() || !coin.extraData || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN))
         return false;
 
     if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-        bool fActiveBind = pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()) == coinEntry;
-        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, Params().GetConsensus());
+        const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, coinEntry);
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             QString information = tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                     arg(QString::number(activeHeight),

@@ -1223,42 +1223,39 @@ int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consens
     const int nPeriodBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
     const uint64_t &nPlotterId = BindPlotterPayload::As(activeCoin.extraData)->GetId();
 
-    // 2.5%, Large capacity ID unlimit
-    for (int index = nPeriodBeginHeight + 1, totalForge = 0; index < nHeight; index++) {
-        if (chainActive[index]->nPlotterId == nPlotterId) {
-            if (++totalForge > 50) {
-                return index;
-            }
-        }
-    }
-
-    // Mined unlimit
+    // I mined block in 2016 blocks
     for (int index = nHeight - 1; index >= nPeriodBeginHeight; index--) {
         if (chainActive[index]->nPlotterId == nPlotterId) {
             return index + 1;
         }
     }
 
-    // Check wallet mined after binded plotter
-    for (int index = nHeight - 1, nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(activeCoin.nHeight)); index > nWalletMinedBeginHeight; index--) {
+    // I participate in some blocks mined
+    const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(activeCoin.nHeight));
+    for (int index = nHeight - 1; index > nWalletMinedBeginHeight; index--) {
         if (chainActive[index]->minerAccountID == activeCoin.refOutAccountID) {
-            return index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            // Bind after mined block will lock in wallet <bindheight + 2016>
+            return static_cast<int>(activeCoin.nHeight) + static_cast<int>(consensusParams.nMinerConfirmationWindow);
         }
     }
 
+    // Bind after no mined any block
     return static_cast<int>(activeCoin.nHeight) + 1;
 }
 
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin &unbindCoin, bool fActiveBind, const Consensus::Params& consensusParams)
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &activeCoin, const Consensus::Params& consensusParams)
 {
-    assert(!unbindCoin.IsSpent());
-    assert(unbindCoin.extraData && unbindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(!bindCoin.IsSpent());
+    assert(bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(!activeCoin.IsSpent());
+    assert(activeCoin.extraData && activeCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(activeCoin.nHeight >= bindCoin.nHeight);
 
     if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
         return consensusParams.BHDIP006Height;
 
     const int nPeriodBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
-    const uint64_t &nPlotterId = BindPlotterPayload::As(unbindCoin.extraData)->GetId();
+    const uint64_t &nPlotterId = BindPlotterPayload::As(bindCoin.extraData)->GetId();
 
     // 2.5%, Large capacity ID unlimit
     for (int index = nPeriodBeginHeight + 1, totalForge = 0; index < nHeight; index++) {
@@ -1269,27 +1266,48 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin &unbindCoin, bool fActiv
         }
     }
 
-    // Delay unbind 2016 blocks when mine block
     if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight) {
         // Bug: Delay unbind when mine to any address, maybe can't unbind forever.
         for (int index = nHeight - 1; index > nPeriodBeginHeight; index--) {
             if (chainActive[index]->nPlotterId == nPlotterId) {
+                // Delay unbind 2016 blocks when mined block
                 return index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
             }
         }
     } else {
-        // 1. I participate last mined
-        // 2. My last mined in this wallet
-        const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(unbindCoin.nHeight));
-        for (int index = nHeight - 1; index > nWalletMinedBeginHeight; index--) {
+        const int nLastActiveBindHeight = (&bindCoin == &activeCoin ? nHeight : static_cast<int>(activeCoin.nHeight)) - 1;
+        const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(bindCoin.nHeight));
+
+        // I mined last block in this wallet
+        for (int index = nLastActiveBindHeight; index > nWalletMinedBeginHeight; index--) {
             CBlockIndex *pindex = chainActive[index];
-            if (pindex->minerAccountID == unbindCoin.refOutAccountID && (fActiveBind || pindex->nPlotterId == nPlotterId)) {
+            if (pindex->nPlotterId == nPlotterId && pindex->minerAccountID == bindCoin.refOutAccountID) {
+                // Delay unbind 2016 blocks when mined block in this wallet
                 return index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            }
+        }
+
+        // I participate in some blocks mined
+        for (int index = nLastActiveBindHeight; index > nWalletMinedBeginHeight; index--) {
+            if (chainActive[index]->minerAccountID == bindCoin.refOutAccountID) {
+                // Bind after mined block will lock in wallet <bindheight + 2016>
+                return static_cast<int>(bindCoin.nHeight) + static_cast<int>(consensusParams.nMinerConfirmationWindow);
             }
         }
     }
 
-    return static_cast<int>(unbindCoin.nHeight) + 1;
+    // Bind after no mined any block
+    return static_cast<int>(bindCoin.nHeight) + 1;
+}
+
+const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin &bindCoin, const COutPoint &bindCoinEntry)
+{
+    COutPoint activeBindCoinEnty = inputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(bindCoin.extraData)->GetId());
+    assert(!activeBindCoinEnty.IsNull());
+    if (activeBindCoinEnty == bindCoinEntry)
+        return bindCoin;
+    
+    return inputs.AccessCoin(activeBindCoinEnty);
 }
 
 bool IsInitialBlockDownload()

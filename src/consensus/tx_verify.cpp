@@ -275,14 +275,13 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 if (nSpendHeight < params.BHDIP006LimitBindPlotterHeight) {
                     // Delay check. Old consensus flexiable 6 blocks active check
-                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, coin, false /*dont care the flag*/ , params)) {
+                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, coin, coin /* Don't care */, params)) {
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                     }
                 } else {
                     // Strict check
-                    bool fActiveBind = prevInputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()) == tx.vin[0].prevout;
-                    const Coin &activeBindCoin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(coin.extraData)->GetId());
-                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, params)) {
+                    const Coin &activeBindCoin = SelfRefActiveBindCoin(prevInputs, coin, tx.vin[0].prevout);
+                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, params)) {
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                     }
                 }

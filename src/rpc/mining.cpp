@@ -783,7 +783,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
         item.push_back(Pair("blockheight", (int)coin.nHeight));
         item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus())));
-        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, true, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, coin, Params().GetConsensus())));
 
         // Last generate block
         int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, nSpendHeight - 1 - (int)Params().GetConsensus().nMinerConfirmationWindow);
@@ -882,7 +882,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         const CCoinsOrderMap &mapCoins = itMapCoins->second;
         for (CCoinsOrderMap::const_reverse_iterator it = mapCoins.rbegin(); fContinue && it != mapCoins.rend(); ++it) {
             const Coin &coin = it->second;
-            bool fActiveBind = pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()) == COutPoint(it->first.hash, 0);
+            const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, COutPoint(it->first.hash, 0));
 
             UniValue item(UniValue::VOBJ);
             {
@@ -895,8 +895,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
-            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, Params().GetConsensus())));
-            item.push_back(Pair("active", fActiveBind));
+            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, Params().GetConsensus())));
+            item.push_back(Pair("active", &coin == &activeBindCoin));
 
             ret.push_back(item);
 

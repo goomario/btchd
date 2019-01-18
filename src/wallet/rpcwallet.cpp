@@ -3749,7 +3749,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         }
     }
 
-    COutPoint coinEntry(txid, 0);
+    const COutPoint coinEntry(txid, 0);
 
     // Create transaction
     CMutableTransaction txNew;
@@ -3769,8 +3769,8 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
 
         // Check lock time
-        bool fActiveBind = pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()) == coinEntry;
-        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, fActiveBind, Params().GetConsensus());
+        const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, coinEntry);
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
                     activeHeight,
