@@ -256,6 +256,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
     std::vector<CRecipient> vecSend;
 
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
+
     // Pre-check input data for validity
     if (payOperateMethod == PayOperateMethod::Pay) {
         if (recipients.empty())
@@ -319,7 +321,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
-        if (chainActive.Height() < Params().GetConsensus().BHDIP006Height)
+        if (nSpendHeight < Params().GetConsensus().BHDIP006Height)
             return InactivedBHDIP006;
 
         const SendCoinsRecipient &rcp = recipients[0];
@@ -342,9 +344,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             return InvalidAddress;
 
         LOCK2(cs_main, wallet->cs_wallet);
-        if (chainActive.Height() < Params().GetConsensus().BHDIP006Height)
+        if (nSpendHeight < Params().GetConsensus().BHDIP006Height)
             return InactivedBHDIP006;
-        if (chainActive.Height() + 1 >= Params().GetConsensus().BHDIP006CheckRelayHeight &&
+        if (nSpendHeight >= Params().GetConsensus().BHDIP006CheckRelayHeight &&
                 (coinControl.m_fee_mode != FeeEstimateMode::FIXED || coinControl.fixedFee < PROTOCOL_BINDPLOTTER_MINFEE))
             return InvalidBindPlotterAmount;
 
@@ -359,7 +361,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             std::vector<unsigned char> bindData(ParseHex(rcp.plotterPassphrase.toStdString()));
             vecSend.push_back({CScript(bindData.cbegin(), bindData.cend()), 0, false});
         } else {
-            vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), chainActive.Height() + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE), 0, false});
+            vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), nSpendHeight - 1 + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE), 0, false});
         }
 
         total += rcp.amount;
@@ -408,7 +410,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         // reject absurdly high fee. (This can never happen because the
         // wallet caps the fee at maxTxFee. This merely serves as a
         // belt-and-suspenders check)
-        if (nFeeRequired > maxTxFee)
+        if (nFeeRequired > maxTxFee && (payOperateMethod != PayOperateMethod::BindPlotter ||
+                                        coinControl.m_fee_mode != FeeEstimateMode::FIXED ||
+                                        nFeeRequired > coinControl.fixedFee))
             return AbsurdFee;
     }
 
@@ -443,11 +447,12 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
         }
 
         // Check tx
+        const int nSpendHeight = GetSpendHeight(*pcoinsTip);
         if (payOperateMethod == PayOperateMethod::SendPledge) {
-            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height() + 1);
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, nSpendHeight);
             assert(payload && payload->type == DATACARRIER_TYPE_PLEDGELOAN);
         } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
-            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, chainActive.Height() + 1);
+            CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*newTx->tx, nSpendHeight);
             assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
         }
 
@@ -800,7 +805,7 @@ bool WalletModel::bumpFee(uint256 hash)
     if (feebumper::CreateTransaction(wallet, hash, coin_control, 0 /* totalFee */, errors, old_fee, new_fee, mtx) != feebumper::Result::OK) {
         QMessageBox::critical(0, tr("Fee bump error"), tr("Increasing transaction fee failed") + "<br />(" +
             (errors.size() ? QString::fromStdString(errors[0]) : "") +")");
-         return false;
+        return false;
     }
 
     // allow a user based fee verification
@@ -878,20 +883,22 @@ bool WalletModel::transactionCanBeUnlock(uint256 hash, DatacarrierType type) con
 
 bool WalletModel::unlockTransaction(uint256 hash) {
     LOCK2(cs_main, wallet->cs_wallet);
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
 
     // Coin
-    const Coin &coin = pcoinsTip->AccessCoin(COutPoint(hash, 0));
+    const COutPoint coinEntry(hash, 0);
+    const Coin &coin = pcoinsTip->AccessCoin(coinEntry);
     if (coin.IsSpent() || !coin.extraData || (coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER && coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN))
         return false;
 
     if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-        int activeHeight = GetUnbindPlotterActiveHeight(chainActive.Height() + 1, BindPlotterPayload::As(coin.extraData)->GetId(), Params().GetConsensus());
-        if (activeHeight > chainActive.Height() + 1) {
+        const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, coinEntry);
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, Params().GetConsensus());
+        if (nSpendHeight < activeHeight) {
             QString information = tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
-                arg(QString::number(activeHeight),
-                    QString::number(activeHeight-chainActive.Height()-1),
-                    QString::number((activeHeight-chainActive.Height()-1)*Params().GetConsensus().nPowTargetSpacing/60));
-
+                                    arg(QString::number(activeHeight),
+                                        QString::number(activeHeight - nSpendHeight),
+                                        QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
             QMessageBox msgBox(QMessageBox::Information, tr("Unbind plotter"), information, QMessageBox::Ok);
             msgBox.exec();
             return false;
@@ -904,7 +911,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
     // Create transaction
     CMutableTransaction txNew;
     txNew.nVersion = CTransaction::UNIFORM_VERSION;
-    txNew.nLockTime = std::max(chainActive.Height(), Params().GetConsensus().BHDIP006Height);
+    txNew.nLockTime = std::max(nSpendHeight - 1, Params().GetConsensus().BHDIP006Height);
     txNew.vin.push_back(CTxIn(COutPoint(hash, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     CTxDestination lockedDest;
     if (!ExtractDestination(coin.out.scriptPubKey, lockedDest))

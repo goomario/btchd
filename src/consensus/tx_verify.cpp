@@ -15,6 +15,7 @@
 #include <chain.h>
 #include <coins.h>
 #include <utilmoneystr.h>
+#include <validation.h>
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {
@@ -207,8 +208,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
-int GetUnbindPlotterActiveHeight(int nHeight, const uint64_t& nPlotterId, const Consensus::Params& consensusParams);
-bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params)
+bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -262,27 +262,56 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     // Tally transaction fees
-    const CAmount txfee_aux = nValueIn - value_out;
+    CAmount txfee_aux = nValueIn - value_out;
     if (!MoneyRange(txfee_aux)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
     }
 
     // Check for bind plotter fee and unbind plotter limit
-    if (nSpendHeight >= params.BHDIP006CheckRelayHeight && tx.IsUniform() && tx.vin.size() == 1) {
-        if (tx.vout.size() == 1) {
-            // Unbind plotter
+    if (nSpendHeight >= params.BHDIP006CheckRelayHeight && tx.IsUniform()) {
+        // Unbind plotter
+        if (tx.vin.size() == 1 && tx.vout.size() == 1) {
             const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                // Process repackaging
-                if (nSpendHeight + 6 < GetUnbindPlotterActiveHeight(nSpendHeight, BindPlotterPayload::As(coin.extraData)->GetId(), params)) {
-                    return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
+                if (nSpendHeight < params.BHDIP006LimitBindPlotterHeight) {
+                    // Delay check. Old consensus flexiable 6 blocks active check
+                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, coin, coin /* Don't care */, params)) {
+                        return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
+                    }
+                } else {
+                    // Strict check
+                    const Coin &activeBindCoin = SelfRefActiveBindCoin(prevInputs, coin, tx.vin[0].prevout);
+                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, params)) {
+                        return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
+                    }
                 }
             }
-        } else {
-            // Bind plotter
+        }
+
+        // Bind plotter
+        if (tx.vout.size() >= 2 && tx.vout.size() <= 3) {
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nSpendHeight);
-            if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER && txfee_aux < PROTOCOL_BINDPLOTTER_MINFEE) {
-                return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-lowfee");
+            if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                // Low fee
+                // Bug. old consensus skip check bind tx fee when vin more then 1, but fixed on BHDIP006LimitBindPlotterHeight
+                if ((tx.vin.size() == 1 || nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) && txfee_aux < PROTOCOL_BINDPLOTTER_MINFEE)
+                    return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-lowfee");
+
+                // Bind limit
+                if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
+                    const Coin &coin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(payload)->GetId());
+                    if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
+                        // Change bind require high transaction fee. Diff reward between full pledge and low pledge reward.
+                        // Example transaction fee require 16.25BHD.
+                        // See https://btchd.org/wiki/pledge-cheat#bind-unbind-plotter
+                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+                        if (txfee_aux < diffReward + PROTOCOL_BINDPLOTTER_MINFEE)
+                            return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-limitlowfee");
+
+                        // Only pay small transaction fee to miner. Other fee to black hole
+                        txfee_aux -= diffReward;
+                    }
+                }
             }
         }
     }

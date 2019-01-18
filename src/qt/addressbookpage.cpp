@@ -147,12 +147,17 @@ void AddressBookPage::setModel(AddressTableModel *_model)
         break;
     }
     ui->tableView->setModel(proxyModel);
-    ui->tableView->sortByColumn(0, Qt::AscendingOrder);
+    ui->tableView->sortByColumn(AddressTableModel::Label, Qt::AscendingOrder);
 
     // Set column widths
 #if QT_VERSION < 0x050000
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
+    if (tab == ReceivingTab) {
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
+    } else {
+        ui->tableView->setColumnHidden(AddressTableModel::Status, true);
+        ui->tableView->setColumnHidden(AddressTableModel::Watchonly, true);
+    }
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
     if (tab == ReceivingTab || gArgs.GetBoolArg("-showalladdressamount", false)) {
@@ -167,8 +172,13 @@ void AddressBookPage::setModel(AddressTableModel *_model)
         ui->tableView->setColumnHidden(AddressTableModel::DebitAmount, true);
     }
 #else
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
+    if (tab == ReceivingTab) {
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Status, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Watchonly, QHeaderView::ResizeToContents);
+    } else {
+        ui->tableView->setColumnHidden(AddressTableModel::Status, true);
+        ui->tableView->setColumnHidden(AddressTableModel::Watchonly, true);
+    }
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
     if (tab == ReceivingTab || gArgs.GetBoolArg("-showalladdressamount", false)) {

@@ -82,7 +82,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     }
     else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Inactived)
     {
-        strHTML += "<b>" + tr("Status") + ":</b> " + tr("Inactived Binded Plotter ID") + " (" + FormatTxStatus(wtx) + ")";
+        strHTML += "<b>" + tr("Status") + ":</b> " + tr("This binding has been unable to mine") + " (" + FormatTxStatus(wtx) + ")";
     }
     else
     {
@@ -312,6 +312,27 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     {
         quint32 numBlocksToMaturity = COINBASE_MATURITY +  1;
         strHTML += "<br>" + tr("Generated coins must mature %1 blocks before they can be spent. When you generated this block, it was broadcast to the network to be added to the block chain. If it fails to get into the chain, its state will change to \"not accepted\" and it won't be spendable. This may occasionally happen if another node generates a block within a few seconds of yours.").arg(QString::number(numBlocksToMaturity)) + "<br>";
+    }
+
+    // Unbind tip
+    if (rec->type == TransactionRecord::BindPlotter && rec->status.status != TransactionStatus::Disabled)
+    {
+        uint64_t plotterId = 0;
+        if (IsValidPlotterID(wtx.mapValue["plotter_id"], &plotterId)) {
+            const COutPoint coinEntry(wtx.tx->GetHash(), 0);
+            const Coin &bindCoin = pcoinsTip->AccessCoin(coinEntry);
+            if (!bindCoin.IsSpent() && bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, bindCoin, coinEntry);
+                int nSpendHeight = GetSpendHeight(*pcoinsTip);
+                int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, bindCoin, activeBindCoin, Params().GetConsensus());
+                if (nSpendHeight < activeHeight) {
+                    strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
+                                            arg(QString::number(activeHeight),
+                                                QString::number(activeHeight - nSpendHeight),
+                                                QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
+                }
+            }
+        }
     }
 
     //

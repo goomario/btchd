@@ -676,9 +676,8 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         if (!CheckSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
 
-        int nSpendHeight = GetSpendHeight(view);
         CAmount nFees = 0;
-        if (!Consensus::CheckTxInputs(tx, state, view, nSpendHeight, nFees, chainparams.GetConsensus())) {
+        if (!Consensus::CheckTxInputs(tx, state, view, *pcoinsTip, GetSpendHeight(view), nFees, chainparams.GetConsensus())) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
@@ -1143,8 +1142,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
-    const CCoinsViewCache &view, const Consensus::Params& consensusParams)
+CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy;
 
@@ -1157,6 +1155,13 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
         nSubsidy >>= halvings;
     }
+
+    return nSubsidy;
+}
+
+BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId, const CCoinsViewCache &view, const Consensus::Params& consensusParams)
+{
+    const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     // Calc miner reward and fund royalty
     BlockReward reward = { 0, 0, 0 };
@@ -1207,25 +1212,102 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     return reward;
 }
 
-int GetUnbindPlotterActiveHeight(int nHeight, const uint64_t& nPlotterId, const Consensus::Params& consensusParams)
+int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consensus::Params& consensusParams)
 {
-    if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
-        return 0;
+    assert(!activeCoin.IsSpent());
+    assert(activeCoin.extraData && activeCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
 
-    int activeHeight = 0;
-    int nBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
-    for (int index = nHeight - 1, totalForge = 0; index > nBeginHeight; index--) {
+    if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight)
+        return consensusParams.BHDIP006Height;
+
+    const int nPeriodBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
+    const uint64_t &nPlotterId = BindPlotterPayload::As(activeCoin.extraData)->GetId();
+
+    // I mined block in 2016 blocks
+    for (int index = nHeight - 1; index >= nPeriodBeginHeight; index--) {
         if (chainActive[index]->nPlotterId == nPlotterId) {
-            if (activeHeight == 0)
-                activeHeight = index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            return index + 1;
+        }
+    }
 
-            if (++totalForge > 50) { // 2.5%
-                activeHeight = 0;
-                break;
+    // I participate in some blocks mined
+    const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(activeCoin.nHeight));
+    for (int index = nHeight - 1; index >= nWalletMinedBeginHeight; index--) {
+        if (chainActive[index]->minerAccountID == activeCoin.refOutAccountID) {
+            // Bind after mined block will lock in wallet <bindheight + 2016>
+            return static_cast<int>(activeCoin.nHeight) + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+        }
+    }
+
+    // Bind after no mined any block
+    return static_cast<int>(activeCoin.nHeight) + 1;
+}
+
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &activeCoin, const Consensus::Params& consensusParams)
+{
+    assert(!bindCoin.IsSpent());
+    assert(bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(!activeCoin.IsSpent());
+    assert(activeCoin.extraData && activeCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(activeCoin.nHeight >= bindCoin.nHeight);
+
+    if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
+        return consensusParams.BHDIP006Height;
+
+    const int nPeriodBeginHeight = std::max(nHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
+    const uint64_t &nPlotterId = BindPlotterPayload::As(bindCoin.extraData)->GetId();
+
+    // 2.5%, Large capacity ID unlimit
+    for (int index = nPeriodBeginHeight + 1, totalForge = 0; index < nHeight; index++) {
+        if (chainActive[index]->nPlotterId == nPlotterId) {
+            if (++totalForge > 50) {
+                return index;
             }
         }
     }
-    return activeHeight;
+
+    if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight) {
+        // Bug: Delay unbind when mine to any address, maybe can't unbind forever.
+        for (int index = nHeight - 1; index > nPeriodBeginHeight; index--) {
+            if (chainActive[index]->nPlotterId == nPlotterId) {
+                // Delay unbind 2016 blocks when mined block
+                return index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            }
+        }
+    } else {
+        const int nLastActiveBindHeight = (&bindCoin == &activeCoin) ? (nHeight - 1) : static_cast<int>(activeCoin.nHeight);
+        const int nWalletMinedBeginHeight = std::max(nPeriodBeginHeight, static_cast<int>(bindCoin.nHeight));
+
+        // I mined last block in this wallet
+        for (int index = nLastActiveBindHeight; index >= nWalletMinedBeginHeight; index--) {
+            CBlockIndex *pindex = chainActive[index];
+            if (pindex->nPlotterId == nPlotterId && pindex->minerAccountID == bindCoin.refOutAccountID) {
+                // Delay unbind 2016 blocks when mined block in this wallet
+                return index + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            }
+        }
+
+        // I participate in some blocks mined
+        for (int index = nLastActiveBindHeight; index >= nWalletMinedBeginHeight; index--) {
+            if (chainActive[index]->minerAccountID == bindCoin.refOutAccountID) {
+                // Bind after mined block will lock in wallet <bindheight + 2016>
+                return static_cast<int>(bindCoin.nHeight) + static_cast<int>(consensusParams.nMinerConfirmationWindow);
+            }
+        }
+    }
+
+    // Bind after no mined any block
+    return static_cast<int>(bindCoin.nHeight) + 1;
+}
+
+const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin &bindCoin, const COutPoint &bindCoinEntry)
+{
+    COutPoint activeBindCoinEnty = inputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(bindCoin.extraData)->GetId());
+    assert(!activeBindCoinEnty.IsNull());
+    if (activeBindCoinEnty == bindCoinEntry)
+        return bindCoin;
+    
+    return inputs.AccessCoin(activeBindCoinEnty);
 }
 
 bool IsInitialBlockDownload()
@@ -1946,7 +2028,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
-    CCoinsViewCache tempView(&view);
+    CCoinsViewCache mutableView(&view);
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
@@ -1956,7 +2038,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if (!tx.IsCoinBase())
         {
             CAmount txfee = 0;
-            if (!Consensus::CheckTxInputs(tx, state, tempView, pindex->nHeight, txfee, chainparams.GetConsensus())) {
+            if (!Consensus::CheckTxInputs(tx, state, mutableView, view, pindex->nHeight, txfee, chainparams.GetConsensus())) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
             nFees += txfee;
@@ -1970,7 +2052,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             // be in ConnectBlock because they require the UTXO set
             prevheights.resize(tx.vin.size());
             for (size_t j = 0; j < tx.vin.size(); j++) {
-                prevheights[j] = tempView.AccessCoin(tx.vin[j].prevout).nHeight;
+                prevheights[j] = mutableView.AccessCoin(tx.vin[j].prevout).nHeight;
             }
 
             if (!SequenceLocks(tx, nLockTimeFlags, &prevheights, *pindex)) {
@@ -1983,7 +2065,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         // * legacy (always)
         // * p2sh (when P2SH enabled in flags and excludes coinbase)
         // * witness (when witness enabled in flags and excludes coinbase)
-        nSigOpsCost += GetTransactionSigOpCost(tx, tempView, flags);
+        nSigOpsCost += GetTransactionSigOpCost(tx, mutableView, flags);
         if (nSigOpsCost > MAX_BLOCK_SIGOPS_COST)
             return state.DoS(100, error("ConnectBlock(): too many sigops"),
                              REJECT_INVALID, "bad-blk-sigops");
@@ -1993,7 +2075,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         {
             std::vector<CScriptCheck> vChecks;
             bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
-            if (!CheckInputs(tx, state, tempView, fScriptChecks, flags, fCacheResults, fCacheResults, txdata[i], nScriptCheckThreads ? &vChecks : nullptr))
+            if (!CheckInputs(tx, state, mutableView, fScriptChecks, flags, fCacheResults, fCacheResults, txdata[i], nScriptCheckThreads ? &vChecks : nullptr))
                 return error("ConnectBlock(): CheckInputs on %s failed with %s",
                     tx.GetHash().ToString(), FormatStateMessage(state));
             control.Add(vChecks);
@@ -2003,7 +2085,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if (i > 0) {
             blockundo.vtxundo.push_back(CTxUndo());
         }
-        UpdateCoins(tx, tempView, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
+        UpdateCoins(tx, mutableView, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
     }
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
@@ -2210,8 +2292,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     assert(pindex->phashBlock);
     // add this block to the view's block chain
-    tempView.SetBestBlock(pindex->GetBlockHash());
-    bool flushed = tempView.Flush();
+    mutableView.SetBestBlock(pindex->GetBlockHash());
+    bool flushed = mutableView.Flush();
     assert(flushed);
 
     int64_t nTime5 = GetTimeMicros(); nTimeIndex += nTime5 - nTime4;
@@ -3952,18 +4034,6 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
 {
     if (!blocktree.LoadBlockIndexGuts(consensus_params, [this](const uint256& hash){ return this->InsertBlockIndex(hash); }))
         return false;
-
-    // Check mapBlockIndex valid
-    {
-        LOCK(cs_main);
-        auto pocVerifyLevel = gArgs.GetBoolArg("-pocforceverifyonlaunch", false) ? PocVerifyLevel::Force : PocVerifyLevel::Checkpoint;
-        for (auto it = mapBlockIndex.begin(); it != mapBlockIndex.end(); it++) {
-            CBlockIndex *pindex = it->second;
-            CBlockHeader blockHeader = pindex->GetBlockHeader();
-            if (!CheckProofOfCapacity(&blockHeader, consensus_params, pocVerifyLevel))
-                return error("%s: CheckProofOfCapacity failed: %s", __func__, pindex->ToString());
-        }
-    }
 
     boost::this_thread::interruption_point();
 

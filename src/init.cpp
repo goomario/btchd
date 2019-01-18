@@ -1513,6 +1513,22 @@ bool AppInitMain()
                     }
                     assert(chainActive.Tip() != nullptr);
 
+                    // Auto reconsider block
+                    if (gArgs.GetBoolArg("-autoreconsiderblock", true) && chainActive.Height() >= chainparams.GetConsensus().BHDIP006LimitBindPlotterHeight) {
+                        CBlockIndex *pAnchorIndex = chainActive[chainparams.GetConsensus().BHDIP006LimitBindPlotterHeight - 1];
+                        {
+                            LOCK(cs_main);
+                            ResetBlockFailureFlags(pAnchorIndex);
+                        }
+
+                        CValidationState state;
+                        ActivateBestChain(state, chainparams);
+                        if (!state.IsValid()) {
+                            strLoadError = _("Error initializing block database");
+                            break;
+                        }
+                    }
+
                     // Reconnect new consensus block
                     if (!chainparams.GetConsensus().BHDIP006FirstForkBlockHash.IsNull() &&
                         chainActive.Height() >= chainparams.GetConsensus().BHDIP006Height &&

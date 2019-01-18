@@ -74,7 +74,7 @@ CAmount GetMinimumFee(unsigned int nTxBytes, const CCoinControl& coin_control, c
         if (feeCalc) feeCalc->reason = FeeReason::REQUIRED;
     }
     // But always obey the maximum
-    if (fee_needed > maxTxFee) {
+    if (fee_needed > maxTxFee && coin_control.m_fee_mode != FeeEstimateMode::FIXED) {
         fee_needed = maxTxFee;
         if (feeCalc) feeCalc->reason = FeeReason::MAXTXFEE;
     }

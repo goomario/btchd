@@ -44,6 +44,7 @@ struct ChainTxData;
 
 struct PrecomputedTransactionData;
 struct LockPoints;
+class Coin;
 
 /** Default for -whitelistrelay. */
 static const bool DEFAULT_WHITELISTRELAY = true;
@@ -66,7 +67,7 @@ static const unsigned int DEFAULT_DESCENDANT_LIMIT = 25;
 /** Default for -limitdescendantsize, maximum kilobytes of in-mempool descendants */
 static const unsigned int DEFAULT_DESCENDANT_SIZE_LIMIT = 101;
 /** Default for -mempoolexpiry, expiration time for mempool transactions in hours */
-static const unsigned int DEFAULT_MEMPOOL_EXPIRY = 336;
+static const unsigned int DEFAULT_MEMPOOL_EXPIRY = 168;
 /** Maximum kilobytes for transactions to store for processing during reorg */
 static const unsigned int MAX_DISCONNECTED_TX_POOL_SIZE = 20000;
 /** The maximum size of a blk?????.dat file (since 0.8) */
@@ -282,7 +283,9 @@ bool IsInitialBlockDownload();
 bool GetTransaction(const uint256& hash, CTransactionRef& tx, const Consensus::Params& params, uint256& hashBlock, bool fAllowSlow = false, CBlockIndex* blockIndex = nullptr);
 /** Find the best known block, and make it the tip of the block chain */
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
-/** Get Block reward */
+/** Get block subsidy */
+CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
+/** Get block reward */
 typedef struct {
     CAmount miner;
     //! Hark fork compatible. See https://btchd.org/wiki/BHDIP/004#multi-output
@@ -292,8 +295,11 @@ typedef struct {
 BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
     const CCoinsViewCache &view, const Consensus::Params& consensusParams);
 
-/** Get unbind plotter transaction lock time. */
-int GetUnbindPlotterActiveHeight(int nHeight, const uint64_t& nPlotterId, const Consensus::Params& consensusParams);
+/** Get bind/unbind plotter transaction lock time. */
+int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consensus::Params& consensusParams);
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &activeCoin, const Consensus::Params& consensusParams);
+/** Utility function for active coin. If entry is active then return bindCoin, Otherwise return new coin */
+const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin &bindCoin, const COutPoint &bindCoinEntry);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

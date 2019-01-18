@@ -9,7 +9,10 @@
  * network protocol versioning
  */
 
-static const int PROTOCOL_VERSION = 80021;
+static const int PROTOCOL_VERSION = 80022;
+
+//! BitcoinHD BHDIP006 version. Limit unbind plotter softfork
+static const int BHD_BHDIP006_LIMITUNBIND = 80021;
 
 //! BitcoinHD BHDIP006 version. Bind plotter & pledge loan
 static const int BHD_BHDIP006 = 80020;

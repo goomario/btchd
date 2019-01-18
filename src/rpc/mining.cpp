@@ -750,6 +750,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
             "    \"txid\":\"txid\",                 (string) The last binded transaction id.\n"
             "    \"blockhash\":\"blockhash\",       (string) The binded transaction included block hash.\n"
             "    \"blockheight\":height,            (numeric) The binded transaction included block height.\n"
+            "    \"bindheightlimit\":height,      (numeric) The plotter bind small fee limit height. Other require high fee.\n"
             "    \"unbindheightlimit\":height,    (numeric) The plotter unbind limit height.\n"
             "    \"lastBlock\": {                   (object) The plotter last generated block. Maybe not exist.\n"
             "        \"blockhash\":\"blockhash\",   (string) The plotter last generated block hash.\n"
@@ -768,6 +769,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
 
     LOCK(cs_main);
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
     COutPoint outpoint;
     const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId, &outpoint);
     if (!coin.IsSpent()) {
@@ -780,11 +782,12 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("txid", outpoint.hash.GetHex()));
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
         item.push_back(Pair("blockheight", (int)coin.nHeight));
-        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterActiveHeight(chainActive.Height() + 1, plotterId, Params().GetConsensus())));
+        item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(nSpendHeight, coin, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, coin, Params().GetConsensus())));
 
         // Last generate block
-        int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, chainActive.Height() - (int)Params().GetConsensus().nMinerConfirmationWindow);
-        for (int nHeight = chainActive.Height(); nHeight > lastPeriodHeight; nHeight--) {
+        int lastPeriodHeight = std::max(Params().GetConsensus().BHDIP001StartMingingHeight, nSpendHeight - 1 - (int)Params().GetConsensus().nMinerConfirmationWindow);
+        for (int nHeight = nSpendHeight - 1; nHeight > lastPeriodHeight; nHeight--) {
             if (chainActive[nHeight]->nPlotterId == plotterId) {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.push_back(Pair("blockhash", chainActive[nHeight]->GetBlockHash().GetHex()));
@@ -818,6 +821,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"unbindheightlimit\": xxx,          (numeric) The plotter unbind limit height.\n"
             "    \"active\": true|false,              (bool, default false) The bind active status.\n"
             "  }\n"
             "]\n"
@@ -850,6 +854,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
+    const int nSpendHeight = GetSpendHeight(*pcoinsTip);
+
     // Load all relation coins
     typedef std::map<COutPoint,Coin> CCoinsOrderMap;
     typedef std::map<uint32_t,CCoinsOrderMap,std::greater<uint32_t> > CCoinsOrderByHeightMap;
@@ -876,6 +882,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         const CCoinsOrderMap &mapCoins = itMapCoins->second;
         for (CCoinsOrderMap::const_reverse_iterator it = mapCoins.rbegin(); fContinue && it != mapCoins.rend(); ++it) {
             const Coin &coin = it->second;
+            const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, COutPoint(it->first.hash, 0));
+
             UniValue item(UniValue::VOBJ);
             {
                 CTxDestination fromDest;
@@ -887,7 +895,9 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
             item.push_back(Pair("height", (int)coin.nHeight));
-            item.push_back(Pair("active", pcoinsTip->HaveActiveBindPlotter(accountID, BindPlotterPayload::As(coin.extraData)->GetId(), (int)coin.nHeight)));
+            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, Params().GetConsensus())));
+            item.push_back(Pair("active", &coin == &activeBindCoin));
+
             ret.push_back(item);
 
             if (--count <= 0)
