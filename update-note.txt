@@ -1,0 +1,30 @@
+BHD钱包更新到 v1.2.1.4-db9ce00
+
+此版本的钱包在 134650 高度开始做算力绑定限制和算力解绑限制，起到防抵押作弊的作用，大约在北京时间 2019年1月21日 14:00:00 达到。
+
+1.算力绑定限制
+对已经绑定到其他钱包的算力更改绑定钱包时，如果此算力在过去2016个块内没有出过块但是绑定的钱包用其他算力出过块，那么此算力的绑定操作将会触发防作弊机制，要求绑定付出16.35BHD的交易手续费，其中16.25BHD销毁，0.1BHD作为打包费用给矿工。
+当用此算力出了块或者到达绑定后第2016个块，此限制解除。
+
+2.算力解绑限制
+对于占全网算力的2.5%的算力无解绑限制。
+如果此算力在绑定的钱包出了块，那么解绑期限将会限制为此出块后的第2016个区块；如果此算力没有在此钱包出块但是绑定的钱包用其他算力出过块，那么此算力必须和钱包绑定2016个块之后才能解绑。
+
+此限制需要为共识做软分叉，保持向前兼容，需要所有矿工升级到新共识，否者继续再老共识上出的块中打包到在新共识中被判定为无效的交易，此块不会被其他已经升级的钱包承认。
+可能会导致 v1.2.0.18 版本的钱包无法同步区块数据，请这个版本的钱包及时更新。
+
+
+BHD wallet updated to v1.2.1.4-db9ce00
+
+This version of the wallet began to do the binding limit and the unbinding limit at the height of 134650, which played a role in preventing mortgage cheating, which was reached at 2:00:00 on January 21, 2019 GMT time.
+
+1.Binding limit
+When changing the wallet to the computing power that has been bound to other wallets, if this computing power has not been blocked in the past 2016 blocks, but the bound wallet has been used by other computing power, then the binding of this computing power The operation will trigger an anti-cheating mechanism that requires a 16.35 BHD transaction fee for the binding, of which 16.25 BHD is destroyed and 0.1 BHD is used as a packing fee for the miners.
+When the block is used to calculate the block or the 2016 block after the binding is reached, the restriction is released.
+
+2.Unbinding limit
+For the 2.5% of the computing power of the entire network, there is no unbinding limit.
+If this power is out of the bound wallet, the unbinding period will be limited to the 2016 block after the block is released; if the power is not in the wallet but the bound wallet is counted Force out of the block, then this calculation must be bound to the wallet after 2016 blocks can be untied.
+
+This restriction needs to be soft-forked for consensus, and it is compatible with forwards. All miners need to upgrade to a new consensus. Otherwise, they will continue to pack the blocks in the old consensus to the transactions that are judged to be invalid in the new consensus.
+This may cause the v1.2.0.18 version of the wallet to fail to sync block data. Please update this version of the wallet in time.
