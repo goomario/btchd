@@ -10,9 +10,10 @@
 #include <stdint.h>
 #include <vector>
 
+#include <primitives/transaction.h>
+
 class CBlockIndex;
 class CCoinsViewCache;
-class CTransaction;
 class CValidationState;
 
 /** Transaction validation functions */
@@ -29,7 +30,8 @@ struct Params;
  * @param[out] txfee Set to the transaction fee if successful.
  * Preconditions: tx.IsCoinBase() is false.
  */
-bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params);
+bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
+    int nSpendHeight, CAmount& txfee, const CAccountID &minerAccountID, const Consensus::Params& params);
 } // namespace Consensus
 
 /** Auxiliary functions for transaction validation (ideally should not be exposed) */

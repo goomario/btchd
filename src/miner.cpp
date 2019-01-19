@@ -83,6 +83,7 @@ BlockAssembler::BlockAssembler(const CChainParams& params) : BlockAssembler(para
 void BlockAssembler::resetBlock()
 {
     inBlock.clear();
+    minerAccountID = 0;
 
     // Reserve space for coinbase tx
     nBlockWeight = 4000;
@@ -105,6 +106,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     if(!pblocktemplate.get())
         return nullptr;
     pblock = &pblocktemplate->block; // pointer for convenience
+
+    minerAccountID = GetAccountIDByScriptPubKey(scriptPubKeyIn);
+    assert (minerAccountID != 0);
 
     // Add dummy coinbase tx as first transaction
     pblock->vtx.emplace_back();
@@ -158,16 +162,13 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLastBlockTx = nBlockTx;
     nLastBlockWeight = nBlockWeight;
 
-    CAccountID accountID = GetAccountIDByScriptPubKey(scriptPubKeyIn);
-    assert (accountID != 0);
-
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
     coinbaseTx.vin[0].prevout.SetNull();
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     // Reward
-    BlockReward blockReward = GetBlockReward(nHeight, nFees, accountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(nHeight, nFees, minerAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
     if (blockReward.minerBHDIP004Compatiable != 0) {
         // Let old wallet can verify
@@ -255,7 +256,7 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
         if (it->GetTx().IsUniform()) {
             CValidationState state;
             CAmount txfee;
-            if (!Consensus::CheckTxInputs(it->GetTx(), state, *pcoinsTip, *pcoinsTip, nHeight, txfee, chainparams.GetConsensus()))
+            if (!Consensus::CheckTxInputs(it->GetTx(), state, *pcoinsTip, *pcoinsTip, nHeight, txfee, minerAccountID, chainparams.GetConsensus()))
                 return false;
         }
     }
