@@ -208,7 +208,8 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
-bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs, int nSpendHeight, CAmount& txfee, const Consensus::Params& params)
+bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
+    int nSpendHeight, CAmount& txfee, const CAccountID &minerAccountID, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -299,17 +300,24 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
                 // Bind limit
                 if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
+                    // Limit bind
                     const Coin &coin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(payload)->GetId());
-                    if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
-                        // Change bind require high transaction fee. Diff reward between full pledge and low pledge reward.
-                        // Example transaction fee require 16.25BHD.
-                        // See https://btchd.org/wiki/pledge-cheat#bind-unbind-plotter
-                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
-                        if (txfee_aux < diffReward + PROTOCOL_BINDPLOTTER_MINFEE)
-                            return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-limitlowfee");
+                    if (!coin.IsSpent()) {
+                        // Forbidden mined self change active bind
+                        if (minerAccountID != 0 && minerAccountID == GetAccountIDByScriptPubKey(tx.vout[0].scriptPubKey))
+                            return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-selfmined");
 
-                        // Only pay small transaction fee to miner. Other fee to black hole
-                        txfee_aux -= diffReward;
+                        if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
+                            // Change bind require high transaction fee. Diff reward between full pledge and low pledge reward.
+                            // Example transaction fee require 16.25BHD.
+                            // See https://btchd.org/wiki/pledge-cheat#bind-unbind-plotter
+                            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+                            if (txfee_aux < diffReward + PROTOCOL_BINDPLOTTER_MINFEE)
+                                return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-limitlowfee");
+
+                            // Only pay small transaction fee to miner. Other fee to black hole
+                            txfee_aux -= diffReward;
+                        }
                     }
                 }
             }

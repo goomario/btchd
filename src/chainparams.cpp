@@ -503,7 +503,7 @@ public:
         consensus.BHDIP006FirstForkBlockHash = uint256S("0x44fe5f2d3e7b9fbf771c1fc2ae400daf0ef31665c3eac3cac3a0e3ba7a968f32"); // 41290 blockhash
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active at 41296
         consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow * 2; // 45328
-        consensus.BHDIP006LimitBindPlotterHeight = 48570;
+        consensus.BHDIP006LimitBindPlotterHeight = 48790;
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;

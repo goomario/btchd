@@ -140,6 +140,9 @@ private:
     CAmount nFees;
     CTxMemPool::setEntries inBlock;
 
+    // Current mined account
+    CAccountID minerAccountID;
+
     // Chain context for the block
     int nHeight;
     int64_t nLockTimeCutoff;
