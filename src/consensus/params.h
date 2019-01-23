@@ -87,7 +87,6 @@ struct Params {
     int BHDIP006BindPlotterActiveHeight;
     int BHDIP006CheckRelayHeight;
     int BHDIP006LimitBindPlotterHeight;
-    uint256 BHDIP006FirstForkBlockHash;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,

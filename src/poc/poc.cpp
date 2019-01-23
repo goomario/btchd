@@ -30,17 +30,6 @@
 
 namespace {
 
-// shabal256
-uint256 shabal256(const uint256 &genSig, int64_t nMix64)
-{
-    uint256 result;
-    CShabal256()
-        .Write((const unsigned char*)genSig.begin(), genSig.size())
-        .Write((const unsigned char*)&nMix64, sizeof(nMix64))
-        .Finalize((unsigned char*)result.begin());
-    return result;
-}
-
 std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline, const std::string &address)
 {
     AssertLockHeld(cs_main);
@@ -264,16 +253,23 @@ uint64_t GetBlockId(const CBlockIndex &blockIndex)
 
 uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight)
 {
-    return UintToArith256(shabal256(genSig, htobe64(nHeight))) % 4096;
+    uint64_t flipHeight = htobe64(static_cast<uint64_t>(nHeight));
+
+    unsigned char result[32];
+    CShabal256()
+        .Write((const unsigned char*)genSig.begin(), genSig.size())
+        .Write((const unsigned char*)&flipHeight, sizeof(flipHeight))
+        .Finalize(result);
+    // Low 2 bytes mod 2^14
+    return (uint32_t) (result[31] + 256 * result[30]) % 4096;
 }
 
 static constexpr int HASH_SIZE = 32;
 static constexpr int HASHES_PER_SCOOP = 2;
-static constexpr int SCOOP_SIZE = HASHES_PER_SCOOP * HASH_SIZE;
-static constexpr int SCOOPS_PER_PLOT = 4096; // original 1MB/plot = 16384
-static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE;
-
-static const int HASH_CAP = 4096;
+static constexpr int SCOOP_SIZE = HASHES_PER_SCOOP * HASH_SIZE; // 2 hashes per column
+static constexpr int SCOOPS_PER_PLOT = 4096;
+static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE; // 256KB
+static std::unique_ptr<uint8_t> calcDLDataCache(new uint8_t[PLOT_SIZE + 16]); // Global calc cache
 
 static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params) {
     const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
@@ -281,53 +277,44 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
     const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
     const uint64_t nonce = htobe64(block.nNonce);
 
-    std::unique_ptr<uint8_t> _gendata(new uint8_t[PLOT_SIZE + 16]);
-    uint8_t *const gendata = _gendata.get();
-    memcpy(gendata + PLOT_SIZE, (const unsigned char*)&addr, 8);
-    memcpy(gendata + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
+    uint8_t *const data = calcDLDataCache.get();
+    memcpy(data + PLOT_SIZE, (const unsigned char*)&addr, 8);
+    memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
     for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
         int len = PLOT_SIZE + 16 - i;
-        if (len > HASH_CAP) {
-            len = HASH_CAP;
+        if (len > SCOOPS_PER_PLOT) {
+            len = SCOOPS_PER_PLOT;
         }
 
-        uint256 temp;
         CShabal256()
-            .Write((const unsigned char*)gendata + i, len)
-            .Finalize((unsigned char*)temp.begin());
-        memcpy((uint8_t*)gendata + i - HASH_SIZE, (const uint8_t*)temp.begin(), HASH_SIZE);
+            .Write((const unsigned char*)data + i, len)
+            .Finalize((unsigned char*)(data + i - HASH_SIZE));
     }
-    uint256 base;
+    uint256 fullHash;
     CShabal256()
-        .Write((const unsigned char*)gendata, PLOT_SIZE + 16)
-        .Finalize((unsigned char*)base.begin());
-
-    std::unique_ptr<uint8_t> _data(new uint8_t[PLOT_SIZE]);
-    uint8_t *data = _data.get();
+        .Write((const unsigned char*)data, PLOT_SIZE + 16)
+        .Finalize((unsigned char*)fullHash.begin());
     for (int i = 0; i < PLOT_SIZE; i++) {
-        data[i] = (uint8_t) (gendata[i] ^ (base.begin()[i % HASH_SIZE]));
+        data[i] = (uint8_t) (data[i] ^ (fullHash.begin()[i % HASH_SIZE]));
     }
-    _gendata.reset(nullptr);
 
-    // PoC2 Rearrangement
+    // PoC2 Rearrangement. Swap high hash
     //
     // [0] [1] [2] [3] ... [N-1]
     // [1] <-> [N-1]
+    // [2] <-> [N-2]
     // [3] <-> [N-3]
-    // [5] <-> [N-5]
-    uint8_t hashBuffer[HASH_SIZE];
-    for (int pos = 32, revPos = PLOT_SIZE - HASH_SIZE; pos < (PLOT_SIZE / 2); pos += 64, revPos -= 64) {
-        memcpy(hashBuffer, data + pos, HASH_SIZE); // Copy low scoop second hash to buffer
-        memcpy(data + pos, data + revPos, HASH_SIZE); // Copy high scoop second hash to low scoop second hash
-        memcpy(data + revPos, hashBuffer, HASH_SIZE); // Copy buffer to high scoop second hash
-    }
+    //
+    // Only care hash data of scopeNum index
+    memcpy(data + scopeNum * SCOOP_SIZE + HASH_SIZE, data + (SCOOPS_PER_PLOT - scopeNum) * SCOOP_SIZE - HASH_SIZE, HASH_SIZE);
 
+    // Result
+    uint256 target;
     CShabal256()
         .Write((const unsigned char*)genSig.begin(), genSig.size())
         .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
-        .Finalize((unsigned char*)base.begin());
-
-    return base.GetUint64(0) / prevBlockIndex.nBaseTarget;
+        .Finalize((unsigned char*)target.begin());
+    return target.GetUint64(0) / prevBlockIndex.nBaseTarget;
 }
 
 // Require hold cs_main
@@ -356,6 +343,8 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
             
             // Prune deadline cache
             if (mapBlockDeadlineCache.size() > mapBlockIndex.size() + params.nMinerConfirmationWindow) {
+                LogPrint(BCLog::POC, "%s: Pruning deadline cache on size large then %u\n", __func__, mapBlockDeadlineCache.size());
+
                 uint64_t deadline = itCache->second;
                 for (auto it = mapBlockDeadlineCache.begin(); it != mapBlockDeadlineCache.end();) {
                     if (it->first == hash || mapBlockIndex.count(it->first)) {
@@ -367,6 +356,8 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
 
                 return deadline;
             }
+        } else {
+            LogPrint(BCLog::POC, "%s: Hit %d(%s) from deadline cache\n", __func__, prevBlockIndex.nHeight + 1, block.GetHash().GetHex());
         }
         return itCache->second;
     } else {

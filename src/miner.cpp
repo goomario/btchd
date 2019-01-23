@@ -17,9 +17,9 @@
 #include <hash.h>
 #include <validation.h>
 #include <net.h>
+#include <poc/poc.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
-#include <pow.h>
 #include <primitives/transaction.h>
 #include <script/standard.h>
 #include <timedata.h>
@@ -203,7 +203,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     pblock->nNonce         = nonce;
     pblock->nPlotterId     = plotterId;
-    pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    pblock->nBaseTarget    = poc::CalculateBaseTarget(*pindexPrev, *pblock, chainparams.GetConsensus());
 
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
