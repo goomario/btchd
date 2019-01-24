@@ -1550,58 +1550,56 @@ bool AppInitMain()
                         break;
                     }
 
-                    {
+                    if (!chainparams.Checkpoints().mapCheckpoints.empty()) {
                         const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
-                        if (!mapCheckpoints.empty()) {
-                            // Find first invalid block in checkpoint
-                            CBlockIndex *pBeginResetIndex = nullptr;
-                            // 1.First invalid block on checkpoint
-                            for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend(); it++) {
-                                auto mi = mapBlockIndex.find(it->second);
-                                if (mi != mapBlockIndex.end() && !mi->second->IsValid()) {
-                                    pBeginResetIndex = mi->second;
+                        // Find first invalid block in checkpoint
+                        CBlockIndex *pBeginResetIndex = nullptr;
+                        // 1.First invalid block on checkpoint
+                        for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend(); it++) {
+                            auto mi = mapBlockIndex.find(it->second);
+                            if (mi != mapBlockIndex.end() && !mi->second->IsValid()) {
+                                pBeginResetIndex = mi->second;
+                                break;
+                            }
+                        }
+                        // 2.First valid block when block data too old
+                        if (!pBeginResetIndex && chainActive.Height() < mapCheckpoints.rbegin()->first) {
+                            // Reset last checkpoint block when block data too old
+                            for (auto it = mapCheckpoints.rbegin(); it != mapCheckpoints.rend(); it++) {
+                                if (it->first < chainActive.Height()) {
+                                    pBeginResetIndex = chainActive[it->first];
                                     break;
                                 }
                             }
-                            // 2.First valid block when block data too old
-                            if (!pBeginResetIndex && chainActive.Height() < mapCheckpoints.rbegin()->first) {
-                                // Reset last checkpoint block when block data too old
-                                for (auto it = mapCheckpoints.rbegin(); it != mapCheckpoints.rend(); it++) {
-                                    if (it->first < chainActive.Height()) {
-                                        pBeginResetIndex = chainActive[it->first];
-                                        break;
-                                    }
-                                }
-                            }
-                            // Reset after block fail flags
-                            if (pBeginResetIndex) {
-                                LOCK(cs_main);
-                                ResetBlockFailureFlags(pBeginResetIndex);
-                            }
-
-                            // Invalid bad block
-                            for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend() && it->first <= chainActive.Height();) {
-                                CBlockIndex *pindex = chainActive[it->first];
-                                if (*(pindex->phashBlock) != it->second) {
-                                    // Invalid
-                                    CValidationState state;
-                                    {
-                                        LOCK(cs_main);
-                                        InvalidateBlock(state, chainparams, pindex);
-                                    }
-                                    if (state.IsValid())
-                                        ActivateBestChain(state, chainparams);
-                                    if (!state.IsValid()) {
-                                        LogPrintf("%s: %s\n", __func__, FormatStateMessage(state));
-                                        strLoadError = _("Error initializing block database");
-                                        break;
-                                    }
-                                } else
-                                    it++;
-                            }
-                            if (!strLoadError.empty())
-                                break; // Got error
                         }
+                        // Reset after block fail flags
+                        if (pBeginResetIndex) {
+                            LOCK(cs_main);
+                            ResetBlockFailureFlags(pBeginResetIndex);
+                        }
+
+                        // Invalid bad block
+                        for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend() && it->first <= chainActive.Height();) {
+                            CBlockIndex *pindex = chainActive[it->first];
+                            if (*(pindex->phashBlock) != it->second) {
+                                // Invalid
+                                CValidationState state;
+                                {
+                                    LOCK(cs_main);
+                                    InvalidateBlock(state, chainparams, pindex);
+                                }
+                                if (state.IsValid())
+                                    ActivateBestChain(state, chainparams);
+                                if (!state.IsValid()) {
+                                    LogPrintf("%s: %s\n", __func__, FormatStateMessage(state));
+                                    strLoadError = _("Error initializing block database");
+                                    break;
+                                }
+                            } else
+                                it++;
+                        }
+                        if (!strLoadError.empty())
+                            break; // Got error
                     }
                 }
             } catch (const std::exception& e) {
