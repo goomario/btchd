@@ -1574,14 +1574,26 @@ bool AppInitMain()
                         }
                         // Reset after block fail flags
                         if (pBeginResetIndex) {
-                            LOCK(cs_main);
-                            ResetBlockFailureFlags(pBeginResetIndex);
+                            uiInterface.InitMessage(_("Verifying blocks..."));
+                            {
+                                LOCK(cs_main);
+                                ResetBlockFailureFlags(pBeginResetIndex);
+                            }
+
+                            CValidationState state;
+                            ActivateBestChain(state, chainparams);
+                            if (!state.IsValid()) {
+                                LogPrintf("%s: %s\n", __func__, FormatStateMessage(state));
+                                strLoadError = _("Error initializing block database");
+                                break;
+                            }
                         }
 
                         // Invalid bad block
                         for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend() && it->first <= chainActive.Height();) {
                             CBlockIndex *pindex = chainActive[it->first];
                             if (*(pindex->phashBlock) != it->second) {
+                                uiInterface.InitMessage(_("Rewinding blocks..."));
                                 // Invalid
                                 CValidationState state;
                                 {
