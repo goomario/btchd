@@ -342,16 +342,20 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
             itCache->second = CalcDL(prevBlockIndex, block, params);
             
             // Prune deadline cache
-            if (mapBlockDeadlineCache.size() > mapBlockIndex.size() + params.nMinerConfirmationWindow) {
-                LogPrint(BCLog::POC, "%s: Pruning deadline cache on size large then %u\n", __func__, mapBlockDeadlineCache.size());
+            if (mapBlockDeadlineCache.size() > chainActive.Height() + params.nMinerConfirmationWindow) {
+                LogPrint(BCLog::POC, "%s: Pruning deadline cache (size %u)\n", __func__, mapBlockDeadlineCache.size());
 
                 uint64_t deadline = itCache->second;
                 for (auto it = mapBlockDeadlineCache.begin(); it != mapBlockDeadlineCache.end();) {
-                    if (it->first == hash || mapBlockIndex.count(it->first)) {
-                        ++it;
-                    } else {
-                        it = mapBlockDeadlineCache.erase(it);
+                    if (it->first != hash) {
+                        auto mi = mapBlockIndex.find(it->first);
+                        if (mi == mapBlockIndex.end() || chainActive[mi->second->nHeight] != mi->second) {
+                            it = mapBlockDeadlineCache.erase(it);
+                            continue;
+                        }
                     }
+
+                    ++it;
                 }
 
                 return deadline;
