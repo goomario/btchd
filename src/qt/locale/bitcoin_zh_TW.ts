@@ -377,7 +377,7 @@ Available pledge: %5</source>
     </message>
     <message>
         <source>Syncing Headers (%1%)...</source>
-        <translation>正在同步前導資料(%1%)中。此過程可能需要比較長的時間，請耐心等待......</translation>
+        <translation>正在同步前導資料(%1%)中...</translation>
     </message>
     <message>
         <source>Reindexing blocks on disk...</source>
