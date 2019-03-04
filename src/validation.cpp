@@ -42,9 +42,9 @@
 #include <validationinterface.h>
 #include <warnings.h>
 
+#include <cinttypes>
 #include <future>
 #include <sstream>
-#include <inttypes.h>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -2234,7 +2234,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 // Check output amount
                 if (block.vtx[0]->vout[1].nValue < fund) {
                     if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004ActiveHeight) {
-                        // Bug, accept corruption pay for fund. See https://btchd.org/wiki/developer/bug-for-BHDIP004
+                        // Bug, accept corruption pay for fund. See https://btchd.org/wiki/BHDIP/004#bad-blocks
                         LogPrint(BCLog::POC, "ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n", pindex->GetBlockHash().ToString(), pindex->nHeight);
                     } else {
                         return state.DoS(100,

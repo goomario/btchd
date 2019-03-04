@@ -13,7 +13,7 @@
 #include <util.h>
 #include <utilstrencodings.h>
 
-#include <assert.h>
+#include <cassert>
 
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint64_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -430,7 +430,7 @@ public:
     }
 };
 
-/**
+/**c
  * Regression test
  */
 class CRegTestParams : public CChainParams {
@@ -463,9 +463,9 @@ public:
         consensus.BHDIP004InActiveHeight = 0;
 
         consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200; // 294
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50; // 345
-        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow; // 489
-        consensus.BHDIP006LimitBindPlotterHeight = consensus.BHDIP006CheckRelayHeight + 5; // 494
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50; // 344
+        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow; // 488
+        consensus.BHDIP006LimitBindPlotterHeight = consensus.BHDIP006CheckRelayHeight + 5; // 493
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

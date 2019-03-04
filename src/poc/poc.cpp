@@ -19,8 +19,7 @@
 #include <timedata.h>
 #include <threadinterrupt.h>
 
-#include <inttypes.h>
-
+#include <cinttypes>
 #include <exception>
 #include <limits>
 #include <string>
@@ -510,23 +509,6 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
     }
 
     return calcDeadline;
-}
-
-int64_t GetForgeEscape()
-{
-    LOCK(cs_main);
-    auto it = mapGenerators.cbegin();
-    if (it == mapGenerators.cend()) {
-        return -1;
-    } else {
-        const CBlockIndex *pindexTip = chainActive.Tip();
-        int64_t nTime = std::max(pindexTip->GetMedianTimePast() + 1, GetAdjustedTime());
-        int64_t nEscapeTime = (int64_t)pindexTip->nTime + (int64_t)it->second.deadline - nTime;
-        if (nEscapeTime < 0) {
-            nEscapeTime = 0;
-        }
-        return nEscapeTime;
-    }
 }
 
 CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &plotterId, int nMiningHeight, const CCoinsViewCache &view,
