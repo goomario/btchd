@@ -1744,7 +1744,7 @@ Available pledge: %5</source>
     </message>
     <message>
         <source>Memory Pool</source>
-        <translation>资金池</translation>
+        <translation>交易池</translation>
     </message>
     <message>
         <source>Current number of transactions</source>
