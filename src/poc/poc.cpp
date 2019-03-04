@@ -110,6 +110,9 @@ void CheckDeadlineThread()
         {
             LOCK(cs_main);
             if (!mapGenerators.empty()) {
+                if (GetTimeOffset() > MAX_FUTURE_BLOCK_TIME) {
+                    LogPrintf("Your computer time maybe inaccurate (offset %" PRI64 "). Add -maxtimeadjustment=0 refuse auto adjuest \n", GetTimeOffset());
+                }
                 CBlockIndex *pindexTip = chainActive.Tip();
                 int64_t nAdjustedTime = GetAdjustedTime();
                 auto it = mapGenerators.begin();
