@@ -3172,8 +3172,6 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     return false;
                 }
                 const_cast<CRecipient&>(recipient).nAmount = nValue;
-                // "Move to" impossible have change
-                scriptChange = GetScriptForDestination(GetPrimaryDestination());
             }
 
             // coin control: send change to custom address

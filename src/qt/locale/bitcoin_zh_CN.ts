@@ -377,7 +377,7 @@ Available pledge: %5</source>
     </message>
     <message>
         <source>Syncing Headers (%1%)...</source>
-        <translation>同步区块头 (%1%)。此过程可能需要比较长的时间，请耐心等待...</translation>
+        <translation>同步区块头 (%1%)...</translation>
     </message>
     <message>
         <source>Reindexing blocks on disk...</source>
@@ -1744,7 +1744,7 @@ Available pledge: %5</source>
     </message>
     <message>
         <source>Memory Pool</source>
-        <translation>资金池</translation>
+        <translation>交易池</translation>
     </message>
     <message>
         <source>Current number of transactions</source>
