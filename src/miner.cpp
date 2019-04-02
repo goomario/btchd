@@ -132,8 +132,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     //
     int64_t nAdjustedTime = GetAdjustedTime();
     if (chainparams.GetConsensus().fPocAllowMinDifficultyBlocks &&
+            nHeight > chainparams.GetConsensus().BHDIP006Height &&
             nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + chainparams.GetConsensus().nPowTargetSpacing)) {
-        // Testnet use current time
+        // Regtest use current time
         pblock->nTime = static_cast<uint32_t>(nAdjustedTime);
     } else {
         // Keep largest difficulty

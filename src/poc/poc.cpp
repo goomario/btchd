@@ -87,11 +87,12 @@ struct GeneratorState {
     uint64_t nonce;
     uint64_t plotterId;
     uint64_t deadline;
+    int height; // Generate block height
     std::string address; // Generate to
 
     GeneratorState() : deadline(poc::INVALID_DEADLINE) { }
 };
-typedef std::unordered_map<int, GeneratorState> Generators; // height -> GeneratorState
+typedef std::unordered_map<uint64_t, GeneratorState> Generators; // blockHash low 64bits -> GeneratorState
 Generators mapGenerators;
 
 CThreadInterrupt interruptCheckDeadline;
@@ -104,52 +105,46 @@ void CheckDeadlineThread()
             break;
         
         std::shared_ptr<CBlock> pblock;
-        uint64_t deadline = std::numeric_limits<uint64_t>::max();
-        int height = 0;
         bool fReActivateBestChain = false;
         {
             LOCK(cs_main);
             if (!mapGenerators.empty()) {
                 if (GetTimeOffset() > MAX_FUTURE_BLOCK_TIME) {
-                    LogPrintf("Your computer time maybe inaccurate (offset %" PRId64 "). Add -maxtimeadjustment=0 refuse auto adjuest \n", GetTimeOffset());
+                    LogPrintf("Your computer time maybe abnormal (offset %" PRId64 "). " \
+                        "Check your computer time or add -maxtimeadjustment=0 \n", GetTimeOffset());
                 }
                 CBlockIndex *pindexTip = chainActive.Tip();
                 int64_t nAdjustedTime = GetAdjustedTime();
                 auto it = mapGenerators.begin();
                 while (it != mapGenerators.end() && !pblock) {
-                    if (pindexTip->nHeight + 1 == it->first) {
-                        // Current height
+                    if (pindexTip->GetBlockHash().GetUint64(0) == it->first) {
+                        // Current round
                         if (nAdjustedTime + 1 >= (int64_t)pindexTip->nTime + (int64_t)it->second.deadline) {
-                            // forge
+                            // Forge
                             LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                it->first, it->second.nonce, it->second.plotterId, it->second.deadline);
+                                it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
                             pblock = CreateBlock(*pindexTip, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
                             if (!pblock) {
                                 LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                    it->first, it->second.nonce, it->second.plotterId, it->second.deadline);
+                                    it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
                             } else {
                                 LogPrint(BCLog::POC, "Created block: %s/%d\n", pblock->GetHash().ToString(), pblock->nTime);
-                                height = it->first;
-                                deadline = it->second.deadline;
                             }
                         } else {
                             // Continue wait forge time
                             ++it;
                             continue;
                         }
-                    } else if (pindexTip->nHeight == it->first) {
-                        // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork). Try snatch block and post block not wait
-                        assert(pindexTip->pprev != nullptr);
-                        uint64_t nBestDeadline;
-                        if (it->second.plotterId == pindexTip->nPlotterId && it->second.nonce == pindexTip->nNonce) {
-                            nBestDeadline = it->second.deadline;
-                        } else {
-                            nBestDeadline = poc::CalculateDeadline(*(pindexTip->pprev), pindexTip->GetBlockHeader(), Params().GetConsensus());
-                        }
-                        if (it->second.deadline <= nBestDeadline) {
+                    } else if (pindexTip->pprev && pindexTip->pprev->GetBlockHash().GetUint64(0) == it->first) {
+                        // Previous round
+                        // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork).
+                        uint64_t myForgeTime = (uint64_t) pindexTip->pprev->GetBlockTime() + it->second.deadline + 1;
+                        uint64_t currentForgeTime = (uint64_t) pindexTip->GetBlockTime();
+                        if (myForgeTime <= currentForgeTime) {
                             // My deadline maybe best. Forge new block
-                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", preDeadline=%" PRIu64 "\n",
-                                it->first, it->second.nonce, it->second.plotterId, it->second.deadline, nBestDeadline);
+                            // Try snatch block and post block not wait
+                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "(%" PRIu64 " <= %" PRIu64 ")\n",
+                                it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline, myForgeTime, currentForgeTime);
                             // Invalidate tip block
                             CValidationState state;
                             if (!InvalidateBlock(state, Params(), pindexTip)) {
@@ -160,11 +155,12 @@ void CheckDeadlineThread()
                                 fReActivateBestChain = true;
                                 pblock = CreateBlock(*(pindexTip->pprev), it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
                                 if (!pblock) {
-                                    LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", preDeadline=%" PRIu64 "\n",
-                                        it->first, it->second.nonce, it->second.plotterId, it->second.deadline, nBestDeadline);
+                                    LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+                                        it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
                                 } else if (mapBlockIndex.count(pblock->GetHash())) {
                                     // Exist block
                                     LogPrintf("Snatch block give up: Exist block %s\n", pblock->GetHash().ToString());
+                                    pblock.reset();
                                 } else {
                                     arith_uint256 mineBlockWork = GetBlockProof(*pblock, Params().GetConsensus());
                                     arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
@@ -172,12 +168,12 @@ void CheckDeadlineThread()
                                         // Low chainwork
                                         LogPrintf("Snatch block give up: Low chainwork, mine/%s/%d < tip/%s/%d\n",
                                             mineBlockWork.ToString(), pblock->nTime, tipBlockWork.ToString(), pindexTip->nTime);
+                                        pblock.reset();
                                     } else {
                                         // Snatch block
                                         LogPrint(BCLog::POC, "Snatch block: mine/%s/%d <-> tip/%s/%d %d\n",
-                                            pblock->GetHash().ToString(), pblock->nTime, pindexTip->phashBlock->ToString(), pindexTip->nTime, pindexTip->nHeight);
-                                        height = it->first;
-                                        deadline = it->second.deadline;
+                                            pblock->GetHash().ToString(), pblock->nTime,
+                                            pindexTip->phashBlock->ToString(), pindexTip->nTime, pindexTip->nHeight);
 
                                         // Set best block chainwork small then mine.
                                         if (mineBlockWork == tipBlockWork && pblock->nTime == pindexTip->nTime) {
@@ -190,8 +186,8 @@ void CheckDeadlineThread()
                             }
                         } else {
                             // Not better tip, give up!
-                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline (mine=%" PRIu64 ") > (tip=%" PRIu64 ")\n",
-                                it->first, it->second.nonce, it->second.plotterId, it->second.deadline, nBestDeadline);
+                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "(%" PRIu64 " > %" PRIu64 ")\n",
+                                it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline, myForgeTime, currentForgeTime);
                         }
                     }
 
@@ -209,9 +205,8 @@ void CheckDeadlineThread()
         }
 
         // Broadcast. Not hold cs_main
-        if (deadline != std::numeric_limits<uint64_t>::max() && pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-            LogPrintf("Process new block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                height, pblock->nNonce, pblock->nPlotterId, deadline);
+        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+            LogPrintf("Process new block fail %s\n", pblock->nNonce, pblock->nPlotterId, pblock->ToString());
         }
     }
 
@@ -273,12 +268,13 @@ static constexpr int SCOOPS_PER_PLOT = 4096;
 static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE; // 256KB
 static std::unique_ptr<uint8_t> calcDLDataCache(new uint8_t[PLOT_SIZE + 16]); // Global calc cache
 
-static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params) {
+static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params &params) {
     const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
     const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
     const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
     const uint64_t nonce = htobe64(block.nNonce);
 
+    CShabal256 shabal256;
     uint8_t *const data = calcDLDataCache.get();
     memcpy(data + PLOT_SIZE, (const unsigned char*)&addr, 8);
     memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
@@ -288,12 +284,12 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
             len = SCOOPS_PER_PLOT;
         }
 
-        CShabal256()
+        shabal256
             .Write((const unsigned char*)data + i, len)
             .Finalize((unsigned char*)(data + i - HASH_SIZE));
     }
     uint256 fullHash;
-    CShabal256()
+    shabal256
         .Write((const unsigned char*)data, PLOT_SIZE + 16)
         .Finalize((unsigned char*)fullHash.begin());
     for (int i = 0; i < PLOT_SIZE; i++) {
@@ -312,7 +308,7 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
 
     // Result
     uint256 target;
-    CShabal256()
+    shabal256
         .Write((const unsigned char*)genSig.begin(), genSig.size())
         .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
         .Finalize((unsigned char*)target.begin());
@@ -414,6 +410,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
         return newBaseTarget;
     } else {
+        // TODO felix check bug
         const int N = nHeight < params.BHDIP006Height ? 25 : (24 * 3600 / params.nPowTargetSpacing);
         // [X-1,X-2,...,X-N]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
@@ -465,7 +462,8 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
     const std::string &address, bool fCheckBind, const Consensus::Params& params)
 {
     AssertLockHeld(cs_main);
-    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n", prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
+    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
+        prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
 
     // Check bind
     if (fCheckBind && prevBlockIndex.nHeight + 1 >= params.BHDIP006BindPlotterActiveHeight) {
@@ -491,21 +489,25 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
         LogPrint(BCLog::POC, "Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
             calcDeadline / (24 * 60 * 60 * 1.0f), MAX_TARGET_DEADLINE / (24 * 60 * 60));
 
-        auto it = mapGenerators.find(prevBlockIndex.nHeight + 1);
+        // Get best
+        auto it = mapGenerators.find(prevBlockIndex.GetBlockHash().GetUint64(0));
         if (it != mapGenerators.end()) {
             bestDeadline = it->second.deadline;
         } else {
             bestDeadline = 0;
         }
     } else {
-        GeneratorState &generator = mapGenerators[prevBlockIndex.nHeight + 1];
+        GeneratorState &generator = mapGenerators[prevBlockIndex.GetBlockHash().GetUint64(0)];
         if (calcDeadline < generator.deadline) {
             generator.nonce     = nNonce;
             generator.plotterId = nPlotterId;
             generator.deadline  = calcDeadline;
+            generator.height    = prevBlockIndex.nHeight + 1;
             generator.address   = address;
 
-            uiInterface.NotifyBestDeadlineChanged(prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
+            LogPrint(BCLog::POC, "New best deadline %" PRIu64 ".\n", calcDeadline);
+
+            uiInterface.NotifyBestDeadlineChanged(generator.height, generator.nonce, generator.plotterId, calcDeadline);
         }
 
         bestDeadline = generator.deadline;

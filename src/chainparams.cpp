@@ -430,7 +430,7 @@ public:
     }
 };
 
-/**c
+/**
  * Regression test
  */
 class CRegTestParams : public CChainParams {
