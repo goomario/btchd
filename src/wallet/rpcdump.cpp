@@ -711,6 +711,7 @@ UniValue dumpprivkeys(const JSONRPCRequest& request)
         item.pushKV("privkey", CBitcoinSecret(vchSecret).ToString());
         item.pushKV("address", EncodeDestination(dest));
         item.pushKV("balance", ValueFromAmount(balance));
+        item.pushKV("account", pwallet->GetAccountName(dest));
         keys.push_back(item);
     }
 
