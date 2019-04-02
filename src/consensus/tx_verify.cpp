@@ -269,7 +269,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     // Check for bind plotter fee and unbind plotter limit
-    if (nSpendHeight >= params.BHDIP006CheckRelayHeight && tx.IsUniform()) {
+    if (tx.IsUniform() && nSpendHeight >= params.BHDIP006CheckRelayHeight) {
         // Unbind plotter
         if (tx.vin.size() == 1 && tx.vout.size() == 1) {
             const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
