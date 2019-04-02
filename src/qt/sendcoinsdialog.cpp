@@ -264,6 +264,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             CoinControlDialog::coinControl()->destChange = CNoDestination();
             CoinControlDialog::coinControl()->destPick = CNoDestination();
             ui->frameCoinControl->setVisible(model->getOptionsModel()->getCoinControlFeatures());
+            coinControlChangeEdited(ui->lineEditCoinControlChange->text());
             break;
         }
 
