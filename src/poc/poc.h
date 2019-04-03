@@ -46,24 +46,10 @@ static const uint64_t INVALID_DEADLINE         = std::numeric_limits<uint64_t>::
 static const uint64_t INVALID_DEADLINE_NOTBIND = std::numeric_limits<uint64_t>::max() - 1;
 
 /**
- * Get account Id
- */
-uint64_t GetBlockGenerator(const CBlockHeader &block);
-std::string GetBlockGeneratorRS(const CBlockHeader &block);
-
-/**
  * Get generation signature
  * Next block generation signature
  */
-uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock);
-
-/**
- * Get block Id
- */
-uint64_t GetBlockId(const CBlockHeader &block);
-uint64_t GetBlockId(const CBlockIndex &blockIndex);
-
-uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight);
+uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock, int nHeight, const Consensus::Params &params);
 
 /** Calculate deadline */
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache = true);
