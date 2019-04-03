@@ -217,48 +217,22 @@ void CheckDeadlineThread()
 
 namespace poc {
 
-uint64_t GetBlockGenerator(const CBlockHeader &block)
-{
-    return block.nPlotterId;
-}
-
-std::string GetBlockGeneratorRS(const CBlockHeader &block)
-{
-    return std::to_string(GetBlockGenerator(block));
-}
-
-uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock)
+// Reuse shabal256 context
+static inline uint256 GetGenerationSignature(CShabal256 &shabal256, const CBlockHeader &prevBlock, int nHeight, const Consensus::Params &params)
 {
     // hashMerkleRoot + nPlotterId
     uint256 result;
-    CShabal256()
+    shabal256
         .Write((const unsigned char*)prevBlock.hashMerkleRoot.begin(), prevBlock.hashMerkleRoot.size())
         .Write((const unsigned char*)&prevBlock.nPlotterId, sizeof(prevBlock.nPlotterId))
         .Finalize((unsigned char*)result.begin());
     return result;
 }
 
-uint64_t GetBlockId(const CBlockHeader &block)
+uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock, int nHeight, const Consensus::Params &params)
 {
-    return block.GetHash().GetUint64(0);
-}
-
-uint64_t GetBlockId(const CBlockIndex &blockIndex)
-{
-    return GetBlockId(blockIndex.GetBlockHeader());
-}
-
-uint32_t GetBlockScoopNum(const uint256 &genSig, int nHeight)
-{
-    uint64_t flipHeight = htobe64(static_cast<uint64_t>(nHeight));
-
-    unsigned char result[32];
-    CShabal256()
-        .Write((const unsigned char*)genSig.begin(), genSig.size())
-        .Write((const unsigned char*)&flipHeight, sizeof(flipHeight))
-        .Finalize(result);
-    // Low 2 bytes mod 2^14
-    return (uint32_t) (result[31] + 256 * result[30]) % 4096;
+    CShabal256 shabal256;
+    return GetGenerationSignature(shabal256, prevBlock, nHeight, params);
 }
 
 static constexpr int HASH_SIZE = 32;
@@ -268,13 +242,24 @@ static constexpr int SCOOPS_PER_PLOT = 4096;
 static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE; // 256KB
 static std::unique_ptr<uint8_t> calcDLDataCache(new uint8_t[PLOT_SIZE + 16]); // Global calc cache
 
+//! Thread unsafe
 static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params &params) {
-    const uint256 genSig = poc::GetBlockGenerationSignature(prevBlockIndex.GetBlockHeader());
-    const uint32_t scopeNum = poc::GetBlockScoopNum(genSig, prevBlockIndex.nHeight + 1);
-    const uint64_t addr = htobe64(poc::GetBlockGenerator(block));
-    const uint64_t nonce = htobe64(block.nNonce);
-
     CShabal256 shabal256;
+    uint256 temp;
+
+    const uint256 genSig = GetGenerationSignature(shabal256, prevBlockIndex.GetBlockHeader(), prevBlockIndex.nHeight + 1, params);
+
+    // Scope
+    const uint64_t flipHeight = htobe64(static_cast<uint64_t>(prevBlockIndex.nHeight + 1));
+    shabal256
+        .Write((const unsigned char*)genSig.begin(), genSig.size())
+        .Write((const unsigned char*)&flipHeight, sizeof(flipHeight))
+        .Finalize((unsigned char*)temp.begin());
+    const uint32_t scopeNum = (uint32_t) (temp.begin()[31] + 256 * temp.begin()[30]) % 4096; // Low 2 bytes mod 2^14
+
+    // Row data
+    const uint64_t addr = htobe64(block.nPlotterId);
+    const uint64_t nonce = htobe64(block.nNonce);
     uint8_t *const data = calcDLDataCache.get();
     memcpy(data + PLOT_SIZE, (const unsigned char*)&addr, 8);
     memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
@@ -288,12 +273,11 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
             .Write((const unsigned char*)data + i, len)
             .Finalize((unsigned char*)(data + i - HASH_SIZE));
     }
-    uint256 fullHash;
     shabal256
         .Write((const unsigned char*)data, PLOT_SIZE + 16)
-        .Finalize((unsigned char*)fullHash.begin());
+        .Finalize((unsigned char*)temp.begin());
     for (int i = 0; i < PLOT_SIZE; i++) {
-        data[i] = (uint8_t) (data[i] ^ (fullHash.begin()[i % HASH_SIZE]));
+        data[i] = (uint8_t) (data[i] ^ (temp.begin()[i % HASH_SIZE]));
     }
 
     // PoC2 Rearrangement. Swap high hash
@@ -307,12 +291,11 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
     memcpy(data + scopeNum * SCOOP_SIZE + HASH_SIZE, data + (SCOOPS_PER_PLOT - scopeNum) * SCOOP_SIZE - HASH_SIZE, HASH_SIZE);
 
     // Result
-    uint256 target;
     shabal256
         .Write((const unsigned char*)genSig.begin(), genSig.size())
         .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
-        .Finalize((unsigned char*)target.begin());
-    return target.GetUint64(0) / prevBlockIndex.nBaseTarget;
+        .Finalize((unsigned char*)temp.begin());
+    return temp.GetUint64(0) / prevBlockIndex.nBaseTarget;
 }
 
 // Require hold cs_main
