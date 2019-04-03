@@ -279,6 +279,7 @@ static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
         jreq.URI = req->GetURI();
         jreq.params.setObject();
         if (requestType->second == "submitNonce") {
+            jreq.strMethod = requestType->second;
             if (!AdjustSubmitNonceParam(jreq, req, parameters))
                 return false;
         } 
