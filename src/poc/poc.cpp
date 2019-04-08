@@ -160,7 +160,6 @@ void CheckDeadlineThread()
                                 } else if (mapBlockIndex.count(pblock->GetHash())) {
                                     // Exist block
                                     LogPrintf("Snatch block give up: Exist block %s\n", pblock->GetHash().ToString());
-                                    pblock.reset();
                                 } else {
                                     arith_uint256 mineBlockWork = GetBlockProof(*pblock, Params().GetConsensus());
                                     arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
@@ -168,7 +167,6 @@ void CheckDeadlineThread()
                                         // Low chainwork
                                         LogPrintf("Snatch block give up: Low chainwork, mine/%s/%d < tip/%s/%d\n",
                                             mineBlockWork.ToString(), pblock->nTime, tipBlockWork.ToString(), pindexTip->nTime);
-                                        pblock.reset();
                                     } else {
                                         // Snatch block
                                         LogPrint(BCLog::POC, "Snatch block: mine/%s/%d <-> tip/%s/%d %d\n",
@@ -206,7 +204,7 @@ void CheckDeadlineThread()
 
         // Broadcast. Not hold cs_main
         if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-            LogPrintf("Process new block fail %s\n", pblock->nNonce, pblock->nPlotterId, pblock->ToString());
+            LogPrintf("Process new block fail %s\n", pblock->ToString());
         }
     }
 
