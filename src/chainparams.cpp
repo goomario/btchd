@@ -277,6 +277,8 @@ public:
                 { 153000, uint256S("0x3ae7b88e3c9fd78b1023aa7394820d476ceaf229f2b50b12a8a0f6287697246b") },
                 { 154000, uint256S("0x28810c52d94b874222992567e0941c47a3463d01e0d1435e2f5b15699bc891ee") },
                 { 155000, uint256S("0x0a2ab0a13df17f6fe30f32ee3dd846449eeaaf5fce40db70157683a23db50fee") },
+                { 156000, uint256S("0x73ef83a58d52c335282d0e1211758d11b312e21ca17c96b5d4e54039846f3223") },
+                { 156900, uint256S("0x5ed436b42ea0a5402c2256f128602ef85de7305333f9b79421f31d883297365e") },
             }
         };
 
@@ -454,15 +456,16 @@ public:
                 {  67000, uint256S("0x382e79f0ca05e6515eb7afdd7500adef354b2774910eea657a583f445fdbeac4") },
                 {  68000, uint256S("0xd4f8fb21c8079683d76efaaa79405f11eb9948e9ea6578dabcbe70a3ed4e0673") },
                 {  69000, uint256S("0x5560a6c2ff84094a9f0fe242b27750212254235557525a76872958f39eb81161") },
-                {  69800, uint256S("0xf1c7b5951675a8d53085ea410e2ef7dd96a4eed2d735e31533944cdadc603eef") },
+                {  70000, uint256S("0x7c0d0abf50bdab5960a6f80d966ad76b6c5fd9098ae66fc09c683deba8ac6ccd") },
+                {  71000, uint256S("0x1e4025e4fba50e3aeaa020ddc409398c2bb1a4ea03cd738bfc79a8674132bdb0") },
+                {  71600, uint256S("0x79263f49443a2f589e9ec3e20bb78c3164cf0fde179d1cd9925487c5d73bf33c") },
             }
         };
 
         chainTxData = ChainTxData{
-            // Data as of block fcb2dc0723a840a92febf35891384cf4a34ede626f13e6411ac77f5a13a30716 (height 69893)
-            1554188094,
-            70196,
-            0.003348
+            1554712362,
+            72008,
+            0.003337
         };
 
     }
