@@ -25,23 +25,18 @@ CBlockLocator CChain::GetLocator(const CBlockIndex *pindex, int lastCheckpointHe
     std::vector<uint256> vHave;
     vHave.reserve(32);
 
-    if (pindex && lastCheckpointHeight > pindex->nHeight) {
+    int nStep = 1;
+    if (!pindex)
+        pindex = Tip();
+    if (lastCheckpointHeight >= pindex->nHeight + 500) {
         // Always use checkpoint
-        int nStep = 1024;
-        if (Contains(pindex)) {
-            // O(1)
-            pindex = (*this)[std::max(1000 * (pindex->nHeight / 1000), 0)];
-        } else {
-            // O(log n)
-            pindex = pindex->GetAncestor(std::max(1000 * (pindex->nHeight / 1000), 0));
-        }
         while (pindex) {
             vHave.push_back(pindex->GetBlockHash());
             // Stop when we have added the genesis block.
             if (pindex->nHeight == 0)
                 break;
             // Exponentially larger steps back, plus the genesis block.
-            int nHeight = std::max(1000 * ((pindex->nHeight - nStep) / 1000), 0);
+            int nHeight = std::max(nStep >= 1000 ? (1000 * ((pindex->nHeight - nStep) / 1000)) : (pindex->nHeight - nStep), 0);
             if (Contains(pindex)) {
                 // Use O(1) CChain index if possible.
                 pindex = (*this)[nHeight];
@@ -49,12 +44,13 @@ CBlockLocator CChain::GetLocator(const CBlockIndex *pindex, int lastCheckpointHe
                 // Otherwise, use O(log n) skiplist.
                 pindex = pindex->GetAncestor(nHeight);
             }
-            nStep *= 2;
+            if (vHave.size() > 10) {
+                if (nStep < 1000)
+                    nStep = 1000;
+                nStep += 1000 * (vHave.size() - 10) / 4;
+            }
         }
     } else {
-        int nStep = 1;
-        if (!pindex)
-            pindex = Tip();
         while (pindex) {
             vHave.push_back(pindex->GetBlockHash());
             // Stop when we have added the genesis block.
