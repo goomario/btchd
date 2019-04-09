@@ -330,7 +330,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 {
     int nHeight = prevBlockIndex.nHeight + 1;
     if (nHeight <= params.BHDIP001StartMingingHeight) {
-        // genesis block & god mode block
+        // genesis block & pre-mining block
         return INITIAL_BASE_TARGET;
     } else if (nHeight < params.BHDIP001StartMingingHeight + 4) {
         return INITIAL_BASE_TARGET;
@@ -340,17 +340,12 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         const CBlockIndex *pLastindex = &prevBlockIndex;
         for (int i = nHeight - 2; i >= nHeight - 4; i--) {
             pLastindex = pLastindex->pprev;
-            if (pLastindex == nullptr) {
-                break;
-            }
             avgBaseTarget += pLastindex->nBaseTarget;
         }
         avgBaseTarget /= 4;
-        assert(pLastindex != nullptr);
 
         uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-
         uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPowTargetSpacing * 4); // 5m * 4blocks
         if (newBaseTarget > MAX_BASE_TARGET) {
             newBaseTarget = MAX_BASE_TARGET;
@@ -358,57 +353,45 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         if (newBaseTarget < (curBaseTarget * 9 / 10)) {
             newBaseTarget = curBaseTarget * 9 / 10;
         }
-
         if (newBaseTarget == 0) {
             newBaseTarget = 1;
         }
-
         if (newBaseTarget > (curBaseTarget * 11 / 10)) {
             newBaseTarget = curBaseTarget * 11 / 10;
         }
 
         return newBaseTarget;
     } else {
-        // TODO felix check bug
+        // Algorithm:
+        //   B(0) = prevBlock, B(1) = B(0).prev, ..., B(n) = B(n-1).prev
+        //   Y(0) = B(0).nBaseTarget
+        //   Y(n) = (Y(n-1) * (n-1) + B(n).nBaseTarget) / (n + 1); n > 0
         const int N = nHeight < params.BHDIP006Height ? 25 : (24 * 3600 / params.nPowTargetSpacing);
-        // [X-1,X-2,...,X-N]
-        uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         const CBlockIndex *pLastindex = &prevBlockIndex;
-        for (int i = nHeight - 2, blockCounter = 1; i >= nHeight - N; i--,blockCounter++) {
+        uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
+        for (int n = 1; n < N; n++) {
             pLastindex = pLastindex->pprev;
-            if (pLastindex == nullptr) {
-                break;
-            }
-            avgBaseTarget = (avgBaseTarget * blockCounter + pLastindex->nBaseTarget) / (blockCounter + 1);
+            avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
         }
-        assert(pLastindex != nullptr);
-
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = params.nPowTargetSpacing * (N - 1); // 5m * (N-1)blocks
-
+        int64_t targetTimespan = params.nPowTargetSpacing * (N - 1); // 5m * (N-1)blocks. Because "time1 = time0 + deadline + 1" about 288s, so we -1
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;
         }
-
         if (diffTime > targetTimespan * 2) {
             diffTime = targetTimespan * 2;
         }
-
         uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
         uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
-
         if (newBaseTarget > MAX_BASE_TARGET) {
             newBaseTarget = MAX_BASE_TARGET;
         }
-
         if (newBaseTarget == 0) {
             newBaseTarget = 1;
         }
-
         if (newBaseTarget < curBaseTarget * 8 / 10) {
             newBaseTarget = curBaseTarget * 8 / 10;
         }
-
         if (newBaseTarget > curBaseTarget * 12 / 10) {
             newBaseTarget = curBaseTarget * 12 / 10;
         }
