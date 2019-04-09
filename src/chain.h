@@ -126,7 +126,7 @@ enum BlockStatus: uint32_t {
     //! Unused.
     BLOCK_VALID_UNKNOWN      =    0,
 
-    //! Parsed, version ok, hash satisfies claimed PoW, 1 <= vtx count <= max, timestamp not in future
+    //! Parsed, version ok, hash satisfies claimed PoC, 1 <= vtx count <= max, timestamp not in future
     BLOCK_VALID_HEADER       =    1,
 
     //! All parent headers found, difficulty matches, timestamp >= median previous, checkpoint. Implies all parents
