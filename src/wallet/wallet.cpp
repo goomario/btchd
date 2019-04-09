@@ -3672,6 +3672,7 @@ const std::string& CWallet::GetAccountName(const CTxDestination& address) const
  * Mark old keypool keys as used,
  * and generate all new keys
  */
+/*
 bool CWallet::NewKeyPool()
 {
     {
@@ -3697,6 +3698,7 @@ bool CWallet::NewKeyPool()
     }
     return true;
 }
+*/
 
 size_t CWallet::KeypoolCountExternalKeys()
 {
