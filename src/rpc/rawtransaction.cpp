@@ -346,7 +346,8 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "2. \"outputs\"               (object, required) a json object with outputs\n"
             "    {\n"
             "      \"address\": x.xxx,    (numeric or string, required) The key is the BitcoinHD address, the numeric value (can be string) is the " + CURRENCY_UNIT + " amount\n"
-            "      \"data\": \"hex\"      (string, required) The key is \"data\", the value is hex encoded data\n"
+            "      \"data\": \"hex\"      (string, required) The key is \"data\", the value is hex encoded data. Conflict with \"rawdata\"\n"
+            "      \"rawdata\": \"hex\"   (string, required) The key is \"rawdata\", the value is hex encoded data and \"push only\". Conflict with \"data\"\n"
             "      ,...\n"
             "    }\n"
             "3. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
@@ -418,14 +419,27 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         rawTx.vin.push_back(in);
     }
 
+    bool existCustomData = false;
     std::set<CTxDestination> destinations;
     std::vector<std::string> addrList = sendTo.getKeys();
     for (const std::string& name_ : addrList) {
-
         if (name_ == "data") {
+            if (existCustomData)
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter: Conflict \"data\" and \"rawdata\"");
+            existCustomData = true;
+
             std::vector<unsigned char> data = ParseHexV(sendTo[name_].getValStr(),"Data");
 
             CTxOut out(0, CScript() << OP_RETURN << data);
+            rawTx.vout.push_back(out);
+        } else if (name_ == "rawdata") {
+            if (existCustomData)
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter: Conflict \"data\" and \"rawdata\"");
+            existCustomData = true;
+
+            std::vector<unsigned char> data = ParseHexV(sendTo[name_].getValStr(),"RawData");
+
+            CTxOut out(0, CScript(data.cbegin(), data.cend()));
             rawTx.vout.push_back(out);
         } else {
             CTxDestination destination = DecodeDestination(name_);
