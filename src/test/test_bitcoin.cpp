@@ -144,12 +144,12 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
     // IncrementExtraNonce creates a valid coinbase and merkleRoot
     unsigned int extraNonce = 0;
     {
-        LOCK(cs_main);
-        IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
+        //LOCK(cs_main);
+        //IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
     }
     
-    // TODO felix fix prevous block
-    while (!CheckProofOfCapacity(nullptr, &block, chainparams.GetConsensus())) ++block.nNonce;
+    static_assert(false, "Not implemetation test");
+    //while (!CheckProofOfCapacity(nullptr, &block, chainparams.GetConsensus())) ++block.nNonce;
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     ProcessNewBlock(chainparams, shared_pblock, true, nullptr);

@@ -119,6 +119,8 @@ public:
         consensus.BHDIP006CheckRelayHeight = 133000; // BHDIP006. Bind/unbind plotter limit. Active at 133000 about when Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006LimitBindPlotterHeight = 134650; // BHDIP006. Bind plotter limit. Active at 134100 about when Tue, 21 Jan 2019 9:00:00 GMT
 
+        consensus.BHDIP007Height = 1600000; // BHDIP007.
+
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
@@ -328,6 +330,8 @@ public:
         consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow * 2; // 45328
         consensus.BHDIP006LimitBindPlotterHeight = 48790;
 
+        consensus.BHDIP007Height = 720000; // BHDIP007.
+
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
@@ -504,6 +508,8 @@ public:
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50; // 344
         consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow; // 488
         consensus.BHDIP006LimitBindPlotterHeight = consensus.BHDIP006CheckRelayHeight + 5; // 493
+
+        consensus.BHDIP007Height = 550; // BHDIP007.
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

@@ -426,4 +426,6 @@ template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txI
 /** Account ID. The 8 bytes of CScriptID head */
 typedef uint64_t CAccountID;
 
+typedef uint160 CAccountID160;
+
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

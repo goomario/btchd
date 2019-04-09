@@ -359,6 +359,18 @@ CScript GetScriptForWitness(const CScript& redeemscript)
     return GetScriptForDestination(WitnessV0ScriptHash(hash));
 }
 
+bool CheckRawPubKeyAndScriptRelationForMining(const CPubKey& pubkey, const CScript &scriptPubKey)
+{
+    if (!pubkey.IsValid() || !pubkey.IsCompressed() || scriptPubKey.empty())
+        return false;
+
+    // P2SH-Segwit
+    CKeyID keyid = pubkey.GetID();
+    CTxDestination segwit = WitnessV0KeyHash(keyid);
+    CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
+    return GetScriptForDestination(p2sh) == scriptPubKey;
+}
+
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }

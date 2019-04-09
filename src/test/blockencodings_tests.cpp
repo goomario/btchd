@@ -47,8 +47,8 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    // TODO felix fix prevous block
-    while (!CheckProofOfCapacity(nullptr, &block, Params().GetConsensus())) ++block.nNonce;
+    static_assert(false, "Not implemetation test");
+    //while (!CheckProofOfCapacity(nullptr, &block, Params().GetConsensus())) ++block.nNonce;
     return block;
 }
 
@@ -293,8 +293,8 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    // TODO felix fix prevous block
-    while (!CheckProofOfCapacity(nullptr, &block, Params().GetConsensus())) ++block.nNonce;
+    static_assert(false, "Not implemetation test");
+    //while (!CheckProofOfCapacity(nullptr, &block, Params().GetConsensus())) ++block.nNonce;
 
     // Test simple header round-trip with only coinbase
     {

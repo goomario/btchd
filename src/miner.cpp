@@ -95,7 +95,8 @@ void BlockAssembler::resetBlock()
     nFees = 0;
 }
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx, uint64_t nonce, uint64_t plotterId, uint64_t deadline)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx,
+    const CKey &privKey, uint64_t nonce, uint64_t plotterId, uint64_t deadline)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -168,7 +169,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
     coinbaseTx.vin[0].prevout.SetNull();
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+    coinbaseTx.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(static_cast<int64_t>(nonce)) << CScriptNum(static_cast<int64_t>(plotterId))) + COINBASE_FLAGS;
+    assert(coinbaseTx.vin[0].scriptSig.size() <= 100);
     // Reward
     BlockReward blockReward = GetBlockReward(nHeight, nFees, minerAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
@@ -207,7 +209,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->nPlotterId     = plotterId;
     pblock->nBaseTarget    = poc::CalculateBaseTarget(*pindexPrev, *pblock, chainparams.GetConsensus());
 
+    pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
+
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
+
+    // Signature
+    if (nHeight >= chainparams.GetConsensus().BHDIP007Height && !sign(*pblock, privKey)) {
+        throw std::runtime_error(strprintf("%s: Signature block error", __func__));
+    }
 
     CValidationState state;
     if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
@@ -476,21 +485,22 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
     }
 }
 
-void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned int& nExtraNonce)
+bool BlockAssembler::sign(CBlock &block, const CKey &privKey)
 {
-    // Update nExtraNonce
-    static uint256 hashPrevBlock;
-    if (hashPrevBlock != pblock->hashPrevBlock)
-    {
-        nExtraNonce = 0;
-        hashPrevBlock = pblock->hashPrevBlock;
+    assert (privKey.IsValid());
+    CPubKey pubKey = privKey.GetPubKey();
+    if (!CheckRawPubKeyAndScriptRelationForMining(pubKey, block.vtx[0]->vout[0].scriptPubKey)) {
+        return false;
     }
-    ++nExtraNonce;
-    unsigned int nHeight = pindexPrev->nHeight+1; // Height first in coinbase required for block.version=2
-    CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
-    assert(txCoinbase.vin[0].scriptSig.size() <= 100);
+    block.vchPubKey = std::vector<unsigned char>(pubKey.begin(), pubKey.end());
 
-    pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
-    pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
+    CHashWriter ss(SER_GETUNSIGHASH, 0);
+    ss << block.GetBlockHeader();
+    uint256 unsignaturedBlockHash = ss.GetHash();
+
+    if (!privKey.Sign(unsignaturedBlockHash, block.vchSignature)) {
+        return false;
+    }
+
+    return true;
 }

@@ -3406,7 +3406,8 @@ UniValue generate(const JSONRPCRequest& request)
     int num_generate = request.params[0].get_int();
 
     std::shared_ptr<CReserveScript> coinbase_script;
-    pwallet->GetScriptForMining(coinbase_script);
+    CKey privKey;
+    pwallet->GetScriptForMining(coinbase_script, &privKey);
 
     // If the keypool is exhausted, no script is returned at all.  Catch this.
     if (!coinbase_script) {
@@ -3418,7 +3419,7 @@ UniValue generate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available");
     }
 
-    return generateBlocks(coinbase_script, num_generate, true);
+    return generateBlocks(coinbase_script, privKey, num_generate, true);
 }
 
 UniValue rescanblockchain(const JSONRPCRequest& request)

@@ -45,12 +45,6 @@ static const int64_t MAX_TARGET_DEADLINE = 365 * 24 * 60 * 60;
 static const uint64_t INVALID_DEADLINE         = std::numeric_limits<uint64_t>::max();
 static const uint64_t INVALID_DEADLINE_NOTBIND = std::numeric_limits<uint64_t>::max() - 1;
 
-/**
- * Get generation signature
- * Next block generation signature
- */
-uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock, int nHeight, const Consensus::Params &params);
-
 /** Calculate deadline */
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache = true);
 
@@ -75,6 +69,11 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
  */
 CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &plotterId, int nMiningHeight, const CCoinsViewCache &view,
     const Consensus::Params &params, CAmount *pMinerPledgeOldConsensus = nullptr);
+
+/**
+ * Check block work
+ */
+bool CheckProofOfCapacity(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
 
 }
 

@@ -45,7 +45,7 @@ unsigned int ParseConfirmTarget(const UniValue& value)
     return (unsigned int)target;
 }
 
-UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, bool keepScript)
+UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const CKey &privKey, int nGenerate, bool keepScript)
 {
     // rough high night desk familiar hop freely needle slowly threaten process flicker
     // =>
@@ -63,18 +63,12 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     while (nHeight < nHeightEnd) {
         ++nHeight;
 
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true, nNonce, nPlotterId, nDeadline));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript,
+            true, privKey, nNonce, nPlotterId, nDeadline));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
-        
-        CMutableTransaction txCoinbase(*pblock->vtx[0]);
-        txCoinbase.vin[0].scriptSig = (CScript() << nHeight<< CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nPlotterId))) + COINBASE_FLAGS;
-        assert(txCoinbase.vin[0].scriptSig.size() <= 100);
-
-        pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
-        pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
-
+        // Update time for pre-mining
         if (nHeight <= Params().GetConsensus().BHDIP001StartMingingHeight) {
             // Update nBaseTarget because nTime has changed
             LOCK(cs_main);
@@ -122,7 +116,7 @@ UniValue generatetoaddress(const JSONRPCRequest& request)
     std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
     coinbaseScript->reserveScript = GetScriptForDestination(destination);
 
-    return generateBlocks(coinbaseScript, nGenerate, false);
+    return generateBlocks(coinbaseScript, CKey(), nGenerate, false);
 }
 
 UniValue getmininginfo(const JSONRPCRequest& request)

@@ -4,7 +4,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chain.h>
+#include <crypto/shabal256.h>
 #include <poc/poc.h>
+#include <pubkey.h>
 
 /**
  * CChain implementation
@@ -139,6 +141,33 @@ const CBlockIndex* CBlockIndex::GetAncestor(int height) const
 CBlockIndex* CBlockIndex::GetAncestor(int height)
 {
     return const_cast<CBlockIndex*>(static_cast<const CBlockIndex*>(this)->GetAncestor(height));
+}
+
+void CBlockIndex::BuildGenerationSignature(const Consensus::Params& params)
+{
+    static uint256 dummyGenerationSignature;
+    generationSignature = pprev ? &pprev->nextGenerationSignature : &dummyGenerationSignature;
+
+    int nNextHeight = nHeight + 1;
+    if (nNextHeight <= params.BHDIP001StartMingingHeight) {
+        //! Pre-Mining not exist generation signature
+        nextGenerationSignature.SetNull();
+    } else if (nNextHeight <= params.BHDIP007Height) {
+        //! hashMerkleRoot + nPlotterId. Unsafe
+        uint64_t plotterId = htole64(nPlotterId);
+        CShabal256()
+            .Write(hashMerkleRoot.begin(), hashMerkleRoot.size())
+            .Write((const unsigned char*)&plotterId, 8)
+            .Finalize(nextGenerationSignature.begin());
+    } else {
+        //! generationSignature + vchPubKey
+        assert(generationSignature != nullptr);
+        assert(!vchPubKey.empty());
+        CShabal256()
+            .Write(generationSignature->begin(), generationSignature->size())
+            .Write(&vchPubKey[0], vchPubKey.size())
+            .Finalize(nextGenerationSignature.begin());
+    }
 }
 
 void CBlockIndex::BuildSkip()

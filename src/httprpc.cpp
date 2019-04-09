@@ -315,12 +315,12 @@ static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
         return true;
     } catch (const UniValue& objError) {
         PoCJSONErrorReply(req, 1, objError.getValStr());
-        LogPrint(BCLog::POC, "Call rpc fail: %s", objError.getValStr().c_str());
+        LogPrint(BCLog::POC, "Call rpc fail: %s\n", objError.getValStr().c_str());
         return false;
     } catch (const std::exception& e) {
         req->WriteHeader("Content-Type", "text/plain; charset=UTF-8");
         req->WriteReply(HTTP_INTERNAL_SERVER_ERROR, e.what());
-        LogPrint(BCLog::POC, "Call rpc fail: %s", e.what());
+        LogPrint(BCLog::POC, "Call rpc fail: %s\n", e.what());
         return false;
     }
 }

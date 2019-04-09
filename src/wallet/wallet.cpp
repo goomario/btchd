@@ -4120,10 +4120,18 @@ void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
     }*/
 }
 
-void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
+void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script, CKey *pkey)
 {
+    CTxDestination dest = GetPrimaryDestination();
+
+    if (pkey != nullptr) {
+        CKeyID keyid = GetKeyForDestination(*this, dest);
+        if (!keyid.IsNull())
+            GetKey(keyid, *pkey);
+    }
+
     script = std::make_shared<CReserveKey>(this);
-    script->reserveScript = GetScriptForDestination(GetPrimaryDestination()); // BitcoinHD must uniform script pubkey
+    script->reserveScript = GetScriptForDestination(dest); // BitcoinHD only support P2SH-Segwit
 }
 
 void CWallet::LockCoin(const COutPoint& output)
@@ -4710,8 +4718,8 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {
     // Only support P2SH
-    CKeyID keyid = key.GetID();
     if (key.IsCompressed()) {
+        CKeyID keyid = key.GetID();
         CTxDestination segwit = WitnessV0KeyHash(keyid);
         CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
         return std::vector<CTxDestination>{std::move(p2sh)};

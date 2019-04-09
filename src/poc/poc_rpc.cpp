@@ -47,9 +47,8 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("height", pindexLast->nHeight + 1);
-    result.pushKV("generationSignature", HexStr(poc::GetBlockGenerationSignature(pindexLast->GetBlockHeader(), pindexLast->nHeight, Params().GetConsensus())));
+    result.pushKV("generationSignature", HexStr(pindexLast->GetNextGenerationSignature()));
     result.pushKV("baseTarget", std::to_string(pindexLast->nBaseTarget));
-    result.pushKV("targetDeadline", poc::MAX_TARGET_DEADLINE);
 
     return result;
 }

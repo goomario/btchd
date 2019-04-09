@@ -186,6 +186,9 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+/** Check raw pubkey and script relation mining */
+bool CheckRawPubKeyAndScriptRelationForMining(const CPubKey& pubkey, const CScript &scriptPubKey);
+
 /** Utility function to get account id with given CScriptID. */
 CAccountID GetAccountIDByScriptID(const CScriptID &scriptID);
 

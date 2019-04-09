@@ -29,22 +29,27 @@
 
 namespace {
 
-std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline, const std::string &address)
+std::shared_ptr<CBlock> CreateBlock(const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline,
+    const std::string &address)
 {
     AssertLockHeld(cs_main);
 
+    bool fRequireSign = chainActive.Tip()->nHeight + 1 >= Params().GetConsensus().BHDIP007Height;
+    CKey privKey;
     CScript scriptPubKey;
     if (address.empty()) {
         // From wallet
         if (::vpwallets.empty())
             return nullptr;
+        CWallet *pwallet = ::vpwallets[0];
 
         std::shared_ptr<CReserveScript> coinbaseScript;
-        ::vpwallets[0]->GetScriptForMining(coinbaseScript);
-        if (!coinbaseScript) {
-            LogPrintf("Cannot load script from wallet\n");
-            return nullptr;
+        if (fRequireSign) {
+            pwallet->GetScriptForMining(coinbaseScript, &privKey);
+        } else {
+            pwallet->GetScriptForMining(coinbaseScript);
         }
+        assert(coinbaseScript != nullptr);
         scriptPubKey = coinbaseScript->reserveScript;
     } else {
         // From address
@@ -61,24 +66,15 @@ std::shared_ptr<CBlock> CreateBlock(CBlockIndex &prevBlockIndex, const uint64_t 
 
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     try {
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptPubKey, true, nNonce, nPlotterId, nDeadline);
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptPubKey, true, privKey, nNonce, nPlotterId, nDeadline);
     } catch (std::exception &e) {
         const char *what = e.what();
-        LogPrintf("%s\n", what ? what : "CreateBlock(): Catch unknown exception");
+        LogPrintf("CreateBlock() fail: %s\n", what ? what : "Catch unknown exception");
     }
     if (!pblocktemplate.get()) 
         return nullptr;
 
     CBlock *pblock = &pblocktemplate->block;
-
-    unsigned int nHeight = prevBlockIndex.nHeight + 1; // Height first in coinbase required for block.version=2
-    CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(static_cast<int64_t>(nNonce)) << CScriptNum(static_cast<int64_t>(nPlotterId))) + COINBASE_FLAGS;
-    assert(txCoinbase.vin[0].scriptSig.size() <= 100);
-
-    pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
-    pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
-
     return std::make_shared<CBlock>(*pblock);
 }
 
@@ -123,7 +119,7 @@ void CheckDeadlineThread()
                             // Forge
                             LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
-                            pblock = CreateBlock(*pindexTip, it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
+                            pblock = CreateBlock(it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
                             if (!pblock) {
                                 LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                     it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
@@ -153,14 +149,13 @@ void CheckDeadlineThread()
                                 LogPrint(BCLog::POC, "End snatch block\n");
                             } else {
                                 fReActivateBestChain = true;
-                                pblock = CreateBlock(*(pindexTip->pprev), it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
+                                pblock = CreateBlock(it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
                                 if (!pblock) {
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                         it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
                                 } else if (mapBlockIndex.count(pblock->GetHash())) {
                                     // Exist block
                                     LogPrintf("Snatch block give up: Exist block %s\n", pblock->GetHash().ToString());
-                                    pblock.reset();
                                 } else {
                                     arith_uint256 mineBlockWork = GetBlockProof(*pblock, Params().GetConsensus());
                                     arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
@@ -168,7 +163,6 @@ void CheckDeadlineThread()
                                         // Low chainwork
                                         LogPrintf("Snatch block give up: Low chainwork, mine/%s/%d < tip/%s/%d\n",
                                             mineBlockWork.ToString(), pblock->nTime, tipBlockWork.ToString(), pindexTip->nTime);
-                                        pblock.reset();
                                     } else {
                                         // Snatch block
                                         LogPrint(BCLog::POC, "Snatch block: mine/%s/%d <-> tip/%s/%d %d\n",
@@ -206,7 +200,7 @@ void CheckDeadlineThread()
 
         // Broadcast. Not hold cs_main
         if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
-            LogPrintf("Process new block fail %s\n", pblock->nNonce, pblock->nPlotterId, pblock->ToString());
+            LogPrintf("Process new block fail %s\n", pblock->ToString());
         }
     }
 
@@ -217,50 +211,32 @@ void CheckDeadlineThread()
 
 namespace poc {
 
-// Reuse shabal256 context
-static inline uint256 GetGenerationSignature(CShabal256 &shabal256, const CBlockHeader &prevBlock, int nHeight, const Consensus::Params &params)
-{
-    // hashMerkleRoot + nPlotterId
-    uint256 result;
-    shabal256
-        .Write((const unsigned char*)prevBlock.hashMerkleRoot.begin(), prevBlock.hashMerkleRoot.size())
-        .Write((const unsigned char*)&prevBlock.nPlotterId, sizeof(prevBlock.nPlotterId))
-        .Finalize((unsigned char*)result.begin());
-    return result;
-}
-
-uint256 GetBlockGenerationSignature(const CBlockHeader &prevBlock, int nHeight, const Consensus::Params &params)
-{
-    CShabal256 shabal256;
-    return GetGenerationSignature(shabal256, prevBlock, nHeight, params);
-}
-
 static constexpr int HASH_SIZE = 32;
 static constexpr int HASHES_PER_SCOOP = 2;
-static constexpr int SCOOP_SIZE = HASHES_PER_SCOOP * HASH_SIZE; // 2 hashes per column
+static constexpr int SCOOP_SIZE = HASHES_PER_SCOOP * HASH_SIZE; // 2 hashes per scoop
 static constexpr int SCOOPS_PER_PLOT = 4096;
 static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE; // 256KB
-static std::unique_ptr<uint8_t> calcDLDataCache(new uint8_t[PLOT_SIZE + 16]); // Global calc cache
+static std::unique_ptr<unsigned char> calcDLDataCache(new unsigned char[PLOT_SIZE + 16]); // Global calc cache
 
 //! Thread unsafe
-static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params &params) {
+static uint64_t CalcDL(const CBlockIndex &prev, const CBlockHeader &block, const Consensus::Params &params) {
     CShabal256 shabal256;
     uint256 temp;
 
-    const uint256 genSig = GetGenerationSignature(shabal256, prevBlockIndex.GetBlockHeader(), prevBlockIndex.nHeight + 1, params);
+    const uint256 &generationSignature = prev.GetNextGenerationSignature();
 
-    // Scope
-    const uint64_t flipHeight = htobe64(static_cast<uint64_t>(prevBlockIndex.nHeight + 1));
+    // Scoop
+    const uint64_t flipHeight = htobe64(static_cast<uint64_t>(prev.nHeight + 1));
     shabal256
-        .Write((const unsigned char*)genSig.begin(), genSig.size())
+        .Write(generationSignature.begin(), generationSignature.size())
         .Write((const unsigned char*)&flipHeight, sizeof(flipHeight))
         .Finalize((unsigned char*)temp.begin());
-    const uint32_t scopeNum = (uint32_t) (temp.begin()[31] + 256 * temp.begin()[30]) % 4096; // Low 2 bytes mod 2^14
+    const uint32_t scoop = (uint32_t) (temp.begin()[31] + 256 * temp.begin()[30]) % 4096;
 
     // Row data
     const uint64_t addr = htobe64(block.nPlotterId);
     const uint64_t nonce = htobe64(block.nNonce);
-    uint8_t *const data = calcDLDataCache.get();
+    unsigned char *const data = calcDLDataCache.get();
     memcpy(data + PLOT_SIZE, (const unsigned char*)&addr, 8);
     memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
     for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
@@ -270,14 +246,14 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
         }
 
         shabal256
-            .Write((const unsigned char*)data + i, len)
-            .Finalize((unsigned char*)(data + i - HASH_SIZE));
+            .Write(data + i, len)
+            .Finalize(data + i - HASH_SIZE);
     }
     shabal256
-        .Write((const unsigned char*)data, PLOT_SIZE + 16)
-        .Finalize((unsigned char*)temp.begin());
+        .Write(data, PLOT_SIZE + 16)
+        .Finalize(temp.begin());
     for (int i = 0; i < PLOT_SIZE; i++) {
-        data[i] = (uint8_t) (data[i] ^ (temp.begin()[i % HASH_SIZE]));
+        data[i] = (unsigned char) (data[i] ^ (temp.begin()[i % HASH_SIZE]));
     }
 
     // PoC2 Rearrangement. Swap high hash
@@ -287,15 +263,15 @@ static uint64_t CalcDL(const CBlockIndex &prevBlockIndex, const CBlockHeader &bl
     // [2] <-> [N-2]
     // [3] <-> [N-3]
     //
-    // Only care hash data of scopeNum index
-    memcpy(data + scopeNum * SCOOP_SIZE + HASH_SIZE, data + (SCOOPS_PER_PLOT - scopeNum) * SCOOP_SIZE - HASH_SIZE, HASH_SIZE);
+    // Only care hash data of scoop index
+    memcpy(data + scoop * SCOOP_SIZE + HASH_SIZE, data + (SCOOPS_PER_PLOT - scoop) * SCOOP_SIZE - HASH_SIZE, HASH_SIZE);
 
     // Result
     shabal256
-        .Write((const unsigned char*)genSig.begin(), genSig.size())
-        .Write((const unsigned char*)data + scopeNum * SCOOP_SIZE, SCOOP_SIZE)
-        .Finalize((unsigned char*)temp.begin());
-    return temp.GetUint64(0) / prevBlockIndex.nBaseTarget;
+        .Write(generationSignature.begin(), generationSignature.size())
+        .Write(data + scoop * SCOOP_SIZE, SCOOP_SIZE)
+        .Finalize(temp.begin());
+    return temp.GetUint64(0) / prev.nBaseTarget;
 }
 
 // Require hold cs_main
@@ -305,7 +281,7 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
     if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
         return 0;
 
-    // BHDIP006 disallow plotter ID equal 0
+    // BHDIP006 disallow plotter 0
     if (block.nPlotterId == 0 && prevBlockIndex.nHeight + 1 >= params.BHDIP006Height)
         return poc::INVALID_DEADLINE;
 
@@ -468,33 +444,20 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
     block.nPlotterId = nPlotterId;
 
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params, false);
-    if (calcDeadline > MAX_TARGET_DEADLINE) {
-        LogPrint(BCLog::POC, "Cann't accept deadline %5.1fday, more than %" PRIu64 "day.\n",
-            calcDeadline / (24 * 60 * 60 * 1.0f), MAX_TARGET_DEADLINE / (24 * 60 * 60));
+    GeneratorState &generator = mapGenerators[prevBlockIndex.GetBlockHash().GetUint64(0)];
+    if (calcDeadline < generator.deadline) {
+        generator.nonce     = nNonce;
+        generator.plotterId = nPlotterId;
+        generator.deadline  = calcDeadline;
+        generator.height    = prevBlockIndex.nHeight + 1;
+        generator.address   = address;
 
-        // Get best
-        auto it = mapGenerators.find(prevBlockIndex.GetBlockHash().GetUint64(0));
-        if (it != mapGenerators.end()) {
-            bestDeadline = it->second.deadline;
-        } else {
-            bestDeadline = 0;
-        }
-    } else {
-        GeneratorState &generator = mapGenerators[prevBlockIndex.GetBlockHash().GetUint64(0)];
-        if (calcDeadline < generator.deadline) {
-            generator.nonce     = nNonce;
-            generator.plotterId = nPlotterId;
-            generator.deadline  = calcDeadline;
-            generator.height    = prevBlockIndex.nHeight + 1;
-            generator.address   = address;
+        LogPrint(BCLog::POC, "New best deadline %" PRIu64 ".\n", calcDeadline);
 
-            LogPrint(BCLog::POC, "New best deadline %" PRIu64 ".\n", calcDeadline);
-
-            uiInterface.NotifyBestDeadlineChanged(generator.height, generator.nonce, generator.plotterId, calcDeadline);
-        }
-
-        bestDeadline = generator.deadline;
+        uiInterface.NotifyBestDeadlineChanged(generator.height, generator.nonce, generator.plotterId, calcDeadline);
     }
+
+    bestDeadline = generator.deadline;
 
     return calcDeadline;
 }
@@ -570,6 +533,21 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
     // New consensus pledge
     int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
     return consensusParams.BHDIP001PledgeAmountPerTB * nMinerCapacityTB;
+}
+
+bool CheckProofOfCapacity(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
+{
+    // Check deadline
+    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
+    if (deadline > poc::MAX_TARGET_DEADLINE)
+        return false; 
+
+    if (prevBlockIndex.nHeight + 1 < params.BHDIP007Height) {
+        return deadline == 0 || block.GetBlockTime() > prevBlockIndex.GetBlockTime() + (int64_t)deadline;
+    } else {
+        // Strict check time interval
+        return block.GetBlockTime() == prevBlockIndex.GetBlockTime() + (int64_t)deadline + 1;
+    }
 }
 
 }
