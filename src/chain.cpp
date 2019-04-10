@@ -155,18 +155,19 @@ void CBlockIndex::BuildGenerationSignature(const Consensus::Params& params)
         nextGenerationSignature.SetNull();
     } else if (nNextHeight <= params.BHDIP007Height) {
         //! hashMerkleRoot + nPlotterId. Unsafe
+        // Legacy consensus use little endian
         uint64_t plotterId = htole64(nPlotterId);
         CShabal256()
             .Write(hashMerkleRoot.begin(), hashMerkleRoot.size())
             .Write((const unsigned char*)&plotterId, 8)
             .Finalize(nextGenerationSignature.begin());
     } else {
-        //! generationSignature + vchPubKey
+        //! generationSignature + nPlotterId
         assert(generationSignature != nullptr);
-        assert(!vchPubKey.empty());
+        uint64_t plotterId = htobe64(nPlotterId);
         CShabal256()
             .Write(generationSignature->begin(), generationSignature->size())
-            .Write(&vchPubKey[0], vchPubKey.size())
+            .Write((const unsigned char*)&plotterId, 8)
             .Finalize(nextGenerationSignature.begin());
     }
 }
