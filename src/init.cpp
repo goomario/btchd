@@ -187,6 +187,7 @@ void Shutdown()
     mempool.AddTransactionsUpdated(1);
 
     StopPOC();
+
     StopHTTPRPC();
     StopREST();
     StopRPC();
@@ -731,8 +732,6 @@ bool AppInitServers()
     if (gArgs.GetBoolArg("-rest", DEFAULT_REST_ENABLE) && !StartREST())
         return false;
     if (!StartHTTPServer())
-        return false;
-    if (!StartPOC())
         return false;
     return true;
 }
@@ -1669,6 +1668,10 @@ bool AppInitMain()
 #else
     LogPrintf("No wallet support compiled in!\n");
 #endif
+
+    // PoC module dependency wallets
+    if (!StartPOC())
+        return false;
 
     // ********************************************************* Step 9: data directory maintenance
 

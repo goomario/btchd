@@ -96,7 +96,7 @@ void BlockAssembler::resetBlock()
 }
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx,
-    const CKey &privKey, uint64_t nonce, uint64_t plotterId, uint64_t deadline)
+    uint64_t nonce, uint64_t plotterId, uint64_t deadline, const std::shared_ptr<CKey> privKey)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -127,20 +127,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     if (chainparams.MineBlocksOnDemand())
         pblock->nVersion = gArgs.GetArg("-blockversion", pblock->nVersion);
 
-    //
-    // The following code will make miners motivated to earlier post block. Maybe make it less difficulty.
-    // pblock->nTime = GetAdjustedTime();
-    //
-    int64_t nAdjustedTime = GetAdjustedTime();
-    if (chainparams.GetConsensus().fPocAllowMinDifficultyBlocks &&
-            nHeight > chainparams.GetConsensus().BHDIP006Height &&
-            nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + chainparams.GetConsensus().nPowTargetSpacing)) {
-        // Regtest use current time
-        pblock->nTime = static_cast<uint32_t>(nAdjustedTime);
-    } else {
-        // Keep largest difficulty
-        pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
-    }
+    // Keep largest difficulty
+    pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
 
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
@@ -214,7 +202,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     // Signature
-    if (nHeight >= chainparams.GetConsensus().BHDIP007Height && !sign(*pblock, privKey)) {
+    if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !sign(*pblock, *privKey))) {
         throw std::runtime_error(strprintf("%s: Signature block error", __func__));
     }
 
@@ -494,10 +482,7 @@ bool BlockAssembler::sign(CBlock &block, const CKey &privKey)
     }
     block.vchPubKey = std::vector<unsigned char>(pubKey.begin(), pubKey.end());
 
-    CHashWriter ss(SER_GETUNSIGHASH, 0);
-    ss << block.GetBlockHeader();
-    uint256 unsignaturedBlockHash = ss.GetHash();
-
+    uint256 unsignaturedBlockHash = block.GetUnsignaturedHash();
     if (!privKey.Sign(unsignaturedBlockHash, block.vchSignature)) {
         return false;
     }

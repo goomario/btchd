@@ -97,9 +97,15 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("generationSignature", HexStr(blockindex->GetGenerationSignature())));
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
-        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
+    }
+    if (blockindex->nHeight >= Params().GetConsensus().BHDIP007Height) {
+        result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
+        result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
+    }
+    if (blockindex->pprev) {
+        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
@@ -142,10 +148,16 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("nonce", (uint64_t)block.nNonce));
     result.push_back(Pair("generationSignature", HexStr(blockindex->GetGenerationSignature())));
     if (blockindex->pprev) {
-        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
-        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
+        result.push_back(Pair("deadline", (uint64_t) poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
+    }
+    if (blockindex->nHeight >= Params().GetConsensus().BHDIP007Height) {
+        result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
+        result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
+    }
+    if (blockindex->pprev) {
+        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)

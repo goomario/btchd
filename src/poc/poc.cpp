@@ -11,11 +11,14 @@
 #include <consensus/validation.h>
 #include <crypto/shabal256.h>
 #include <miner.h>
+#include <rpc/protocol.h>
 #include <ui_interface.h>
 #include <util.h>
 #include <utiltime.h>
 #include <validation.h>
+#ifdef ENABLE_WALLET
 #include <wallet/wallet.h>
+#endif
 #include <timedata.h>
 #include <threadinterrupt.h>
 
@@ -24,49 +27,35 @@
 #include <limits>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 
 #include <event2/thread.h>
 
 namespace {
 
-std::shared_ptr<CBlock> CreateBlock(const uint64_t &nNonce, const uint64_t &nPlotterId, const uint64_t &nDeadline,
-    const std::string &address)
+// Generator
+struct GeneratorState {
+    uint64_t nonce;
+    uint64_t plotterId;
+    uint64_t deadline;
+    int height;
+
+    CTxDestination dest;
+    std::shared_ptr<CKey> privKey;
+
+    GeneratorState() : deadline(poc::INVALID_DEADLINE) { }
+};
+typedef std::unordered_map<uint64_t, GeneratorState> Generators; // blockHash low 64bits -> GeneratorState
+Generators mapGenerators;
+
+std::shared_ptr<CBlock> CreateBlock(const GeneratorState &generateState)
 {
     AssertLockHeld(cs_main);
 
-    bool fRequireSign = chainActive.Tip()->nHeight + 1 >= Params().GetConsensus().BHDIP007Height;
-    CKey privKey;
-    CScript scriptPubKey;
-    if (address.empty()) {
-        // From wallet
-        if (::vpwallets.empty())
-            return nullptr;
-        CWallet *pwallet = ::vpwallets[0];
-
-        std::shared_ptr<CReserveScript> coinbaseScript;
-        if (fRequireSign) {
-            pwallet->GetScriptForMining(coinbaseScript, &privKey);
-        } else {
-            pwallet->GetScriptForMining(coinbaseScript);
-        }
-        assert(coinbaseScript != nullptr);
-        scriptPubKey = coinbaseScript->reserveScript;
-    } else {
-        // From address
-        CTxDestination dest = DecodeDestination(address);
-        if (!IsValidDestination(dest)) {
-            LogPrintf("Invalidate BitcoinHD address: %s\n", address);
-            return nullptr;
-        }
-        scriptPubKey = GetScriptForDestination(dest);
-    }
-    if (scriptPubKey.empty()) {
-        return nullptr;
-    }
-
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     try {
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptPubKey, true, privKey, nNonce, nPlotterId, nDeadline);
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(GetScriptForDestination(generateState.dest), true,
+            generateState.nonce, generateState.plotterId, generateState.deadline, generateState.privKey);
     } catch (std::exception &e) {
         const char *what = e.what();
         LogPrintf("CreateBlock() fail: %s\n", what ? what : "Catch unknown exception");
@@ -78,19 +67,7 @@ std::shared_ptr<CBlock> CreateBlock(const uint64_t &nNonce, const uint64_t &nPlo
     return std::make_shared<CBlock>(*pblock);
 }
 
-// Generator
-struct GeneratorState {
-    uint64_t nonce;
-    uint64_t plotterId;
-    uint64_t deadline;
-    int height; // Generate block height
-    std::string address; // Generate to
-
-    GeneratorState() : deadline(poc::INVALID_DEADLINE) { }
-};
-typedef std::unordered_map<uint64_t, GeneratorState> Generators; // blockHash low 64bits -> GeneratorState
-Generators mapGenerators;
-
+// Mining loop
 CThreadInterrupt interruptCheckDeadline;
 std::thread threadCheckDeadline;
 void CheckDeadlineThread()
@@ -119,7 +96,7 @@ void CheckDeadlineThread()
                             // Forge
                             LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                 it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
-                            pblock = CreateBlock(it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
+                            pblock = CreateBlock(it->second);
                             if (!pblock) {
                                 LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                     it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
@@ -149,7 +126,7 @@ void CheckDeadlineThread()
                                 LogPrint(BCLog::POC, "End snatch block\n");
                             } else {
                                 fReActivateBestChain = true;
-                                pblock = CreateBlock(it->second.nonce, it->second.plotterId, it->second.deadline, it->second.address);
+                                pblock = CreateBlock(it->second);
                                 if (!pblock) {
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                         it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
@@ -206,6 +183,10 @@ void CheckDeadlineThread()
 
     LogPrintf("Exit PoC forge thread\n");
 }
+
+// Save block signature require private key
+typedef std::unordered_map< uint64_t, std::shared_ptr<CKey> > CPrivKeyMap;
+CPrivKeyMap mapSignaturePrivKeys;
 
 }
 
@@ -401,46 +382,132 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 }
 
 uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId,
-    const std::string &address, bool fCheckBind, const Consensus::Params& params)
+    const std::string &generateTo, bool fCheckBind, const Consensus::Params& params)
 {
     AssertLockHeld(cs_main);
-    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 "\n",
-        prevBlockIndex.nHeight + 1, nNonce, nPlotterId);
 
-    // Check bind
-    if (fCheckBind && prevBlockIndex.nHeight + 1 >= params.BHDIP006BindPlotterActiveHeight) {
-        CAccountID accountID;
-        if (address.empty()) {
-            if (::vpwallets.empty())
-                return INVALID_DEADLINE_NOTBIND;
-            accountID = GetAccountIDByTxDestination(::vpwallets[0]->GetPrimaryDestination());
-        } else {
-            accountID = GetAccountIDByAddress(address);
-        }
-        if (!pcoinsTip->HaveActiveBindPlotter(accountID, nPlotterId))
-            return INVALID_DEADLINE_NOTBIND;
-    }
+    if (interruptCheckDeadline)
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Not run in mining mode, restart by -server");
 
     CBlockHeader block;
     block.nVersion   = ComputeBlockVersion(&prevBlockIndex, params);
     block.nNonce     = nNonce;
     block.nPlotterId = nPlotterId;
-
     uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params, false);
-    GeneratorState &generator = mapGenerators[prevBlockIndex.GetBlockHash().GetUint64(0)];
-    if (calcDeadline < generator.deadline) {
-        generator.nonce     = nNonce;
-        generator.plotterId = nPlotterId;
-        generator.deadline  = calcDeadline;
-        generator.height    = prevBlockIndex.nHeight + 1;
-        generator.address   = address;
+    if (calcDeadline == INVALID_DEADLINE)
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid deadline");
+
+    LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
+        prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
+
+    uint64_t blockId = prevBlockIndex.GetBlockHash().GetUint64(0);
+    bool fBest = false;
+    if (mapGenerators.count(blockId)) {
+        GeneratorState &generatorState = mapGenerators[blockId];
+        if (generatorState.deadline > calcDeadline) {
+            fBest = true;
+            bestDeadline = calcDeadline;
+        } else {
+            bestDeadline = generatorState.deadline;
+        }
+    } else {
+        fBest = true;
+        bestDeadline = calcDeadline;
+    }
+
+    if (fBest) {
+        CTxDestination dest;
+        std::shared_ptr<CKey> privKey;
+        if (generateTo.empty()) {
+            // Update generate address from wallet
+        #ifdef ENABLE_WALLET
+            CWalletRef pwallet = vpwallets.empty() ? nullptr : vpwallets[0];
+            if (!pwallet)
+                throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require wallet");
+            dest = pwallet->GetPrimaryDestination();
+            if (!boost::get<CScriptID>(&dest))
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid primary address");
+        #else
+            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require wallet");
+        #endif
+        } else {
+            dest = DecodeDestination(generateTo);
+            if (!boost::get<CScriptID>(&dest)) {
+                // Maybe privkey
+                CBitcoinSecret vchSecret;
+                if (!vchSecret.SetString(generateTo))
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address or private key");
+                CKey key = vchSecret.GetKey();
+                if (!key.IsValid()) {
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address or private key");
+                } else {
+                    privKey = std::make_shared<CKey>(key);
+                    // P2SH-Segwit
+                    CKeyID keyid = privKey->GetPubKey().GetID();
+                    CTxDestination segwit = WitnessV0KeyHash(keyid);
+                    dest = CScriptID(GetScriptForDestination(segwit));
+                }
+            }
+        }
+        if (!boost::get<CScriptID>(&dest))
+            throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Invalid BitcoinHD address");
+
+        // Check bind
+        if (prevBlockIndex.nHeight + 1 >= params.BHDIP006Height) {
+            CAccountID accountID = GetAccountIDByTxDestination(dest);
+            if (accountID == 0)
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BitcoinHD address");
+            if (!pcoinsTip->HaveActiveBindPlotter(accountID, nPlotterId))
+                throw JSONRPCError(RPC_INVALID_REQUEST, "Not bind to address");
+        }
+
+        // Update private key for signature
+        if (prevBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
+            uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
+
+            if (!privKey) {
+                // From cache
+                if (mapSignaturePrivKeys.count(destId)) {
+                    privKey = mapSignaturePrivKeys[destId];
+                }
+
+            #ifdef ENABLE_WALLET
+                // From wallets
+                if (!privKey) {
+                    for (CWalletRef pwallet : vpwallets) {
+                        CKeyID keyid = GetKeyForDestination(*pwallet, dest);
+                        if (!keyid.IsNull()) {
+                            privKey = std::make_shared<CKey>();
+                            if (!pwallet->GetKey(keyid, *privKey)) {
+                                privKey.reset();
+                            } else {
+                                mapSignaturePrivKeys[destId] = privKey;
+                                break;
+                            }
+                        }
+                    }
+                }
+            #endif
+            } else if (!mapSignaturePrivKeys.count(destId)) {
+                mapSignaturePrivKeys[destId] = privKey;
+            }
+
+            if (!privKey)
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Not found private key for signature");
+        }
+
+        GeneratorState &generatorState = mapGenerators[blockId];
+        generatorState.nonce     = nNonce;
+        generatorState.plotterId = nPlotterId;
+        generatorState.deadline  = calcDeadline;
+        generatorState.height    = prevBlockIndex.nHeight + 1;
+        generatorState.dest      = dest;
+        generatorState.privKey   = privKey;
 
         LogPrint(BCLog::POC, "New best deadline %" PRIu64 ".\n", calcDeadline);
 
-        uiInterface.NotifyBestDeadlineChanged(generator.height, generator.nonce, generator.plotterId, calcDeadline);
+        uiInterface.NotifyBestDeadlineChanged(generatorState.height, generatorState.nonce, generatorState.plotterId, calcDeadline);
     }
-
-    bestDeadline = generator.deadline;
 
     return calcDeadline;
 }
@@ -533,6 +600,45 @@ bool CheckProofOfCapacity(const CBlockIndex &prevBlockIndex, const CBlockHeader 
     }
 }
 
+bool AddMiningSignaturePrivkey(const std::string &privkey, std::string *newAddress)
+{
+    CBitcoinSecret vchSecret;
+    if (vchSecret.SetString(privkey)) {
+        CKey key = vchSecret.GetKey();
+        if (key.IsValid()) {
+            // P2SH-Segwit
+            std::shared_ptr<CKey> privKeyPtr = std::make_shared<CKey>(key);
+            CKeyID keyid = privKeyPtr->GetPubKey().GetID();
+            CTxDestination segwit = WitnessV0KeyHash(keyid);
+            CTxDestination dest = CScriptID(GetScriptForDestination(segwit));
+            if (newAddress)
+                *newAddress = EncodeDestination(dest);
+
+            LOCK(cs_main);
+            mapSignaturePrivKeys[boost::get<CScriptID>(&dest)->GetUint64(0)] = privKeyPtr;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::vector<std::string> GetMiningSignatureAddresses()
+{
+    LOCK(cs_main);
+
+    std::vector<std::string> addresses;
+    addresses.reserve(mapSignaturePrivKeys.size());
+    for (auto it = mapSignaturePrivKeys.cbegin(); it != mapSignaturePrivKeys.cend(); it++) {
+        CKeyID keyid = it->second->GetPubKey().GetID();
+        CTxDestination segwit = WitnessV0KeyHash(keyid);
+        CTxDestination dest = CScriptID(GetScriptForDestination(segwit));
+        addresses.push_back(EncodeDestination(dest));
+    }
+
+    return addresses;
+}
+
 }
 
 bool StartPOC()
@@ -542,9 +648,41 @@ bool StartPOC()
     if (gArgs.GetBoolArg("-server", false)) {
         LogPrintf("Starting PoC forge thread\n");
         threadCheckDeadline = std::thread(CheckDeadlineThread);
+
+        // import private key
+        for (const std::string &privkey : gArgs.GetArgs("-miningsign")) {
+            std::string strkeyLog = (privkey.size() > 5 ? privkey.substr(0, 5) : privkey) +
+                                    "******************************************" +
+                                    (privkey.size() > 5 ? privkey.substr(privkey.size() - 5, 5) : privkey);
+            std::string address;
+            if (poc::AddMiningSignaturePrivkey(privkey, &address)) {
+                LogPrintf("Import mining-sign address %s from %s\n", address, strkeyLog);
+            } else {
+                LogPrintf("Import invalid mining-sign private key from -miningsign=\"%s\"\n", strkeyLog);
+            }
+        }
+
+    #ifdef ENABLE_WALLET
+        // From current wallet
+        for (CWalletRef pwallet : vpwallets) {
+            CTxDestination dest = pwallet->GetPrimaryDestination();
+            CKeyID keyid = GetKeyForDestination(*pwallet, dest);
+            if (!keyid.IsNull()) {
+                std::shared_ptr<CKey> privKey = std::make_shared<CKey>();
+                if (pwallet->GetKey(keyid, *privKey)) {
+                    LOCK(cs_main);
+                    mapSignaturePrivKeys[boost::get<CScriptID>(&dest)->GetUint64(0)] = privKey;
+
+                    LogPrintf("Import mining-sign from wallet primary address %s\n", EncodeDestination(dest));
+                }
+            }
+        }
+    #endif
+
     } else {
         LogPrintf("Skip PoC forge thread\n");
     }
+    
     return true;
 }
 
@@ -558,6 +696,8 @@ void StopPOC()
 {
     if (threadCheckDeadline.joinable())
         threadCheckDeadline.join();
+
+    mapSignaturePrivKeys.clear();
 
     LogPrintf("Stopped PoC module\n");
 }

@@ -148,7 +148,7 @@ enum
     SER_GETHASH         = (1 << 2),
 
     // exclude signature
-    SER_GETUNSIGHASH    = (1 << 4) + (1 << 2),
+    SER_UNSIGNATURED    = (1 << 4),
 };
 
 #define READWRITE(obj)      (::SerReadWrite(s, (obj), ser_action))

@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <vector>
+
 class CBlockHeader;
 class CBlock;
 class CBlockIndex;
@@ -39,11 +41,10 @@ static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
 static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
 
 // Max target deadline
-static const int64_t MAX_TARGET_DEADLINE = 365 * 24 * 60 * 60;
+static const int64_t MAX_TARGET_DEADLINE = std::numeric_limits<uint32_t>::max();
 
 // Invalid deadline
-static const uint64_t INVALID_DEADLINE         = std::numeric_limits<uint64_t>::max();
-static const uint64_t INVALID_DEADLINE_NOTBIND = std::numeric_limits<uint64_t>::max() - 1;
+static const uint64_t INVALID_DEADLINE = std::numeric_limits<uint64_t>::max();
 
 /** Calculate deadline */
 uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache = true);
@@ -53,7 +54,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
 
 /** Add new nonce */
 uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId,
-    const std::string &address, bool fCheckBind, const Consensus::Params& params);
+    const std::string &generateTo, bool fCheckBind, const Consensus::Params& params);
 
 /**
  * Get miner pledge forge block
@@ -74,6 +75,16 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
  * Check block work
  */
 bool CheckProofOfCapacity(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params);
+
+/**
+ * Add private key for mining signature
+ */
+bool AddMiningSignaturePrivkey(const std::string &privkey, std::string *newAddress = nullptr);
+
+/**
+ * Get mining signature addresses
+ */
+std::vector<std::string> GetMiningSignatureAddresses();
 
 }
 

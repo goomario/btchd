@@ -807,6 +807,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nStatus         = diskindex.nStatus;
                 pindexNew->nTx             = diskindex.nTx;
                 pindexNew->minerAccountID  = diskindex.minerAccountID;
+                pindexNew->vchPubKey       = diskindex.vchPubKey;
+                pindexNew->vchSignature    = diskindex.vchSignature;
 
                 pcursor->Next();
             } else {

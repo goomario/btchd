@@ -59,7 +59,7 @@ public:
         if (nSignatureFlags & BLOCKSIGNATURE_FLAG) {
             READWRITE(LIMITED_VECTOR(vchPubKey, CPubKey::COMPRESSED_PUBLIC_KEY_SIZE));
             // Signature block data exclude vchSignature
-            if (!(s.GetType() & SER_GETUNSIGHASH)) {
+            if (!(s.GetType() & SER_UNSIGNATURED)) {
                 READWRITE(LIMITED_VECTOR(vchSignature, CPubKey::SIGNATURE_SIZE));
             }
         }
@@ -84,6 +84,7 @@ public:
     }
 
     uint256 GetHash() const;
+    uint256 GetUnsignaturedHash() const;
 
     int64_t GetBlockTime() const
     {
@@ -141,8 +142,6 @@ public:
         block.vchSignature   = vchSignature;
         return block;
     }
-
-    CAccountID160 GetGenerator() const;
 
     std::string ToString() const;
 };

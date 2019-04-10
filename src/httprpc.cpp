@@ -312,17 +312,14 @@ static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
         // Send reply
         req->WriteHeader("Content-Type", "application/json; charset=UTF-8");
         req->WriteReply(HTTP_OK, result.write());
-        return true;
     } catch (const UniValue& objError) {
-        PoCJSONErrorReply(req, 1, objError.getValStr());
-        LogPrint(BCLog::POC, "Call rpc fail: %s\n", objError.getValStr().c_str());
+        JSONErrorReply(req, objError, jreq.id);
         return false;
     } catch (const std::exception& e) {
-        req->WriteHeader("Content-Type", "text/plain; charset=UTF-8");
-        req->WriteReply(HTTP_INTERNAL_SERVER_ERROR, e.what());
-        LogPrint(BCLog::POC, "Call rpc fail: %s\n", e.what());
+        JSONErrorReply(req, JSONRPCError(RPC_PARSE_ERROR, e.what()), jreq.id);
         return false;
     }
+    return true;
 }
 
 static bool InitRPCAuthentication()

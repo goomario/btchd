@@ -45,7 +45,7 @@ unsigned int ParseConfirmTarget(const UniValue& value)
     return (unsigned int)target;
 }
 
-UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const CKey &privKey, int nGenerate, bool keepScript)
+UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const std::shared_ptr<CKey> privKey, int nGenerate, bool keepScript)
 {
     // rough high night desk familiar hop freely needle slowly threaten process flicker
     // =>
@@ -64,7 +64,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const CK
         ++nHeight;
 
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript,
-            true, privKey, nNonce, nPlotterId, nDeadline));
+            true, nNonce, nPlotterId, nDeadline, privKey));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -116,7 +116,7 @@ UniValue generatetoaddress(const JSONRPCRequest& request)
     std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
     coinbaseScript->reserveScript = GetScriptForDestination(destination);
 
-    return generateBlocks(coinbaseScript, CKey(), nGenerate, false);
+    return generateBlocks(coinbaseScript, nullptr, nGenerate, false);
 }
 
 UniValue getmininginfo(const JSONRPCRequest& request)

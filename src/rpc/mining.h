@@ -11,7 +11,7 @@
 #include <univalue.h>
 
 /** Generate blocks (mine) */
-UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const CKey &privKey, int nGenerate, bool keepScript);
+UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const std::shared_ptr<CKey> privKey, int nGenerate, bool keepScript);
 
 /** Check bounds on a command line confirm target */
 unsigned int ParseConfirmTarget(const UniValue& value);

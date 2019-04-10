@@ -162,8 +162,8 @@ public:
     /** Construct a new block template with coinbase to scriptPubKeyIn */
     std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn,
                                                    bool fMineWitnessTx = true,
-                                                   const CKey &privKey = CKey(),
-                                                   uint64_t nonce = 0, uint64_t plotterId = 0, uint64_t deadline = 0);
+                                                   uint64_t nonce = 0, uint64_t plotterId = 0, uint64_t deadline = 0,
+                                                   const std::shared_ptr<CKey> privKey = nullptr);
 private:
     // utility functions
     /** Clear the block's state and prepare for assembling a new block */

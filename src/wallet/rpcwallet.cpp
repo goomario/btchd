@@ -3419,7 +3419,7 @@ UniValue generate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available");
     }
 
-    return generateBlocks(coinbase_script, privKey, num_generate, true);
+    return generateBlocks(coinbase_script, std::make_shared<CKey>(privKey), num_generate, true);
 }
 
 UniValue rescanblockchain(const JSONRPCRequest& request)

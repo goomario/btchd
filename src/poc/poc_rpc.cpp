@@ -53,7 +53,8 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nPlotterId, int nTargetHeight, const std::string &address, bool fCheckBind)
+static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nPlotterId, int nTargetHeight,
+    const std::string &generateTo, bool fCheckBind)
 {
     if (IsInitialBlockDownload()) {
         throw std::runtime_error("Is initial block downloading!");
@@ -65,21 +66,21 @@ static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t
         throw std::runtime_error("Invalid block!");
     }
 
-    uint64_t bestDeadline = 0;
-    uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nPlotterId, address, fCheckBind, Params().GetConsensus());
-    if (deadline == poc::INVALID_DEADLINE) {
-        result.pushKV("result", "error");
-        result.pushKV("errorCode", "001");
-        result.pushKV("errorDescription", "Invalid plotter ID");
-    } else if (deadline == poc::INVALID_DEADLINE_NOTBIND) {
-        result.pushKV("result", "error");
-        result.pushKV("errorCode", "002");
-        result.pushKV("errorDescription", "Not active bind plotter ID to address");
-    } else {
+    try {
+        uint64_t bestDeadline = 0;
+        uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nPlotterId, generateTo, fCheckBind, Params().GetConsensus());
         result.pushKV("result", "success");
         result.pushKV("deadline", deadline);
         result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
         result.pushKV("height", pBlockIndex->nHeight + 1);
+    } catch (const UniValue& objError) {
+        result.pushKV("result", "error");
+        result.pushKV("errorCode", objError.isObject() ? objError["code"].getValStr() : "403");
+        result.pushKV("errorDescription", objError.isObject() ? objError["message"].getValStr() : objError.getValStr());
+    } catch (const std::exception& e) {
+        result.pushKV("result", "error");
+        result.pushKV("errorCode", "500");
+        result.pushKV("errorDescription", e.what());
     }
 }
 
@@ -93,7 +94,7 @@ static UniValue submitNonce(const JSONRPCRequest& request)
             "1. \"nonce\"           (string, required) Nonce\n"
             "2. \"plotterId\"       (string, required) Plotter ID\n"
             "3. \"height\"          (integer, optional) Target height for mining\n"
-            "4. \"address\"         (string, optional) Target address for mining\n"
+            "4. \"address\"         (string, optional) Target address or private key (BHDIP007) for mining\n"
             "5. \"checkBind\"       (boolean, optional, true) Check bind for BHDIP006\n"
             "\nResult:\n"
             "{\n"
@@ -118,9 +119,9 @@ static UniValue submitNonce(const JSONRPCRequest& request)
         nTargetHeight = request.params[2].isNum() ? request.params[2].get_int() : std::stoi(request.params[2].get_str());
     }
 
-    std::string address;
+    std::string generateTo;
     if (request.params.size() >= 4) {
-        address = request.params[3].get_str();
+        generateTo = request.params[3].get_str();
     }
 
     bool fCheckBind = true;
@@ -128,38 +129,70 @@ static UniValue submitNonce(const JSONRPCRequest& request)
         fCheckBind = request.params[4].get_bool();
     }
 
-    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, address, fCheckBind);
+    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, generateTo, fCheckBind);
     return result;
+}
+
+static UniValue addSignPrivkey(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "addsignprivkey \"privkey\"\n"
+            "\nAdd private key for signature.\n"
+            "\nArguments:\n"
+            "1. \"privkey\"      (string, required) The string of the private key\n"
+            "\nResult:\n"
+            "BitcoinHD mining address\n"
+        );
+    }
+
+    std::string address;
+    if (!poc::AddMiningSignaturePrivkey(request.params[0].get_str(), &address))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+    return address;
+}
+
+static UniValue listSignAddresses(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "listsignaddresses\n"
+            "\nList signature addresses for signature.\n"
+            "\nResult:\n"
+            "BitcoinHD address\n"
+        );
+    }
+
+    UniValue addresses(UniValue::VARR);
+    for (const std::string &address : poc::GetMiningSignatureAddresses()) {
+        addresses.push_back(address);
+    }
+
+    return addresses;
 }
 
 static UniValue getPlotterId(const JSONRPCRequest& request)
 {
-    if (request.fHelp) {
+    if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "getPlotterId \"passphrase\"\n"
+            "getplotterid \"passphrase\"\n"
             "\nGet potter id from passphrase.\n"
             "\nArguments:\n"
             "1. \"passphrase\"      (string, required) The string of the passphrase\n"
             "\nResult:\n"
-            "Id\n"
+            "Plotter id\n"
         );
-    }
-
-    UniValue result(UniValue::VOBJ);
-    if (request.params.size() != 1) {
-        result.pushKV("result", "Missing parameters");
-        return result;
     }
 
     return PocLegacy::GeneratePlotterId(request.params[0].get_str());;
 }
 
-static UniValue getMinerAccount(const JSONRPCRequest& request)
+static UniValue getNewPlotter(const JSONRPCRequest& request)
 {
     if (request.fHelp) {
         throw std::runtime_error(
-            "getmineraccount\n"
-            "\nGet new miner account.\n"
+            "getnewplotter\n"
+            "\nGet new plotter account.\n"
             "\nResult:\n"
             "{\n"
             "  [ passphrase ]              (string) The passphrase\n"
@@ -182,10 +215,12 @@ static UniValue getMinerAccount(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)                  argNames
   //  --------------------- ------------------------  -----------------------           ----------
-    { "hidden",           "getMiningInfo",            &poc::rpc::getMiningInfo,         { } },
-    { "hidden",           "submitNonce",              &poc::rpc::submitNonce,           { "nonce", "plotterId", "height", "address", "checkBind" } },
-    { "hidden",           "getPlotterId",             &poc::rpc::getPlotterId,          { "passPhrase" } },
-    { "hidden",           "getmineraccount",          &poc::rpc::getMinerAccount,       { } },
+    { "hidden",             "getMiningInfo",          &poc::rpc::getMiningInfo,         { } },
+    { "hidden",             "submitNonce",            &poc::rpc::submitNonce,           { "nonce", "plotterId", "height", "address", "checkBind" } },
+    { "poc",                "addsignprivkey",         &poc::rpc::addSignPrivkey,        { "privkey" } },
+    { "poc",                "listsignaddresses",      &poc::rpc::listSignAddresses,     { } },
+    { "poc",                "getplotterid",           &poc::rpc::getPlotterId,          { "passPhrase" } },
+    { "poc",                "getnewplotter",          &poc::rpc::getNewPlotter,         { } },
 };
 
 void RegisterPoCRPCCommands(CRPCTable &t)
