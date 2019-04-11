@@ -681,6 +681,7 @@ bool StartPOC()
 
     } else {
         LogPrintf("Skip PoC forge thread\n");
+        interruptCheckDeadline();
     }
     
     return true;
