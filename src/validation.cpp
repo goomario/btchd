@@ -3251,21 +3251,44 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckWork)
 {
-    // Check proof of capacity matches previous time duration
-    if (fCheckWork) {
-        if (block.hashPrevBlock.IsNull()) {
-            // Genesis
-            if (block.GetHash() != consensusParams.hashGenesisBlock)
-                return state.DoS(50, false, REJECT_INVALID, "block-hash", false, "invalid genesis block");
-        } else {
-            auto mi = mapBlockIndex.find(block.hashPrevBlock);
-            if (mi == mapBlockIndex.end())
-                return state.DoS(50, false, REJECT_INVALID, "block-hash", false, "notfound previous block");
+    // Genesis
+    if (block.hashPrevBlock.IsNull()) {
+        if (block.GetHash() != consensusParams.hashGenesisBlock)
+            return state.DoS(100, false, REJECT_INVALID, "block-hash", false, "invalid genesis block");
 
-            LogPrint(BCLog::POC, "%s: Checking %5d(%s) proof of capacity\n", __func__, mi->second->nHeight + 1, block.GetHash().GetHex());
-            if (!poc::CheckProofOfCapacity(*mi->second, block, consensusParams))
-                return state.DoS(50, false, REJECT_INVALID, "high-deadline", false, "proof of capacity failed");
-        }
+        return true;
+    }
+
+    // Have previous block
+    BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
+    if (mi == mapBlockIndex.end())
+        return state.DoS(10, error("%s: prev block not found", __func__), 0, "prev-blk-not-found");
+    const CBlockIndex* pindexPrev = mi->second;
+
+    // Block signature for BHDIP007
+    if (pindexPrev->nHeight + 1 >= consensusParams.BHDIP007Height) {
+        if (block.vchPubKey.size() != CPubKey::COMPRESSED_PUBLIC_KEY_SIZE ||
+            block.vchSignature.size() > CPubKey::SIGNATURE_SIZE)
+                return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-require", false, "require block signature");
+
+        uint256 unsignaturedBlockHash = block.GetUnsignaturedHash();
+        CPubKey pubkey(block.vchPubKey);
+        if (!pubkey.Verify(unsignaturedBlockHash, block.vchSignature))
+            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-incorrect", false, "incorrect block signature");
+    } else {
+        if (!block.vchPubKey.empty() || !block.vchSignature.empty())
+            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-notallow", false, "not allow block signature");
+    }
+
+    // Check difficulty and deadline
+    if (fCheckWork) {
+        LogPrint(BCLog::POC, "%s: Checking %5d(%s) proof of capacity\n", __func__, pindexPrev->nHeight + 1, block.GetHash().GetHex());
+
+        if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, consensusParams))
+            return state.DoS(100, false, REJECT_INVALID, "bad-diff", false, "incorrect difficulty");
+
+        if (!poc::CheckProofOfCapacity(*pindexPrev, block, consensusParams))
+            return state.DoS(100, false, REJECT_INVALID, "high-deadline", false, "proof of capacity failed");
     }
 
     return true;
@@ -3327,6 +3350,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     }
     if (nSigOps * WITNESS_SCALE_FACTOR > MAX_BLOCK_SIGOPS_COST)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
+
+    // Block signature
+    if (!block.vchPubKey.empty()) {
+        if (!CheckRawPubKeyAndScriptRelationForMining(CPubKey(block.vchPubKey), block.vtx[0]->vout[0].scriptPubKey))
+            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-notminer", false, "require signing by miner");
+    }
 
     if (fCheckWork && fCheckMerkleRoot)
         block.fChecked = true;
@@ -3410,10 +3439,10 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     assert(pindexPrev != nullptr);
     const int nHeight = pindexPrev->nHeight + 1;
 
-    // Check proof of work
+    // Check difficulty
     const Consensus::Params& consensusParams = params.GetConsensus();
     if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, consensusParams))
-        return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
+        return state.DoS(100, false, REJECT_INVALID, "bad-diff", false, "incorrect difficulty");
 
     // Check against checkpoints
     if (fCheckpointsEnabled) {
@@ -3442,21 +3471,6 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
             return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
                                  strprintf("rejected nVersion=0x%08x nHeight=%d block", nHeight, block.nVersion));
-
-    // Block signature
-    if (nHeight >= consensusParams.BHDIP007Height) {
-        if (block.vchPubKey.size() != CPubKey::COMPRESSED_PUBLIC_KEY_SIZE ||
-            block.vchSignature.size() > CPubKey::SIGNATURE_SIZE)
-                return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-require", false, "require block signature");
-
-        uint256 unsignaturedBlockHash = block.GetUnsignaturedHash();
-        CPubKey pubkey(block.vchPubKey);
-        if (!pubkey.Verify(unsignaturedBlockHash, block.vchSignature))
-            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-incorrect", false, "incorrect block signature");
-    } else {
-        if (!block.vchPubKey.empty() || !block.vchSignature.empty())
-            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-notallow", false, "not allow block signature");
-    }
 
     return true;
 }
@@ -3495,14 +3509,6 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         if (block.vtx[0]->vin[0].scriptSig.size() < expect.size() ||
             !std::equal(expect.begin(), expect.end(), block.vtx[0]->vin[0].scriptSig.begin())) {
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-height", false, "block height mismatch in coinbase");
-        }
-    }
-
-    // Block signature
-    // Miner must signatrue block data
-    if (nHeight >= consensusParams.BHDIP007Height) {
-        if (!CheckRawPubKeyAndScriptRelationForMining(CPubKey(block.vchPubKey), block.vtx[0]->vout[0].scriptPubKey)) {
-            return state.DoS(10, false, REJECT_INVALID, "bad-sig-notsignatory", false, "the miner not signatory");
         }
     }
 

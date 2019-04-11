@@ -1531,24 +1531,7 @@ bool AppInitMain()
                             MIN_BLOCKS_TO_KEEP);
                     }
 
-                    {
-                        LOCK(cs_main);
-                        CBlockIndex* tip = chainActive.Tip();
-                        RPCNotifyBlockChange(true, tip);
-                        if (tip && tip->nTime > GetAdjustedTime() + MAX_FUTURE_BLOCK_TIME) {
-                            strLoadError = _("The block database contains a block which appears to be from the future. "
-                                    "This may be due to your computer's date and time being set incorrectly. "
-                                    "Only rebuild the block database if you are sure that your computer's date and time are correct");
-                            break;
-                        }
-                    }
-
-                    if (!CVerifyDB().VerifyDB(chainparams, pcoinsdbview.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
-                                  gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
-                        strLoadError = _("Corrupted block database detected");
-                        break;
-                    }
-
+                    // Verify checkpoints
                     if (!chainparams.Checkpoints().mapCheckpoints.empty()) {
                         const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
                         // Find first invalid block in checkpoint
@@ -1567,6 +1550,16 @@ bool AppInitMain()
                             for (auto it = mapCheckpoints.rbegin(); it != mapCheckpoints.rend(); it++) {
                                 if (it->first < chainActive.Height()) {
                                     pBeginResetIndex = chainActive[it->first];
+                                    break;
+                                }
+                            }
+                        }
+                        // 3.Last checkpoint
+                        if (!pBeginResetIndex) {
+                            for (auto it = mapCheckpoints.rbegin(); it != mapCheckpoints.rend(); it++) {
+                                auto mi = mapBlockIndex.find(it->second);
+                                if (mi != mapBlockIndex.end()) {
+                                    pBeginResetIndex = mi->second;
                                     break;
                                 }
                             }
@@ -1611,6 +1604,25 @@ bool AppInitMain()
                         }
                         if (!strLoadError.empty())
                             break; // Got error
+                    }
+
+                    // Check tip time
+                    {
+                        LOCK(cs_main);
+                        CBlockIndex* tip = chainActive.Tip();
+                        RPCNotifyBlockChange(true, tip);
+                        if (tip && tip->nTime > GetAdjustedTime() + MAX_FUTURE_BLOCK_TIME) {
+                            strLoadError = _("The block database contains a block which appears to be from the future. "
+                                    "This may be due to your computer's date and time being set incorrectly. "
+                                    "Only rebuild the block database if you are sure that your computer's date and time are correct");
+                            break;
+                        }
+                    }
+
+                    if (!CVerifyDB().VerifyDB(chainparams, pcoinsTip.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
+                                  gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
+                        strLoadError = _("Corrupted block database detected");
+                        break;
                     }
                 }
             } catch (const std::exception& e) {
