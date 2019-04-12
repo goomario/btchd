@@ -228,6 +228,15 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
     return false;
 }
 
+CTxDestination ExtractDestination(const CScript& scriptPubKey)
+{
+    CTxDestination addressRet;
+    if (ExtractDestination(scriptPubKey, addressRet))
+        return addressRet;
+
+    return CTxDestination();
+}
+
 bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet)
 {
     addressRet.clear();

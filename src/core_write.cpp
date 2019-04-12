@@ -229,21 +229,15 @@ void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& t
 {
     if (payload.type == DATACARRIER_TYPE_BINDPLOTTER) {
         auto ptr = (const BindPlotterPayload *) &payload;
-        CTxDestination relevantDest;
-        ExtractDestination(txOut.scriptPubKey, relevantDest);
-
         out.push_back(Pair("type", "bindplotter"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
-        out.push_back(Pair("address", EncodeDestination(relevantDest)));
+        out.push_back(Pair("address", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
         out.push_back(Pair("id", std::to_string(ptr->GetId())));
     } else if (payload.type == DATACARRIER_TYPE_PLEDGELOAN) {
         auto ptr = (const PledgeLoanPayload *) &payload;
-        CTxDestination relevantDest;
-        ExtractDestination(txOut.scriptPubKey, relevantDest);
-
         out.push_back(Pair("type", "pledge"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
-        out.push_back(Pair("from", EncodeDestination(relevantDest)));
+        out.push_back(Pair("from", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
         out.push_back(Pair("to", EncodeDestination(ptr->scriptID)));
     }
 }

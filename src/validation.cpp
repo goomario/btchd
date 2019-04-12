@@ -2092,9 +2092,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // Check bind
     if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight && !view.HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
-        CTxDestination dest = CNoDestination();
-        ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
-        std::string address = EncodeDestination(dest);
+        std::string address = EncodeDestination(ExtractDestination(block.vtx[0]->vout[0].scriptPubKey));
         return state.DoS(100,
                         error("ConnectBlock(): Not active bind %" PRIu64 " to %s", pindex->nPlotterId, address),
                         REJECT_INVALID, "bad-cb-bindplotter");
@@ -2122,13 +2120,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                 REJECT_INVALID, "bad-cb-amount");
 
             // Check output address
-            std::string address;
-            {
-                CTxDestination dest;
-                if (ExtractDestination(block.vtx[0]->vout[1].scriptPubKey, dest)) {
-                    address = EncodeDestination(dest);
-                }
-            }
+            std::string address = EncodeDestination(ExtractDestination(block.vtx[0]->vout[1].scriptPubKey));
             if (!chainparams.GetConsensus().BHDFundAddressPool.count(address))
                 return state.DoS(100,
                                 error("ConnectBlock(): coinbase not pays to fund account (limit=%d)", blockReward.fund),
@@ -2168,13 +2160,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                     REJECT_INVALID, "bad-cb-amount");
 
                 // Check output address
-                std::string address;
-                {
-                    CTxDestination dest;
-                    if (ExtractDestination(block.vtx[0]->vout[fundIndex].scriptPubKey, dest)) {
-                        address = EncodeDestination(dest);
-                    }
-                }
+                std::string address = EncodeDestination(ExtractDestination(block.vtx[0]->vout[fundIndex].scriptPubKey));
                 if (!chainparams.GetConsensus().BHDFundAddressPool.count(address))
                     return state.DoS(100,
                                     error("ConnectBlock(): coinbase not pays to fund account (limit=%d)", blockReward.minerBHDIP004Compatiable),
@@ -2219,13 +2205,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                     REJECT_INVALID, "bad-cb-amount");
 
                 // Check output address
-                std::string address;
-                {
-                    CTxDestination dest;
-                    if (ExtractDestination(block.vtx[0]->vout[1].scriptPubKey, dest)) {
-                        address = EncodeDestination(dest);
-                    }
-                }
+                std::string address = EncodeDestination(ExtractDestination(block.vtx[0]->vout[1].scriptPubKey));
                 if (!chainparams.GetConsensus().BHDFundAddressPool.count(address))
                     return state.DoS(100,
                                     error("ConnectBlock(): coinbase not pays to fund account (limit=%d)", fund),
@@ -2255,9 +2235,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
             // If has other output, must output to fund
             // Compatiable: Testnet 8501 vout[1] to fund
-            CTxDestination dest;
-            ExtractDestination(block.vtx[0]->vout[i].scriptPubKey, dest);
-            if (!chainparams.GetConsensus().BHDFundAddressPool.count(EncodeDestination(dest)))
+            std::string address = EncodeDestination(ExtractDestination(block.vtx[0]->vout[i].scriptPubKey));
+            if (!chainparams.GetConsensus().BHDFundAddressPool.count(address))
                 return state.DoS(100,
                                 error("ConnectBlock(): coinbase cannot pays to multi outputs"),
                                 REJECT_INVALID, "bad-cb-multiouts");

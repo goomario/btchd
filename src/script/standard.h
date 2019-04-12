@@ -148,6 +148,7 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
  * P2PKH, P2SH, P2WPKH, and P2WSH scripts.
  */
 bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet);
+CTxDestination ExtractDestination(const CScript& scriptPubKey);
 
 /**
  * Parse a standard scriptPubKey with one or more destination addresses. For
