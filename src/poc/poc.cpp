@@ -328,8 +328,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
         uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPowTargetSpacing * 4); // 5m * 4blocks
-        if (newBaseTarget > MAX_BASE_TARGET) {
-            newBaseTarget = MAX_BASE_TARGET;
+        if (newBaseTarget > INITIAL_BASE_TARGET) {
+            newBaseTarget = INITIAL_BASE_TARGET;
         }
         if (newBaseTarget < (curBaseTarget * 9 / 10)) {
             newBaseTarget = curBaseTarget * 9 / 10;
@@ -364,8 +364,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
         }
         uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
         uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
-        if (newBaseTarget > MAX_BASE_TARGET) {
-            newBaseTarget = MAX_BASE_TARGET;
+        if (newBaseTarget > INITIAL_BASE_TARGET) {
+            newBaseTarget = INITIAL_BASE_TARGET;
         }
         if (newBaseTarget == 0) {
             newBaseTarget = 1;
@@ -568,7 +568,7 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
 
     // Net capacity
     nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
-    int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::MAX_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
+    int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::INITIAL_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
 
     // Old consensus pledge
     if (pMinerPledgeOldConsensus != nullptr) {

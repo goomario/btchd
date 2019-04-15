@@ -32,13 +32,13 @@ static const arith_uint256 TWO64 = arith_uint256(std::numeric_limits<uint64_t>::
 /**
  * Initial base target.
  * 
- * This correct value is 14660155037.
- * See https://www.reddit.com/r/burstcoin/comments/akbxcy/genesis_base_target_bhd_capacity_estimates/.
+ * This correct value is 14660155037. ((2^64-1)/300 - 1) / 300 / 4 / 1024 / 1024
+ * See https://btchd.org/wiki/The_Proof_of_Capacity#Base_Target
  */
-static const uint64_t INITIAL_BASE_TARGET = 18325193796L; // 0x0000000444444444
+static const uint64_t INITIAL_BASE_TARGET = 18325193796ull;
 
-/** Max target */
-static const uint64_t MAX_BASE_TARGET = 18325193796L; // 0x0000000444444444
+/** BHD base target */
+static const uint64_t BHD_BASE_TARGET = 14660155037ull;
 
 // Max target deadline
 static const int64_t MAX_TARGET_DEADLINE = std::numeric_limits<uint32_t>::max();
