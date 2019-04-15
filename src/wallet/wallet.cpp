@@ -3764,8 +3764,10 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
                 setExternalKeyPool.insert(index);
 
                 // Add to address book
-                sprintf(addressNameBuffer, "Receive-%05" PRIi64, index);
-                SetAddressBook(GetDestinationForKey(pubkey, g_address_type), addressNameBuffer, "receive");
+                if (index > 0) {
+                    sprintf(addressNameBuffer, "Receive-%05" PRIi64, index);
+                    SetAddressBook(GetDestinationForKey(pubkey, g_address_type), addressNameBuffer, "receive");
+                }
             }
             m_pool_key_to_index[pubkey.GetID()] = index;
         }
