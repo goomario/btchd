@@ -11,20 +11,11 @@
 
 static const int PROTOCOL_VERSION = 80022;
 
-//! BitcoinHD BHDIP006 version. Limit unbind plotter softfork
-static const int BHD_BHDIP006_LIMITUNBIND = 80021;
+//! BHDIP 006, limit unbind plotter, softfork
+static const int BHDIP006_LIMITUNBIND_VERSION = 80021;
 
-//! BitcoinHD BHDIP006 version. Bind plotter & pledge loan
-static const int BHD_BHDIP006 = 80020;
-
-//! BitcoinHD V2 version
-static const int BHD_V2_VERSION = 80019;
-
-//! BitcoinHD V2 version preview
-static const int BHD_V2PRE_VERSION = 80018;
-
-//! BitcoinHD V1 version
-static const int BHD_V1_VERSION = 80017;
+//! BHDIP 006, bind plotter, pledge loan
+static const int BHDIP006_VERSION = 80020;
 
 //! test with this version
 static const int PRETEST_VERSION = 80015;
