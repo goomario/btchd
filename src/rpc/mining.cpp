@@ -791,7 +791,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
 
 UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             "listbindplotterofaddress \"address\" (plotterId count)\n"
             "\nReturns up to binded plotter of address.\n"
