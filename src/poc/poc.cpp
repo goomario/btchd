@@ -35,17 +35,17 @@ namespace {
 
 // Generator
 struct GeneratorState {
-    uint64_t nonce;
     uint64_t plotterId;
-    uint64_t deadline;
+    uint64_t nonce;
+    uint64_t best;
     int height;
 
     CTxDestination dest;
     std::shared_ptr<CKey> privKey;
 
-    GeneratorState() : deadline(poc::INVALID_DEADLINE) { }
+    GeneratorState() : best(poc::INVALID_DEADLINE) { }
 };
-typedef std::unordered_map<uint64_t, GeneratorState> Generators; // blockHash low 64bits -> GeneratorState
+typedef std::unordered_map<uint64_t, GeneratorState> Generators; // Generation low 64bits -> GeneratorState
 Generators mapGenerators;
 
 std::shared_ptr<CBlock> CreateBlock(const GeneratorState &generateState)
@@ -55,7 +55,8 @@ std::shared_ptr<CBlock> CreateBlock(const GeneratorState &generateState)
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     try {
         pblocktemplate = BlockAssembler(Params()).CreateNewBlock(GetScriptForDestination(generateState.dest), true,
-            generateState.nonce, generateState.plotterId, generateState.deadline, generateState.privKey);
+            generateState.plotterId, generateState.nonce, generateState.best / chainActive.Tip()->nBaseTarget,
+            generateState.privKey);
     } catch (std::exception &e) {
         const char *what = e.what();
         LogPrintf("CreateBlock() fail: %s\n", what ? what : "Catch unknown exception");
@@ -90,16 +91,17 @@ void CheckDeadlineThread()
                 int64_t nAdjustedTime = GetAdjustedTime();
                 auto it = mapGenerators.begin();
                 while (it != mapGenerators.end() && !pblock) {
-                    if (pindexTip->GetBlockHash().GetUint64(0) == it->first) {
+                    if (pindexTip->GetNextGenerationSignature().GetUint64(0) == it->first) {
                         // Current round
-                        if (nAdjustedTime + 1 >= (int64_t)pindexTip->nTime + (int64_t)it->second.deadline) {
+                        uint64_t deadline = it->second.best / pindexTip->nBaseTarget;
+                        if (nAdjustedTime + 1 >= (int64_t)pindexTip->nTime + (int64_t)deadline) {
                             // Forge
                             LogPrint(BCLog::POC, "Generate block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
+                                it->second.height, it->second.nonce, it->second.plotterId, deadline);
                             pblock = CreateBlock(it->second);
                             if (!pblock) {
                                 LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                    it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
+                                    it->second.height, it->second.nonce, it->second.plotterId, deadline);
                             } else {
                                 LogPrint(BCLog::POC, "Created block: %s/%d\n", pblock->GetHash().ToString(), pblock->nTime);
                             }
@@ -108,16 +110,17 @@ void CheckDeadlineThread()
                             ++it;
                             continue;
                         }
-                    } else if (pindexTip->pprev && pindexTip->pprev->GetBlockHash().GetUint64(0) == it->first) {
+                    } else if (pindexTip->pprev && pindexTip->pprev->GetNextGenerationSignature().GetUint64(0) == it->first) {
                         // Previous round
                         // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork).
-                        uint64_t myForgeTime = (uint64_t) pindexTip->pprev->GetBlockTime() + it->second.deadline + 1;
-                        uint64_t currentForgeTime = (uint64_t) pindexTip->GetBlockTime();
-                        if (myForgeTime <= currentForgeTime) {
+                        uint64_t deadline = it->second.best / pindexTip->pprev->nBaseTarget;
+                        uint64_t myForgingTime = (uint64_t) pindexTip->pprev->GetBlockTime() + deadline + 1;
+                        uint64_t mainForgeTime = (uint64_t) pindexTip->GetBlockTime();
+                        if (myForgingTime < mainForgeTime || (myForgingTime == mainForgeTime && pindexTip->pprev->nPlotterId != it->second.plotterId)) {
                             // My deadline maybe best. Forge new block
                             // Try snatch block and post block not wait
                             LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "(%" PRIu64 " <= %" PRIu64 ")\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline, myForgeTime, currentForgeTime);
+                                it->second.height, it->second.nonce, it->second.plotterId, deadline, myForgingTime, mainForgeTime);
                             // Invalidate tip block
                             CValidationState state;
                             if (!InvalidateBlock(state, Params(), pindexTip)) {
@@ -129,7 +132,7 @@ void CheckDeadlineThread()
                                 pblock = CreateBlock(it->second);
                                 if (!pblock) {
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                        it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline);
+                                        it->second.height, it->second.nonce, it->second.plotterId, deadline);
                                 } else if (mapBlockIndex.count(pblock->GetHash())) {
                                     // Exist block
                                     LogPrintf("Snatch block give up: Exist block %s\n", pblock->GetHash().ToString());
@@ -158,7 +161,7 @@ void CheckDeadlineThread()
                         } else {
                             // Not better tip, give up!
                             LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "(%" PRIu64 " > %" PRIu64 ")\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, it->second.deadline, myForgeTime, currentForgeTime);
+                                it->second.height, it->second.nonce, it->second.plotterId, deadline, myForgingTime, mainForgeTime);
                         }
                     }
 
@@ -199,15 +202,13 @@ static constexpr int SCOOPS_PER_PLOT = 4096;
 static constexpr int PLOT_SIZE = SCOOPS_PER_PLOT * SCOOP_SIZE; // 256KB
 static std::unique_ptr<unsigned char> calcDLDataCache(new unsigned char[PLOT_SIZE + 16]); // Global calc cache
 
-//! Thread unsafe
-static uint64_t CalcDL(const CBlockIndex &prev, const CBlockHeader &block, const Consensus::Params &params) {
+//! Thread safe
+static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const uint64_t& nPlotterId, const uint64_t& nNonce, const Consensus::Params& params) {
     CShabal256 shabal256;
     uint256 temp;
 
-    const uint256 &generationSignature = prev.GetNextGenerationSignature();
-
     // Scoop
-    const uint64_t flipHeight = htobe64(static_cast<uint64_t>(prev.nHeight + 1));
+    const uint64_t flipHeight = htobe64(static_cast<uint64_t>(nHeight));
     shabal256
         .Write(generationSignature.begin(), generationSignature.size())
         .Write((const unsigned char*)&flipHeight, sizeof(flipHeight))
@@ -215,8 +216,8 @@ static uint64_t CalcDL(const CBlockIndex &prev, const CBlockHeader &block, const
     const uint32_t scoop = (uint32_t) (temp.begin()[31] + 256 * temp.begin()[30]) % 4096;
 
     // Row data
-    const uint64_t addr = htobe64(block.nPlotterId);
-    const uint64_t nonce = htobe64(block.nNonce);
+    const uint64_t addr = htobe64(nPlotterId);
+    const uint64_t nonce = htobe64(nNonce);
     unsigned char *const data = calcDLDataCache.get();
     memcpy(data + PLOT_SIZE, (const unsigned char*)&addr, 8);
     memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
@@ -252,11 +253,11 @@ static uint64_t CalcDL(const CBlockIndex &prev, const CBlockHeader &block, const
         .Write(generationSignature.begin(), generationSignature.size())
         .Write(data + scoop * SCOOP_SIZE, SCOOP_SIZE)
         .Finalize(temp.begin());
-    return temp.GetUint64(0) / prev.nBaseTarget;
+    return temp.GetUint64(0);
 }
 
 // Require hold cs_main
-uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params, bool fEnableCache)
+uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, bool fEnableCache, const Consensus::Params& params)
 {
     // Fund
     if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
@@ -266,9 +267,9 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
     if (block.nPlotterId == 0 && prevBlockIndex.nHeight + 1 >= params.BHDIP006Height)
         return poc::INVALID_DEADLINE;
 
-    // Regtest
+    // Regtest use nonce as deadline
     if (params.fPocAllowMinDifficultyBlocks)
-        return block.nNonce;
+        return block.nNonce * prevBlockIndex.nBaseTarget;
 
     if (fEnableCache) {
         // From cache
@@ -277,13 +278,13 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
         bool inserted;
         std::tie(itCache, inserted) = mapBlockDeadlineCache.emplace(hash, poc::INVALID_DEADLINE);
         if (inserted) {
-            itCache->second = CalcDL(prevBlockIndex, block, params);
+            itCache->second = CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
             
             // Prune deadline cache
             if (mapBlockDeadlineCache.size() > chainActive.Height() + params.nMinerConfirmationWindow) {
                 LogPrint(BCLog::POC, "%s: Pruning deadline cache (size %u)\n", __func__, mapBlockDeadlineCache.size());
 
-                uint64_t deadline = itCache->second;
+                uint64_t best = itCache->second;
                 for (auto it = mapBlockDeadlineCache.begin(); it != mapBlockDeadlineCache.end();) {
                     if (it->first != hash) {
                         auto mi = mapBlockIndex.find(it->first);
@@ -296,18 +297,19 @@ uint64_t CalculateDeadline(const CBlockIndex &prevBlockIndex, const CBlockHeader
                     ++it;
                 }
 
-                return deadline;
+                return best;
             }
         } else {
             LogPrint(BCLog::POC, "%s: Hit %d(%s) from deadline cache\n", __func__, prevBlockIndex.nHeight + 1, block.GetHash().GetHex());
         }
+
         return itCache->second;
     } else {
-        return CalcDL(prevBlockIndex, block, params);
+        return CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
     }
 }
 
-uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
+uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     int nHeight = prevBlockIndex.nHeight + 1;
     if (nHeight <= params.BHDIP001StartMingingHeight) {
@@ -381,8 +383,9 @@ uint64_t CalculateBaseTarget(const CBlockIndex &prevBlockIndex, const CBlockHead
     }
 }
 
-uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, const uint64_t &nNonce, const uint64_t &nPlotterId,
-    const std::string &generateTo, bool fCheckBind, const Consensus::Params& params)
+uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
+    const uint64_t& nNonce, const uint64_t& nPlotterId, const std::string& generateTo,
+    bool fCheckBind, const Consensus::Params& params)
 {
     AssertLockHeld(cs_main);
 
@@ -390,32 +393,32 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
         throw JSONRPCError(RPC_INVALID_REQUEST, "Not run in mining mode, restart by -server");
 
     CBlockHeader block;
-    block.nVersion   = ComputeBlockVersion(&prevBlockIndex, params);
-    block.nNonce     = nNonce;
     block.nPlotterId = nPlotterId;
-    uint64_t calcDeadline = CalculateDeadline(prevBlockIndex, block, params, false);
-    if (calcDeadline == INVALID_DEADLINE)
+    block.nNonce     = nNonce;
+    const uint64_t calcUnformattedDeadline = CalculateDeadline(prevBlockIndex, block, false, params);
+    if (calcUnformattedDeadline == INVALID_DEADLINE)
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid deadline");
 
+    const uint64_t calcDeadline = calcUnformattedDeadline / prevBlockIndex.nBaseTarget;
     LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
         prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
 
-    uint64_t blockId = prevBlockIndex.GetBlockHash().GetUint64(0);
-    bool fBest = false;
-    if (mapGenerators.count(blockId)) {
-        GeneratorState &generatorState = mapGenerators[blockId];
-        if (generatorState.deadline > calcDeadline) {
-            fBest = true;
-            bestDeadline = calcDeadline;
+    bestDeadline = calcDeadline;
+    const uint64_t generationId = prevBlockIndex.GetNextGenerationSignature().GetUint64(0);
+    bool fNewBest = false;
+    if (mapGenerators.count(generationId)) {
+        GeneratorState &generatorState = mapGenerators[generationId];
+        if (generatorState.best > calcUnformattedDeadline) {
+            fNewBest = true;
         } else {
-            bestDeadline = generatorState.deadline;
+            fNewBest = false;
+            bestDeadline = generatorState.best / prevBlockIndex.nBaseTarget;
         }
     } else {
-        fBest = true;
-        bestDeadline = calcDeadline;
+        fNewBest = true;
     }
 
-    if (fBest) {
+    if (fNewBest) {
         CTxDestination dest;
         std::shared_ptr<CKey> privKey;
         if (generateTo.empty()) {
@@ -496,24 +499,25 @@ uint64_t AddNonce(uint64_t &bestDeadline, const CBlockIndex &prevBlockIndex, con
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Not found private key for signature");
         }
 
-        GeneratorState &generatorState = mapGenerators[blockId];
-        generatorState.nonce     = nNonce;
+        // Update best
+        GeneratorState &generatorState = mapGenerators[generationId];
         generatorState.plotterId = nPlotterId;
-        generatorState.deadline  = calcDeadline;
+        generatorState.nonce     = nNonce;
+        generatorState.best      = calcUnformattedDeadline;
         generatorState.height    = prevBlockIndex.nHeight + 1;
         generatorState.dest      = dest;
         generatorState.privKey   = privKey;
 
         LogPrint(BCLog::POC, "New best deadline %" PRIu64 ".\n", calcDeadline);
 
-        uiInterface.NotifyBestDeadlineChanged(generatorState.height, generatorState.nonce, generatorState.plotterId, calcDeadline);
+        uiInterface.NotifyBestDeadlineChanged(generatorState.height, generatorState.plotterId, generatorState.nonce, calcDeadline);
     }
 
     return calcDeadline;
 }
 
-CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &plotterId, int nMiningHeight, const CCoinsViewCache &view,
-    const Consensus::Params &consensusParams, CAmount *pMinerPledgeOldConsensus)
+CAmount GetMinerForgePledge(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight, const CCoinsViewCache& view,
+    const Consensus::Params& consensusParams, CAmount* pMinerPledgeOldConsensus)
 {
     AssertLockHeld(cs_main);
     assert(nMiningHeight > 0);
@@ -537,7 +541,7 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
 
             // 1. Multi plotter generate to same wallet (like pool)
             // 2. Same plotter generate to multi wallets (for decrease pledge)
-            if (pblockIndex->minerAccountID == minerAccountID || pblockIndex->nPlotterId == plotterId) {
+            if (pblockIndex->minerAccountID == minerAccountID || pblockIndex->nPlotterId == nPlotterId) {
                 ++nTotalForgeCount;
 
                 if (pblockIndex->minerAccountID != minerAccountID) {
@@ -585,12 +589,13 @@ CAmount GetMinerForgePledge(const CAccountID &minerAccountID, const uint64_t &pl
     return consensusParams.BHDIP001PledgeAmountPerTB * nMinerCapacityTB;
 }
 
-bool CheckProofOfCapacity(const CBlockIndex &prevBlockIndex, const CBlockHeader &block, const Consensus::Params& params)
+bool CheckProofOfCapacity(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
-    // Check deadline
-    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
+    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, true, params) / prevBlockIndex.nBaseTarget;
+
+    // Maybe overflow on arithmetic operation
     if (deadline > poc::MAX_TARGET_DEADLINE)
-        return false; 
+        return false;
 
     if (prevBlockIndex.nHeight + 1 < params.BHDIP007Height) {
         return deadline == 0 || block.GetBlockTime() > prevBlockIndex.GetBlockTime() + (int64_t)deadline;
@@ -600,7 +605,7 @@ bool CheckProofOfCapacity(const CBlockIndex &prevBlockIndex, const CBlockHeader 
     }
 }
 
-bool AddMiningSignaturePrivkey(const std::string &privkey, std::string *newAddress)
+bool AddMiningSignaturePrivkey(const std::string& privkey, std::string* newAddress)
 {
     CBitcoinSecret vchSecret;
     if (vchSecret.SetString(privkey)) {

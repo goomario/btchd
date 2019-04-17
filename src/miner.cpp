@@ -96,7 +96,7 @@ void BlockAssembler::resetBlock()
 }
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx,
-    uint64_t nonce, uint64_t plotterId, uint64_t deadline, const std::shared_ptr<CKey> privKey)
+    uint64_t plotterId, uint64_t nonce, uint64_t deadline, const std::shared_ptr<CKey> privKey)
 {
     int64_t nTimeStart = GetTimeMicros();
 

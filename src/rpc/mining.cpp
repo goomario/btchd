@@ -63,8 +63,8 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const st
     while (nHeight < nHeightEnd) {
         ++nHeight;
 
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript,
-            true, nNonce, nPlotterId, nDeadline, privKey));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true,
+            nPlotterId, nNonce, nDeadline, privKey));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
