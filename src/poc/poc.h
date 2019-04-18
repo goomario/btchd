@@ -51,12 +51,11 @@ static const uint64_t INVALID_DEADLINE = std::numeric_limits<uint64_t>::max();
  *
  * @param prevBlockIndex    Previous block
  * @param block             Block header
- * @param fEnableCache      Add result to cache option
  * @param params            Consensus params
  *
- * @return Return unformatted deadline, require divide prev.nBaseTarget
+ * @return Return deadline
  */
-uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, bool fEnableCache, const Consensus::Params& params);
+uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params);
 
 /**
  * Calculate base target

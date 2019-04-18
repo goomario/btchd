@@ -67,10 +67,6 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
-            // Second sort by create block time (prevent earliest publish block), ...
-            if (pa->nTime < pb->nTime) return false;
-            if (pa->nTime > pb->nTime) return true;
-
             // ... then by earliest time received, ...
             if (pa->nSequenceId < pb->nSequenceId) return false;
             if (pa->nSequenceId > pb->nSequenceId) return true;
@@ -3616,7 +3612,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
                 CBlockIndex *pindexTip = chainActive.Tip();
                 arith_uint256 nNewChainWork = pindexPrev->nChainWork + GetBlockProof(header, chainparams.GetConsensus());
                 arith_uint256 nBestChainWork = pindexTip ? pindexTip->nChainWork : 0;
-                if (nNewChainWork < nBestChainWork || (nNewChainWork == nBestChainWork && pindexTip != nullptr && pindexTip->nTime < header.nTime)) {
+                if (nNewChainWork <= nBestChainWork) {
                     // Not better chainwork. Reject low chainwork fork
                     if (first_invalid) *first_invalid = header;
                     return state.Invalid(error("%s: Reject not better chainwork for block(%s <- %s)",

@@ -75,7 +75,7 @@ void CheckDeadlineThread()
 {
     RenameThread("bitcoin-checkdeadline");
     while (!interruptCheckDeadline) {
-        if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(500)))
+        if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(200)))
             break;
         
         std::shared_ptr<CBlock> pblock;
@@ -87,6 +87,7 @@ void CheckDeadlineThread()
                     LogPrintf("Your computer time maybe abnormal (offset %" PRId64 "). " \
                         "Check your computer time or add -maxtimeadjustment=0 \n", GetTimeOffset());
                 }
+                const CChainParams& params = Params();
                 CBlockIndex *pindexTip = chainActive.Tip();
                 int64_t nAdjustedTime = GetAdjustedTime();
                 auto it = mapGenerators.begin();
@@ -103,7 +104,7 @@ void CheckDeadlineThread()
                                 LogPrintf("Generate block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                     it->second.height, it->second.nonce, it->second.plotterId, deadline);
                             } else {
-                                LogPrint(BCLog::POC, "Created block: %s/%d\n", pblock->GetHash().ToString(), pblock->nTime);
+                                LogPrint(BCLog::POC, "Created block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
                             }
                         } else {
                             // Continue wait forge time
@@ -113,55 +114,44 @@ void CheckDeadlineThread()
                     } else if (pindexTip->pprev && pindexTip->pprev->GetNextGenerationSignature().GetUint64(0) == it->first) {
                         // Previous round
                         // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork).
-                        uint64_t deadline = it->second.best / pindexTip->pprev->nBaseTarget;
-                        uint64_t myForgingTime = (uint64_t) pindexTip->pprev->GetBlockTime() + deadline + 1;
-                        uint64_t mainForgeTime = (uint64_t) pindexTip->GetBlockTime();
-                        if (myForgingTime < mainForgeTime || (myForgingTime == mainForgeTime && pindexTip->pprev->nPlotterId != it->second.plotterId)) {
-                            // My deadline maybe best. Forge new block
-                            // Try snatch block and post block not wait
-                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "(%" PRIu64 " <= %" PRIu64 ")\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, deadline, myForgingTime, mainForgeTime);
+                        uint64_t mineDeadline = it->second.best / pindexTip->pprev->nBaseTarget;
+
+                        CBlockHeader block;
+                        block.nTime       = static_cast<uint32_t>(pindexTip->pprev->GetBlockTime() + mineDeadline + 1);
+                        block.nPlotterId  = it->second.plotterId;
+                        block.nNonce      = it->second.nonce;
+                        block.nBaseTarget = poc::CalculateBaseTarget(*(pindexTip->pprev), block, params.GetConsensus());
+
+                        arith_uint256 mineBlockWork = GetBlockProof(block, params.GetConsensus());
+                        arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, params.GetConsensus());
+                        if (mineBlockWork > tipBlockWork) {
+                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", %s > %s\n",
+                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline,
+                                mineBlockWork.ToString(), tipBlockWork.ToString());
                             // Invalidate tip block
                             CValidationState state;
-                            if (!InvalidateBlock(state, Params(), pindexTip)) {
+                            if (!InvalidateBlock(state, params, pindexTip)) {
                                 LogPrint(BCLog::POC, "Snatch block: invalidate current tip block error, %s\n", state.GetRejectReason());
                                 LogPrint(BCLog::POC, "Snatch block: current tip, %s\n", pindexTip->ToString());
                                 LogPrint(BCLog::POC, "End snatch block\n");
                             } else {
                                 fReActivateBestChain = true;
+                                ResetBlockFailureFlags(pindexTip);
+
                                 pblock = CreateBlock(it->second);
                                 if (!pblock) {
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-                                        it->second.height, it->second.nonce, it->second.plotterId, deadline);
-                                } else if (mapBlockIndex.count(pblock->GetHash())) {
-                                    // Exist block
-                                    LogPrintf("Snatch block give up: Exist block %s\n", pblock->GetHash().ToString());
+                                        it->second.height, it->second.nonce, it->second.plotterId, mineDeadline);
                                 } else {
-                                    arith_uint256 mineBlockWork = GetBlockProof(*pblock, Params().GetConsensus());
-                                    arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
-                                    if (mineBlockWork < tipBlockWork || pblock->nTime > pindexTip->nTime) {
-                                        // Low chainwork
-                                        LogPrintf("Snatch block give up: Low chainwork, mine/%s/%d < tip/%s/%d\n",
-                                            mineBlockWork.ToString(), pblock->nTime, tipBlockWork.ToString(), pindexTip->nTime);
-                                    } else {
-                                        // Snatch block
-                                        LogPrint(BCLog::POC, "Snatch block: mine/%s/%d <-> tip/%s/%d %d\n",
-                                            pblock->GetHash().ToString(), pblock->nTime,
-                                            pindexTip->phashBlock->ToString(), pindexTip->nTime, pindexTip->nHeight);
-
-                                        // Set best block chainwork small then mine.
-                                        if (mineBlockWork == tipBlockWork && pblock->nTime == pindexTip->nTime) {
-                                            pindexTip->nChainWork = pindexTip->pprev->nChainWork + tipBlockWork - 1;
-                                        }
-                                    }
+                                    // Snatch block
+                                    LogPrint(BCLog::POC, "Snatch block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
                                 }
-
-                                ResetBlockFailureFlags(pindexTip);
                             }
                         } else {
                             // Not better tip, give up!
-                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "(%" PRIu64 " > %" PRIu64 ")\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, deadline, myForgingTime, mainForgeTime);
+                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", %s <= %s\n",
+                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline,
+                                mineBlockWork.ToString(), tipBlockWork.ToString());
                         }
                     }
 
@@ -173,13 +163,13 @@ void CheckDeadlineThread()
         // Update best. Not hold cs_main
         if (fReActivateBestChain) {
             CValidationState state;
-            ActivateBestChain(state, Params());
+            ActivateBestChain(state, params);
             assert (state.IsValid());
             LogPrint(BCLog::POC, "End snatch block\n");
         }
 
         // Broadcast. Not hold cs_main
-        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+        if (pblock && !ProcessNewBlock(params, pblock, true, nullptr)) {
             LogPrintf("Process new block fail %s\n", pblock->ToString());
         }
     }
@@ -256,8 +246,8 @@ static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const ui
     return temp.GetUint64(0);
 }
 
-// Require hold cs_main
-uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, bool fEnableCache, const Consensus::Params& params)
+//! Thread unsafe
+static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, bool fEnableCache, const Consensus::Params& params)
 {
     // Fund
     if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
@@ -307,6 +297,12 @@ uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader
     } else {
         return CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
     }
+}
+
+// Require hold cs_main
+uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
+{
+    return CalculateUnformattedDeadline(prevBlockIndex, block, true, params) / prevBlockIndex.nBaseTarget;
 }
 
 uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
@@ -395,7 +391,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
     CBlockHeader block;
     block.nPlotterId = nPlotterId;
     block.nNonce     = nNonce;
-    const uint64_t calcUnformattedDeadline = CalculateDeadline(prevBlockIndex, block, false, params);
+    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(prevBlockIndex, block, false, params);
     if (calcUnformattedDeadline == INVALID_DEADLINE)
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid deadline");
 
@@ -591,7 +587,7 @@ CAmount GetMinerForgePledge(const CAccountID& minerAccountID, const uint64_t& nP
 
 bool CheckProofOfCapacity(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
-    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, true, params) / prevBlockIndex.nBaseTarget;
+    uint64_t deadline = CalculateDeadline(prevBlockIndex, block, params);
 
     // Maybe overflow on arithmetic operation
     if (deadline > poc::MAX_TARGET_DEADLINE)

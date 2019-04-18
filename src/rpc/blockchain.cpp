@@ -96,8 +96,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
     result.push_back(Pair("generationSignature", HexStr(blockindex->GetGenerationSignature())));
     if (blockindex->pprev) {
-        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), true,
-            Params().GetConsensus()) / blockindex->nBaseTarget));
+        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
     }
@@ -149,8 +148,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("nonce", (uint64_t)block.nNonce));
     result.push_back(Pair("generationSignature", HexStr(blockindex->GetGenerationSignature())));
     if (blockindex->pprev) {
-        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), true,
-            Params().GetConsensus()) / blockindex->nBaseTarget));
+        result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
     }
