@@ -3603,71 +3603,97 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
 bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex, CBlockHeader *first_invalid)
 {
     if (first_invalid != nullptr) first_invalid->SetNull();
-    {
+    // DoS check
+    if (headers.size() == 1) {
         LOCK(cs_main);
-
-        // DoS check
-        if (headers.size() == 1) {
-            const CBlockHeader& header = headers[0];
-            uint256 hash = header.GetHash();
-            if (mapBlockIndex.count(hash) == 0) {
-                // New block
-                BlockMap::iterator mi = mapBlockIndex.find(header.hashPrevBlock);
-                if (mi != mapBlockIndex.end()) {
-                    CBlockIndex *pindexPrev = (*mi).second;
-                    CBlockIndex *pindexTip = chainActive.Tip();
-                    arith_uint256 nNewChainWork = pindexPrev->nChainWork + GetBlockProof(header, chainparams.GetConsensus());
-                    arith_uint256 nBestChainWork = pindexTip ? pindexTip->nChainWork : 0;
-                    if (nNewChainWork < nBestChainWork || (nNewChainWork == nBestChainWork && pindexTip != nullptr && pindexTip->nTime < header.nTime)) {
-                        // Not better chainwork. Reject low chainwork fork
-                        if (first_invalid) *first_invalid = header;
-                        return state.Invalid(error("%s: Reject not better chainwork for block(%s <- %s)",
-                                __func__, hash.ToString(), pindexPrev->phashBlock->ToString()),
-                            REJECT_INVALID, "bad-chainwork");
-                    }
+        const CBlockHeader& header = headers[0];
+        uint256 hash = header.GetHash();
+        if (mapBlockIndex.count(hash) == 0) {
+            // New block
+            BlockMap::iterator mi = mapBlockIndex.find(header.hashPrevBlock);
+            if (mi != mapBlockIndex.end()) {
+                CBlockIndex *pindexPrev = (*mi).second;
+                CBlockIndex *pindexTip = chainActive.Tip();
+                arith_uint256 nNewChainWork = pindexPrev->nChainWork + GetBlockProof(header, chainparams.GetConsensus());
+                arith_uint256 nBestChainWork = pindexTip ? pindexTip->nChainWork : 0;
+                if (nNewChainWork < nBestChainWork || (nNewChainWork == nBestChainWork && pindexTip != nullptr && pindexTip->nTime < header.nTime)) {
+                    // Not better chainwork. Reject low chainwork fork
+                    if (first_invalid) *first_invalid = header;
+                    return state.Invalid(error("%s: Reject not better chainwork for block(%s <- %s)",
+                            __func__, hash.ToString(), pindexPrev->phashBlock->ToString()),
+                        REJECT_INVALID, "bad-chainwork");
                 }
-            }
-        }
-
-        // Skip hit checkpoint before blocks for verify deadline performance
-        int nLastKnownBlockIndex = -1;
-        if (headers.size() > 10 && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
-            const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
-            bool fFoundCheckpoint = false;
-            for (nLastKnownBlockIndex = headers.size() - 1; nLastKnownBlockIndex >= 0 && !fFoundCheckpoint; nLastKnownBlockIndex--) {
-                uint256 hash = headers[nLastKnownBlockIndex].GetHash();
-                for (auto it = mapCheckpoints.rbegin(); it != mapCheckpoints.rend(); it++) {
-                    if (it->second == hash) {
-                        fFoundCheckpoint = true;
-                        break;
-                    }
-                }
-            }
-            if (fFoundCheckpoint) nLastKnownBlockIndex++;
-            LogPrint(BCLog::POC, "ProcessNewBlockHeaders: %s-%s, Verify work [%d,%d)\n",
-                headers.begin()->GetHash().ToString(), headers.rbegin()->GetHash().ToString(),
-                nLastKnownBlockIndex + 1, (int) headers.size());
-        }
-
-        // Connect block
-        for (std::size_t index = 0; index < headers.size(); index++) {
-            const CBlockHeader& header = headers[index];
-            bool fCheckWork = static_cast<int>(index) > nLastKnownBlockIndex;
-            CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
-            if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, fCheckWork)) {
-                if (first_invalid) *first_invalid = header;
-                return false;
-            }
-            if (ppindex) {
-                *ppindex = pindex;
-            }
-            // Exit on shutdown requested
-            if (fCheckWork && ShutdownRequested()) {
-                break;
             }
         }
     }
-    NotifyHeaderTip();
+
+    // Skip hit checkpoint before blocks for verify deadline performance
+    int nLastKnownBlockIndex = -1;
+    if (headers.size() > 10 && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
+        const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
+        bool fFoundCheckpoint = false;
+        for (nLastKnownBlockIndex = headers.size() - 1; nLastKnownBlockIndex >= 0 && !fFoundCheckpoint; nLastKnownBlockIndex--) {
+            uint256 hash = headers[nLastKnownBlockIndex].GetHash();
+            for (auto it = mapCheckpoints.rbegin(); it != mapCheckpoints.rend(); it++) {
+                if (it->second == hash) {
+                    fFoundCheckpoint = true;
+                    break;
+                }
+            }
+        }
+        if (fFoundCheckpoint) nLastKnownBlockIndex++;
+        LogPrint(BCLog::POC, "ProcessNewBlockHeaders: %s-%s, Verify work [%d,%d)\n",
+            headers.begin()->GetHash().ToString(), headers.rbegin()->GetHash().ToString(),
+            nLastKnownBlockIndex + 1, (int) headers.size());
+    }
+
+    // Connect block
+    {
+        std::size_t index = 0;
+        // Not required verify work
+        if (nLastKnownBlockIndex > 0) {
+            LOCK(cs_main);
+            for (; index < headers.size(); index++) {
+                const CBlockHeader& header = headers[index];
+                if (static_cast<int>(index) <= nLastKnownBlockIndex)
+                    break;
+                CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
+                if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, false)) {
+                    if (first_invalid) *first_invalid = header;
+                    return false;
+                }
+                if (ppindex) {
+                    *ppindex = pindex;
+                }
+            }
+        }
+        // Required verify work
+        while (index < headers.size()) {
+            // Hold cs_main too long time maybe block GUI thread
+            {
+                LOCK(cs_main);
+                for (std::size_t processed = 0; processed < 10 && index < headers.size(); processed++, index++) {
+                    const CBlockHeader& header = headers[index];
+                    CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
+                    if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, true)) {
+                        if (first_invalid) *first_invalid = header;
+                        return false;
+                    }
+                    if (ppindex) {
+                        *ppindex = pindex;
+                    }
+                }
+            }
+            if (ShutdownRequested())
+                break;
+            MilliSleep(10);
+        }
+    }
+
+    {
+        LOCK(cs_main);
+        NotifyHeaderTip();
+    }
     return true;
 }
 
