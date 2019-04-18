@@ -180,22 +180,14 @@ void CBlockIndex::BuildSkip()
 
 arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params& params)
 {
-    if (params.fPocAllowMinDifficultyBlocks) {
-        //! Testnet use special work
-        return poc::TWO64 / header.nBaseTarget + uint64_t(0xffffffff) / std::max((uint64_t)1, header.nNonce);
-    } else {
-        return poc::TWO64 / header.nBaseTarget;
-    }
+    //! Overflow [-20%,+20%]
+    return poc::TWO64 / header.nBaseTarget + poc::TWO64 / (uint64_t) header.GetBlockTime();
 }
 
 arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params& params)
 {
-    if (params.fPocAllowMinDifficultyBlocks) {
-        //! Testnet use special work
-        return poc::TWO64 / block.nBaseTarget + uint64_t(0xffffffff) / std::max((uint64_t)1, block.nNonce);
-    } else {
-        return poc::TWO64 / block.nBaseTarget;
-    }
+    //! Overflow [-20%,+20%]
+    return poc::TWO64 / block.nBaseTarget + poc::TWO64 / (uint64_t) block.GetBlockTime();
 }
 
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params& params)

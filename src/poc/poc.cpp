@@ -78,6 +78,7 @@ void CheckDeadlineThread()
         if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(200)))
             break;
         
+        const CChainParams& params = Params();
         std::shared_ptr<CBlock> pblock;
         bool fReActivateBestChain = false;
         {
@@ -87,7 +88,6 @@ void CheckDeadlineThread()
                     LogPrintf("Your computer time maybe abnormal (offset %" PRId64 "). " \
                         "Check your computer time or add -maxtimeadjustment=0 \n", GetTimeOffset());
                 }
-                const CChainParams& params = Params();
                 CBlockIndex *pindexTip = chainActive.Tip();
                 int64_t nAdjustedTime = GetAdjustedTime();
                 auto it = mapGenerators.begin();
