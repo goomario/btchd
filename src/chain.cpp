@@ -180,14 +180,14 @@ void CBlockIndex::BuildSkip()
 
 arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params& params)
 {
-    //! Overflow [-20%,+20%]
-    return poc::TWO64 / header.nBaseTarget + poc::TWO64 / (uint64_t) header.GetBlockTime();
+    //! Same nBaseTarget select biggest hash
+    return (poc::TWO64 / header.nBaseTarget) * 100 + header.GetHash().GetUint64(0) % 100;
 }
 
 arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params& params)
 {
-    //! Overflow [-20%,+20%]
-    return poc::TWO64 / block.nBaseTarget + poc::TWO64 / (uint64_t) block.GetBlockTime();
+    //! Same nBaseTarget select biggest hash
+    return (poc::TWO64 / block.nBaseTarget) * 100 + block.phashBlock->GetUint64(0) % 100;
 }
 
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params& params)

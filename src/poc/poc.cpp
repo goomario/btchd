@@ -111,29 +111,20 @@ void CheckDeadlineThread()
                             ++it;
                             continue;
                         }
-                    } else if (pindexTip->pprev && pindexTip->pprev->GetNextGenerationSignature().GetUint64(0) == it->first) {
+                    } else if (pindexTip->GetGenerationSignature().GetUint64(0) == it->first) {
                         // Previous round
                         // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork).
                         uint64_t mineDeadline = it->second.best / pindexTip->pprev->nBaseTarget;
+                        uint64_t tipDeadline = (uint64_t) (pindexTip->GetBlockTime() - pindexTip->pprev->GetBlockTime() - 1);
+                        if (mineDeadline <= tipDeadline) {
+                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 " <= %" PRIu64 "\n",
+                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline, tipDeadline);
 
-                        CBlockHeader block;
-                        block.nTime       = static_cast<uint32_t>(pindexTip->pprev->GetBlockTime() + mineDeadline + 1);
-                        block.nPlotterId  = it->second.plotterId;
-                        block.nNonce      = it->second.nonce;
-                        block.nBaseTarget = poc::CalculateBaseTarget(*(pindexTip->pprev), block, params.GetConsensus());
-
-                        arith_uint256 mineBlockWork = GetBlockProof(block, params.GetConsensus());
-                        arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, params.GetConsensus());
-                        if (mineBlockWork > tipBlockWork) {
-                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", %s > %s\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline,
-                                mineBlockWork.ToString(), tipBlockWork.ToString());
                             // Invalidate tip block
                             CValidationState state;
                             if (!InvalidateBlock(state, params, pindexTip)) {
                                 LogPrint(BCLog::POC, "Snatch block: invalidate current tip block error, %s\n", state.GetRejectReason());
                                 LogPrint(BCLog::POC, "Snatch block: current tip, %s\n", pindexTip->ToString());
-                                LogPrint(BCLog::POC, "End snatch block\n");
                             } else {
                                 fReActivateBestChain = true;
                                 ResetBlockFailureFlags(pindexTip);
@@ -143,15 +134,23 @@ void CheckDeadlineThread()
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                         it->second.height, it->second.nonce, it->second.plotterId, mineDeadline);
                                 } else {
-                                    // Snatch block
-                                    LogPrint(BCLog::POC, "Snatch block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
+                                    arith_uint256 mineBlockWork = GetBlockProof(*pblock, params.GetConsensus());
+                                    arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, params.GetConsensus());
+                                    if (mineBlockWork <= tipBlockWork) {
+                                        // Not better tip, give up!
+                                        LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 " %s <= %s\n",
+                                            it->second.height, it->second.nonce, it->second.plotterId,
+                                            mineBlockWork.ToString(), tipBlockWork.ToString());
+                                        pblock.reset();
+                                    } else  {
+                                        LogPrint(BCLog::POC, "Snatch block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
+                                    }
                                 }
                             }
                         } else {
                             // Not better tip, give up!
-                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 ", %s <= %s\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline,
-                                mineBlockWork.ToString(), tipBlockWork.ToString());
+                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 " > %" PRIu64 "\n",
+                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline, tipDeadline);
                         }
                     }
 
