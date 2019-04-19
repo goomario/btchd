@@ -565,7 +565,7 @@ void CBlockPolicyEstimator::processTransaction(const CTxMemPoolEntry& entry, boo
         return;
     }
 
-    if (entry.GetTx().IsUniform()) {
+    if (entry.GetTx().IsUniform() && entry.GetFee() >= COIN / 10) {
         // Ignore special txs
         return;
     }
@@ -592,7 +592,7 @@ void CBlockPolicyEstimator::processTransaction(const CTxMemPoolEntry& entry, boo
 
 bool CBlockPolicyEstimator::processBlockTx(unsigned int nBlockHeight, const CTxMemPoolEntry* entry)
 {
-    if (!removeTx(entry->GetTx().GetHash(), true) || entry->GetTx().IsUniform()) {
+    if (!removeTx(entry->GetTx().GetHash(), true) || (entry->GetTx().IsUniform() && entry.GetFee() >= COIN / 10)) {
         // This transaction wasn't being tracked for fee estimation
         return false;
     }
