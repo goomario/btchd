@@ -878,9 +878,7 @@ void PeerLogicValidation::NewPoCValidBlock(const CBlockIndex *pindex, const std:
         // but we don't think they have this one, go ahead and announce it
         if (state.fPreferHeaderAndIDs && (!fWitnessEnabled || state.fWantsCmpctWitness) &&
                 !PeerHasHeader(&state, pindex) && PeerHasHeader(&state, pindex->pprev) &&
-                state.pindexBestKnownBlock != nullptr &&
-                    (state.pindexBestKnownBlock->nChainWork < pindex->nChainWork ||
-                        (state.pindexBestKnownBlock->nChainWork == pindex->nChainWork && state.pindexBestKnownBlock->nTime > pindex->nTime))) {
+                (!state.pindexBestKnownBlock || pindex->nChainWork > state.pindexBestKnownBlock->nChainWork)) {
             LogPrint(BCLog::NET, "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoCValidBlock",
                     hashBlock.ToString(), pnode->GetId());
             connman->PushMessage(pnode, msgMaker.Make(NetMsgType::CMPCTBLOCK, *pcmpctblock));
