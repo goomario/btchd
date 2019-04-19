@@ -1972,7 +1972,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         //  relative to a piece of software is an objective fact these defaults can be easily reviewed.
         // This setting doesn't force the selection of any particular chain but makes validating some faster by
         //  effectively caching the result of part of the verification.
-        BlockMap::const_iterator  it = mapBlockIndex.find(hashAssumeValid);
+        BlockMap::const_iterator it = mapBlockIndex.find(hashAssumeValid);
         if (it != mapBlockIndex.end()) {
             if (it->second->GetAncestor(pindex->nHeight) == pindex &&
                 pindexBestHeader->GetAncestor(pindex->nHeight) == pindex &&
@@ -3598,34 +3598,12 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
 // Exposed wrapper for AcceptBlockHeader
 bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex, CBlockHeader *first_invalid)
 {
-    if (first_invalid != nullptr) first_invalid->SetNull();
-    // DoS check
-    if (headers.size() == 1) {
-        LOCK(cs_main);
-        const CBlockHeader& header = headers[0];
-        uint256 hash = header.GetHash();
-        if (mapBlockIndex.count(hash) == 0) {
-            // New block
-            BlockMap::iterator mi = mapBlockIndex.find(header.hashPrevBlock);
-            if (mi != mapBlockIndex.end()) {
-                CBlockIndex *pindexPrev = (*mi).second;
-                CBlockIndex *pindexTip = chainActive.Tip();
-                arith_uint256 nNewChainWork = pindexPrev->nChainWork + GetBlockProof(header, chainparams.GetConsensus());
-                arith_uint256 nBestChainWork = pindexTip ? pindexTip->nChainWork : 0;
-                if (nNewChainWork <= nBestChainWork) {
-                    // Not better chainwork. Reject low chainwork fork
-                    if (first_invalid) *first_invalid = header;
-                    return state.Invalid(error("%s: Reject not better chainwork for block(%s <- %s)",
-                            __func__, hash.ToString(), pindexPrev->phashBlock->ToString()),
-                        REJECT_INVALID, "bad-chainwork");
-                }
-            }
-        }
-    }
+    if (first_invalid != nullptr)
+        first_invalid->SetNull();
 
     // Skip hit checkpoint before blocks for verify deadline performance
     int nLastKnownBlockIndex = -1;
-    if (headers.size() > 10 && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
+    if (headers.size() >= MAX_BLOCKS_TO_ANNOUNCE && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
         const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
         bool fFoundCheckpoint = false;
         for (nLastKnownBlockIndex = headers.size() - 1; nLastKnownBlockIndex >= 0 && !fFoundCheckpoint; nLastKnownBlockIndex--) {
@@ -3638,7 +3616,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
             }
         }
         if (fFoundCheckpoint) nLastKnownBlockIndex++;
-        LogPrint(BCLog::POC, "ProcessNewBlockHeaders: %s-%s, Verify work [%d,%d)\n",
+        LogPrint(BCLog::POC, "%s: %s-%s, Verify work [%d,%d)\n", __func__,
             headers.begin()->GetHash().ToString(), headers.rbegin()->GetHash().ToString(),
             nLastKnownBlockIndex + 1, (int) headers.size());
     }
