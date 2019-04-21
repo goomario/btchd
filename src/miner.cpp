@@ -17,9 +17,9 @@
 #include <hash.h>
 #include <validation.h>
 #include <net.h>
+#include <poc/poc.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
-#include <pow.h>
 #include <primitives/transaction.h>
 #include <script/standard.h>
 #include <timedata.h>
@@ -131,8 +131,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // pblock->nTime = GetAdjustedTime();
     //
     int64_t nAdjustedTime = GetAdjustedTime();
-    if (nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + MAX_FUTURE_BLOCK_TIME)) {
-        // Time changed
+    if (chainparams.GetConsensus().fPocAllowMinDifficultyBlocks &&
+            nHeight > chainparams.GetConsensus().BHDIP006Height &&
+            nAdjustedTime > static_cast<int64_t>(pindexPrev->GetBlockTime() + deadline + chainparams.GetConsensus().nPowTargetSpacing)) {
+        // Regtest use current time
         pblock->nTime = static_cast<uint32_t>(nAdjustedTime);
     } else {
         // Keep largest difficulty
@@ -203,7 +205,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     pblock->nNonce         = nonce;
     pblock->nPlotterId     = plotterId;
-    pblock->nBaseTarget    = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    pblock->nBaseTarget    = poc::CalculateBaseTarget(*pindexPrev, *pblock, chainparams.GetConsensus());
 
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 

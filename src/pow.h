@@ -12,18 +12,8 @@
 
 class CBlockHeader;
 class CBlockIndex;
-class uint256;
-
-uint64_t GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params&);
-
-enum class PocVerifyLevel {
-    Force,      //< Verify all block
-    Checkpoint, //< Only verify checkpoint block
-    Auto,       //< Verify checkpoint and  checkpoint after block
-    Skip,       //< Dont verify any block. Reserved!
-};
 
 /** Check whether a block hash satisfies the proof-of-capacity requirement specified by nBaseTarget */
-bool CheckProofOfCapacity(const CBlockHeader* pblock, const Consensus::Params&, PocVerifyLevel pocVerifyLevel = PocVerifyLevel::Force);
+bool CheckProofOfCapacity(const CBlockIndex* pindexLast, const CBlockHeader* pblock, const Consensus::Params&);
 
 #endif // BITCOIN_POW_H

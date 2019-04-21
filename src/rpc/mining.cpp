@@ -18,7 +18,6 @@
 #include <net.h>
 #include <poc/poc.h>
 #include <policy/fees.h>
-#include <pow.h>
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
 #include <rpc/server.h>
@@ -80,7 +79,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             // Update nBaseTarget because nTime has changed
             LOCK(cs_main);
             pblock->nTime = chainActive.Tip()->nTime + 1;
-            pblock->nBaseTarget = GetNextWorkRequired(chainActive.Tip(), pblock, Params().GetConsensus());
+            pblock->nBaseTarget = poc::CalculateBaseTarget(*chainActive.Tip(), *pblock, Params().GetConsensus());
         }
 
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);

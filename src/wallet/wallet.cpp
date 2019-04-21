@@ -32,6 +32,7 @@
 #include <wallet/fees.h>
 
 #include <assert.h>
+#include <cinttypes>
 #include <future>
 
 #include <boost/algorithm/string/replace.hpp>
@@ -3172,8 +3173,6 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     return false;
                 }
                 const_cast<CRecipient&>(recipient).nAmount = nValue;
-                // "Move to" impossible have change
-                scriptChange = GetScriptForDestination(GetPrimaryDestination());
             }
 
             // coin control: send change to custom address
@@ -3641,6 +3640,8 @@ bool CWallet::DelAddressBook(const CTxDestination& address)
     return CWalletDB(*dbw).EraseName(EncodeDestination(address));
 }
 
+const static std::string DEFAULT_ACCOUNT_NAME;
+
 const std::string& CWallet::GetAccountName(const CScript& scriptPubKey) const
 {
     CTxDestination address;
@@ -3652,7 +3653,18 @@ const std::string& CWallet::GetAccountName(const CScript& scriptPubKey) const
     }
     // A scriptPubKey that doesn't have an entry in the address book is
     // associated with the default account ("").
-    const static std::string DEFAULT_ACCOUNT_NAME;
+    return DEFAULT_ACCOUNT_NAME;
+}
+
+const std::string& CWallet::GetAccountName(const CTxDestination& address) const
+{
+    auto mi = mapAddressBook.find(address);
+    if (mi != mapAddressBook.end()) {
+        return mi->second.name;
+    }
+
+    // A CTxDestination that doesn't have an entry in the address book is
+    // associated with the default account ("").
     return DEFAULT_ACCOUNT_NAME;
 }
 
@@ -3727,6 +3739,7 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
         int64_t missingExternal = std::max(std::max((int64_t) nTargetSize, (int64_t) 1) - (int64_t)setExternalKeyPool.size(), (int64_t) 0);
         int64_t missingInternal = 0;
 
+        char addressNameBuffer[32];
         bool internal = false;
         CWalletDB walletdb(*dbw);
         for (int64_t i = missingInternal + missingExternal; i--;)
@@ -3747,6 +3760,10 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
                 setInternalKeyPool.insert(index);
             } else {
                 setExternalKeyPool.insert(index);
+
+                // Add to address book
+                sprintf(addressNameBuffer, "Receive-%05" PRIi64, index);
+                SetAddressBook(GetDestinationForKey(pubkey, g_address_type), addressNameBuffer, "receive");
             }
             m_pool_key_to_index[pubkey.GetID()] = index;
         }

@@ -492,6 +492,24 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     ui->berkeleyDBVersion->hide();
 #endif
 
+    // set current wallet view
+#ifdef ENABLE_WALLET
+    bool fCurrentWalletVisible = !gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET);
+#else
+    bool fCurrentWalletVisible = false;
+#endif
+    ui->labelCurrentWalletTitle->setVisible(fCurrentWalletVisible);
+    ui->labelPrimaryAddress->setVisible(fCurrentWalletVisible);
+    ui->primaryAddress->setVisible(fCurrentWalletVisible);
+    ui->labelPrimaryAddressBalance->setVisible(fCurrentWalletVisible);
+    ui->primaryAddressBalance->setVisible(fCurrentWalletVisible);
+    ui->labelBindPlotter->setVisible(fCurrentWalletVisible);
+    ui->bindPlotterIdContainer->setVisible(fCurrentWalletVisible);
+    ui->labelEstimateCapacity->setVisible(fCurrentWalletVisible);
+    ui->estimateCapacity->setVisible(fCurrentWalletVisible);
+    ui->labelMiningRequirePledge->setVisible(fCurrentWalletVisible);
+    ui->miningRequirePledge->setVisible(fCurrentWalletVisible);
+
     // Register RPC timer interface
     rpcTimerInterface = new QtRPCTimerInterface();
     // avoid accidentally overwriting an existing, non QTThread
@@ -885,54 +903,52 @@ void RPCConsole::updatePledge()
 
         // Get account id of address
         CAccountID accountID = GetAccountIDByAddress(primaryAddress.toStdString());
-        if (accountID == 0) {
-            return;
-        }
-
-        // Primary address total balance
-        CAmount balance;
-        {
-            CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
-            balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
-            balance = balance - pledgeLoanBalance + pledgeDebitBalance;
-        }
-        ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
-
-        // Primary address capacity and pledge
-        CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, Params().GetConsensus());
-
-        // Binded plotter
-        QString strBindPlotters;
-        if (chainActive.Height() < Params().GetConsensus().BHDIP006BindPlotterActiveHeight) {
-            std::set<uint64_t> existPlotterId;
-            const int nEndHeight = chainActive.Height();
-            const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
-                                              Params().GetConsensus().BHDIP001StartMingingHeight + 1);
-            for (int index = nEndHeight; index >= nBeginHeight; index--) {
-                CBlockIndex *pblockIndex = chainActive[index];
-                if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
-                    continue;
-                if (!strBindPlotters.isEmpty())
-                    strBindPlotters += ",";
-                strBindPlotters += QString::number(pblockIndex->nPlotterId);
-                existPlotterId.insert(pblockIndex->nPlotterId);
+        if (accountID != 0) {
+            // Primary address total balance
+            CAmount balance;
+            {
+                CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
+                balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
+                balance = balance - pledgeLoanBalance + pledgeDebitBalance;
             }
-        } else {
-            std::set<uint64_t> plotters;
-            pcoinsTip->GetAccountBindPlotters(accountID, plotters);
-            for (const uint64_t &id : plotters) {
-                if (!strBindPlotters.isEmpty())
-                    strBindPlotters += ",";
-                strBindPlotters += QString::number(id);
-            }
-        }
-        if (strBindPlotters.isEmpty())
-            nPledgeAmount = 0;
-        ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
+            ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
-        ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
-        ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
-        ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
+            // Primary address capacity and pledge
+            CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, Params().GetConsensus());
+
+            // Binded plotter
+            QString strBindPlotters;
+            if (chainActive.Height() < Params().GetConsensus().BHDIP006BindPlotterActiveHeight) {
+                std::set<uint64_t> existPlotterId;
+                const int nEndHeight = chainActive.Height();
+                const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
+                                                Params().GetConsensus().BHDIP001StartMingingHeight + 1);
+                for (int index = nEndHeight; index >= nBeginHeight; index--) {
+                    CBlockIndex *pblockIndex = chainActive[index];
+                    if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
+                        continue;
+                    if (!strBindPlotters.isEmpty())
+                        strBindPlotters += ",";
+                    strBindPlotters += QString::number(pblockIndex->nPlotterId);
+                    existPlotterId.insert(pblockIndex->nPlotterId);
+                }
+            } else {
+                std::set<uint64_t> plotters;
+                pcoinsTip->GetAccountBindPlotters(accountID, plotters);
+                for (const uint64_t &id : plotters) {
+                    if (!strBindPlotters.isEmpty())
+                        strBindPlotters += ",";
+                    strBindPlotters += QString::number(id);
+                }
+            }
+            if (strBindPlotters.isEmpty())
+                nPledgeAmount = 0;
+            ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
+
+            ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
+            ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
+            ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
+        }
     } else {
         // Pending
         ui->primaryAddressBalance->setText("N/A");

@@ -98,7 +98,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
         if (blockindex->nHeight > Params().GetConsensus().BHDIP001StartMingingHeight)
-            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
+            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader(), blockindex->nHeight, Params().GetConsensus()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
@@ -146,7 +146,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
         if (blockindex->nHeight > Params().GetConsensus().BHDIP001StartMingingHeight)
-            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader()))));
+            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader(), blockindex->nHeight, Params().GetConsensus()))));
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
@@ -1685,33 +1685,6 @@ UniValue savemempool(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-UniValue createcheckpoint(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() != 0) {
-        throw std::runtime_error(
-            "createcheckpoint\n"
-            "\nCreate checkpoint.\n"
-            "\nExamples:\n"
-            + HelpExampleCli("createcheckpoint", "")
-            + HelpExampleRpc("createcheckpoint", "")
-        );
-    }
-
-    LOCK(cs_main);
-
-    auto &paramConsensus = Params().GetConsensus();
-
-    std::string strCheckpoints;
-    char buffer[128];
-    for (int nHeight = 200 * ((paramConsensus.BHDIP001StartMingingHeight + 1) / 200); nHeight < chainActive.Height(); nHeight += 200) {
-        sprintf(buffer, "{ %6d, uint256S(\"0x%s\") },\n", nHeight, chainActive[nHeight]->phashBlock->ToString().c_str());
-        strCheckpoints += buffer;
-    }
-    return strCheckpoints;
-}
-
-
-
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -1745,7 +1718,6 @@ static const CRPCCommand commands[] =
     { "hidden",             "waitforblock",           &waitforblock,           {"blockhash","timeout"} },
     { "hidden",             "waitforblockheight",     &waitforblockheight,     {"height","timeout"} },
     { "hidden",             "syncwithvalidationinterfacequeue", &syncwithvalidationinterfacequeue, {} },
-    { "hidden",             "createcheckpoint",       &createcheckpoint,       {} },
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &t)

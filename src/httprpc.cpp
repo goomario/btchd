@@ -220,64 +220,38 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
 
 static bool AdjustSubmitNonceParam(JSONRPCRequest& jreq, HTTPRequest* req, const std::map<std::string, std::string>& parameters)
 {
-    // submitNonce
+    const auto secretPhrase = parameters.find("secretPhrase");
+    const auto plotterId = parameters.find("accountId");
     const auto nonce = parameters.find("nonce");
+    const auto height = parameters.find("height");
+    const auto address = parameters.find("address");
+    const auto checkBind = parameters.find("checkBind");
+
     if (nonce != parameters.cend()) {
-        const auto plotterId = parameters.find("accountId");
-        const auto secretPhrase = parameters.find("secretPhrase");
-        const auto height = parameters.find("height");
-        const auto address = parameters.find("address");
-        const auto checkBind = parameters.find("checkBind");
-        if (plotterId != parameters.cend()) {
-            // Pool
-            jreq.strMethod = "submitNonceToPool";
-            jreq.params.pushKV("nonce", nonce->second);
-            jreq.params.pushKV("plotterId", plotterId->second);
-            if (height != parameters.cend())
-                jreq.params.pushKV("height", height->second);
-            if (address != parameters.cend())
-                jreq.params.pushKV("address", address->second);
-            if (address != parameters.cend())
-                jreq.params.pushKV("address", address->second);
-            if (checkBind != parameters.cend())
-                jreq.params.pushKV("checkBind", checkBind->second);
-        }
-        else if (secretPhrase != parameters.cend()) {
-            // Solo
-            jreq.strMethod = "submitNonceAsSolo";
-            jreq.params.pushKV("nonce", nonce->second);
-            jreq.params.pushKV("secretPhrase", secretPhrase->second);
-            if (height != parameters.cend())
-                jreq.params.pushKV("height", height->second);
-            if (address != parameters.cend())
-                jreq.params.pushKV("address", address->second);
-            if (checkBind != parameters.cend())
-                jreq.params.pushKV("checkBind", checkBind->second);
-        }
-        else {
-            PoCJSONErrorReply(req, 1, "Incorrect request");
-            return false;
-        }
-    }
-    else {
+        jreq.params.pushKV("nonce", nonce->second);
+    } else {
         PoCJSONErrorReply(req, 1, "Incorrect request");
         return false;
     }
-    return true;
-}
 
-static bool AdjustGetBlockParam(JSONRPCRequest& jreq, HTTPRequest* req, const std::map<std::string, std::string>& parameters)
-{
-    jreq.strMethod = "getBlock";
+    if (plotterId != parameters.cend() && !plotterId->second.empty()) {
+        jreq.params.pushKV("plotterId", plotterId->second);
+    } else if (secretPhrase != parameters.cend() && !secretPhrase->second.empty()) {
+        // secretPhrase to plotterId
+        jreq.params.pushKV("plotterId", PocLegacy::GeneratePlotterId(secretPhrase->second));
+    } else {
+        PoCJSONErrorReply(req, 1, "Incorrect request");
+        return false;
+    }
 
-    auto findAndFill = [&](const char* key) {
-        const auto param = parameters.find(key);
-        jreq.params.pushKV(key, param != parameters.cend() ? param->second : "");
-    };
+    // Other optional parameters
+    if (height != parameters.cend())
+        jreq.params.pushKV("height", height->second);
+    if (address != parameters.cend())
+        jreq.params.pushKV("address", address->second);
+    if (checkBind != parameters.cend())
+        jreq.params.pushKV("checkBind", checkBind->second);
 
-    findAndFill("block");
-    findAndFill("height");
-    findAndFill("timestamp");
     return true;
 }
 
@@ -305,13 +279,10 @@ static bool HTTPReq_PoCJSONRPC(HTTPRequest* req, const std::string &)
         jreq.URI = req->GetURI();
         jreq.params.setObject();
         if (requestType->second == "submitNonce") {
+            jreq.strMethod = requestType->second;
             if (!AdjustSubmitNonceParam(jreq, req, parameters))
                 return false;
         } 
-        else if (requestType->second == "getBlock") {
-            if (!AdjustGetBlockParam(jreq, req, parameters))
-                return false;
-        }
         else {
             jreq.strMethod = requestType->second;
             for (auto it = parameters.cbegin(); it != parameters.cend(); it++) {
