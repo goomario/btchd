@@ -3601,6 +3601,53 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
     if (first_invalid != nullptr)
         first_invalid->SetNull();
 
+    // DoS and Long fork
+    {
+        LOCK(cs_main);
+        BlockMap::const_iterator miPrev = mapBlockIndex.find(headers[0].hashPrevBlock);
+        if (miPrev != mapBlockIndex.end()) {
+            const CBlockIndex* pindexPrev = miPrev->second;
+            const CBlockIndex* pindexLast = pindexPrev;
+            for (const CBlockHeader& header : headers) {
+                BlockMap::const_iterator mi = mapBlockIndex.find(header.GetHash());
+                if (mi == mapBlockIndex.end())
+                    break;
+                pindexLast = mi->second;
+            }
+            if (pindexLast->nHeight - pindexPrev->nHeight != (int) headers.size() && !chainActive.Contains(pindexLast)) {
+                const CBlockIndex* pindexFork = chainActive.FindFork(pindexLast);
+                if (chainActive.Height() > pindexFork->nHeight) {
+                    if (chainActive.Height() >= pindexFork->nHeight + 6) {
+                        //! Long fork
+                        arith_uint256 nChainWork = pindexLast->nChainWork;
+                        for (std::size_t index = (std::size_t) (pindexLast->nHeight - pindexPrev->nHeight); index < headers.size(); index++) {
+                            nChainWork += GetBlockProof(headers[index], chainparams.GetConsensus());
+                        }
+                        // pow(0.5, 24) * 288 * 365 = 0.00626564
+                        if (nChainWork < chainActive.Tip()->nChainWork + GetBlockProof(*(chainActive.Tip()), chainparams.GetConsensus()) * 24) {
+                            //! Long fork chain work less then 24 blocks, we reject
+                            return state.DoS(10, error("%s: Sent us small chain work long fork blocks", __func__), 0, "dos-suspicion");
+                        }
+                    } else {
+                        //! Short fork
+                        arith_uint256 nChainWork = pindexLast->nChainWork;
+                        for (std::size_t index = (std::size_t) (pindexLast->nHeight - pindexPrev->nHeight); index < headers.size(); index++) {
+                            nChainWork += GetBlockProof(headers[index], chainparams.GetConsensus());
+                            if (nChainWork > chainActive.Tip()->nChainWork)
+                                break;
+                        }
+                        if (nChainWork <= chainActive.Tip()->nChainWork) {
+                            //! Short fork same or less chain work, we reject
+                            return state.DoS(10, error("%s: Sent us same or small chain work fork blocks", __func__), 0, "dos-suspicion");
+                        }
+                    }
+
+                    LogPrint(BCLog::POC, "Received fork blocks %d +%d\n", pindexFork->nHeight, (int) headers.size() + pindexPrev->nHeight - pindexFork->nHeight);
+                }
+            }
+        }
+    }
+
     // Skip hit checkpoint before blocks for verify deadline performance
     int nLastKnownBlockIndex = -1;
     if (headers.size() >= MAX_BLOCKS_TO_ANNOUNCE && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
