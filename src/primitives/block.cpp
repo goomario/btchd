@@ -17,6 +17,11 @@ uint256 CBlockHeader::GetHash() const
     return SerializeHash(*this);
 }
 
+uint256 CBlockHeader::GetUnsignaturedHash() const
+{
+    return SerializeHash(*this, SER_GETHASH | SER_UNSIGNATURED);
+}
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;

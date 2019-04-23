@@ -3672,6 +3672,7 @@ const std::string& CWallet::GetAccountName(const CTxDestination& address) const
  * Mark old keypool keys as used,
  * and generate all new keys
  */
+/*
 bool CWallet::NewKeyPool()
 {
     {
@@ -3697,6 +3698,7 @@ bool CWallet::NewKeyPool()
     }
     return true;
 }
+*/
 
 size_t CWallet::KeypoolCountExternalKeys()
 {
@@ -3762,8 +3764,10 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
                 setExternalKeyPool.insert(index);
 
                 // Add to address book
-                sprintf(addressNameBuffer, "Receive-%05" PRIi64, index);
-                SetAddressBook(GetDestinationForKey(pubkey, g_address_type), addressNameBuffer, "receive");
+                if (index > 0) {
+                    sprintf(addressNameBuffer, "Receive-%05" PRIi64, index);
+                    SetAddressBook(GetDestinationForKey(pubkey, g_address_type), addressNameBuffer, "receive");
+                }
             }
             m_pool_key_to_index[pubkey.GetID()] = index;
         }
@@ -4120,10 +4124,18 @@ void CWallet::MarkReserveKeysAsUsed(int64_t keypool_id)
     }*/
 }
 
-void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
+void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script, CKey *pkey)
 {
+    CTxDestination dest = GetPrimaryDestination();
+
+    if (pkey != nullptr) {
+        CKeyID keyid = GetKeyForDestination(*this, dest);
+        if (!keyid.IsNull())
+            GetKey(keyid, *pkey);
+    }
+
     script = std::make_shared<CReserveKey>(this);
-    script->reserveScript = GetScriptForDestination(GetPrimaryDestination()); // BitcoinHD must uniform script pubkey
+    script->reserveScript = GetScriptForDestination(dest); // BitcoinHD only support P2SH-Segwit
 }
 
 void CWallet::LockCoin(const COutPoint& output)
@@ -4710,8 +4722,8 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {
     // Only support P2SH
-    CKeyID keyid = key.GetID();
     if (key.IsCompressed()) {
+        CKeyID keyid = key.GetID();
         CTxDestination segwit = WitnessV0KeyHash(keyid);
         CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
         return std::vector<CTxDestination>{std::move(p2sh)};

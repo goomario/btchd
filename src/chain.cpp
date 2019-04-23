@@ -4,7 +4,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chain.h>
+#include <crypto/shabal256.h>
 #include <poc/poc.h>
+#include <pubkey.h>
 
 /**
  * CChain implementation
@@ -142,6 +144,34 @@ CBlockIndex* CBlockIndex::GetAncestor(int height)
     return const_cast<CBlockIndex*>(static_cast<const CBlockIndex*>(this)->GetAncestor(height));
 }
 
+void CBlockIndex::BuildGenerationSignature(const Consensus::Params& params)
+{
+    static uint256 dummyGenerationSignature;
+    generationSignature = pprev ? &pprev->nextGenerationSignature : &dummyGenerationSignature;
+
+    int nNextHeight = nHeight + 1;
+    if (nNextHeight <= params.BHDIP001StartMingingHeight) {
+        //! Pre-Mining not exist generation signature
+        nextGenerationSignature.SetNull();
+    } else if (nNextHeight <= params.BHDIP007Height) {
+        //! hashMerkleRoot + nPlotterId. Unsafe
+        // Legacy consensus use little endian
+        uint64_t plotterId = htole64(nPlotterId);
+        CShabal256()
+            .Write(hashMerkleRoot.begin(), hashMerkleRoot.size())
+            .Write((const unsigned char*)&plotterId, 8)
+            .Finalize(nextGenerationSignature.begin());
+    } else {
+        //! generationSignature + nPlotterId
+        assert(generationSignature != nullptr);
+        uint64_t plotterId = htobe64(nPlotterId);
+        CShabal256()
+            .Write(generationSignature->begin(), generationSignature->size())
+            .Write((const unsigned char*)&plotterId, 8)
+            .Finalize(nextGenerationSignature.begin());
+    }
+}
+
 void CBlockIndex::BuildSkip()
 {
     if (pprev)
@@ -150,12 +180,14 @@ void CBlockIndex::BuildSkip()
 
 arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params& params)
 {
-    return poc::TWO64 / header.nBaseTarget;
+    //! Same nBaseTarget select biggest hash
+    return (poc::TWO64 / header.nBaseTarget) * 100 + header.GetHash().GetUint64(0) % 100;
 }
 
 arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params& params)
 {
-    return poc::TWO64 / block.nBaseTarget;
+    //! Same nBaseTarget select biggest hash
+    return (poc::TWO64 / block.nBaseTarget) * 100 + block.phashBlock->GetUint64(0) % 100;
 }
 
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params& params)

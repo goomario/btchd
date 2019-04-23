@@ -94,14 +94,18 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("baseTarget", (uint64_t)blockindex->nBaseTarget));
     result.push_back(Pair("plotterId", (uint64_t)blockindex->nPlotterId));
     result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
-
+    result.push_back(Pair("generationSignature", HexStr(blockindex->GetGenerationSignature())));
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
-        if (blockindex->nHeight > Params().GetConsensus().BHDIP001StartMingingHeight)
-            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader(), blockindex->nHeight, Params().GetConsensus()))));
-        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
+    }
+    if (blockindex->nHeight >= Params().GetConsensus().BHDIP007Height) {
+        result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
+        result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
+    }
+    if (blockindex->pprev) {
+        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
@@ -142,14 +146,18 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("baseTarget", (uint64_t)block.nBaseTarget));
     result.push_back(Pair("plotterId", (uint64_t)blockindex->nPlotterId));
     result.push_back(Pair("nonce", (uint64_t)block.nNonce));
-
+    result.push_back(Pair("generationSignature", HexStr(blockindex->GetGenerationSignature())));
     if (blockindex->pprev) {
         result.push_back(Pair("deadline", (uint64_t)poc::CalculateDeadline(*(blockindex->pprev), blockindex->GetBlockHeader(), Params().GetConsensus())));
-        if (blockindex->nHeight > Params().GetConsensus().BHDIP001StartMingingHeight)
-            result.push_back(Pair("generationSignature", HexStr(poc::GetBlockGenerationSignature(blockindex->pprev->GetBlockHeader(), blockindex->nHeight, Params().GetConsensus()))));
-        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
+    }
+    if (blockindex->nHeight >= Params().GetConsensus().BHDIP007Height) {
+        result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
+        result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
+    }
+    if (blockindex->pprev) {
+        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
@@ -1695,7 +1703,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "getblock",               &getblock,               {"blockhash","verbosity|verbose"} },
     { "blockchain",         "getblockhash",           &getblockhash,           {"height"} },
     { "blockchain",         "getblockheader",         &getblockheader,         {"blockhash","verbose"} },
-    { "blockchain",         "getchaintips",           &getchaintips,           {} },
+    { "blockchain",         "getchaintips",           &getchaintips,           {"verbose"} },
     { "blockchain",         "getdifficulty",          &getdifficulty,          {} },
     { "blockchain",         "getmempoolancestors",    &getmempoolancestors,    {"txid","verbose"} },
     { "blockchain",         "getmempooldescendants",  &getmempooldescendants,  {"txid","verbose"} },

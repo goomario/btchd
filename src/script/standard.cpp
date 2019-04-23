@@ -228,6 +228,15 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
     return false;
 }
 
+CTxDestination ExtractDestination(const CScript& scriptPubKey)
+{
+    CTxDestination addressRet;
+    if (ExtractDestination(scriptPubKey, addressRet))
+        return addressRet;
+
+    return CTxDestination();
+}
+
 bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet)
 {
     addressRet.clear();
@@ -357,6 +366,18 @@ CScript GetScriptForWitness(const CScript& redeemscript)
     uint256 hash;
     CSHA256().Write(&redeemscript[0], redeemscript.size()).Finalize(hash.begin());
     return GetScriptForDestination(WitnessV0ScriptHash(hash));
+}
+
+bool CheckRawPubKeyAndScriptRelationForMining(const CPubKey& pubkey, const CScript &scriptPubKey)
+{
+    if (!pubkey.IsValid() || !pubkey.IsCompressed() || scriptPubKey.empty())
+        return false;
+
+    // P2SH-Segwit
+    CKeyID keyid = pubkey.GetID();
+    CTxDestination segwit = WitnessV0KeyHash(keyid);
+    CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
+    return GetScriptForDestination(p2sh) == scriptPubKey;
 }
 
 bool IsValidDestination(const CTxDestination& dest) {

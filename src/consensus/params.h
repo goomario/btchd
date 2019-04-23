@@ -66,6 +66,7 @@ struct Params {
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    int nCapacityEvalWindow;
 
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
@@ -87,14 +88,16 @@ struct Params {
     int BHDIP006BindPlotterActiveHeight;
     int BHDIP006CheckRelayHeight;
     int BHDIP006LimitBindPlotterHeight;
+    /** Block height at which BHDIP007 becomes active */
+    int BHDIP007Height;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
      * Examples: 1916 for 95%, 1512 for testchains.
      */
-    uint32_t nRuleChangeActivationThreshold;
-    uint32_t nMinerConfirmationWindow;
+    int nRuleChangeActivationThreshold;
+    int nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
 
     /** Proof of Capacity parameters */

@@ -148,6 +148,7 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
  * P2PKH, P2SH, P2WPKH, and P2WSH scripts.
  */
 bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet);
+CTxDestination ExtractDestination(const CScript& scriptPubKey);
 
 /**
  * Parse a standard scriptPubKey with one or more destination addresses. For
@@ -185,6 +186,9 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  * the various witness-specific CTxDestination subtypes.
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
+
+/** Check raw pubkey and script relation mining */
+bool CheckRawPubKeyAndScriptRelationForMining(const CPubKey& pubkey, const CScript &scriptPubKey);
 
 /** Utility function to get account id with given CScriptID. */
 CAccountID GetAccountIDByScriptID(const CScriptID &scriptID);

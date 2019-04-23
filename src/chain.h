@@ -7,8 +7,8 @@
 #define BITCOIN_CHAIN_H
 
 #include <arith_uint256.h>
+#include <consensus/params.h>
 #include <primitives/block.h>
-#include <pow.h>
 #include <tinyformat.h>
 #include <uint256.h>
 
@@ -18,7 +18,7 @@
  * Maximum amount of time that a block timestamp is allowed to exceed the
  * current network-adjusted time before the block will be accepted.
  */
-static const int64_t MAX_FUTURE_BLOCK_TIME = 1 * 15;
+static const int64_t MAX_FUTURE_BLOCK_TIME = 1 * 10;
 
 /**
  * Timestamp window used as a grace period by code that compares external
@@ -52,34 +52,34 @@ public:
         READWRITE(VARINT(nTimeLast));
     }
 
-     void SetNull() {
-         nBlocks = 0;
-         nSize = 0;
-         nUndoSize = 0;
-         nHeightFirst = 0;
-         nHeightLast = 0;
-         nTimeFirst = 0;
-         nTimeLast = 0;
-     }
+    void SetNull() {
+    nBlocks = 0;
+    nSize = 0;
+    nUndoSize = 0;
+    nHeightFirst = 0;
+    nHeightLast = 0;
+    nTimeFirst = 0;
+    nTimeLast = 0;
+    }
 
-     CBlockFileInfo() {
-         SetNull();
-     }
+    CBlockFileInfo() {
+        SetNull();
+    }
 
-     std::string ToString() const;
+    std::string ToString() const;
 
-     /** update statistics (does not update nSize) */
-     void AddBlock(unsigned int nHeightIn, uint64_t nTimeIn) {
-         if (nBlocks==0 || nHeightFirst > nHeightIn)
-             nHeightFirst = nHeightIn;
-         if (nBlocks==0 || nTimeFirst > nTimeIn)
-             nTimeFirst = nTimeIn;
-         nBlocks++;
-         if (nHeightIn > nHeightLast)
-             nHeightLast = nHeightIn;
-         if (nTimeIn > nTimeLast)
-             nTimeLast = nTimeIn;
-     }
+    /** update statistics (does not update nSize) */
+    void AddBlock(unsigned int nHeightIn, uint64_t nTimeIn) {
+        if (nBlocks==0 || nHeightFirst > nHeightIn)
+            nHeightFirst = nHeightIn;
+        if (nBlocks==0 || nTimeFirst > nTimeIn)
+            nTimeFirst = nTimeIn;
+        nBlocks++;
+        if (nHeightIn > nHeightLast)
+            nHeightLast = nHeightIn;
+        if (nTimeIn > nTimeLast)
+            nTimeLast = nTimeIn;
+    }
 };
 
 struct CDiskBlockPos
@@ -126,7 +126,7 @@ enum BlockStatus: uint32_t {
     //! Unused.
     BLOCK_VALID_UNKNOWN      =    0,
 
-    //! Parsed, version ok, hash satisfies claimed PoW, 1 <= vtx count <= max, timestamp not in future
+    //! Parsed, version ok, hash satisfies claimed PoC, 1 <= vtx count <= max, timestamp not in future
     BLOCK_VALID_HEADER       =    1,
 
     //! All parent headers found, difficulty matches, timestamp >= median previous, checkpoint. Implies all parents
@@ -206,7 +206,7 @@ public:
     //! Verification status of this block. See enum BlockStatus
     uint32_t nStatus;
 
-    //! Miner account ID.
+    //! Miner account ID. From P2SH destination 8 bytes
     CAccountID minerAccountID;
 
     //! block header
@@ -216,12 +216,21 @@ public:
     uint64_t nBaseTarget;
     uint64_t nNonce;
     uint64_t nPlotterId;
+    std::vector<unsigned char> vchPubKey;
+    std::vector<unsigned char> vchSignature;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
 
     //! (memory only) Maximum nTime in the chain up to and including this block.
     unsigned int nTimeMax;
+
+    //! (memory only) Generation signature. Reference previous nextGenerationSignature.
+    uint256 *generationSignature;
+
+    //! (memory only) Generation signature. From current block data.
+    //! Generate next block required this value.
+    uint256 nextGenerationSignature;
 
     void SetNull()
     {
@@ -239,6 +248,8 @@ public:
         minerAccountID = 0;
         nSequenceId = 0;
         nTimeMax = 0;
+        generationSignature = nullptr;
+        nextGenerationSignature.SetNull();
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -246,6 +257,8 @@ public:
         nBaseTarget    = 0;
         nNonce         = 0;
         nPlotterId     = 0;
+        vchPubKey.clear();
+        vchSignature.clear();
     }
 
     CBlockIndex()
@@ -263,6 +276,8 @@ public:
         nBaseTarget    = block.nBaseTarget;
         nNonce         = block.nNonce;
         nPlotterId     = block.nPlotterId;
+        vchPubKey      = block.vchPubKey;
+        vchSignature   = block.vchSignature;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -294,6 +309,8 @@ public:
         block.nBaseTarget    = nBaseTarget;
         block.nNonce         = nNonce;
         block.nPlotterId     = nPlotterId;
+        block.vchPubKey      = vchPubKey;
+        block.vchSignature   = vchSignature;
         return block;
     }
 
@@ -365,6 +382,20 @@ public:
     //! Efficiently find an ancestor of this block.
     CBlockIndex* GetAncestor(int height);
     const CBlockIndex* GetAncestor(int height) const;
+
+    //! Build generation signature
+    void BuildGenerationSignature(const Consensus::Params& params);
+
+    const uint256& GetGenerationSignature() const
+    {
+        assert(generationSignature);
+        return *generationSignature;
+    }
+
+    const uint256& GetNextGenerationSignature() const
+    {
+        return nextGenerationSignature;
+    }
 };
 
 arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params&);
@@ -409,13 +440,19 @@ public:
             READWRITE(VARINT(nUndoPos));
 
         // block header
+        uint64_t nSignatureFlags = nBaseTarget | (vchPubKey.empty() ? 0 : BLOCKSIGNATURE_FLAG);
         READWRITE(this->nVersion);
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nBaseTarget);
+        READWRITE(nSignatureFlags);
         READWRITE(nNonce);
         READWRITE(nPlotterId);
+        nBaseTarget = nSignatureFlags & BASETARGET_MASK;
+        if (nSignatureFlags & BLOCKSIGNATURE_FLAG) {
+            READWRITE(LIMITED_VECTOR(vchPubKey, CPubKey::COMPRESSED_PUBLIC_KEY_SIZE));
+            READWRITE(LIMITED_VECTOR(vchSignature, CPubKey::SIGNATURE_SIZE));
+        }
     }
 
     uint256 GetBlockHash() const
@@ -428,9 +465,10 @@ public:
         block.nBaseTarget     = nBaseTarget;
         block.nNonce          = nNonce;
         block.nPlotterId      = nPlotterId;
+        block.vchPubKey       = vchPubKey;
+        block.vchSignature    = vchSignature;
         return block.GetHash();
     }
-
 
     std::string ToString() const
     {

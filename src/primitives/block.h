@@ -7,8 +7,12 @@
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
 #include <primitives/transaction.h>
+#include <pubkey.h>
 #include <serialize.h>
 #include <uint256.h>
+
+static const uint64_t BASETARGET_MASK       = 0x7fffffffffffffffL;
+static const uint64_t BLOCKSIGNATURE_FLAG   = 0x8000000000000000L;
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -28,6 +32,9 @@ public:
     uint64_t nBaseTarget;
     uint64_t nNonce;
     uint64_t nPlotterId;
+    // block signature by generator
+    std::vector<unsigned char> vchPubKey;
+    std::vector<unsigned char> vchSignature;
 
     CBlockHeader()
     {
@@ -38,13 +45,24 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
+        // Read: Signature flag and base target read from stream. Real base target require remove mask
+        // Write: Signature flag and base target write to stream
+        uint64_t nSignatureFlags = nBaseTarget | (vchPubKey.empty() ? 0 : BLOCKSIGNATURE_FLAG);
         READWRITE(this->nVersion);
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nBaseTarget);
+        READWRITE(nSignatureFlags);
         READWRITE(nNonce);
         READWRITE(nPlotterId);
+        nBaseTarget = nSignatureFlags & BASETARGET_MASK;
+        if (nSignatureFlags & BLOCKSIGNATURE_FLAG) {
+            READWRITE(LIMITED_VECTOR(vchPubKey, CPubKey::COMPRESSED_PUBLIC_KEY_SIZE));
+            // Signature block data exclude vchSignature
+            if (!(s.GetType() & SER_UNSIGNATURED)) {
+                READWRITE(LIMITED_VECTOR(vchSignature, CPubKey::SIGNATURE_SIZE));
+            }
+        }
     }
 
     void SetNull()
@@ -56,6 +74,8 @@ public:
         nBaseTarget = 0;
         nNonce = 0;
         nPlotterId = 0;
+        vchPubKey.clear();
+        vchSignature.clear();
     }
 
     bool IsNull() const
@@ -64,6 +84,7 @@ public:
     }
 
     uint256 GetHash() const;
+    uint256 GetUnsignaturedHash() const;
 
     int64_t GetBlockTime() const
     {
@@ -117,6 +138,8 @@ public:
         block.nBaseTarget    = nBaseTarget;
         block.nNonce         = nNonce;
         block.nPlotterId     = nPlotterId;
+        block.vchPubKey      = vchPubKey;
+        block.vchSignature   = vchSignature;
         return block;
     }
 

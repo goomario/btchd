@@ -1002,7 +1002,7 @@ public:
     static CFeeRate fallbackFee;
     static CFeeRate m_discard_rate;
 
-    bool NewKeyPool();
+    //bool NewKeyPool();
     size_t KeypoolCountExternalKeys();
     bool TopUpKeyPool(unsigned int kpSize = 0);
     void ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRequestedInternal);
@@ -1063,7 +1063,7 @@ public:
         }
     }
 
-    void GetScriptForMining(std::shared_ptr<CReserveScript> &script);
+    void GetScriptForMining(std::shared_ptr<CReserveScript> &script, CKey *pkey = nullptr);
     
     unsigned int GetKeyPoolSize()
     {

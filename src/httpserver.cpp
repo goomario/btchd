@@ -592,6 +592,9 @@ std::string HTTPRequest::ReadBody()
     if (!buf)
         return "";
     size_t size = evbuffer_get_length(buf);
+    if (size > 65535)
+        return "";
+
     /** Trivial implementation: if this is ever a performance bottleneck,
      * internal copying can be avoided in multi-segment buffers by using
      * evbuffer_peek and an awkward loop. Though in that case, it'd be even
