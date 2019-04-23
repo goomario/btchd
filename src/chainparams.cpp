@@ -101,6 +101,7 @@ public:
         consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
+        consensus.nCapacityEvalWindow = 2016;
         consensus.fPocAllowMinDifficultyBlocks = false;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -115,7 +116,7 @@ public:
         consensus.BHDIP004InActiveHeight = 99000;
 
         consensus.BHDIP006Height = 129100; // BHDIP006. Actived on Wed, 02 Jan 2019 02:17:19 GMT
-        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nMinerConfirmationWindow; // BHDIP006. Bind plotter actived at 131116 and Tue, 08 Jan 2019 23:14:57 GMT
+        consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + consensus.nCapacityEvalWindow; // BHDIP006. Bind plotter actived at 131116 and Tue, 08 Jan 2019 23:14:57 GMT
         consensus.BHDIP006CheckRelayHeight = 133000; // BHDIP006. Bind/unbind plotter limit. Active at 133000 about when Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006LimitBindPlotterHeight = 134650; // BHDIP006. Bind plotter limit. Active at 134100 about when Tue, 21 Jan 2019 9:00:00 GMT
 
@@ -316,6 +317,7 @@ public:
         consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 420000;
+        consensus.nCapacityEvalWindow = 2016;
         consensus.fPocAllowMinDifficultyBlocks = false;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -331,7 +333,7 @@ public:
 
         consensus.BHDIP006Height = 41290; // BHDIP006
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 6; // BHDIP006. Bind plotter active at 41296
-        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow * 2; // 45328
+        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nCapacityEvalWindow * 2; // 45328
         consensus.BHDIP006LimitBindPlotterHeight = 48790;
 
         consensus.BHDIP007Height = 72550; // BHDIP007.
@@ -497,6 +499,7 @@ public:
         consensus.BHDIP001PledgeAmountPerTB = 3 * COIN;
 
         consensus.nSubsidyHalvingInterval = 300;
+        consensus.nCapacityEvalWindow = 144;
         consensus.fPocAllowMinDifficultyBlocks = true;
         consensus.nPowTargetSpacing = 5 * 60;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
@@ -512,7 +515,7 @@ public:
 
         consensus.BHDIP006Height = consensus.BHDIP001NoPledgeHeight + 200; // 294
         consensus.BHDIP006BindPlotterActiveHeight = consensus.BHDIP006Height + 50; // 344
-        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nMinerConfirmationWindow; // 488
+        consensus.BHDIP006CheckRelayHeight = consensus.BHDIP006BindPlotterActiveHeight + consensus.nCapacityEvalWindow; // 488
         consensus.BHDIP006LimitBindPlotterHeight = consensus.BHDIP006CheckRelayHeight + 5; // 493
 
         consensus.BHDIP007Height = 550; // BHDIP007.

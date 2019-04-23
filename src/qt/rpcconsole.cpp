@@ -900,6 +900,7 @@ void RPCConsole::updatePledge()
     const QString primaryAddress = ui->primaryAddress->text();
     if (!primaryAddress.isEmpty() && !IsInitialBlockDownload()) {
         LOCK(cs_main);
+        const Consensus::Params& params = Params().GetConsensus();
 
         // Get account id of address
         CAccountID accountID = GetAccountIDByAddress(primaryAddress.toStdString());
@@ -914,15 +915,14 @@ void RPCConsole::updatePledge()
             ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
             // Primary address capacity and pledge
-            CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, Params().GetConsensus());
+            CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, params);
 
             // Binded plotter
             QString strBindPlotters;
-            if (chainActive.Height() < Params().GetConsensus().BHDIP006BindPlotterActiveHeight) {
+            if (chainActive.Height() < params.BHDIP006BindPlotterActiveHeight) {
                 std::set<uint64_t> existPlotterId;
                 const int nEndHeight = chainActive.Height();
-                const int nBeginHeight = std::max(nEndHeight - static_cast<int>(Params().GetConsensus().nMinerConfirmationWindow) + 1,
-                                                Params().GetConsensus().BHDIP001StartMingingHeight + 1);
+                const int nBeginHeight = std::max(nEndHeight - params.nCapacityEvalWindow + 1, params.BHDIP001StartMingingHeight + 1);
                 for (int index = nEndHeight; index >= nBeginHeight; index--) {
                     CBlockIndex *pblockIndex = chainActive[index];
                     if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
@@ -945,7 +945,7 @@ void RPCConsole::updatePledge()
                 nPledgeAmount = 0;
             ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
 
-            ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / Params().GetConsensus().BHDIP001PledgeAmountPerTB * 1024));
+            ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / params.BHDIP001PledgeAmountPerTB * 1024));
             ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
             ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
         }

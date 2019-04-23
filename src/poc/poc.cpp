@@ -270,7 +270,7 @@ static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, 
             itCache->second = CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
             
             // Prune deadline cache
-            if (mapBlockDeadlineCache.size() > chainActive.Height() + params.nMinerConfirmationWindow) {
+            if ((int) mapBlockDeadlineCache.size() > chainActive.Height() + 2048) {
                 LogPrint(BCLog::POC, "%s: Pruning deadline cache (size %u)\n", __func__, mapBlockDeadlineCache.size());
 
                 uint64_t best = itCache->second;
@@ -522,7 +522,7 @@ CAmount GetMinerForgePledge(const CAccountID& minerAccountID, const uint64_t& nP
         *pMinerPledgeOldConsensus = 0;
 
     // Calc range
-    int nBeginHeight = std::max(nMiningHeight - static_cast<int>(consensusParams.nMinerConfirmationWindow), consensusParams.BHDIP001StartMingingHeight + 1);
+    int nBeginHeight = std::max(nMiningHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
     if (nMiningHeight <= nBeginHeight)
         return 0;
 

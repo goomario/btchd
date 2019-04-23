@@ -66,6 +66,7 @@ struct Params {
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    int nCapacityEvalWindow;
 
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
@@ -95,8 +96,8 @@ struct Params {
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
      * Examples: 1916 for 95%, 1512 for testchains.
      */
-    uint32_t nRuleChangeActivationThreshold;
-    uint32_t nMinerConfirmationWindow;
+    int nRuleChangeActivationThreshold;
+    int nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
 
     /** Proof of Capacity parameters */
