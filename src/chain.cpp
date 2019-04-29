@@ -6,7 +6,7 @@
 #include <chain.h>
 #include <crypto/shabal256.h>
 #include <poc/poc.h>
-#include <pubkey.h>
+#include <util.h>
 
 /**
  * CChain implementation
@@ -40,8 +40,10 @@ CBlockLocator CChain::GetLocator(const CBlockIndex *pindex, int lastCheckpointHe
             // O(log n)
             pindex = pindex->GetAncestor(std::max(1000 * (pindex->nHeight / 1000), 0));
         }
+        LogPrint(BCLog::NET, "GetLocator(by checkpoints):\r\n");
         while (pindex) {
             vHave.push_back(pindex->GetBlockHash());
+            LogPrint(BCLog::NET, "\t%6d: %s\r\n", pindex->nHeight, pindex->GetBlockHash().ToString());
             // Stop when we have added the genesis block.
             if (pindex->nHeight == 0)
                 break;
@@ -58,8 +60,10 @@ CBlockLocator CChain::GetLocator(const CBlockIndex *pindex, int lastCheckpointHe
                 nStep *= 2;
         }
     } else {
+        LogPrint(BCLog::NET, "GetLocator:\r\n");
         while (pindex) {
             vHave.push_back(pindex->GetBlockHash());
+            LogPrint(BCLog::NET, "\t%6d: %s\r\n", pindex->nHeight, pindex->GetBlockHash().ToString());
             // Stop when we have added the genesis block.
             if (pindex->nHeight == 0)
                 break;

@@ -53,16 +53,6 @@ struct Params {
     /** BitcoinHD Fund address */
     std::string BHDFundAddress;
     std::set<std::string> BHDFundAddressPool;
-    /** BitcoinHD fund pre-mining height */
-    int BHDIP001StartMingingHeight;
-    /** BitcoinHD fund royalty percent */
-    int BHDIP001FundRoyaltyPercent;
-    /** BitcoinHD fund royalty percent on low pledge */
-    int BHDIP001FundRoyaltyPercentOnLowPledge;
-    /** BitcoinHD miner no pledge height before */
-    int BHDIP001NoPledgeHeight;
-    /** BitcoinHD miner pledge amount per TB */
-    CAmount BHDIP001PledgeAmountPerTB;
 
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
@@ -77,8 +67,19 @@ struct Params {
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
 
+    /** BitcoinHD fund pre-mining height */
+    int BHDIP001StartMingingHeight;
+    /** BitcoinHD fund royalty percent */
+    int BHDIP001FundRoyaltyPercent;
+    /** BitcoinHD fund royalty percent on low pledge */
+    int BHDIP001FundRoyaltyPercentOnLowPledge;
+    /** BitcoinHD miner no pledge height before */
+    int BHDIP001NoPledgeHeight;
+    /** BitcoinHD miner pledge amount per TB */
+    CAmount BHDIP001PledgeRatio;
+
     /** View all BHDIP document on https://btchd.org/wiki/BHDIP */
-    /** Block height at which BHDIP004 becomes active. Some block error, fork begin height */
+    /** Block height at which BHDIP004 becomes active */
     int BHDIP004ActiveHeight;
     /** Block height at which BHDIP004 becomes inactive */
     int BHDIP004InActiveHeight;
@@ -90,6 +91,8 @@ struct Params {
     int BHDIP006LimitBindPlotterHeight;
     /** Block height at which BHDIP007 becomes active */
     int BHDIP007Height;
+    int BHDIP007SmoothEndHeight;
+    int BHDIP007DynPledgeStage;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,

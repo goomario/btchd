@@ -216,6 +216,7 @@ bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
 bool fRequireStandard = true;
 bool fCheckBlockIndex = false;
 bool fCheckpointsEnabled = DEFAULT_CHECKPOINTS_ENABLED;
+bool fForceCheckDeadline = DEFAULT_FORCECHECKDEADLINE_ENABLED;
 size_t nCoinCacheUsage = 5000 * 300;
 uint64_t nPruneTarget = 0;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
@@ -229,8 +230,6 @@ CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
 
 CBlockPolicyEstimator feeEstimator;
 CTxMemPool mempool(&feeEstimator);
-
-BlockDeadlineCacheMap mapBlockDeadlineCache;
 
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
@@ -1146,7 +1145,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     return nSubsidy;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId, const CCoinsViewCache &view, const Consensus::Params& consensusParams)
+BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& minerAccountID, const uint64_t& nPlotterId, const CCoinsViewCache& view, const Consensus::Params& consensusParams)
 {
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
@@ -1170,7 +1169,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         // See https://btchd.org/wiki/developer/BHD004-soft-fork-for-multimining
         //
         CAmount minerPledgeAmountAtOldConsensus;
-        CAmount minerPledgeAmount = poc::GetMinerForgePledge(minerAccountID, nPlotterId, nHeight, view, consensusParams, &minerPledgeAmountAtOldConsensus);
+        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(minerAccountID, nPlotterId, nHeight, view, nullptr, &minerPledgeAmountAtOldConsensus, consensusParams);
         CAmount accountBalance = view.GetAccountBalance(minerAccountID);
         if (accountBalance >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
@@ -1186,7 +1185,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
         // Normal mining for BHDIP006
         CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
         CAmount accountBalance = view.GetAccountBalance(minerAccountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
-        CAmount minerPledgeAmount = poc::GetMinerForgePledge(minerAccountID, nPlotterId, nHeight, view, consensusParams);
+        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(minerAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
         if (accountBalance - pledgeLoanBalance + pledgeDebitBalance >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
         } else {
@@ -1199,38 +1198,39 @@ BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &
     return reward;
 }
 
-int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consensus::Params& consensusParams)
+int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consensus::Params& consensusParams)
 {
     assert(!activeCoin.IsSpent());
     assert(activeCoin.extraData && activeCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(nHeight > static_cast<int>(activeCoin.nHeight));
 
     if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight)
         return consensusParams.BHDIP006Height;
 
     const uint64_t &nPlotterId = BindPlotterPayload::As(activeCoin.extraData)->GetId();
 
-    // Checking range [nBeginHeight, nEndHeight]
-    const int nBeginHeight = std::max(static_cast<int>(activeCoin.nHeight), consensusParams.BHDIP001StartMingingHeight + 1);
-    const int nEndHeight = std::min(nHeight - 1, static_cast<int>(activeCoin.nHeight) + consensusParams.nCapacityEvalWindow);
-
-    // Mined block in 2016 blocks, next block unlimit
-    for (int height = nBeginHeight; height <= nEndHeight; height++) {
+    // Mined block in <EvalWindow>, next block unlimit
+    int nEvalBeginHeight = std::max(nHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
+    int nEvalEndHeight = nHeight - 1;
+    for (int height = nEvalBeginHeight; height <= nEvalEndHeight; height++) {
         if (chainActive[height]->nPlotterId == nPlotterId) {
-            return height + 1;
+            return std::max(height, static_cast<int>(activeCoin.nHeight)) + 1;
         }
     }
 
-    // Participator mined require lock a period <bindheight + 2016>
+    // Participator mined after bind require lock <EvalWindow>
+    int nBeginHeight = static_cast<int>(activeCoin.nHeight);
+    int nEndHeight = std::max(std::min(nHeight - 1, static_cast<int>(activeCoin.nHeight) + consensusParams.nCapacityEvalWindow - 1), nBeginHeight);
     for (int height = nBeginHeight; height <= nEndHeight; height++) {
         if (chainActive[height]->minerAccountID == activeCoin.refOutAccountID) {
-            return static_cast<int>(activeCoin.nHeight)  + consensusParams.nCapacityEvalWindow;
+            return static_cast<int>(activeCoin.nHeight) + consensusParams.nCapacityEvalWindow;
         }
     }
 
     return static_cast<int>(activeCoin.nHeight) + 1;
 }
 
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &activeCoin, const Consensus::Params& consensusParams)
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& activeCoin, const Consensus::Params& consensusParams)
 {
     assert(!bindCoin.IsSpent());
     assert(bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
@@ -1242,20 +1242,15 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &a
         return consensusParams.BHDIP006Height;
 
     const uint64_t &nPlotterId = BindPlotterPayload::As(bindCoin.extraData)->GetId();
-    const int nLastActiveBindHeight = (&bindCoin == &activeCoin) ? (nHeight - 1) : static_cast<int>(activeCoin.nHeight);
 
-    // Checking range [nBeginHeight, nEndHeight]
-    const int nBeginHeight = std::max(static_cast<int>(bindCoin.nHeight), consensusParams.BHDIP001StartMingingHeight + 1);
-    const int nEndHeight = std::min(nLastActiveBindHeight, static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow);
+    // Checking eval range [nPrePeriodBeginHeight, nPrePeriodEndHeight]
+    int nEvalBeginHeight = std::max(nHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
+    int nEvalEndHeight = nHeight - 1;
 
-    // Checking range [nPrePeriodBeginHeight, nPrePeriodEndHeight]
-    const int nPrePeriodBeginHeight = std::max(nHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
-    const int nPrePeriodEndHeight = nHeight - 1;
-
-    // 2.5%, Large capacity ID unlimit
-    for (int height = nPrePeriodBeginHeight + 1, preiodTotalMined = 0; height <= nPrePeriodEndHeight; height++) {
+    // 2.5%, Large capacity unlimit
+    for (int height = nEvalBeginHeight + 1, nMinedBlockCount = 0; height <= nEvalEndHeight; height++) {
         if (chainActive[height]->nPlotterId == nPlotterId) {
-            if (++preiodTotalMined > consensusParams.nCapacityEvalWindow / 40) {
+            if (++nMinedBlockCount > consensusParams.nCapacityEvalWindow / 40) {
                 return height;
             }
         }
@@ -1263,45 +1258,45 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &a
 
     if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight) {
         //! Issues: Delay unbind when mine to any address, maybe can't unbind forever.
-        for (int height = nHeight - 1; height > nPrePeriodBeginHeight; height--) {
+        for (int height = nEvalEndHeight; height > nEvalBeginHeight; height--) {
             if (chainActive[height]->nPlotterId == nPlotterId) {
-                // Delay unbind 2016 blocks when mined block
+                // Delay unbind EvalWindow blocks when mined block
                 return height + consensusParams.nCapacityEvalWindow;
             }
         }
-    } else if (nHeight < consensusParams.BHDIP007Height) {
-        //! Issues: Infinitely +2016
+    } else {
+        int nLastActiveBindHeight = (&bindCoin == &activeCoin) ? (nHeight - 1) : static_cast<int>(activeCoin.nHeight);
+
         // Last block mined in this wallet
-        const int nWalletMinedBeginHeight = std::max(nPrePeriodBeginHeight, static_cast<int>(bindCoin.nHeight));
+        const int nWalletMinedBeginHeight = std::max(nEvalBeginHeight, static_cast<int>(bindCoin.nHeight));
         for (int height = nLastActiveBindHeight; height >= nWalletMinedBeginHeight; height--) {
             CBlockIndex *pindex = chainActive[height];
             if (pindex->nPlotterId == nPlotterId && pindex->minerAccountID == bindCoin.refOutAccountID) {
-                return height + consensusParams.nCapacityEvalWindow;
+                if (nHeight < consensusParams.BHDIP007Height) {
+                    //! Issues: Infinitely +<EvalWindow>
+                    return height + consensusParams.nCapacityEvalWindow;
+                } else {
+                    // Max limit +<EvalWindow>
+                    return std::min(height + consensusParams.nCapacityEvalWindow,
+                        static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow);
+                }
             }
         }
 
-        // Participator mined require lock a period <bindheight + 2016>
+        // Participator mined after bind require lock <EvalWindow>
+        int nBeginHeight = std::max(static_cast<int>(bindCoin.nHeight), consensusParams.BHDIP001StartMingingHeight + 1);
+        int nEndHeight = std::min(nLastActiveBindHeight, static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow);
         for (int height = nBeginHeight; height <= nEndHeight; height++) {
             if (chainActive[height]->minerAccountID == bindCoin.refOutAccountID) {
                 return static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow;
             }
         }
-    } else {
-        //! BHDIP007: Improve infinitely +2016
-        // Mined or participator mined require lock <bindheight + 2016>
-        for (int height = nBeginHeight; height <= nEndHeight; height++) {
-            CBlockIndex *pindex = chainActive[height];
-            if (pindex->minerAccountID == bindCoin.refOutAccountID) {
-                return static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow;
-            }
-        }
     }
 
-    // Bind after no mined any block
     return static_cast<int>(bindCoin.nHeight) + 1;
 }
 
-const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin &bindCoin, const COutPoint &bindCoinEntry)
+const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin& bindCoin, const COutPoint& bindCoinEntry)
 {
     COutPoint activeBindCoinEnty = inputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(bindCoin.extraData)->GetId());
     assert(!activeBindCoinEnty.IsNull());
@@ -3249,35 +3244,36 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     }
 
     // Have previous block
-    BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
-    if (mi == mapBlockIndex.end())
+    BlockMap::iterator miPrev = mapBlockIndex.find(block.hashPrevBlock);
+    if (miPrev == mapBlockIndex.end())
         return state.DoS(10, error("%s: prev block not found", __func__), 0, "prev-blk-not-found");
-    const CBlockIndex* pindexPrev = mi->second;
+    const CBlockIndex* pindexPrev = miPrev->second;
 
     // Block signature for BHDIP007
     if (pindexPrev->nHeight + 1 >= consensusParams.BHDIP007Height) {
         if (block.vchPubKey.size() != CPubKey::COMPRESSED_PUBLIC_KEY_SIZE ||
             block.vchSignature.size() > CPubKey::SIGNATURE_SIZE)
-                return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-require", false, "require block signature");
+                return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "require block signature");
 
-        uint256 unsignaturedBlockHash = block.GetUnsignaturedHash();
         CPubKey pubkey(block.vchPubKey);
-        if (!pubkey.Verify(unsignaturedBlockHash, block.vchSignature))
-            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-incorrect", false, "incorrect block signature");
+        if (!pubkey.Verify(block.GetUnsignaturedHash(), block.vchSignature))
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "incorrect block signature");
     } else {
         if (!block.vchPubKey.empty() || !block.vchSignature.empty())
-            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-notallow", false, "not allow block signature");
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "not allow block signature");
     }
 
-    // Check difficulty and deadline
-    if (fCheckWork) {
-        LogPrint(BCLog::POC, "%s: Checking %5d(%s) proof of capacity\n", __func__, pindexPrev->nHeight + 1, block.GetHash().GetHex());
+    if (fCheckWork && (fForceCheckDeadline || !fReindex)) { // Skip check work while reindexing
+        // Skip exist valid block header
+        BlockMap::iterator mi = mapBlockIndex.find(block.GetHash());
+        if (mi != mapBlockIndex.end() && !(mi->second->nStatus & BLOCK_FAILED_MASK))
+            return true;
 
+        LogPrint(BCLog::POC, "%s: Checking %5d(%s) difficulty and work\n", __func__, pindexPrev->nHeight + 1, block.GetHash().GetHex());
         if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, consensusParams))
             return state.DoS(100, false, REJECT_INVALID, "bad-diff", false, "incorrect difficulty");
-
         if (!poc::CheckProofOfCapacity(*pindexPrev, block, consensusParams))
-            return state.DoS(100, false, REJECT_INVALID, "high-deadline", false, "proof of capacity failed");
+            return state.DoS(100, false, REJECT_INVALID, "bad-work", false, "check work failed");
     }
 
     return true;
@@ -3341,10 +3337,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
     // Block signature
-    if (!block.vchPubKey.empty()) {
-        if (!CheckRawPubKeyAndScriptRelationForMining(CPubKey(block.vchPubKey), block.vtx[0]->vout[0].scriptPubKey))
-            return state.DoS(100, false, REJECT_INVALID, "bad-sigblk-notminer", false, "require signing by miner");
-    }
+    if (!block.vchPubKey.empty() && !CheckRawPubKeyAndScriptRelationForMining(CPubKey(block.vchPubKey), block.vtx[0]->vout[0].scriptPubKey))
+        return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "require signing by miner");
 
     if (fCheckWork && fCheckMerkleRoot)
         block.fChecked = true;
@@ -3664,7 +3658,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
 
     // Skip hit checkpoint before blocks for verify deadline performance
     int nLastKnownBlockIndex = -1;
-    if (headers.size() >= MAX_BLOCKS_TO_ANNOUNCE && !chainparams.Checkpoints().mapCheckpoints.empty() && !gArgs.GetBoolArg("-forceverifypoc", false)) {
+    if (!fForceCheckDeadline && headers.size() >= MAX_BLOCKS_TO_ANNOUNCE && !chainparams.Checkpoints().mapCheckpoints.empty()) {
         const MapCheckpoints &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
         bool fFoundCheckpoint = false;
         for (nLastKnownBlockIndex = headers.size() - 1; nLastKnownBlockIndex >= 0 && !fFoundCheckpoint; nLastKnownBlockIndex--) {
@@ -3690,7 +3684,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
             LOCK(cs_main);
             for (; index < headers.size(); index++) {
                 const CBlockHeader& header = headers[index];
-                if (static_cast<int>(index) <= nLastKnownBlockIndex)
+                if (static_cast<int>(index) > nLastKnownBlockIndex)
                     break;
                 CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
                 if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, false)) {
@@ -3707,7 +3701,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
             // Hold cs_main too long time maybe block GUI thread
             {
                 LOCK(cs_main);
-                for (std::size_t processed = 0; processed < 10 && index < headers.size(); processed++, index++) {
+                for (std::size_t processed = 0; processed < 20 && index < headers.size(); processed++, index++) {
                     const CBlockHeader& header = headers[index];
                     CBlockIndex *pindex = nullptr; // Use a temp pindex instead of ppindex to avoid a const_cast
                     if (!g_chainstate.AcceptBlockHeader(header, state, chainparams, &pindex, true)) {

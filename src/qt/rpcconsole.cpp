@@ -915,22 +915,20 @@ void RPCConsole::updatePledge()
             ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
             // Primary address capacity and pledge
-            CAmount nPledgeAmount = poc::GetMinerForgePledge(accountID, 0, chainActive.Height() + 1, *pcoinsTip, params);
+            int64_t nCapacityTB;
+            CAmount nPledgeAmount = poc::GetMiningPledgeAmount(accountID, 0, chainActive.Height() + 1, *pcoinsTip, &nCapacityTB, nullptr, params);
 
             // Binded plotter
             QString strBindPlotters;
             if (chainActive.Height() < params.BHDIP006BindPlotterActiveHeight) {
                 std::set<uint64_t> existPlotterId;
-                const int nEndHeight = chainActive.Height();
-                const int nBeginHeight = std::max(nEndHeight - params.nCapacityEvalWindow + 1, params.BHDIP001StartMingingHeight + 1);
-                for (int index = nEndHeight; index >= nBeginHeight; index--) {
-                    CBlockIndex *pblockIndex = chainActive[index];
-                    if (pblockIndex == nullptr || pblockIndex->minerAccountID != accountID || existPlotterId.find(pblockIndex->nPlotterId) != existPlotterId.end())
+                for (const CBlockIndex& block : poc::GetEvalBlocks(chainActive.Height(), false, params)) {
+                    if (block.minerAccountID != accountID || existPlotterId.count(block.nPlotterId))
                         continue;
                     if (!strBindPlotters.isEmpty())
                         strBindPlotters += ",";
-                    strBindPlotters += QString::number(pblockIndex->nPlotterId);
-                    existPlotterId.insert(pblockIndex->nPlotterId);
+                    strBindPlotters += QString::number(block.nPlotterId);
+                    existPlotterId.insert(block.nPlotterId);
                 }
             } else {
                 std::set<uint64_t> plotters;
@@ -941,13 +939,25 @@ void RPCConsole::updatePledge()
                     strBindPlotters += QString::number(id);
                 }
             }
-            if (strBindPlotters.isEmpty())
-                nPledgeAmount = 0;
-            ui->bindPlotterId->setText(strBindPlotters.isEmpty() ? tr("None") : strBindPlotters);
+            bool fMiningEnabled = !strBindPlotters.isEmpty();
+            if (fMiningEnabled) {
+                ui->bindPlotterId->setText(strBindPlotters);
+                ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nCapacityTB * 1024));
+                ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
+                ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
+            } else {
+                ui->bindPlotterId->setText(tr("None"));
+                ui->estimateCapacity->setText(tr("None"));
+                ui->miningRequirePledge->setText(tr("None"));
+                ui->miningRequirePledge->setStyleSheet("");
+            }
 
-            ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nPledgeAmount / params.BHDIP001PledgeAmountPerTB * 1024));
-            ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
-            ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
+            ui->labelBindPlotter->setVisible(fMiningEnabled);
+            ui->bindPlotterIdContainer->setVisible(fMiningEnabled);
+            ui->labelEstimateCapacity->setVisible(fMiningEnabled);
+            ui->estimateCapacity->setVisible(fMiningEnabled);
+            ui->labelMiningRequirePledge->setVisible(fMiningEnabled);
+            ui->miningRequirePledge->setVisible(fMiningEnabled);
         }
     } else {
         // Pending
