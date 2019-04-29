@@ -139,6 +139,9 @@ static const bool DEFAULT_ENABLE_REPLACEMENT = true;
 /** Default for using fee filter */
 static const bool DEFAULT_FEEFILTER = true;
 
+/** Default for force check deadline */
+static const bool DEFAULT_FORCECHECKDEADLINE_ENABLED = false;
+
 /** Maximum number of headers to announce when relaying blocks with headers message.*/
 static const unsigned int MAX_BLOCKS_TO_ANNOUNCE = 8;
 
@@ -174,6 +177,7 @@ extern bool fIsBareMultisigStd;
 extern bool fRequireStandard;
 extern bool fCheckBlockIndex;
 extern bool fCheckpointsEnabled;
+extern bool fForceCheckDeadline;
 extern size_t nCoinCacheUsage;
 /** A fee rate smaller than this is considered zero fee (for relaying, mining and transaction creation) */
 extern CFeeRate minRelayTxFee;
@@ -219,10 +223,6 @@ static const unsigned int DEFAULT_CHECKLEVEL = 3;
 // one 128MB block file + added 15% undo data = 147MB greater for a total of 545MB
 // Setting the target to > than 550MB will make it likely we can respect the target.
 static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024;
-
-// Block deadline cache
-typedef std::unordered_map<uint256, uint64_t, BlockHasher> BlockDeadlineCacheMap;
-extern BlockDeadlineCacheMap mapBlockDeadlineCache;
 
 /** 
  * Process an incoming block. This only returns after the best known valid
@@ -288,18 +288,18 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
 /** Get block reward */
 typedef struct {
     CAmount miner;
-    //! Hark fork compatible. See https://btchd.org/wiki/BHDIP/004#multi-output
+    //! Hark fork compatible
     CAmount minerBHDIP004Compatiable;
     CAmount fund;
 } BlockReward;
-BlockReward GetBlockReward(int nHeight, const CAmount &nFees, const CAccountID &minerAccountID, const uint64_t &nPlotterId,
-    const CCoinsViewCache &view, const Consensus::Params& consensusParams);
+BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& minerAccountID, const uint64_t& nPlotterId,
+    const CCoinsViewCache& view, const Consensus::Params& consensusParams);
 
 /** Get bind/unbind plotter transaction lock time. */
-int GetBindPlotterLimitHeight(int nHeight, const Coin &activeCoin, const Consensus::Params& consensusParams);
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin &bindCoin, const Coin &activeCoin, const Consensus::Params& consensusParams);
+int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consensus::Params& consensusParams);
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& activeCoin, const Consensus::Params& consensusParams);
 /** Utility function for active coin. If entry is active then return bindCoin, Otherwise return new coin */
-const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin &bindCoin, const COutPoint &bindCoinEntry);
+const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin& bindCoin, const COutPoint& bindCoinEntry);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

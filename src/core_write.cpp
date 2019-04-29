@@ -26,6 +26,11 @@ UniValue ValueFromAmount(const CAmount& amount)
             strprintf("%s%d.%08d", sign ? "-" : "", quotient, remainder));
 }
 
+UniValue ValueFromCapacity(const uint64_t& capacityTB)
+{
+    return std::to_string(capacityTB) + " TB";
+}
+
 std::string FormatScript(const CScript& script)
 {
     std::string ret;

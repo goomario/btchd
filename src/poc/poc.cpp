@@ -23,6 +23,7 @@
 #include <threadinterrupt.h>
 
 #include <cinttypes>
+#include <cmath>
 #include <exception>
 #include <limits>
 #include <string>
@@ -77,8 +78,7 @@ void CheckDeadlineThread()
     while (!interruptCheckDeadline) {
         if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(200)))
             break;
-        
-        const CChainParams& params = Params();
+
         std::shared_ptr<CBlock> pblock;
         bool fReActivateBestChain = false;
         {
@@ -88,10 +88,10 @@ void CheckDeadlineThread()
                     LogPrintf("Your computer time maybe abnormal (offset %" PRId64 "). " \
                         "Check your computer time or add -maxtimeadjustment=0 \n", GetTimeOffset());
                 }
-                CBlockIndex *pindexTip = chainActive.Tip();
                 int64_t nAdjustedTime = GetAdjustedTime();
-                auto it = mapGenerators.begin();
-                while (it != mapGenerators.end() && !pblock) {
+                CBlockIndex *pindexTip = chainActive.Tip();
+                auto it = mapGenerators.cbegin();
+                while (it != mapGenerators.cend() && !pblock) {
                     if (pindexTip->GetNextGenerationSignature().GetUint64(0) == it->first) {
                         // Current round
                         uint64_t deadline = it->second.best / pindexTip->nBaseTarget;
@@ -117,12 +117,12 @@ void CheckDeadlineThread()
                         uint64_t mineDeadline = it->second.best / pindexTip->pprev->nBaseTarget;
                         uint64_t tipDeadline = (uint64_t) (pindexTip->GetBlockTime() - pindexTip->pprev->GetBlockTime() - 1);
                         if (mineDeadline <= tipDeadline) {
-                            LogPrint(BCLog::POC, "Begin snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 " <= %" PRIu64 "\n",
+                            LogPrint(BCLog::POC, "Snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 " <= %" PRIu64 "\n",
                                 it->second.height, it->second.nonce, it->second.plotterId, mineDeadline, tipDeadline);
 
                             // Invalidate tip block
                             CValidationState state;
-                            if (!InvalidateBlock(state, params, pindexTip)) {
+                            if (!InvalidateBlock(state, Params(), pindexTip)) {
                                 LogPrint(BCLog::POC, "Snatch block: invalidate current tip block error, %s\n", state.GetRejectReason());
                                 LogPrint(BCLog::POC, "Snatch block: current tip, %s\n", pindexTip->ToString());
                             } else {
@@ -134,8 +134,8 @@ void CheckDeadlineThread()
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                         it->second.height, it->second.nonce, it->second.plotterId, mineDeadline);
                                 } else {
-                                    arith_uint256 mineBlockWork = GetBlockProof(*pblock, params.GetConsensus());
-                                    arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, params.GetConsensus());
+                                    arith_uint256 mineBlockWork = GetBlockProof(*pblock, Params().GetConsensus());
+                                    arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
                                     if (mineBlockWork <= tipBlockWork) {
                                         // Not better tip, give up!
                                         LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 " %s <= %s\n",
@@ -162,13 +162,12 @@ void CheckDeadlineThread()
         // Update best. Not hold cs_main
         if (fReActivateBestChain) {
             CValidationState state;
-            ActivateBestChain(state, params);
+            ActivateBestChain(state, Params());
             assert (state.IsValid());
-            LogPrint(BCLog::POC, "End snatch block\n");
         }
 
         // Broadcast. Not hold cs_main
-        if (pblock && !ProcessNewBlock(params, pblock, true, nullptr)) {
+        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
             LogPrintf("Process new block fail %s\n", pblock->ToString());
         }
     }
@@ -246,7 +245,7 @@ static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const ui
 }
 
 //! Thread unsafe
-static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, bool fEnableCache, const Consensus::Params& params)
+static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     // Fund
     if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
@@ -260,48 +259,13 @@ static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, 
     if (params.fPocAllowMinDifficultyBlocks)
         return block.nNonce * prevBlockIndex.nBaseTarget;
 
-    if (fEnableCache) {
-        // From cache
-        const uint256 hash = block.GetHash();
-        BlockDeadlineCacheMap::iterator itCache;
-        bool inserted;
-        std::tie(itCache, inserted) = mapBlockDeadlineCache.emplace(hash, poc::INVALID_DEADLINE);
-        if (inserted) {
-            itCache->second = CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
-            
-            // Prune deadline cache
-            if ((int) mapBlockDeadlineCache.size() > chainActive.Height() + 2048) {
-                LogPrint(BCLog::POC, "%s: Pruning deadline cache (size %u)\n", __func__, mapBlockDeadlineCache.size());
-
-                uint64_t best = itCache->second;
-                for (auto it = mapBlockDeadlineCache.begin(); it != mapBlockDeadlineCache.end();) {
-                    if (it->first != hash) {
-                        auto mi = mapBlockIndex.find(it->first);
-                        if (mi == mapBlockIndex.end() || chainActive[mi->second->nHeight] != mi->second) {
-                            it = mapBlockDeadlineCache.erase(it);
-                            continue;
-                        }
-                    }
-
-                    ++it;
-                }
-
-                return best;
-            }
-        } else {
-            LogPrint(BCLog::POC, "%s: Hit %d(%s) from deadline cache\n", __func__, prevBlockIndex.nHeight + 1, block.GetHash().GetHex());
-        }
-
-        return itCache->second;
-    } else {
-        return CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
-    }
+    return CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
 }
 
 // Require hold cs_main
 uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
-    return CalculateUnformattedDeadline(prevBlockIndex, block, true, params) / prevBlockIndex.nBaseTarget;
+    return CalculateUnformattedDeadline(prevBlockIndex, block, params) / prevBlockIndex.nBaseTarget;
 }
 
 uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
@@ -309,9 +273,9 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
     int nHeight = prevBlockIndex.nHeight + 1;
     if (nHeight <= params.BHDIP001StartMingingHeight) {
         // genesis block & pre-mining block
-        return INITIAL_BASE_TARGET;
+        return BHD_BASE_TARGET_240;
     } else if (nHeight < params.BHDIP001StartMingingHeight + 4) {
-        return INITIAL_BASE_TARGET;
+        return BHD_BASE_TARGET_240;
     } else if (nHeight < params.BHDIP001StartMingingHeight + 2700) {
         // [N-1,N-2,N-3,N-4]
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
@@ -325,8 +289,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
         uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPowTargetSpacing * 4); // 5m * 4blocks
-        if (newBaseTarget > INITIAL_BASE_TARGET) {
-            newBaseTarget = INITIAL_BASE_TARGET;
+        if (newBaseTarget > BHD_BASE_TARGET_240) {
+            newBaseTarget = BHD_BASE_TARGET_240;
         }
         if (newBaseTarget < (curBaseTarget * 9 / 10)) {
             newBaseTarget = curBaseTarget * 9 / 10;
@@ -361,8 +325,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         }
         uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
         uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
-        if (newBaseTarget > INITIAL_BASE_TARGET) {
-            newBaseTarget = INITIAL_BASE_TARGET;
+        if (newBaseTarget > BHD_BASE_TARGET_240) {
+            newBaseTarget = BHD_BASE_TARGET_240;
         }
         if (newBaseTarget == 0) {
             newBaseTarget = 1;
@@ -390,7 +354,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
     CBlockHeader block;
     block.nPlotterId = nPlotterId;
     block.nNonce     = nNonce;
-    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(prevBlockIndex, block, false, params);
+    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(prevBlockIndex, block, params);
     if (calcUnformattedDeadline == INVALID_DEADLINE)
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid deadline");
 
@@ -511,77 +475,217 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
     return calcDeadline;
 }
 
-CAmount GetMinerForgePledge(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight, const CCoinsViewCache& view,
-    const Consensus::Params& consensusParams, CAmount* pMinerPledgeOldConsensus)
+CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& params)
 {
     AssertLockHeld(cs_main);
-    assert(nMiningHeight > 0);
-    assert(nMiningHeight <= chainActive.Height() + 1);
+    assert(nHeight >= 0 && nHeight <= chainActive.Height());
+
+    CBlockList vBlocks;
+    int nBeginHeight = std::max(nHeight - params.nCapacityEvalWindow + 1, params.BHDIP001StartMingingHeight + 1);
+    if (nHeight >= nBeginHeight) {
+        vBlocks.reserve(nHeight - nBeginHeight + 1);
+        if (fAscent) {
+            for (int height = nBeginHeight; height <= nHeight; height++) {
+                vBlocks.push_back(std::cref(*(chainActive[height])));
+            }
+        } else {
+            for (int height = nHeight; height >= nBeginHeight; height--) {
+                vBlocks.push_back(std::cref(*(chainActive[height])));
+            }
+        }
+    }
+    return vBlocks;
+}
+
+int64_t GetNetCapacity(int nHeight, const Consensus::Params& params)
+{
+    AssertLockHeld(cs_main);
+    assert(nHeight >= 0 && nHeight <= chainActive.Height());
+
+    uint64_t nBaseTarget = 0;
+    int nBlockCount = 0;
+    for (const CBlockIndex& block : GetEvalBlocks(nHeight, true, params)) {
+        nBaseTarget += block.nBaseTarget;
+        nBlockCount++;
+    }
+
+    if (nBlockCount != 0) {
+        nBaseTarget /= nBlockCount;
+        if (nBaseTarget > 0) {
+            return std::max(static_cast<int64_t>(poc::BHD_BASE_TARGET / nBaseTarget), (int64_t) 1);
+        }
+    }
+
+    return (int64_t) 1;
+}
+
+template <uint64_t BaseTarget>
+static int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
+{
+    uint64_t nBaseTarget = 0;
+    int nBlockCount = 0;
+    for (const CBlockIndex& block : GetEvalBlocks(nHeight, true, params)) {
+        associateBlock(block);
+        nBaseTarget += block.nBaseTarget;
+        nBlockCount++;
+    }
+
+    if (nBlockCount != 0) {
+        nBaseTarget /= nBlockCount;
+        if (nBaseTarget > 0) {
+            return std::max(static_cast<int64_t>(BaseTarget / nBaseTarget), (int64_t) 1);
+        }
+    }
+
+    return (int64_t) 1;
+}
+
+int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
+{
+    AssertLockHeld(cs_main);
+    assert(nHeight >= 0 && nHeight <= chainActive.Height());
+
+    return GetNetCapacity<BHD_BASE_TARGET>(nHeight, params, associateBlock);
+}
+
+// Round to cent coin
+static inline CAmount RoundPledgeRatio(CAmount amount)
+{
+    const CAmount percise = COIN / 10000;
+    return ((amount + percise / 2) / percise) * percise;
+}
+
+CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params)
+{
+    if (nHeight < params.BHDIP007Height) {
+        // Legacy
+        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
+        return nLegacyRatio;
+    } else if (nHeight <= params.BHDIP007SmoothEndHeight) {
+        // Smooth
+        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
+        int step = params.BHDIP007SmoothEndHeight - params.BHDIP007Height + 1;
+        int current = nHeight - params.BHDIP007Height + 1;
+        return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001PledgeRatio) * current) / step);
+    } else {
+        // Dynamic
+        if (nNetCapacityTB <= params.BHDIP007DynPledgeStage)
+            return params.BHDIP001PledgeRatio;
+
+        int nStage = (int) (std::log2((float) (nNetCapacityTB / params.BHDIP007DynPledgeStage)) + 0.000005f);
+        CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001PledgeRatio));
+        CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001PledgeRatio));
+        int64_t nStartCapacityTB = (1 << nStage) * params.BHDIP007DynPledgeStage;
+        int64_t nEndCapacityTB = nStartCapacityTB * 2;
+        assert (nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
+
+        int64_t nPartCapacityTB = std::max(nEndCapacityTB - nNetCapacityTB, (int64_t) 0);
+        return nTargetRatio + RoundPledgeRatio(((nStartRatio - nTargetRatio) * nPartCapacityTB) / (nEndCapacityTB - nStartCapacityTB));
+    }
+}
+
+CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params)
+{
+    AssertLockHeld(cs_main);
+    assert(nHeight >= 0 && nHeight <= chainActive.Height() + 1);
+
+    int64_t nNetCapacityTB = 0;
+    if (nHeight > params.BHDIP007SmoothEndHeight) {
+        int nAdjustHeight = ((nHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
+        nNetCapacityTB = GetNetCapacity(nAdjustHeight, params);
+    }
+
+    return EvalPledgeRatio(nHeight, nNetCapacityTB, params);
+}
+
+CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio)
+{
+    return ((pledgeRatio * nCapacityTB + COIN/2) / COIN) * COIN;
+}
+
+// Compatible BHD007 before consensus
+static inline CAmount GetCompatiblePledgeRatio(int nMiningHeight, const Consensus::Params& params)
+{
+    return nMiningHeight < params.BHDIP007Height ? params.BHDIP001PledgeRatio : GetPledgeRatio(nMiningHeight, params);
+}
+
+// Compatible BHD007 before consensus
+static inline int64_t GetCompatibleNetCapacity(int nMiningHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
+{
+    if (nMiningHeight < params.BHDIP007Height)
+        return GetNetCapacity<BHD_BASE_TARGET_240>(nMiningHeight - 1, params, associateBlock);
+    else
+        return GetNetCapacity<BHD_BASE_TARGET>(nMiningHeight - 1, params, associateBlock);
+}
+
+CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight,
+    const CCoinsViewCache& view, int64_t* pMinerCapacity, CAmount* pOldMinerPledge,
+    const Consensus::Params& params)
+{
+    AssertLockHeld(cs_main);
+    assert(nMiningHeight > 0 && nMiningHeight <= chainActive.Height() + 1);
     assert(GetSpendHeight(view) == nMiningHeight);
-    if (pMinerPledgeOldConsensus != nullptr)
-        *pMinerPledgeOldConsensus = 0;
 
-    // Calc range
-    int nBeginHeight = std::max(nMiningHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
-    if (nMiningHeight <= nBeginHeight)
-        return 0;
+    if (pMinerCapacity != nullptr) *pMinerCapacity = 0;
+    if (pOldMinerPledge != nullptr) *pOldMinerPledge = 0;
 
-    uint64_t nAvgBaseTarget = 0; // Average BaseTarget
-    int nTotalForgeCount = 0, nTotalForgeCountOldConsensus = 0;
-    if (nMiningHeight < consensusParams.BHDIP006BindPlotterActiveHeight) {
-        // Forged by plotter ID
-        for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
-            CBlockIndex *pblockIndex = chainActive[index];
-            nAvgBaseTarget += pblockIndex->nBaseTarget;
+    const CAmount pledgeRatio = GetCompatiblePledgeRatio(nMiningHeight, params);
 
-            // 1. Multi plotter generate to same wallet (like pool)
-            // 2. Same plotter generate to multi wallets (for decrease pledge)
-            if (pblockIndex->minerAccountID == minerAccountID || pblockIndex->nPlotterId == nPlotterId) {
-                ++nTotalForgeCount;
+    int64_t nNetCapacityTB = 0;
+    int nBlockCount = 0, nMinedCount = 0;
+    if (nMiningHeight < params.BHDIP006BindPlotterActiveHeight) {
+        // Mined by plotter ID
+        int nOldMinedCount = 0;
+        nNetCapacityTB = GetCompatibleNetCapacity(nMiningHeight, params,
+            [&nBlockCount, &nMinedCount, &nOldMinedCount, &minerAccountID, &nPlotterId] (const CBlockIndex &block) {
+                nBlockCount++;
 
-                if (pblockIndex->minerAccountID != minerAccountID) {
-                    // Old consensus: multi mining. Plotter ID bind to multi miner (also multi wallet)
-                    nTotalForgeCountOldConsensus = -1;
-                } else if (nTotalForgeCountOldConsensus != -1) {
-                    nTotalForgeCountOldConsensus++;
+                // 1. Multi plotter generate to same wallet (like pool)
+                // 2. Same plotter generate to multi wallets (for decrease pledge)
+                if (block.minerAccountID == minerAccountID || block.nPlotterId == nPlotterId) {
+                    nMinedCount++;
+
+                    if (block.minerAccountID != minerAccountID) {
+                        // Old consensus: multi mining. Plotter ID bind to multi miner
+                        nOldMinedCount = -1;
+                    } else if (nOldMinedCount != -1) {
+                        nOldMinedCount++;
+                    }
                 }
             }
-            assert(nTotalForgeCount >= nTotalForgeCountOldConsensus);
+        );
+
+        // Old consensus pledge
+        if (pOldMinerPledge != nullptr && nBlockCount > 0) {
+            if (nOldMinedCount == -1) {
+                // Multi mining
+                *pOldMinerPledge = MAX_MONEY;
+            } else if (nOldMinedCount > 0) {
+                int64_t nOldMinerCapacityTB = std::max((nNetCapacityTB * nOldMinedCount) / nBlockCount, (int64_t) 1);
+                *pOldMinerPledge = GetCapacityPledgeAmount(nOldMinerCapacityTB, pledgeRatio);
+            }
         }
     } else {
-        // Bind plotter actived
+        // Binded plotter
         std::set<uint64_t> plotters;
         view.GetAccountBindPlotters(minerAccountID, plotters);
-        for (int index = nMiningHeight - 1; index >= nBeginHeight; index--) {
-            CBlockIndex *pblockIndex = chainActive[index];
-            nAvgBaseTarget += pblockIndex->nBaseTarget;
+        nNetCapacityTB = GetCompatibleNetCapacity(nMiningHeight, params,
+            [&nBlockCount, &nMinedCount, &plotters] (const CBlockIndex &block) {
+                nBlockCount++;
 
-            if (plotters.count(pblockIndex->nPlotterId))
-                ++nTotalForgeCount;
-        }
-        if (nTotalForgeCount < nMiningHeight - nBeginHeight)
-            nTotalForgeCount++;
+                if (plotters.count(block.nPlotterId))
+                    nMinedCount++;
+            }
+        );
+        // Remove sugar
+        if (nMinedCount < nBlockCount) nMinedCount++;
     }
-    if (nTotalForgeCount == 0)
+    if (nMinedCount == 0 || nBlockCount == 0)
         return 0;
 
-    // Net capacity
-    nAvgBaseTarget /= (nMiningHeight - nBeginHeight);
-    int64_t nNetCapacityTB = std::max(static_cast<int64_t>(poc::INITIAL_BASE_TARGET / nAvgBaseTarget), static_cast<int64_t>(1));
-
-    // Old consensus pledge
-    if (pMinerPledgeOldConsensus != nullptr) {
-        if (nTotalForgeCountOldConsensus == -1) {
-            *pMinerPledgeOldConsensus = MAX_MONEY;
-        } else if (nTotalForgeCountOldConsensus > 0) {
-            int64_t nMinerCapacityTBOldConsensus = std::max((nNetCapacityTB * nTotalForgeCountOldConsensus) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
-            *pMinerPledgeOldConsensus = consensusParams.BHDIP001PledgeAmountPerTB * nMinerCapacityTBOldConsensus;
-        }
-    }
-
-    // New consensus pledge
-    int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nTotalForgeCount) / (nMiningHeight - nBeginHeight), static_cast<int64_t>(1));
-    return consensusParams.BHDIP001PledgeAmountPerTB * nMinerCapacityTB;
+    int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nMinedCount) / nBlockCount, (int64_t) 1);
+    if (pMinerCapacity != nullptr) *pMinerCapacity = nMinerCapacityTB;
+    return GetCapacityPledgeAmount(nMinerCapacityTB, pledgeRatio);
 }
 
 bool CheckProofOfCapacity(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
@@ -678,12 +782,11 @@ bool StartPOC()
             }
         }
     #endif
-
     } else {
         LogPrintf("Skip PoC forge thread\n");
         interruptCheckDeadline();
     }
-    
+
     return true;
 }
 

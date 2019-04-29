@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <functional>
 #include <vector>
 
 class CBlockHeader;
@@ -30,12 +31,12 @@ namespace poc {
 static const arith_uint256 TWO64 = arith_uint256(std::numeric_limits<uint64_t>::max()) + 1;
 
 /**
- * Initial base target.
+ * BHD base target for 240s.
  * 
  * This correct value is 14660155037. ((2^64-1)/300 - 1) / 300 / 4 / 1024 / 1024
  * See https://btchd.org/wiki/The_Proof_of_Capacity#Base_Target
  */
-static const uint64_t INITIAL_BASE_TARGET = 18325193796ull;
+static const uint64_t BHD_BASE_TARGET_240 = 18325193796ull;
 
 // BHD base target. ((2^64-1)/300 - 1) / 300 / 4 / 1024 / 1024
 static const uint64_t BHD_BASE_TARGET = 14660155037ull;
@@ -86,19 +87,85 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
     bool fCheckBind, const Consensus::Params& params);
 
 /**
- * Get miner pledge forge block
+ * Block collection
+ */
+typedef std::vector< std::reference_wrapper<const CBlockIndex> > CBlockList;
+
+/**
+ * Get blocks by eval window
+ *
+ * @param nHeight           The height of net capacity
+ * @param fAscent           Ascent or Descent sort blocks
+ * @param params            Consensus params
+ */
+CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& params);
+
+/**
+ * Eval pledge ratio by capacity
+ *
+ * @param nHeight           The height of net capacity
+ * @param nNetCapacityTB    Network capacity of TB
+ * @param params            Consensus params
+ */
+CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params);
+
+/**
+ * Get net capacity
+ *
+ * @param nHeight           The height of net capacity
+ * @param params            Consensus params
+ *
+ * @return Return net capacity of TB
+ */
+int64_t GetNetCapacity(int nHeight, const Consensus::Params& params);
+
+/**
+ * Get net capacity
+ *
+ * @param nHeight           The height of net capacity
+ * @param params            Consensus params
+ * @param associateBlock    Associate block callback
+ *
+ * @return Return net capacity of TB
+ */
+int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex &block)> associateBlock);
+
+/**
+ * Get pledge ratio
+ *
+ * @param nHeight           The height of pledge ratio
+ * @param params            Consensus params
+ *
+ * @return Return pledge ratio
+ */
+CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params);
+
+/**
+ * Get capacity pledge amount
+ *
+ * @param nCapacityTB       Miner capacity
+ * @param pledgeRatio       The pledge ratio
+ *
+ * @return Return pledge amount
+ */
+CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio);
+
+/**
+ * Get mining pledge amount for miner
  *
  * @param minerAccountID            Miner address digit ID
  * @param nPlotterId                Proof of capacity ID
- * @param nMiningHeight             The height of pledge if forge block
+ * @param nMiningHeight             The height of mining
  * @param view                      The coin view
+ * @param pMinerCapacityTB          Miner capacity by estimate
+ * @param pOldMinerPledge           Only in BHDIP004. See https://btchd.org/wiki/BHDIP/004#getminerpledge
  * @param params                    Consensus params
- * @param pMinerPledgeOldConsensus  Only in BHDIP004. See https://btchd.org/wiki/BHDIP/004#getminerpledge
  *
- * @return MAX_MONEY if not bind. See https://btchd.org/wiki/BHDIP/006
+ * @return Mining pledge amount for miner
  */
-CAmount GetMinerForgePledge(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight, const CCoinsViewCache& view,
-    const Consensus::Params& params, CAmount *pMinerPledgeOldConsensus = nullptr);
+CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight,
+    const CCoinsViewCache& view, int64_t* pMinerCapacityTB, CAmount* pOldMinerPledge,
+    const Consensus::Params& params);
 
 /**
  * Check block work

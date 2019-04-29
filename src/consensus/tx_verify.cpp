@@ -294,7 +294,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nSpendHeight);
             if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 // Low fee
-                // Bug. old consensus skip check bind tx fee when vin more then 1, but fixed on BHDIP006LimitBindPlotterHeight
+                //! Bug. old consensus skip check bind tx fee when vin more then 1, but fixed on BHDIP006LimitBindPlotterHeight
                 if ((tx.vin.size() == 1 || nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) && txfee_aux < PROTOCOL_BINDPLOTTER_MINFEE)
                     return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-lowfee");
 
