@@ -41,6 +41,7 @@ private:
 
 public:
     explicit PeerLogicValidation(CConnman* connman, CScheduler &scheduler);
+    virtual ~PeerLogicValidation();
 
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected, const std::vector<CTransactionRef>& vtxConflicted) override;
     void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override;

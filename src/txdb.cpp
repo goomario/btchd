@@ -554,7 +554,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
     // Read from database
     {
-        CAmount value;
+        CAmount value = 0;
         AccountCoinEntry entry(accountID, COutPoint(uint256(), 0));
         pcursor->Seek(entry);
         while (pcursor->Valid()) {
@@ -622,7 +622,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            CAmount value;
+            CAmount value = 0;
             PledgeLoanEntry entry(accountID, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
             while (pcursor->Valid()) {
@@ -658,7 +658,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         {
-            CAmount value;
+            CAmount value = 0;
             PledgeDebitEntry entry(accountID, COutPoint(uint256(), 0));
             pcursor->Seek(entry);
             while (pcursor->Valid()) {
@@ -828,7 +828,7 @@ bool CCoinsViewDB::Upgrade() {
 
     // Check coin database version
     {
-        uint32_t coinDbVersion;
+        uint32_t coinDbVersion = 0;
         if (db.Read(DB_COIN_VERSION, VARINT(coinDbVersion)) && coinDbVersion == currentCoinDbVersion)
             return true; // Newest version
         db.Erase(DB_COIN_VERSION);
