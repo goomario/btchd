@@ -80,6 +80,7 @@ void CheckDeadlineThread()
             break;
 
         std::shared_ptr<CBlock> pblock;
+        bool fProcessNewBlock = false;
         bool fReActivateBestChain = false;
         {
             LOCK(cs_main);
@@ -105,6 +106,7 @@ void CheckDeadlineThread()
                                     it->second.height, it->second.nonce, it->second.plotterId, deadline);
                             } else {
                                 LogPrint(BCLog::POC, "Created block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
+                                fProcessNewBlock = true;
                             }
                         } else {
                             // Continue wait forge time
@@ -141,9 +143,9 @@ void CheckDeadlineThread()
                                         LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 " %s <= %s\n",
                                             it->second.height, it->second.nonce, it->second.plotterId,
                                             mineBlockWork.ToString(), tipBlockWork.ToString());
-                                        pblock.reset();
                                     } else  {
                                         LogPrint(BCLog::POC, "Snatch block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
+                                        fProcessNewBlock = true;
                                     }
                                 }
                             }
@@ -167,9 +169,8 @@ void CheckDeadlineThread()
         }
 
         // Broadcast. Not hold cs_main
-        if (pblock && !ProcessNewBlock(Params(), pblock, true, nullptr)) {
+        if (fProcessNewBlock && !ProcessNewBlock(Params(), pblock, true, nullptr))
             LogPrintf("Process new block fail %s\n", pblock->ToString());
-        }
     }
 
     LogPrintf("Exit PoC forge thread\n");
