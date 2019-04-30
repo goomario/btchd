@@ -3764,8 +3764,8 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
                 setExternalKeyPool.insert(index);
 
                 // Add to address book
-                if (index > 0) {
-                    sprintf(addressNameBuffer, "Receive-%05" PRIi64, index);
+                if (index > 1) {
+                    sprintf(addressNameBuffer, "Receive-%05" PRIi64, index - 1);
                     SetAddressBook(GetDestinationForKey(pubkey, g_address_type), addressNameBuffer, "receive");
                 }
             }
