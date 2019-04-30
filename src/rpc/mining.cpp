@@ -1114,7 +1114,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
                 mapBindPlotter[plotterId] = PlotterItem{0, nullptr};
             }
             nNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params,
-                [&nBlockCount, &nMinedBlockCount, &accountID, &plotters, &mapBindPlotter](const CBlockIndex &block) {
+                [&nBlockCount, &nMinedBlockCount, &plotters, &mapBindPlotter](const CBlockIndex &block) {
                     nBlockCount++;
                     if (plotters.count(block.nPlotterId)) {
                         nMinedBlockCount++;

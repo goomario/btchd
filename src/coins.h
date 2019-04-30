@@ -92,7 +92,7 @@ public:
 
         extraData = nullptr;
         if (code & 0x80000000) {
-            unsigned int extraDataType;
+            unsigned int extraDataType = 0;
             ::Unserialize(s, VARINT(extraDataType));
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 extraData = std::make_shared<BindPlotterPayload>();

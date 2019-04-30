@@ -71,7 +71,7 @@ public:
 
         txout->extraData = nullptr;
         if (nCode & 0x80000000) {
-            unsigned int extraDataType;
+            unsigned int extraDataType = 0;
             ::Unserialize(s, VARINT(extraDataType));
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 txout->extraData = std::make_shared<BindPlotterPayload>();
