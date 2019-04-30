@@ -555,14 +555,42 @@ static void BlockNotifyCallback(bool initialSync, const CBlockIndex *pBlockIndex
     }
 }
 
-static void VerifyingBlocksProgress(bool initialSync, const CBlockIndex *pBlockIndex)
+class CVerifyingBlocksTracer
 {
-    if (pBlockIndex && pBlockIndex->nHeight % 20 == 0) {
-        int nBlockCountGuess = (int) ((GetTime() - chainActive[0]->GetBlockTime()) / Params().GetConsensus().nPowTargetSpacing);
-        if (nBlockCountGuess > 0)
-            uiInterface.ShowProgress(_("Verifying blocks..."), std::min(95, std::max(1, 95 * pBlockIndex->nHeight / nBlockCountGuess)), false);
+public:
+    explicit CVerifyingBlocksTracer(const CBlockIndex *pBlockIndex) {
+        nStartHeight = pBlockIndex ? pBlockIndex->nHeight : chainActive.Height();
+        uiInterface.NotifyBlockTip.connect(boost::bind(BlockTipChanged, this, _1, _2));
     }
-}
+    ~CVerifyingBlocksTracer() {
+        uiInterface.NotifyBlockTip.disconnect(boost::bind(BlockTipChanged, this, _1, _2));
+    }
+
+    static void BlockTipChanged(CVerifyingBlocksTracer *tracer, bool initialSync, const CBlockIndex *pBlockIndex) {
+        if (!pBlockIndex || pBlockIndex->nHeight % 10 != 0)
+            return;
+
+        if (tracer->nStartHeight > pBlockIndex->nHeight)
+            tracer->nStartHeight = pBlockIndex->nHeight;
+
+        int startMiningHeight = Params().GetConsensus().BHDIP001StartMingingHeight;
+        if (pBlockIndex->nHeight < startMiningHeight) {
+            if (pBlockIndex->nHeight >= tracer->nStartHeight && startMiningHeight > tracer->nStartHeight)
+                uiInterface.ShowProgress(_("Verifying blocks..."), std::min(1, std::max(1, (int) (50 * (pBlockIndex->nHeight - tracer->nStartHeight) / (startMiningHeight - tracer->nStartHeight)))), false);
+        } else {
+            const CBlockIndex *pBeginBlockIndex = chainActive[tracer->nStartHeight];
+            if (pBeginBlockIndex) {
+                int64_t blockTimestep = pBlockIndex->GetBlockTime() - pBeginBlockIndex->GetBlockTime();
+                int64_t requireTimestep = GetTime() - pBeginBlockIndex->GetBlockTime();
+                if (blockTimestep >= 0 && requireTimestep > 0)
+                    uiInterface.ShowProgress(_("Verifying blocks..."), 50 + std::min(50, (int) (50 * blockTimestep / requireTimestep)), false);
+            }
+        }
+    }
+
+private:
+    int64_t nStartHeight;
+};
 
 static bool fHaveGenesis = false;
 static CWaitableCriticalSection cs_GenesisWait;
@@ -1576,23 +1604,25 @@ bool AppInitMain()
                                 }
                             }
                         }
+
+                        // Trace verify progress
+                        CVerifyingBlocksTracer tracer(pBeginResetIndex);
+
                         // Reset after block fail flags
                         if (pBeginResetIndex) {
                             uiInterface.InitMessage(_("Verifying blocks..."));
+
                             {
                                 LOCK(cs_main);
                                 ResetBlockFailureFlags(pBeginResetIndex);
                             }
                             CValidationState state;
-                            uiInterface.NotifyBlockTip.connect(VerifyingBlocksProgress);
                             ActivateBestChain(state, chainparams);
-                            uiInterface.NotifyBlockTip.disconnect(VerifyingBlocksProgress);
                             if (!state.IsValid()) {
                                 LogPrintf("%s: %s\n", __func__, FormatStateMessage(state));
                                 strLoadError = _("Error initializing block database");
                                 break;
                             }
-                            uiInterface.ShowProgress(_("Verifying blocks..."), 100, false);
                         }
 
                         // Invalid bad block
