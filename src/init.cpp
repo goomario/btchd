@@ -554,6 +554,15 @@ static void BlockNotifyCallback(bool initialSync, const CBlockIndex *pBlockIndex
     }
 }
 
+static void VerifyingBlocksProgress(bool initialSync, const CBlockIndex *pBlockIndex)
+{
+    if (pBlockIndex && pBlockIndex->nHeight % 20 == 0) {
+        int nBlockCountGuess = (int) ((GetTime() - chainActive[0]->GetBlockTime()) / Params().GetConsensus().nPowTargetSpacing);
+        if (nBlockCountGuess > 0)
+            uiInterface.ShowProgress(_("Verifying blocks..."), std::min(95, std::max(1, 95 * pBlockIndex->nHeight / nBlockCountGuess)), false);
+    }
+}
+
 static bool fHaveGenesis = false;
 static CWaitableCriticalSection cs_GenesisWait;
 static CConditionVariable condvar_GenesisWait;
@@ -1573,14 +1582,16 @@ bool AppInitMain()
                                 LOCK(cs_main);
                                 ResetBlockFailureFlags(pBeginResetIndex);
                             }
-
                             CValidationState state;
+                            uiInterface.NotifyBlockTip.connect(VerifyingBlocksProgress);
                             ActivateBestChain(state, chainparams);
+                            uiInterface.NotifyBlockTip.disconnect(VerifyingBlocksProgress);
                             if (!state.IsValid()) {
                                 LogPrintf("%s: %s\n", __func__, FormatStateMessage(state));
                                 strLoadError = _("Error initializing block database");
                                 break;
                             }
+                            uiInterface.ShowProgress(_("Verifying blocks..."), 100, false);
                         }
 
                         // Invalid bad block
