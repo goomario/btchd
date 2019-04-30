@@ -427,35 +427,31 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
         if (prevBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
             uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
 
-            if (!privKey) {
-                // From cache
-                if (mapSignaturePrivKeys.count(destId)) {
-                    privKey = mapSignaturePrivKeys[destId];
-                }
+            // From cache
+            if (!privKey && mapSignaturePrivKeys.count(destId))
+                privKey = mapSignaturePrivKeys[destId];
 
-            #ifdef ENABLE_WALLET
-                // From wallets
-                if (!privKey) {
-                    for (CWalletRef pwallet : vpwallets) {
-                        CKeyID keyid = GetKeyForDestination(*pwallet, dest);
-                        if (!keyid.IsNull()) {
-                            privKey = std::make_shared<CKey>();
-                            if (!pwallet->GetKey(keyid, *privKey)) {
-                                privKey.reset();
-                            } else {
-                                mapSignaturePrivKeys[destId] = privKey;
-                                break;
-                            }
+            // From wallets
+        #ifdef ENABLE_WALLET
+            if (!privKey) {
+                for (CWalletRef pwallet : vpwallets) {
+                    CKeyID keyid = GetKeyForDestination(*pwallet, dest);
+                    if (!keyid.IsNull()) {
+                        CKey key;
+                        if (pwallet->GetKey(keyid, key)) {
+                            privKey = std::make_shared<CKey>(key);
+                            break;
                         }
                     }
                 }
-            #endif
-            } else if (!mapSignaturePrivKeys.count(destId)) {
-                mapSignaturePrivKeys[destId] = privKey;
             }
+        #endif
 
             if (!privKey)
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Not found private key for signature");
+
+            if (!mapSignaturePrivKeys.count(destId))
+                mapSignaturePrivKeys[destId] = privKey;
         }
 
         // Update best
