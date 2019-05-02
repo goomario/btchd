@@ -343,7 +343,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
     }
 }
 
-uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
+uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
     const uint64_t& nNonce, const uint64_t& nPlotterId, const std::string& generateTo,
     bool fCheckBind, const Consensus::Params& params)
 {
@@ -355,16 +355,16 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
     CBlockHeader block;
     block.nPlotterId = nPlotterId;
     block.nNonce     = nNonce;
-    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(prevBlockIndex, block, params);
+    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(miningBlockIndex, block, params);
     if (calcUnformattedDeadline == INVALID_DEADLINE)
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid deadline");
 
-    const uint64_t calcDeadline = calcUnformattedDeadline / prevBlockIndex.nBaseTarget;
+    const uint64_t calcDeadline = calcUnformattedDeadline / miningBlockIndex.nBaseTarget;
     LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-        prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
+        miningBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
 
     bestDeadline = calcDeadline;
-    const uint64_t generationId = prevBlockIndex.GetNextGenerationSignature().GetUint64(0);
+    const uint64_t generationId = miningBlockIndex.GetNextGenerationSignature().GetUint64(0);
     bool fNewBest = false;
     if (mapGenerators.count(generationId)) {
         GeneratorState &generatorState = mapGenerators[generationId];
@@ -372,13 +372,14 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
             fNewBest = true;
         } else {
             fNewBest = false;
-            bestDeadline = generatorState.best / prevBlockIndex.nBaseTarget;
+            bestDeadline = generatorState.best / miningBlockIndex.nBaseTarget;
         }
     } else {
         fNewBest = true;
     }
 
-    if (fNewBest) {
+    // Only process best deadline and tips&prev blocks
+    if (fNewBest && miningBlockIndex.nHeight >= chainActive.Height() - 1) {
         CTxDestination dest;
         std::shared_ptr<CKey> privKey;
         if (generateTo.empty()) {
@@ -388,10 +389,8 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
             if (!pwallet)
                 throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require wallet");
             dest = pwallet->GetPrimaryDestination();
-            if (!boost::get<CScriptID>(&dest))
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid primary address");
         #else
-            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require wallet");
+            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require generate destination address or private key");
         #endif
         } else {
             dest = DecodeDestination(generateTo);
@@ -399,10 +398,10 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
                 // Maybe privkey
                 CBitcoinSecret vchSecret;
                 if (!vchSecret.SetString(generateTo))
-                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address or private key");
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid generate destination address or private key");
                 CKey key = vchSecret.GetKey();
                 if (!key.IsValid()) {
-                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address or private key");
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid generate destination address or private key");
                 } else {
                     privKey = std::make_shared<CKey>(key);
                     // P2SH-Segwit
@@ -416,7 +415,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
             throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Invalid BitcoinHD address");
 
         // Check bind
-        if (prevBlockIndex.nHeight + 1 >= params.BHDIP006Height) {
+        if (miningBlockIndex.nHeight + 1 >= params.BHDIP006Height) {
             CAccountID accountID = GetAccountIDByTxDestination(dest);
             if (accountID == 0)
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BitcoinHD address");
@@ -425,7 +424,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
         }
 
         // Update private key for signature
-        if (prevBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
+        if (miningBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
             uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
 
             // From cache
@@ -460,7 +459,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
         generatorState.plotterId = nPlotterId;
         generatorState.nonce     = nNonce;
         generatorState.best      = calcUnformattedDeadline;
-        generatorState.height    = prevBlockIndex.nHeight + 1;
+        generatorState.height    = miningBlockIndex.nHeight + 1;
         generatorState.dest      = dest;
         generatorState.privKey   = privKey;
 

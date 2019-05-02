@@ -73,7 +73,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
  * Add new nonce
  *
  * @param bestDeadline      Output current best deadline
- * @param prevBlockIndex    Previous block
+ * @param miningBlockIndex  Mining block
  * @param nPlotterId        Plot Id
  * @param nNonce            Found nonce
  * @param generateTo        Destination address or private key for block signing
@@ -82,7 +82,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
  *
  * @return Return deadline calc result
  */
-uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
+uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
     const uint64_t& nPlotterId, const uint64_t& nNonce, const std::string& generateTo,
     bool fCheckBind, const Consensus::Params& params);
 
