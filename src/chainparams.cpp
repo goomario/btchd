@@ -165,18 +165,7 @@ public:
         // This is fine at runtime as we'll fall back to using them as a oneshot if they dont support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.push_back("seed0-chain.btchd.net");
-        vSeeds.push_back("seed1-chain.btchd.net");
-        vSeeds.push_back("seed2-chain.btchd.net");
-        vSeeds.push_back("seed3-chain.btchd.net");
-        vSeeds.push_back("seed4-chain.btchd.net");
-        vSeeds.push_back("seed0-chain.btchd.org");
-        vSeeds.push_back("seed1-chain.btchd.org");
-        vSeeds.push_back("seed2-chain.btchd.org");
-        vSeeds.push_back("seed3-chain.btchd.org");
-        vSeeds.push_back("seed0-chain.btchd.info");
-        vSeeds.push_back("seed0-chain.btchd.top");
-        vSeeds.push_back("seed0-chain.btchd.pro");
+        vSeeds.push_back("seed.btchd.org");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
@@ -379,12 +368,7 @@ public:
         vFixedSeeds.clear();
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.push_back("testnet-seed0-chain.btchd.net");
-        vSeeds.push_back("testnet-seed1-chain.btchd.net");
-        vSeeds.push_back("testnet-seed2-chain.btchd.net");
-        vSeeds.push_back("testnet-seed3-chain.btchd.net");
-        vSeeds.push_back("testnet-seed0-chain.btchd.org");
-        vSeeds.push_back("testnet-seed1-chain.btchd.org");
+        vSeeds.push_back("seed-testnet.btchd.org");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
