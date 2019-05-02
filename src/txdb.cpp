@@ -692,7 +692,9 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     return availableBalance;
 }
 
-void CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+std::set<COutPoint> CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const {
+    std::set<COutPoint> outpoints;
+
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     BindPlotterEntry entry(accountID, plotterId, COutPoint(uint256(), 0));
     pcursor->Seek(entry);
@@ -704,9 +706,13 @@ void CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID &accountID, con
         }
         pcursor->Next();
     }
+
+    return outpoints;
 }
 
-void CCoinsViewDB::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const {
+std::set<COutPoint> CCoinsViewDB::GetBindPlotterAccountEntries(const uint64_t &plotterId) const {
+    std::set<COutPoint> outpoints;
+
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     BindPlotterEntry entry(0, 0, COutPoint(uint256(), 0));
     pcursor->Seek(entry);
@@ -719,6 +725,8 @@ void CCoinsViewDB::GetBindPlotterAccountEntries(const uint64_t &plotterId, std::
         }
         pcursor->Next();
     }
+
+    return outpoints;
 }
 
 CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) { }

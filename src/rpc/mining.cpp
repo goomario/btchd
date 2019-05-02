@@ -878,17 +878,15 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     typedef std::map<uint32_t, CCoinsOrderMap, std::greater<uint32_t> > CCoinsOrderByHeightMap;
     CCoinsOrderByHeightMap mapOrderedCoins;
     {
-        std::set<COutPoint> outpoints;
-        pcoinsTip->GetAccountBindPlotterEntries(accountID, plotterId, outpoints);
-        for (auto it = outpoints.cbegin(); it != outpoints.cend(); ++it) {
+        for (const COutPoint& outpoint : pcoinsTip->GetAccountBindPlotterEntries(accountID, plotterId)) {
             Coin coin;
-            if (pcoinsTip->GetCoin(*it, coin)) {
+            if (pcoinsTip->GetCoin(outpoint, coin)) {
                 assert(!coin.IsSpent());
                 assert(coin.extraData);
                 assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
                 assert(coin.refOutAccountID == accountID);
                 CCoinsOrderMap &mapCoins = mapOrderedCoins[coin.nHeight];
-                mapCoins[*it] = std::move(coin);
+                mapCoins[outpoint] = std::move(coin);
             } else
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
         }
@@ -1130,10 +1128,9 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         if (nBlockCount > 0)
             nCapacityTB = std::max((int64_t) ((nNetCapacityTB * nMinedBlockCount) / nBlockCount), (int64_t) 1);
     } else {
-        std::set<uint64_t> plotters;
-        pcoinsTip->GetAccountBindPlotters(accountID, plotters);
+        std::set<uint64_t> plotters = pcoinsTip->GetAccountBindPlotters(accountID);
         if (!plotters.empty()) {
-            for (const uint64_t &plotterId : plotters) {
+            for (const uint64_t& plotterId : plotters) {
                 mapBindPlotter[plotterId] = PlotterItem{0, nullptr};
             }
             nNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params,

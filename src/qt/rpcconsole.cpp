@@ -931,12 +931,10 @@ void RPCConsole::updatePledge()
                     existPlotterId.insert(block.nPlotterId);
                 }
             } else {
-                std::set<uint64_t> plotters;
-                pcoinsTip->GetAccountBindPlotters(accountID, plotters);
-                for (const uint64_t &id : plotters) {
+                for (const uint64_t& plotterId : pcoinsTip->GetAccountBindPlotters(accountID)) {
                     if (!strBindPlotters.isEmpty())
                         strBindPlotters += ",";
-                    strBindPlotters += QString::number(id);
+                    strBindPlotters += QString::number(plotterId);
                 }
             }
             bool fMiningEnabled = !strBindPlotters.isEmpty();

@@ -85,8 +85,8 @@ public:
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    void GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
-    void GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
+    std::set<COutPoint> GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    std::set<COutPoint> GetBindPlotterAccountEntries(const uint64_t &plotterId) const override;
 };
 
 /** Access to the block database (blocks/index/) */
