@@ -106,8 +106,9 @@ CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& par
  * @param nHeight           The height of net capacity
  * @param nNetCapacityTB    Network capacity of TB
  * @param params            Consensus params
+ * @param pRatioStage       The stage of current ratio
  */
-CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params);
+CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage = nullptr);
 
 /**
  * Get net capacity
@@ -135,10 +136,12 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
  *
  * @param nHeight           The height of pledge ratio
  * @param params            Consensus params
+ * @param pRatioStage       The stage of current ratio
+ * @param pRatioCapacityTB  The net capacity of current stage
  *
  * @return Return pledge ratio
  */
-CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params);
+CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params, int* pRatioStage = nullptr, int64_t* pRatioCapacityTB = nullptr);
 
 /**
  * Get capacity pledge amount

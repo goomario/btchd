@@ -537,8 +537,10 @@ static inline CAmount RoundPledgeRatio(CAmount amount)
     return ((amount + percise / 2) / percise) * percise;
 }
 
-CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params)
+CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
 {
+    if (pRatioStage) *pRatioStage = -1;
+
     if (nHeight < params.BHDIP007Height) {
         // Legacy
         CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
@@ -561,12 +563,14 @@ CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Pa
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
         assert (nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
 
+        if (pRatioStage) *pRatioStage = nStage;
+
         int64_t nPartCapacityTB = std::max(nEndCapacityTB - nNetCapacityTB, (int64_t) 0);
         return nTargetRatio + RoundPledgeRatio(((nStartRatio - nTargetRatio) * nPartCapacityTB) / (nEndCapacityTB - nStartCapacityTB));
     }
 }
 
-CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params)
+CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params, int* pRatioStage, int64_t* pRatioCapacityTB)
 {
     AssertLockHeld(cs_main);
     assert(nHeight >= 0 && nHeight <= chainActive.Height() + 1);
@@ -575,9 +579,12 @@ CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params)
     if (nHeight > params.BHDIP007SmoothEndHeight) {
         int nAdjustHeight = ((nHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
         nNetCapacityTB = GetNetCapacity(nAdjustHeight, params);
+        if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
+    } else {
+        if (pRatioCapacityTB) *pRatioCapacityTB = params.BHDIP007DynPledgeStage;
     }
 
-    return EvalPledgeRatio(nHeight, nNetCapacityTB, params);
+    return EvalPledgeRatio(nHeight, nNetCapacityTB, params, pRatioStage);
 }
 
 CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio)

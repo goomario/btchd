@@ -132,10 +132,17 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
-            "  \"capacity\": nnn            (numeric) The net capacity. Unit of TB\n"
+            "  \"capacity\": nnn            (string) The net capacity\n"
             "  \"ratio\": xxx.xxxxx         (numeric) The ratio of pledge\n"
-            "  \"next_ratio\": xxx.xxxxx    (numeric) The ratio of pledge for next period\n"
-            "  \"next_ratio_capacity\": nnn (numeric) The capacity of pledge for next period. Unit of TB\n"
+            "  \"ratiostartheight\": nnn    (numeric) The height of ratio updated\n"
+            "  \"ratiostage\": nnn          (numeric) The ratio stage of pledge\n"
+            "  \"ratiocapacity\": nnn       (string) The capacity of pledge\n"
+            "  \"nextratio\": {             (object) Next ratio estimate by current data\n"
+            "    \"ratio\": xxx.xxxxx       (numeric) The ratio of pledge for next period\n"
+            "    \"ratiostartheight\": nnn  (numeric) The height of ratio update for next period\n"
+            "    \"ratiostage\": nnn        (numeric) The ratio stage of pledgefor next period\n"
+            "    \"ratiocapacity\": nnn     (string) The capacity of pledge for next period\n"
+            "  },\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
             "  \"errors\": \"...\"            (string) DEPRECATED. Same as warnings. Only shown when bitcoind is started with -deprecatedrpc=getmininginfo\n"
@@ -147,24 +154,40 @@ UniValue getmininginfo(const JSONRPCRequest& request)
 
 
     LOCK(cs_main);
+    const Consensus::Params &params = Params().GetConsensus();
 
-    int nEvalNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), Params().GetConsensus());
+    int nRatioStage = 0;
+    int64_t nRatioNetCapacityTB = 0;
 
     UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("blocks",              (int)chainActive.Height()));
-    obj.push_back(Pair("currentblockweight",  (uint64_t)nLastBlockWeight));
-    obj.push_back(Pair("currentblocktx",      (uint64_t)nLastBlockTx));
-    obj.push_back(Pair("pooledtx",            (uint64_t)mempool.size()));
-    obj.push_back(Pair("difficulty",          (double)GetDifficulty()));
-    obj.push_back(Pair("capacity",            poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget));
-    obj.push_back(Pair("ratio",               ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, Params().GetConsensus()))));
-    obj.push_back(Pair("next_ratio",          ValueFromAmount(poc::EvalPledgeRatio(chainActive.Height() + 1, nEvalNetCapacityTB, Params().GetConsensus()))));
-    obj.push_back(Pair("next_ratio_capacity", nEvalNetCapacityTB));
-    obj.push_back(Pair("chain",               Params().NetworkIDString()));
+    obj.push_back(Pair("blocks",             (int)chainActive.Height()));
+    obj.push_back(Pair("currentblockweight", (uint64_t)nLastBlockWeight));
+    obj.push_back(Pair("currentblocktx",     (uint64_t)nLastBlockTx));
+    obj.push_back(Pair("pooledtx",           (uint64_t)mempool.size()));
+    obj.push_back(Pair("difficulty",         (double)GetDifficulty()));
+    obj.push_back(Pair("capacity",           ValueFromCapacity(poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget)));
+    if (chainActive.Height() >= params.BHDIP007Height) {
+        obj.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB))));
+        obj.push_back(Pair("ratiostartheight", std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow * params.nCapacityEvalWindow));
+        obj.push_back(Pair("ratiostage",       nRatioStage));
+        obj.push_back(Pair("ratiocapacity",    ValueFromCapacity(nRatioNetCapacityTB)));
+    }
+    if (chainActive.Height() >= params.BHDIP007SmoothEndHeight) {
+        nRatioNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params);
+
+        UniValue nextRatio(UniValue::VOBJ);
+        nextRatio.push_back(Pair("ratio",            ValueFromAmount(poc::EvalPledgeRatio(chainActive.Height() + 1, nRatioNetCapacityTB, params, &nRatioStage))));
+        nextRatio.push_back(Pair("ratiostartheight", (std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow + 1) * params.nCapacityEvalWindow));
+        nextRatio.push_back(Pair("ratiostage",       nRatioStage));
+        nextRatio.push_back(Pair("ratiocapacity",    ValueFromCapacity(nRatioNetCapacityTB)));
+
+        obj.push_back(Pair("nextratio",      nextRatio));
+    }
+    obj.push_back(Pair("chain",              Params().NetworkIDString()));
     if (IsDeprecatedRPCEnabled("getmininginfo")) {
-        obj.push_back(Pair("errors",          GetWarnings("statusbar")));
+        obj.push_back(Pair("errors",         GetWarnings("statusbar")));
     } else {
-        obj.push_back(Pair("warnings",        GetWarnings("statusbar")));
+        obj.push_back(Pair("warnings",       GetWarnings("statusbar")));
     }
     return obj;
 }
