@@ -53,13 +53,13 @@ public:
     }
 
     void SetNull() {
-    nBlocks = 0;
-    nSize = 0;
-    nUndoSize = 0;
-    nHeightFirst = 0;
-    nHeightLast = 0;
-    nTimeFirst = 0;
-    nTimeLast = 0;
+        nBlocks = 0;
+        nSize = 0;
+        nUndoSize = 0;
+        nHeightFirst = 0;
+        nHeightLast = 0;
+        nTimeFirst = 0;
+        nTimeLast = 0;
     }
 
     CBlockFileInfo() {

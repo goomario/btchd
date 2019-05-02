@@ -28,7 +28,11 @@ UniValue ValueFromAmount(const CAmount& amount)
 
 UniValue ValueFromCapacity(const uint64_t& capacityTB)
 {
-    return std::to_string(capacityTB) + " TB";
+    if (capacityTB < 10 * 1024) {
+        return std::to_string(capacityTB) + " TB";
+    } else {
+        return std::to_string(capacityTB / 1024) + " PB";
+    }
 }
 
 std::string FormatScript(const CScript& script)

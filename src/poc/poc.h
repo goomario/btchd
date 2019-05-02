@@ -73,7 +73,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
  * Add new nonce
  *
  * @param bestDeadline      Output current best deadline
- * @param prevBlockIndex    Previous block
+ * @param miningBlockIndex  Mining block
  * @param nPlotterId        Plot Id
  * @param nNonce            Found nonce
  * @param generateTo        Destination address or private key for block signing
@@ -82,7 +82,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
  *
  * @return Return deadline calc result
  */
-uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
+uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
     const uint64_t& nPlotterId, const uint64_t& nNonce, const std::string& generateTo,
     bool fCheckBind, const Consensus::Params& params);
 
@@ -106,8 +106,9 @@ CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& par
  * @param nHeight           The height of net capacity
  * @param nNetCapacityTB    Network capacity of TB
  * @param params            Consensus params
+ * @param pRatioStage       The stage of current ratio
  */
-CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params);
+CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage = nullptr);
 
 /**
  * Get net capacity
@@ -135,10 +136,12 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
  *
  * @param nHeight           The height of pledge ratio
  * @param params            Consensus params
+ * @param pRatioStage       The stage of current ratio
+ * @param pRatioCapacityTB  The net capacity of current stage
  *
  * @return Return pledge ratio
  */
-CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params);
+CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params, int* pRatioStage = nullptr, int64_t* pRatioCapacityTB = nullptr);
 
 /**
  * Get capacity pledge amount

@@ -54,40 +54,9 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
     return result;
 }
 
-static void SubmitNonce(UniValue &result, const uint64_t &nNonce, const uint64_t &nPlotterId, int nTargetHeight,
-    const std::string &generateTo, bool fCheckBind)
-{
-    if (IsInitialBlockDownload()) {
-        throw std::runtime_error("Is initial block downloading!");
-    }
-
-    LOCK(cs_main);
-    const CBlockIndex *pBlockIndex = chainActive[nTargetHeight < 1 ? chainActive.Height() : (nTargetHeight - 1)];
-    if (pBlockIndex == nullptr) {
-        throw std::runtime_error("Invalid block!");
-    }
-
-    try {
-        uint64_t bestDeadline = 0;
-        uint64_t deadline = AddNonce(bestDeadline, *pBlockIndex, nNonce, nPlotterId, generateTo, fCheckBind, Params().GetConsensus());
-        result.pushKV("result", "success");
-        result.pushKV("deadline", deadline);
-        result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
-        result.pushKV("height", pBlockIndex->nHeight + 1);
-    } catch (const UniValue& objError) {
-        result.pushKV("result", "error");
-        result.pushKV("errorCode", objError.isObject() ? objError["code"].getValStr() : "403");
-        result.pushKV("errorDescription", objError.isObject() ? objError["message"].getValStr() : objError.getValStr());
-    } catch (const std::exception& e) {
-        result.pushKV("result", "error");
-        result.pushKV("errorCode", "500");
-        result.pushKV("errorDescription", e.what());
-    }
-}
-
 static UniValue submitNonce(const JSONRPCRequest& request)
 {
-    if (request.fHelp) {
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 5) {
         throw std::runtime_error(
             "submitNonce \"nonce\" \"plotterId\" (height \"address\" checkBind)\n"
             "\nSubmit mining nonce.\n"
@@ -106,11 +75,8 @@ static UniValue submitNonce(const JSONRPCRequest& request)
         );
     }
 
-    UniValue result(UniValue::VOBJ);
-    if (request.params.size() < 2 || request.params.size() > 5) {
-        result.pushKV("result", "Missing parameters");
-        return result;
-    }
+    if (IsInitialBlockDownload())
+        throw std::runtime_error("Is initial block downloading!");
 
     uint64_t nNonce = static_cast<uint64_t>(std::stoull(request.params[0].get_str()));
     uint64_t nPlotterId = static_cast<uint64_t>(std::stoull(request.params[1].get_str()));
@@ -130,7 +96,28 @@ static UniValue submitNonce(const JSONRPCRequest& request)
         fCheckBind = request.params[4].get_bool();
     }
 
-    SubmitNonce(result, nNonce, nPlotterId, nTargetHeight, generateTo, fCheckBind);
+    LOCK(cs_main);
+    const CBlockIndex *pindexMining = chainActive[nTargetHeight < 1 ? chainActive.Height() : (nTargetHeight - 1)];
+    if (pindexMining == nullptr)
+        throw std::runtime_error("Invalid mining height");
+
+    UniValue result(UniValue::VOBJ);
+    try {
+        uint64_t bestDeadline = 0;
+        uint64_t deadline = AddNonce(bestDeadline, *pindexMining, nNonce, nPlotterId, generateTo, fCheckBind, Params().GetConsensus());
+        result.pushKV("result", "success");
+        result.pushKV("deadline", deadline);
+        result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
+        result.pushKV("height", pindexMining->nHeight + 1);
+    } catch (const UniValue& objError) {
+        result.pushKV("result", "error");
+        result.pushKV("errorCode", objError.isObject() ? objError["code"].getValStr() : "403");
+        result.pushKV("errorDescription", objError.isObject() ? objError["message"].getValStr() : objError.getValStr());
+    } catch (const std::exception& e) {
+        result.pushKV("result", "error");
+        result.pushKV("errorCode", "500");
+        result.pushKV("errorDescription", e.what());
+    }
     return result;
 }
 

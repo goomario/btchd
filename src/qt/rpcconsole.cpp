@@ -962,9 +962,13 @@ void RPCConsole::updatePledge()
     } else {
         // Pending
         ui->primaryAddressBalance->setText("N/A");
-        ui->estimateCapacity->setText("N/A");
-        ui->bindPlotterId->setText("N/A");
-        ui->miningRequirePledge->setText("N/A");
+
+        ui->labelBindPlotter->setVisible(false);
+        ui->bindPlotterIdContainer->setVisible(false);
+        ui->labelEstimateCapacity->setVisible(false);
+        ui->estimateCapacity->setVisible(false);
+        ui->labelMiningRequirePledge->setVisible(false);
+        ui->miningRequirePledge->setVisible(false);
     }
 }
 

@@ -125,8 +125,7 @@ void CheckDeadlineThread()
                             // Invalidate tip block
                             CValidationState state;
                             if (!InvalidateBlock(state, Params(), pindexTip)) {
-                                LogPrint(BCLog::POC, "Snatch block: invalidate current tip block error, %s\n", state.GetRejectReason());
-                                LogPrint(BCLog::POC, "Snatch block: current tip, %s\n", pindexTip->ToString());
+                                LogPrint(BCLog::POC, "Snatch block fail: invalidate %s got\n\t%s\n", pindexTip->ToString(), state.GetRejectReason());
                             } else {
                                 fReActivateBestChain = true;
                                 ResetBlockFailureFlags(pindexTip);
@@ -135,24 +134,11 @@ void CheckDeadlineThread()
                                 if (!pblock) {
                                     LogPrintf("Snatch block fail: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
                                         it->second.height, it->second.nonce, it->second.plotterId, mineDeadline);
-                                } else {
-                                    arith_uint256 mineBlockWork = GetBlockProof(*pblock, Params().GetConsensus());
-                                    arith_uint256 tipBlockWork = GetBlockProof(*pindexTip, Params().GetConsensus());
-                                    if (mineBlockWork <= tipBlockWork) {
-                                        // Not better tip, give up!
-                                        LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 " %s <= %s\n",
-                                            it->second.height, it->second.nonce, it->second.plotterId,
-                                            mineBlockWork.ToString(), tipBlockWork.ToString());
-                                    } else  {
-                                        LogPrint(BCLog::POC, "Snatch block: hash=%s, time=%d\n", pblock->GetHash().ToString(), pblock->nTime);
-                                        fProcessNewBlock = true;
-                                    }
+                                } else if (GetBlockProof(*pblock, Params().GetConsensus()) > GetBlockProof(*pindexTip, Params().GetConsensus())) {
+                                    LogPrint(BCLog::POC, "Snatch block success: height=%d, hash=%s\n", it->second.height, pblock->GetHash().ToString());
+                                    fProcessNewBlock = true;
                                 }
                             }
-                        } else {
-                            // Not better tip, give up!
-                            LogPrint(BCLog::POC, "Snatch block give up: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 " > %" PRIu64 "\n",
-                                it->second.height, it->second.nonce, it->second.plotterId, mineDeadline, tipDeadline);
                         }
                     }
 
@@ -343,7 +329,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
     }
 }
 
-uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
+uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
     const uint64_t& nNonce, const uint64_t& nPlotterId, const std::string& generateTo,
     bool fCheckBind, const Consensus::Params& params)
 {
@@ -355,27 +341,28 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
     CBlockHeader block;
     block.nPlotterId = nPlotterId;
     block.nNonce     = nNonce;
-    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(prevBlockIndex, block, params);
+    const uint64_t calcUnformattedDeadline = CalculateUnformattedDeadline(miningBlockIndex, block, params);
     if (calcUnformattedDeadline == INVALID_DEADLINE)
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid deadline");
 
-    const uint64_t calcDeadline = calcUnformattedDeadline / prevBlockIndex.nBaseTarget;
+    const uint64_t calcDeadline = calcUnformattedDeadline / miningBlockIndex.nBaseTarget;
     LogPrint(BCLog::POC, "Add nonce: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 "\n",
-        prevBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
-
+        miningBlockIndex.nHeight + 1, nNonce, nPlotterId, calcDeadline);
     bestDeadline = calcDeadline;
-    const uint64_t generationId = prevBlockIndex.GetNextGenerationSignature().GetUint64(0);
     bool fNewBest = false;
-    if (mapGenerators.count(generationId)) {
-        GeneratorState &generatorState = mapGenerators[generationId];
-        if (generatorState.best > calcUnformattedDeadline) {
-            fNewBest = true;
+    if (miningBlockIndex.nHeight >= chainActive.Height() - 1) {
+        // Only tip and previous block
+        auto it = mapGenerators.find(miningBlockIndex.GetNextGenerationSignature().GetUint64(0));
+        if (it != mapGenerators.end()) {
+            if (it->second.best > calcUnformattedDeadline) {
+                fNewBest = true;
+            } else {
+                fNewBest = false;
+                bestDeadline = it->second.best / miningBlockIndex.nBaseTarget;
+            }
         } else {
-            fNewBest = false;
-            bestDeadline = generatorState.best / prevBlockIndex.nBaseTarget;
+            fNewBest = true;
         }
-    } else {
-        fNewBest = true;
     }
 
     if (fNewBest) {
@@ -386,12 +373,10 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
         #ifdef ENABLE_WALLET
             CWalletRef pwallet = vpwallets.empty() ? nullptr : vpwallets[0];
             if (!pwallet)
-                throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require wallet");
+                throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require generate destination address or private key");
             dest = pwallet->GetPrimaryDestination();
-            if (!boost::get<CScriptID>(&dest))
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid primary address");
         #else
-            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require wallet");
+            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Require generate destination address or private key");
         #endif
         } else {
             dest = DecodeDestination(generateTo);
@@ -399,10 +384,10 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
                 // Maybe privkey
                 CBitcoinSecret vchSecret;
                 if (!vchSecret.SetString(generateTo))
-                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address or private key");
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid generate destination address or private key");
                 CKey key = vchSecret.GetKey();
                 if (!key.IsValid()) {
-                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address or private key");
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid generate destination address or private key");
                 } else {
                     privKey = std::make_shared<CKey>(key);
                     // P2SH-Segwit
@@ -413,19 +398,19 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
             }
         }
         if (!boost::get<CScriptID>(&dest))
-            throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Invalid BitcoinHD address");
+            throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid BitcoinHD address");
 
         // Check bind
-        if (prevBlockIndex.nHeight + 1 >= params.BHDIP006Height) {
+        if (miningBlockIndex.nHeight + 1 >= params.BHDIP006Height) {
             CAccountID accountID = GetAccountIDByTxDestination(dest);
             if (accountID == 0)
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BitcoinHD address");
             if (!pcoinsTip->HaveActiveBindPlotter(accountID, nPlotterId))
-                throw JSONRPCError(RPC_INVALID_REQUEST, "Not bind to address");
+                throw JSONRPCError(RPC_INVALID_REQUEST, strprintf("%" PRIu64 " with %s not active bind", nPlotterId, EncodeDestination(dest)));
         }
 
         // Update private key for signature
-        if (prevBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
+        if (miningBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
             uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
 
             // From cache
@@ -449,18 +434,18 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& prevBlockIndex,
         #endif
 
             if (!privKey)
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Not found private key for signature");
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Require private key for block signature");
 
             if (!mapSignaturePrivKeys.count(destId))
                 mapSignaturePrivKeys[destId] = privKey;
         }
 
         // Update best
-        GeneratorState &generatorState = mapGenerators[generationId];
+        GeneratorState &generatorState = mapGenerators[miningBlockIndex.GetNextGenerationSignature().GetUint64(0)];
         generatorState.plotterId = nPlotterId;
         generatorState.nonce     = nNonce;
         generatorState.best      = calcUnformattedDeadline;
-        generatorState.height    = prevBlockIndex.nHeight + 1;
+        generatorState.height    = miningBlockIndex.nHeight + 1;
         generatorState.dest      = dest;
         generatorState.privKey   = privKey;
 
@@ -552,8 +537,10 @@ static inline CAmount RoundPledgeRatio(CAmount amount)
     return ((amount + percise / 2) / percise) * percise;
 }
 
-CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params)
+CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
 {
+    if (pRatioStage) *pRatioStage = -1;
+
     if (nHeight < params.BHDIP007Height) {
         // Legacy
         CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
@@ -576,12 +563,14 @@ CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Pa
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
         assert (nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
 
+        if (pRatioStage) *pRatioStage = nStage;
+
         int64_t nPartCapacityTB = std::max(nEndCapacityTB - nNetCapacityTB, (int64_t) 0);
         return nTargetRatio + RoundPledgeRatio(((nStartRatio - nTargetRatio) * nPartCapacityTB) / (nEndCapacityTB - nStartCapacityTB));
     }
 }
 
-CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params)
+CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params, int* pRatioStage, int64_t* pRatioCapacityTB)
 {
     AssertLockHeld(cs_main);
     assert(nHeight >= 0 && nHeight <= chainActive.Height() + 1);
@@ -590,9 +579,12 @@ CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params)
     if (nHeight > params.BHDIP007SmoothEndHeight) {
         int nAdjustHeight = ((nHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
         nNetCapacityTB = GetNetCapacity(nAdjustHeight, params);
+        if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
+    } else {
+        if (pRatioCapacityTB) *pRatioCapacityTB = params.BHDIP007DynPledgeStage;
     }
 
-    return EvalPledgeRatio(nHeight, nNetCapacityTB, params);
+    return EvalPledgeRatio(nHeight, nNetCapacityTB, params, pRatioStage);
 }
 
 CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio)

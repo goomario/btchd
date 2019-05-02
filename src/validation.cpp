@@ -3718,6 +3718,8 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
                         *ppindex = pindex;
                     }
                 }
+
+                NotifyHeaderTip();
             }
             if (ShutdownRequested())
                 break;
