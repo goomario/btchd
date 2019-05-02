@@ -1220,7 +1220,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
 
     uint64_t plotterId = 0;
     if (!request.params[1].isNull()) {
-        if (!request.params[1].isStr() || !IsValidPlotterID(request.params[1].get_str(), &plotterId))
+        if (!request.params[1].isStr() || (!request.params[1].get_str().empty() && !IsValidPlotterID(request.params[1].get_str(), &plotterId)))
             throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
     }
 
