@@ -242,7 +242,7 @@ void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& t
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
         out.push_back(Pair("address", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
         out.push_back(Pair("id", std::to_string(ptr->GetId())));
-    } else if (payload.type == DATACARRIER_TYPE_PLEDGELOAN) {
+    } else if (payload.type == DATACARRIER_TYPE_PLEDGE) {
         auto ptr = (const PledgeLoanPayload *) &payload;
         out.push_back(Pair("type", "pledge"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));

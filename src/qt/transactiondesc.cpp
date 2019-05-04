@@ -321,7 +321,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         if (IsValidPlotterID(wtx.mapValue["plotter_id"], &plotterId)) {
             const COutPoint coinEntry(wtx.tx->GetHash(), 0);
             const Coin &bindCoin = pcoinsTip->AccessCoin(coinEntry);
-            if (!bindCoin.IsSpent() && bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            if (!bindCoin.IsSpent() && bindCoin.IsBindPlotter()) {
                 const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, bindCoin, coinEntry);
                 int nSpendHeight = GetSpendHeight(*pcoinsTip);
                 int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, bindCoin, activeBindCoin, Params().GetConsensus());

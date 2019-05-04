@@ -3759,7 +3759,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
     txNew.vin.push_back(CTxIn(coinEntry, CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
         const Coin &coin = pcoinsTip->AccessCoin(coinEntry);
-        if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER)
+        if (coin.IsSpent() || !coin.IsBindPlotter())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not bind");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The bind plotter transaction not mine");
@@ -4114,7 +4114,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
 
     // Check
     CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
-    if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN)
+    if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error on create pledge loan data");
 
     CValidationState state;
@@ -4198,7 +4198,7 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     txNew.vin.push_back(CTxIn(COutPoint(txid, 0), CScript(), coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1)));
     {
         const Coin &coin = pcoinsTip->AccessCoin(COutPoint(txid, 0));
-        if (coin.IsSpent() || !coin.extraData || coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN)
+        if (coin.IsSpent() || !coin.IsPledge())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not pledge");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge loan not mine");
@@ -4320,7 +4320,7 @@ UniValue listpledges(const JSONRPCRequest& request)
         // Extract tx
         int nHeight = (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) ? mapBlockIndex[wtx.hashBlock]->nHeight : 0;
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
-        if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN)
+        if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
             continue;
         bool fValid = pcoinsTip->HaveCoin(COutPoint(wtx.GetHash(), 0));
         if (!fIncludeInvalid && !fValid)

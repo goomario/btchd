@@ -352,7 +352,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
                 {
                     status.status = TransactionStatus::Disabled;
                 }
-                else if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER)
+                else if (coin.IsBindPlotter())
                 {
                     if (coinEntry != pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()))
                         status.status = TransactionStatus::Inactived;

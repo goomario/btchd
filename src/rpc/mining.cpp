@@ -839,6 +839,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"bindheightlimit\": xxx             (numeric) The plotter bind small fee limit height. Other require high fee.\n"
             "    \"unbindheightlimit\": xxx,          (numeric) The plotter unbind limit height.\n"
             "    \"capacity\": \"capacity TB\",         (string) The capacity.\n"
             "    \"active\": true|false,              (bool, default false) The bind active status.\n"
@@ -878,15 +879,17 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     typedef std::map<uint32_t, CCoinsOrderMap, std::greater<uint32_t> > CCoinsOrderByHeightMap;
     CCoinsOrderByHeightMap mapOrderedCoins;
     {
-        for (const auto& outpoint : pcoinsTip->GetBindPlotterEntriesByAccount(accountID, plotterId)) {
+        for (const auto& pair : pcoinsTip->GetAccountBindPlotterEntries(accountID, plotterId)) {
+            if (!pair.second.valid)
+                continue;
+
             Coin coin;
-            if (pcoinsTip->GetCoin(outpoint.first, coin)) {
+            if (pcoinsTip->GetCoin(pair.first, coin)) {
                 assert(!coin.IsSpent());
-                assert(coin.extraData);
-                assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+                assert(coin.IsBindPlotter());
                 assert(coin.refOutAccountID == accountID);
                 CCoinsOrderMap &mapCoins = mapOrderedCoins[coin.nHeight];
-                mapCoins[outpoint.first] = std::move(coin);
+                mapCoins[pair.first] = std::move(coin);
             } else
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
         }
@@ -920,6 +923,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", chainActive[static_cast<int>(coin.nHeight)]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[static_cast<int>(coin.nHeight)]->GetBlockTime()));
             item.push_back(Pair("height", static_cast<int>(coin.nHeight)));
+            item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, coin, Params().GetConsensus())));
             item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, coin, activeBindCoin, Params().GetConsensus())));
             if (nBlockCount > 0) {
                 item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[plotterId]) / nBlockCount)));
@@ -1069,7 +1073,7 @@ UniValue getunbindplotterlimit(const JSONRPCRequest& request)
     if (!pcoinsTip->GetCoin(coinEntry, coin))
         throw JSONRPCError(RPC_INVALID_PARAMS, "Not found valid bind transaction");
 
-    if (!coin.extraData || coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER)
+    if (!coin.IsBindPlotter())
         throw JSONRPCError(RPC_INVALID_PARAMS, "Invalid bind transaction");
 
     const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, coinEntry);
@@ -1380,7 +1384,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
             assert(key.n == 0);
             assert(!coin.IsSpent());
-            assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN);
+            assert(coin.IsPledge());
 
             UniValue item(UniValue::VOBJ);
             item.push_back(Pair("from", EncodeDestination(ExtractDestination(coin.out.scriptPubKey))));

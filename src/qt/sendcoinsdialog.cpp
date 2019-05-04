@@ -393,12 +393,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     CDatacarrierPayloadRef payload;
     if (prepareStatus.status == WalletModel::OK) {
         LOCK(cs_main);
-        if (operateMethod == PayOperateMethod::SendPledge) {
-            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
-            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN) {
-                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
-            }
-        } else if (operateMethod == PayOperateMethod::BindPlotter) {
+        if (operateMethod == PayOperateMethod::BindPlotter) {
             payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
             if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
                 fNewRecipientAllowed = true;
@@ -410,6 +405,11 @@ void SendCoinsDialog::on_sendButton_clicked()
             if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
                     QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
+        } else if (operateMethod == PayOperateMethod::SendPledge) {
+            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
+            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE) {
+                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
+            }
         }
     }
 
@@ -465,7 +465,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     switch (operateMethod)
     {
     case PayOperateMethod::SendPledge:
-        assert(payload && payload->type == DATACARRIER_TYPE_PLEDGELOAN);
+        assert(payload && payload->type == DATACARRIER_TYPE_PLEDGE);
         titleString = tr("Confirm send pledge coins");
         questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to send pledge?") + "</b></span>";
         break;

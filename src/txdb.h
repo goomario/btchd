@@ -85,7 +85,7 @@ public:
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };
 

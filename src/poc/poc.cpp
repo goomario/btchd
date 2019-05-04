@@ -539,27 +539,31 @@ static inline CAmount RoundPledgeRatio(CAmount amount)
 
 CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
 {
-    if (pRatioStage) *pRatioStage = -1;
-
     if (nHeight < params.BHDIP007Height) {
         // Legacy
+        if (pRatioStage) *pRatioStage = -2;
+
         CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
         return nLegacyRatio;
     } else if (nHeight <= params.BHDIP007SmoothEndHeight) {
         // Smooth
+        if (pRatioStage) *pRatioStage = -1;
+
         CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
         int step = params.BHDIP007SmoothEndHeight - params.BHDIP007Height + 1;
         int current = nHeight - params.BHDIP007Height + 1;
         return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001PledgeRatio) * current) / step);
     } else {
         // Dynamic
-        if (nNetCapacityTB <= params.BHDIP007DynPledgeStage)
+        if (nNetCapacityTB <= params.BHDIP007DynPledgeStage) {
+            if (pRatioStage) *pRatioStage = -1;
             return params.BHDIP001PledgeRatio;
+        }
 
-        int nStage = (int) (std::log2((float) (nNetCapacityTB / params.BHDIP007DynPledgeStage)) + 0.000005f);
+        int nStage = std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007DynPledgeStage)) + 0.000005f), 40);
         CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001PledgeRatio));
         CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001PledgeRatio));
-        int64_t nStartCapacityTB = (1 << nStage) * params.BHDIP007DynPledgeStage;
+        int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007DynPledgeStage;
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
         assert (nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
 

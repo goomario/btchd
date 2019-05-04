@@ -94,12 +94,12 @@ public:
         };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 420000; // About 4 years
-        consensus.nCapacityEvalWindow = 2016; // About a week
-        consensus.fPocAllowMinDifficultyBlocks = false;
-        consensus.nPowTargetSpacing = 5 * 60; // 5 minutes
+        consensus.nSubsidyHalvingInterval = 420000;      // About 4 years
+        consensus.nCapacityEvalWindow = 2016;            // About 1 week
+        consensus.fPocAllowMinDifficultyBlocks = false;  // For test
+        consensus.nPowTargetSpacing = 5 * 60;            // 5 minutes
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
-        consensus.nMinerConfirmationWindow = 2016;
+        consensus.nMinerConfirmationWindow = 2016;       // About 1 week
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
@@ -107,8 +107,8 @@ public:
         consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.BHDIP001StartMingingHeight            = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
-        consensus.BHDIP001FundRoyaltyPercent            = 5; // 5% to fund
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70% to fund
+        consensus.BHDIP001FundRoyaltyPercent            = 5;     // 5% to fund
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70;    // 70% to fund
         consensus.BHDIP001NoPledgeHeight                = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
         consensus.BHDIP001PledgeRatio                   = 3 * COIN;
 
@@ -317,8 +317,8 @@ public:
         consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.BHDIP001StartMingingHeight            = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
-        consensus.BHDIP001FundRoyaltyPercent            = 5; // 5%
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BHDIP001FundRoyaltyPercent            = 5;    // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70;   // 70%
         consensus.BHDIP001NoPledgeHeight                = 12400;
         consensus.BHDIP001PledgeRatio                   = 3 * COIN;
 
@@ -501,7 +501,7 @@ public:
         consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.BHDIP001StartMingingHeight            = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
-        consensus.BHDIP001FundRoyaltyPercent            = 5; // 5%
+        consensus.BHDIP001FundRoyaltyPercent            = 5;  // 5%
         consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
         consensus.BHDIP001NoPledgeHeight                = 94;
         consensus.BHDIP001PledgeRatio                   = 3 * COIN;

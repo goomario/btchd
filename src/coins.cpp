@@ -17,13 +17,14 @@ bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { ret
 CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeLoanCursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::PledgeDebitCursor(const CAccountID &accountID) const { return nullptr; }
-CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins, CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
+CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
     if (pBindPlotterBalance != nullptr) *pBindPlotterBalance = 0;
     if (pPledgeLoanBalance != nullptr) *pPledgeLoanBalance = 0;
     if (pPledgeDebitBalance != nullptr) *pPledgeDebitBalance = 0;
     return 0;
 }
-CBindPlotterCoinsMap CCoinsView::GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const { return {}; }
+CBindPlotterCoinsMap CCoinsView::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const { return {}; }
 CBindPlotterCoinsMap CCoinsView::GetBindPlotterEntries(const uint64_t &plotterId) const { return {}; }
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const {
     Coin coin;
@@ -45,8 +46,8 @@ CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMa
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
     return base->GetBalance(accountID, mapParentModifiedCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
-CBindPlotterCoinsMap CCoinsViewBacked::GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const {
-    return base->GetBindPlotterEntriesByAccount(accountID, plotterId);
+CBindPlotterCoinsMap CCoinsViewBacked::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const {
+    return base->GetAccountBindPlotterEntries(accountID, plotterId);
 }
 CBindPlotterCoinsMap CCoinsViewBacked::GetBindPlotterEntries(const uint64_t &plotterId) const {
     return base->GetBindPlotterEntries(plotterId);
@@ -69,8 +70,7 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
         return cacheCoins.end();
     CCoinsMap::iterator ret = cacheCoins.emplace(std::piecewise_construct, std::forward_as_tuple(outpoint), std::forward_as_tuple(std::move(tmp))).first;
     if (ret->second.coin.IsSpent()) {
-        if (ret->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height &&
-                ret->second.coin.extraData && ret->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+        if (ret->second.coin.IsBindPlotter() && ret->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height) {
             ret->second.flags = CCoinsCacheEntry::UNBIND;
         } else {
             // The parent only has an empty entry for this outpoint; we can consider our
@@ -127,7 +127,8 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        if (i == 0 && extraData && (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGELOAN)) {
+        if (i == 0 && extraData) {
+            assert (extraData->type == DATACARRIER_TYPE_BINDPLOTTER || extraData->type == DATACARRIER_TYPE_PLEDGE);
             Coin coin(tx.vout[i], nHeight, fCoinbase);
             coin.extraData = extraData;
             cache.AddCoin(COutPoint(txid, i), std::move(coin), overwrite);
@@ -139,11 +140,14 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
 
 bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout, bool rollback) {
     CCoinsMap::iterator it = FetchCoin(outpoint);
-    if (it == cacheCoins.end()) return false;
+    if (it == cacheCoins.end())
+        return false;
+
     cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
-    if (moveout) *moveout = it->second.coin;
-    if (!rollback && it->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height &&
-            it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+    if (moveout)
+        *moveout = it->second.coin;
+
+    if (!rollback && it->second.coin.IsBindPlotter() && it->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height) {
         // Unbind
         it->second.flags |= CCoinsCacheEntry::DIRTY | CCoinsCacheEntry::UNBIND;
         it->second.flags &= ~CCoinsCacheEntry::FRESH;
@@ -269,7 +273,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
             if (it->second.coin.refOutAccountID != accountID &&
                 (!it->second.coin.extraData ||
-                    it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN ||
+                    it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
                     PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                 continue;
             }
@@ -285,7 +289,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                 }
                 if (it->second.coin.refOutAccountID != accountID &&
                     (!it->second.coin.extraData ||
-                        it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGELOAN ||
+                        it->second.coin.extraData->type != DATACARRIER_TYPE_PLEDGE ||
                         PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
                     continue;
                 }
@@ -316,23 +320,23 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
     }
 }
 
-CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const {
+CBindPlotterCoinsMap CCoinsViewCache::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const {
     // From base view
-    CBindPlotterCoinsMap outpoints = base->GetBindPlotterEntriesByAccount(accountID, plotterId);
+    CBindPlotterCoinsMap outpoints = base->GetAccountBindPlotterEntries(accountID, plotterId);
 
     // Merge by cache
     for (CCoinsMap::iterator it = cacheCoins.begin(); it != cacheCoins.end(); it++) {
-        if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.extraData || it->second.coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER) {
+        if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.IsBindPlotter())
             continue;
-        }
         if (accountID == it->second.coin.refOutAccountID && (plotterId == 0 || BindPlotterPayload::As(it->second.coin.extraData)->GetId() == plotterId)) {
-            if (it->second.coin.IsSpent()) {
+            if (!(it->second.flags & CCoinsCacheEntry::UNBIND) && it->second.coin.IsSpent()) {
                 outpoints.erase(it->first);
             } else {
                 CBindPlotterInfo &info = outpoints[it->first];
+                info.nHeight = it->second.coin.nHeight;
                 info.accountID = it->second.coin.refOutAccountID;
                 info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
-                info.nHeight = static_cast<int>(it->second.coin.nHeight);
+                info.valid = !(it->second.flags & CCoinsCacheEntry::UNBIND);
             }
         }
     }
@@ -346,17 +350,17 @@ CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntries(const uint64_t &plot
 
     // Merge by cache
     for (CCoinsMap::iterator it = cacheCoins.begin(); it != cacheCoins.end(); it++) {
-        if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.extraData || it->second.coin.extraData->type != DATACARRIER_TYPE_BINDPLOTTER) {
+        if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.IsBindPlotter())
             continue;
-        }
         if (BindPlotterPayload::As(it->second.coin.extraData)->GetId() == plotterId) {
-            if (it->second.coin.IsSpent()) {
+            if (!(it->second.flags & CCoinsCacheEntry::UNBIND) && it->second.coin.IsSpent()) {
                 outpoints.erase(it->first);
             } else {
                 CBindPlotterInfo &info = outpoints[it->first];
+                info.nHeight = it->second.coin.nHeight;
                 info.accountID = it->second.coin.refOutAccountID;
                 info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
-                info.nHeight = static_cast<int>(it->second.coin.nHeight);
+                info.valid = !(it->second.flags & CCoinsCacheEntry::UNBIND);
             }
         }
     }
@@ -364,7 +368,8 @@ CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntries(const uint64_t &plot
     return outpoints;
 }
 
-CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID, CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
+CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID,
+        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const {
     // Merge with base cache coins
     return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
@@ -374,19 +379,20 @@ COutPoint CCoinsViewCache::GetActiveBindPlotterEntry(const uint64_t &plotterId) 
         return COutPoint();
 
     // Last bind is actived
-    const COutPoint *lastOutPoint = nullptr;
+    const COutPoint *lastOutpoint = nullptr;
     int lastHeight = 0;
-    auto outpoints = GetBindPlotterEntries(plotterId); // Find all bind plotter outpoint. Must order by COutPoint ascent
-    for (auto it = outpoints.rbegin(); it != outpoints.rend(); ++it) {
-        assert(it->second.plotterId == plotterId);
+    bool lastValid = false;
+    for (auto &pair : GetBindPlotterEntries(plotterId)) {
+        assert(pair.second.plotterId == plotterId);
         // Same height will select largest COutPoint<tx,n>
-        if (lastHeight < it->second.nHeight) {
-            lastHeight = it->second.nHeight;
-            lastOutPoint = &(it->first);
+        if (!lastOutpoint || lastHeight < pair.second.nHeight || (lastHeight == pair.second.nHeight && *lastOutpoint < pair.first)) {
+            lastHeight = pair.second.nHeight;
+            lastOutpoint = &pair.first;
+            lastValid = pair.second.valid;
         }
     }
-    if (lastOutPoint)
-        return *lastOutPoint;
+    if (lastValid && lastOutpoint)
+        return *lastOutpoint;
 
     return COutPoint();
 }
@@ -397,9 +403,8 @@ const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId,
         return coinEmpty;
 
     const Coin& coin = AccessCoin(entry);
-    if (coin.IsSpent())
-        return coinEmpty;
-    assert(coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(!coin.IsSpent());
+    assert(coin.IsBindPlotter());
     assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
     if (outpoint) *outpoint = entry;
     return coin;
@@ -412,8 +417,9 @@ bool CCoinsViewCache::HaveActiveBindPlotter(const CAccountID &accountID, const u
 
 std::set<uint64_t> CCoinsViewCache::GetAccountBindPlotters(const CAccountID &accountID) const {
     std::set<uint64_t> plotters;
-    for (const auto& outpoint: GetBindPlotterEntriesByAccount(accountID, 0)) {
-        plotters.insert(outpoint.second.plotterId);
+    for (const auto& pair: GetAccountBindPlotterEntries(accountID)) {
+        if (pair.second.valid)
+            plotters.insert(pair.second.plotterId);
     }
     return plotters;
 }

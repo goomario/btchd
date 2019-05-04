@@ -1200,12 +1200,11 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
 
 int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consensus::Params& consensusParams)
 {
-    assert(!activeCoin.IsSpent());
-    assert(activeCoin.extraData && activeCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
+    assert(!activeCoin.IsSpent() && activeCoin.IsBindPlotter());
     assert(nHeight > static_cast<int>(activeCoin.nHeight));
 
     if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight)
-        return consensusParams.BHDIP006Height;
+        return std::max(consensusParams.BHDIP006Height, static_cast<int>(activeCoin.nHeight) + 1);
 
     const uint64_t &nPlotterId = BindPlotterPayload::As(activeCoin.extraData)->GetId();
 
@@ -1232,14 +1231,10 @@ int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consens
 
 int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& activeCoin, const Consensus::Params& consensusParams)
 {
-    assert(!bindCoin.IsSpent());
-    assert(bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
-    assert(!activeCoin.IsSpent());
-    assert(activeCoin.extraData && activeCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
-    assert(activeCoin.nHeight >= bindCoin.nHeight);
+    assert(!bindCoin.IsSpent() && bindCoin.IsBindPlotter());
 
     if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
-        return consensusParams.BHDIP006Height;
+        return std::max(consensusParams.BHDIP006Height, static_cast<int>(bindCoin.nHeight) + 1);
 
     const uint64_t &nPlotterId = BindPlotterPayload::As(bindCoin.extraData)->GetId();
 
@@ -1265,6 +1260,11 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& a
             }
         }
     } else {
+        if (nHeight >= consensusParams.BHDIP007Height && activeCoin.IsSpent())
+            return static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow;
+
+        assert(!activeCoin.IsSpent() && activeCoin.IsBindPlotter());
+        assert(activeCoin.nHeight >= bindCoin.nHeight);
         int nLastActiveBindHeight = (&bindCoin == &activeCoin) ? (nHeight - 1) : static_cast<int>(activeCoin.nHeight);
 
         // Last block mined in this wallet
@@ -1276,7 +1276,7 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& a
                     //! Issues: Infinitely +<EvalWindow>
                     return height + consensusParams.nCapacityEvalWindow;
                 } else {
-                    // Max limit +<EvalWindow>
+                    // BHDIP007 Max limit +<EvalWindow>
                     return std::min(height + consensusParams.nCapacityEvalWindow,
                         static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow);
                 }
@@ -1299,7 +1299,6 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& a
 const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin& bindCoin, const COutPoint& bindCoinEntry)
 {
     COutPoint activeBindCoinEnty = inputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(bindCoin.extraData)->GetId());
-    assert(!activeBindCoinEnty.IsNull());
     if (activeBindCoinEnty == bindCoinEntry)
         return bindCoin;
     

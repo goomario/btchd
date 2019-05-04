@@ -74,7 +74,7 @@ public:
             ::Serialize(s, VARINT((unsigned int&)extraData->type));
             if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-            } else if (extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+            } else if (extraData->type == DATACARRIER_TYPE_PLEDGE) {
                 ::Serialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
             } else
                 assert(false);
@@ -97,7 +97,7 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-            } else if (extraDataType == DATACARRIER_TYPE_PLEDGELOAN) {
+            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
                 extraData = std::make_shared<PledgeLoanPayload>();
                 ::Unserialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
             } else
@@ -111,6 +111,14 @@ public:
 
     size_t DynamicMemoryUsage() const {
         return memusage::DynamicUsage(out.scriptPubKey);
+    }
+
+    bool IsBindPlotter() const {
+        return extraData && extraData->type == DATACARRIER_TYPE_BINDPLOTTER;
+    }
+
+    bool IsPledge() const {
+        return extraData && extraData->type == DATACARRIER_TYPE_PLEDGE;
     }
 };
 
@@ -160,7 +168,11 @@ struct CBindPlotterInfo
     int nHeight;
     CAccountID accountID;
     uint64_t plotterId;
+    bool valid;
+
+    CBindPlotterInfo() : nHeight(0), accountID(0), plotterId(0), valid(true) {}
 };
+
 typedef std::map<COutPoint, CBindPlotterInfo> CBindPlotterCoinsMap;
 
 /** Cursor template for iterating over CoinsData state */
@@ -232,7 +244,7 @@ public:
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const;
 
     //! Get account bind plotter all coin entries. if plotterId is 0 then return all coin entries for account.
-    virtual CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const;
+    virtual CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const;
 
     //! Get plotter bind all coin entries.
     virtual CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const;
@@ -259,7 +271,7 @@ public:
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };
 
@@ -303,7 +315,7 @@ public:
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 
     /**
