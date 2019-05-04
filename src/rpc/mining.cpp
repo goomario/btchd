@@ -858,7 +858,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
     uint64_t plotterId = 0;
     if (request.params.size() >= 2) {
-        if (!request.params[1].isStr() || !IsValidPlotterID(request.params[1].get_str(), &plotterId))
+        if (!request.params[1].isStr() || (!request.params[1].get_str().empty() && !IsValidPlotterID(request.params[1].get_str(), &plotterId)))
             throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
     }
     int count = std::numeric_limits<int>::max();
@@ -878,15 +878,15 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
     typedef std::map<uint32_t, CCoinsOrderMap, std::greater<uint32_t> > CCoinsOrderByHeightMap;
     CCoinsOrderByHeightMap mapOrderedCoins;
     {
-        for (const COutPoint& outpoint : pcoinsTip->GetAccountBindPlotterEntries(accountID, plotterId)) {
+        for (const auto& outpoint : pcoinsTip->GetBindPlotterEntriesByAccount(accountID, plotterId)) {
             Coin coin;
-            if (pcoinsTip->GetCoin(outpoint, coin)) {
+            if (pcoinsTip->GetCoin(outpoint.first, coin)) {
                 assert(!coin.IsSpent());
                 assert(coin.extraData);
                 assert(coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER);
                 assert(coin.refOutAccountID == accountID);
                 CCoinsOrderMap &mapCoins = mapOrderedCoins[coin.nHeight];
-                mapCoins[outpoint] = std::move(coin);
+                mapCoins[outpoint.first] = std::move(coin);
             } else
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
         }

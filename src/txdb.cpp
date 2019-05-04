@@ -47,6 +47,7 @@ static const char DB_COIN_PLEDGELOAN = 'E';
 static const char DB_COIN_PLEDGEDEBIT = 'e';
 /** Index flag for <Account,PlotterId> to bind plotter UTXO */
 static const char DB_COIN_BINDPLOTTER = 'P';
+static const char DB_COIN_BINDPLOTTER_INDEX = 'p';
 
 namespace {
 
@@ -171,6 +172,27 @@ struct BindPlotterRefEntry {
         s >> key;
         s >> VARINT(*accountID);
         s >> VARINT(*plotterId);
+        s >> outpoint->hash;
+        s >> VARINT(outpoint->n);
+    }
+};
+
+//! Entry for bind coin
+struct BindPlotterCoinEntry {
+    COutPoint* outpoint;
+    char key;
+    explicit BindPlotterCoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN_BINDPLOTTER_INDEX) {}
+
+    template<typename Stream>
+    void Serialize(Stream &s) const {
+        s << key;
+        s << outpoint->hash;
+        s << VARINT(outpoint->n);
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s) {
+        s >> key;
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
@@ -338,7 +360,11 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
 
                 if (it->second.coin.extraData) {
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                        batch.Erase(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first));
+                        if (it->second.flags & CCoinsCacheEntry::UNBIND) {
+                            batch.Write(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first), VARINT(it->second.coin.nHeight));
+                        } else {
+                            batch.Erase(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first));
+                        }
                     }
                     else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                         batch.Erase(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first));
@@ -353,7 +379,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
 
                 if (it->second.coin.extraData) {
                     if (it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                        batch.Write(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first), 0);
+                        batch.Write(BindPlotterRefEntry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first), VARINT(it->second.coin.nHeight));
                     }
                     else if (it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
                         batch.Write(PledgeLoanRefEntry(&it->second.coin.refOutAccountID, &it->first), VARINT(it->second.coin.out.nValue));
@@ -692,15 +718,19 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     return availableBalance;
 }
 
-std::set<COutPoint> CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const {
-    std::set<COutPoint> outpoints;
+CBindPlotterCoinsMap CCoinsViewDB::GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const {
+    CBindPlotterCoinsMap outpoints;
 
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     BindPlotterEntry entry(accountID, plotterId, COutPoint(uint256(), 0));
     pcursor->Seek(entry);
     while (pcursor->Valid()) {
         if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER && entry.accountID == accountID && (plotterId == 0 || entry.plotterId == plotterId)) {
-            outpoints.insert(entry.outpoint);
+            CBindPlotterInfo &info = outpoints[entry.outpoint];
+            info.accountID = entry.accountID;
+            info.plotterId = entry.plotterId;
+            if (!pcursor->GetValue(VARINT(info.nHeight)))
+                throw std::runtime_error("Database read error");
         } else {
             break;
         }
@@ -710,16 +740,21 @@ std::set<COutPoint> CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID 
     return outpoints;
 }
 
-std::set<COutPoint> CCoinsViewDB::GetBindPlotterAccountEntries(const uint64_t &plotterId) const {
-    std::set<COutPoint> outpoints;
+CBindPlotterCoinsMap CCoinsViewDB::GetBindPlotterEntries(const uint64_t &plotterId) const {
+    CBindPlotterCoinsMap outpoints;
 
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     BindPlotterEntry entry(0, 0, COutPoint(uint256(), 0));
     pcursor->Seek(entry);
     while (pcursor->Valid()) {
         if (pcursor->GetKey(entry) && entry.key == DB_COIN_BINDPLOTTER) {
-            if (entry.plotterId == plotterId)
-                outpoints.insert(entry.outpoint);
+            if (entry.plotterId == plotterId) {
+                CBindPlotterInfo &info = outpoints[entry.outpoint];
+                info.accountID = entry.accountID;
+                info.plotterId = entry.plotterId;
+                if (!pcursor->GetValue(VARINT(info.nHeight)))
+                    throw std::runtime_error("Database read error");
+            }
         } else {
             break;
         }
@@ -832,7 +867,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
 /** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    const uint32_t currentCoinDbVersion = 0x20190103;
+    const uint32_t currentCoinDbVersion = 0x20190504;
 
     // Check coin database version
     {
@@ -918,7 +953,7 @@ bool CCoinsViewDB::Upgrade() {
     pcursor->Seek(DB_COIN);
     if (pcursor->Valid()) {
         size_t batch_size = (size_t)gArgs.GetArg("-dbbatchsize", nDefaultDbBatchSize);
-        int utxo_bucket = 130000 / 100; // Current UTXO about 130000
+        int utxo_bucket = 173000 / 100;
         int indexProgress = -1;
         CDBBatch batch(db);
         COutPoint outpoint;
@@ -937,7 +972,7 @@ bool CCoinsViewDB::Upgrade() {
                     // Extra data
                     if (coin.extraData) {
                         if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                            batch.Write(BindPlotterRefEntry(&coin.refOutAccountID, &BindPlotterPayload::As(coin.extraData)->id, &outpoint), 0);
+                            batch.Write(BindPlotterRefEntry(&coin.refOutAccountID, &BindPlotterPayload::As(coin.extraData)->id, &outpoint), VARINT(coin.nHeight));
                             add++;
                         }
                         else if (coin.extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {

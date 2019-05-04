@@ -146,6 +146,7 @@ struct CCoinsCacheEntry
          * flush the changes to the parent cache.  It is always safe to
          * not mark FRESH if that condition is not guaranteed.
          */
+        UNBIND = (1 << 2), // Unbind plotter coin
     };
 
     CCoinsCacheEntry() : flags(0) {}
@@ -153,6 +154,14 @@ struct CCoinsCacheEntry
 };
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
+
+struct CBindPlotterInfo
+{
+    int nHeight;
+    CAccountID accountID;
+    uint64_t plotterId;
+};
+typedef std::map<COutPoint, CBindPlotterInfo> CBindPlotterCoinsMap;
 
 /** Cursor template for iterating over CoinsData state */
 template <typename K, typename V>
@@ -222,11 +231,11 @@ public:
     virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const;
 
-    //! Get account bind plotter all outpoint. if plotterId = 0 then return all accountID binded
-    virtual std::set<COutPoint> GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const;
+    //! Get account bind plotter all coin entries. if plotterId is 0 then return all coin entries for account.
+    virtual CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const;
 
-    //! Get plotter bind all account outpoint.
-    virtual std::set<COutPoint> GetBindPlotterAccountEntries(const uint64_t &plotterId) const;
+    //! Get plotter bind all coin entries.
+    virtual CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const;
 };
 
 
@@ -250,8 +259,8 @@ public:
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    std::set<COutPoint> GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const override;
-    std::set<COutPoint> GetBindPlotterAccountEntries(const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };
 
 
@@ -294,8 +303,8 @@ public:
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
         CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    std::set<COutPoint> GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const override;
-    std::set<COutPoint> GetBindPlotterAccountEntries(const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetBindPlotterEntriesByAccount(const CAccountID &accountID, const uint64_t &plotterId) const override;
+    CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 
     /**
      * Check if we have the given utxo already loaded in this cache.
@@ -327,7 +336,7 @@ public:
      * If no unspent output exists for the passed outpoint, this call
      * has no effect.
      */
-    bool SpendCoin(const COutPoint &outpoint, Coin* moveto = nullptr);
+    bool SpendCoin(const COutPoint &outpoint, Coin* moveto = nullptr, bool rollback = false);
 
     /**
      * Push the modifications applied to this cache to its base.
