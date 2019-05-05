@@ -1198,45 +1198,44 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
     return reward;
 }
 
-int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consensus::Params& consensusParams)
+int GetBindPlotterLimitHeight(int nHeight, const CBindPlotterCoinPair& lastBindCoinInfo, const Consensus::Params& consensusParams)
 {
-    assert(!activeCoin.IsSpent() && activeCoin.IsBindPlotter());
-    assert(nHeight > static_cast<int>(activeCoin.nHeight));
+    assert(!lastBindCoinInfo.first.IsNull() && lastBindCoinInfo.second.valid);
+    assert(nHeight > lastBindCoinInfo.second.nHeight);
 
     if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight)
-        return std::max(consensusParams.BHDIP006Height, static_cast<int>(activeCoin.nHeight) + 1);
+        return std::max(consensusParams.BHDIP006Height, lastBindCoinInfo.second.nHeight + 1);
 
-    const uint64_t &nPlotterId = BindPlotterPayload::As(activeCoin.extraData)->GetId();
+    // Current height overflow <EvalWindow>
+    if (nHeight >= lastBindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow)
+        return lastBindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow;
 
     // Mined block in <EvalWindow>, next block unlimit
     int nEvalBeginHeight = std::max(nHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
     int nEvalEndHeight = nHeight - 1;
     for (int height = nEvalBeginHeight; height <= nEvalEndHeight; height++) {
-        if (chainActive[height]->nPlotterId == nPlotterId) {
-            return std::max(height, static_cast<int>(activeCoin.nHeight)) + 1;
-        }
+        if (chainActive[height]->nPlotterId == lastBindCoinInfo.second.plotterId)
+            return std::max(height, lastBindCoinInfo.second.nHeight) + 1;
     }
 
     // Participator mined after bind require lock <EvalWindow>
-    int nBeginHeight = static_cast<int>(activeCoin.nHeight);
-    int nEndHeight = std::max(std::min(nHeight - 1, static_cast<int>(activeCoin.nHeight) + consensusParams.nCapacityEvalWindow - 1), nBeginHeight);
+    int nBeginHeight = lastBindCoinInfo.second.nHeight;
+    int nEndHeight = std::max(std::min(nHeight - 1, lastBindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow - 1), nBeginHeight);
     for (int height = nBeginHeight; height <= nEndHeight; height++) {
-        if (chainActive[height]->minerAccountID == activeCoin.refOutAccountID) {
-            return static_cast<int>(activeCoin.nHeight) + consensusParams.nCapacityEvalWindow;
-        }
+        if (chainActive[height]->minerAccountID == lastBindCoinInfo.second.accountID)
+            return lastBindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow;
     }
 
-    return static_cast<int>(activeCoin.nHeight) + 1;
+    return lastBindCoinInfo.second.nHeight + 1;
 }
 
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& firstActiveCoin, const Consensus::Params& consensusParams)
+int GetUnbindPlotterLimitHeight(int nHeight, const CBindPlotterCoinPair& bindCoinInfo, const CCoinsViewCache& inputs, const Consensus::Params& consensusParams)
 {
-    assert(!bindCoin.IsSpent() && bindCoin.IsBindPlotter());
+    assert(!bindCoinInfo.first.IsNull() && bindCoinInfo.second.valid);
+    assert(nHeight > bindCoinInfo.second.nHeight);
 
     if (nHeight < consensusParams.BHDIP006CheckRelayHeight)
-        return std::max(consensusParams.BHDIP006Height, static_cast<int>(bindCoin.nHeight) + 1);
-
-    const uint64_t &nPlotterId = BindPlotterPayload::As(bindCoin.extraData)->GetId();
+        return std::max(consensusParams.BHDIP006Height, bindCoinInfo.second.nHeight + 1);
 
     // Checking eval range [nPrePeriodBeginHeight, nPrePeriodEndHeight]
     int nEvalBeginHeight = std::max(nHeight - consensusParams.nCapacityEvalWindow, consensusParams.BHDIP001StartMingingHeight + 1);
@@ -1244,65 +1243,49 @@ int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& f
 
     // 2.5%, Large capacity unlimit
     for (int height = nEvalBeginHeight + 1, nMinedBlockCount = 0; height <= nEvalEndHeight; height++) {
-        if (chainActive[height]->nPlotterId == nPlotterId) {
-            if (++nMinedBlockCount > consensusParams.nCapacityEvalWindow / 40) {
+        if (chainActive[height]->nPlotterId == bindCoinInfo.second.plotterId) {
+            if (++nMinedBlockCount > consensusParams.nCapacityEvalWindow / 40)
                 return height;
-            }
         }
     }
 
     if (nHeight < consensusParams.BHDIP006LimitBindPlotterHeight) {
         //! Issues: Delay unbind when mine to any address, maybe can't unbind forever.
         for (int height = nEvalEndHeight; height > nEvalBeginHeight; height--) {
-            if (chainActive[height]->nPlotterId == nPlotterId) {
+            if (chainActive[height]->nPlotterId == bindCoinInfo.second.plotterId) {
                 // Delay unbind EvalWindow blocks when mined block
                 return height + consensusParams.nCapacityEvalWindow;
             }
         }
     } else {
-        if (nHeight >= consensusParams.BHDIP007Height && activeCoin.IsSpent())
-            return static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow;
-
-        assert(!activeCoin.IsSpent() && activeCoin.IsBindPlotter());
-        assert(activeCoin.nHeight >= bindCoin.nHeight);
-        int nLastActiveBindHeight = (&bindCoin == &activeCoin) ? (nHeight - 1) : static_cast<int>(activeCoin.nHeight);
+        CBindPlotterCoinPair changeBindCoinInfo = inputs.GetChangeBindPlotterInfo(bindCoinInfo);
+        int nLastActiveBindHeight = (bindCoinInfo.first == changeBindCoinInfo.first) ? (nHeight - 1) : changeBindCoinInfo.second.nHeight;
 
         // Last block mined in this wallet
-        const int nWalletMinedBeginHeight = std::max(nEvalBeginHeight, static_cast<int>(bindCoin.nHeight));
+        const int nWalletMinedBeginHeight = std::max(nEvalBeginHeight, bindCoinInfo.second.nHeight);
         for (int height = nLastActiveBindHeight; height >= nWalletMinedBeginHeight; height--) {
             CBlockIndex *pindex = chainActive[height];
-            if (pindex->nPlotterId == nPlotterId && pindex->minerAccountID == bindCoin.refOutAccountID) {
+            if (pindex->nPlotterId == bindCoinInfo.second.plotterId && pindex->minerAccountID == bindCoinInfo.second.accountID) {
                 if (nHeight < consensusParams.BHDIP007Height) {
                     //! Issues: Infinitely +<EvalWindow>
                     return height + consensusParams.nCapacityEvalWindow;
                 } else {
                     // BHDIP007 Max limit +<EvalWindow>
-                    return std::min(height + consensusParams.nCapacityEvalWindow,
-                        static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow);
+                    return std::min(height + consensusParams.nCapacityEvalWindow, bindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow);
                 }
             }
         }
 
         // Participator mined after bind require lock <EvalWindow>
-        int nBeginHeight = std::max(static_cast<int>(bindCoin.nHeight), consensusParams.BHDIP001StartMingingHeight + 1);
-        int nEndHeight = std::min(nLastActiveBindHeight, static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow);
+        int nBeginHeight = std::max(bindCoinInfo.second.nHeight, consensusParams.BHDIP001StartMingingHeight + 1);
+        int nEndHeight = std::min(nLastActiveBindHeight, bindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow);
         for (int height = nBeginHeight; height <= nEndHeight; height++) {
-            if (chainActive[height]->minerAccountID == bindCoin.refOutAccountID) {
-                return static_cast<int>(bindCoin.nHeight) + consensusParams.nCapacityEvalWindow;
-            }
+            if (chainActive[height]->minerAccountID == bindCoinInfo.second.accountID)
+                return bindCoinInfo.second.nHeight + consensusParams.nCapacityEvalWindow;
         }
     }
 
-    return static_cast<int>(bindCoin.nHeight) + 1;
-}
-
-const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin& bindCoin, const COutPoint& bindCoinEntry)
-{
-    COutPoint activeBindCoinEnty = inputs.GetActiveBindPlotterEntry(BindPlotterPayload::As(bindCoin.extraData)->GetId());
-    if (activeBindCoinEnty == bindCoinEntry)
-        return bindCoin;
-    
-    return inputs.AccessCoin(activeBindCoinEnty);
+    return bindCoinInfo.second.nHeight + 1;
 }
 
 bool IsInitialBlockDownload()

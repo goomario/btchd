@@ -3634,8 +3634,8 @@ UniValue bindplotter(const JSONRPCRequest& request)
         if (plotterId == 0)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid bind plotter script");
 
-        const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
-        if (!coin.IsSpent() && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
+        const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
+        if (lastBindCoinInfo.second.valid && nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, lastBindCoinInfo, params)) {
             CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
             if (diffReward > 0) {
                 coin_control.m_fee_mode = FeeEstimateMode::FIXED;
@@ -3770,8 +3770,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
 
         // Check lock time
-        const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, coin, coinEntry);
-        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, Params().GetConsensus());
+        int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, std::make_pair(coinEntry, CBindPlotterInfo(coin)), *pcoinsTip, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
                     activeHeight,
@@ -3927,7 +3926,9 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
             item.push_back(Pair("height", pblockIndex->nHeight));
-            item.push_back(Pair("active", pcoinsTip->GetActiveBindPlotterEntry(it->second.plotterId) == COutPoint(wtx.GetHash(), 0)));
+
+            const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId);
+            item.push_back(Pair("active", lastBindCoinInfo.second.valid && lastBindCoinInfo.first == COutPoint(wtx.GetHash(), 0)));
         } else {
             item.push_back(Pair("active", false));
         }

@@ -271,18 +271,18 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     // Check for bind plotter fee and unbind plotter limit
     if (tx.IsUniform() && nSpendHeight >= params.BHDIP006CheckRelayHeight) {
         if (tx.vin.size() == 1 && tx.vout.size() == 1) {
-            // Unlock
+            // Unbind & Withdraw
             const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                const CBindPlotterCoinPair bindCoinInfo = std::make_pair(tx.vin[0].prevout, CBindPlotterInfo(coin));
                 if (nSpendHeight < params.BHDIP006LimitBindPlotterHeight) {
                     // Delay check. Old consensus flexiable 6 blocks active check
-                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, coin, coin /* Don't care */, params)) {
+                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, bindCoinInfo, prevInputs /* Don't care */, params)) {
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                     }
                 } else {
                     // Strict check
-                    const Coin &activeBindCoin = SelfRefActiveBindCoin(prevInputs, coin, tx.vin[0].prevout);
-                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, params)) {
+                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, bindCoinInfo, prevInputs, params)) {
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
                     }
                 }
@@ -300,14 +300,14 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                     return state.DoS(100, false, REJECT_INVALID, "bad-bindplotter-lowfee");
 
                 // Limit bind
-                const Coin& coin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(payload)->GetId());
-                if (!coin.IsSpent()) {
+                const CBindPlotterCoinPair lastBindCoinInfo = prevInputs.GetLastBindPlotterInfo(BindPlotterPayload::As(payload)->GetId());
+                if (lastBindCoinInfo.second.valid) {
                     // Forbidden self-packaging change active bind tx
                     if (minerAccountID != 0 && minerAccountID == GetAccountIDByScriptPubKey(tx.vout[0].scriptPubKey))
                         return state.DoS(100, false, REJECT_INVALID, "bad-bindplotter-selfmined");
 
                     // Limit bind other address for mining-swap. 
-                    if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
+                    if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, lastBindCoinInfo, params)) {
                         // Change bind require high transaction fee. Diff reward between full pledge and low pledge reward.
                         // 23.75 - 7.5 = 16.25
                         CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;

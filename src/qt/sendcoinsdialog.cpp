@@ -360,9 +360,9 @@ void SendCoinsDialog::on_sendButton_clicked()
                     return;
                 }
 
-                const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
-                if (!coin.IsSpent()) {
-                    bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, coin, params);
+                const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
+                if (lastBindCoinInfo.second.valid) {
+                    bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, lastBindCoinInfo, params);
                     if (nSpendHeight < bindLimitHeight) {
                         CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
                         if (diffReward > 0) {

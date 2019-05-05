@@ -354,7 +354,8 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
                 }
                 else if (coin.IsBindPlotter())
                 {
-                    if (coinEntry != pcoinsTip->GetActiveBindPlotterEntry(BindPlotterPayload::As(coin.extraData)->GetId()))
+                    const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(BindPlotterPayload::As(coin.extraData)->GetId());
+                    if (lastBindCoinInfo.first != coinEntry)
                         status.status = TransactionStatus::Inactived;
                 }
             }

@@ -152,6 +152,7 @@ bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout, bool r
         cacheCoins.erase(it);
     } else {
         it->second.flags |= CCoinsCacheEntry::DIRTY;
+        it->second.flags &= ~CCoinsCacheEntry::UNBIND;
         it->second.coin.Clear();
     }
     return true;
@@ -376,50 +377,56 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID,
     return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 
-COutPoint CCoinsViewCache::GetActiveBindPlotterEntry(const uint64_t &plotterId) const {
-    if (plotterId == 0)
-        return COutPoint();
+CBindPlotterCoinPair CCoinsViewCache::GetChangeBindPlotterInfo(const CBindPlotterCoinPair &bindCoinPair) const {
+    CBindPlotterCoinPair changeBindPair = bindCoinPair;
+    for (const CBindPlotterCoinPair& pair : GetBindPlotterEntries(changeBindPair.second.plotterId)) {
+        if (bindCoinPair.first == pair.first ||
+                (pair.second.nHeight < bindCoinPair.second.nHeight) ||
+                (pair.second.nHeight == bindCoinPair.second.nHeight && pair.first < bindCoinPair.first))
+            continue;
 
-    // Last bind is actived
-    const COutPoint *lastOutpoint = nullptr;
-    int lastHeight = 0;
-    bool lastValid = false;
-    for (auto &pair : GetBindPlotterEntries(plotterId)) {
-        assert(pair.second.plotterId == plotterId);
-        // Same height will select largest COutPoint<tx,n>
-        if (!lastOutpoint || lastHeight < pair.second.nHeight || (lastHeight == pair.second.nHeight && *lastOutpoint < pair.first)) {
-            lastHeight = pair.second.nHeight;
-            lastOutpoint = &pair.first;
-            lastValid = pair.second.valid;
-        }
+        // Select smallest bind
+        if (changeBindPair.second.nHeight > pair.second.nHeight ||
+                (changeBindPair.second.nHeight == pair.second.nHeight && pair.first < changeBindPair.first))
+            changeBindPair = pair;
     }
-    if (lastValid && lastOutpoint)
-        return *lastOutpoint;
-
-    return COutPoint();
+    return changeBindPair;
 }
 
-const Coin& CCoinsViewCache::GetActiveBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint) const {
-    COutPoint entry = GetActiveBindPlotterEntry(plotterId);
-    if (entry.IsNull())
+CBindPlotterCoinPair CCoinsViewCache::GetLastBindPlotterInfo(const uint64_t &plotterId) const {
+    CBindPlotterCoinPair lastInfo = std::make_pair(COutPoint(), CBindPlotterInfo());
+    for (const CBindPlotterCoinPair& pair : GetBindPlotterEntries(plotterId)) {
+        assert(pair.second.plotterId == plotterId);
+        if (!lastInfo.first.IsNull() ||
+                (lastInfo.second.nHeight < pair.second.nHeight) ||
+                (lastInfo.second.nHeight == pair.second.nHeight && lastInfo.first < pair.first))
+            lastInfo = pair;
+    }
+    return lastInfo;
+}
+
+const Coin& CCoinsViewCache::GetLastBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint) const {
+    CBindPlotterCoinPair lastBindCoinInfo = GetLastBindPlotterInfo(plotterId);
+    if (outpoint)
+        *outpoint = lastBindCoinInfo.first;
+    if (!lastBindCoinInfo.second.valid)
         return coinEmpty;
 
-    const Coin& coin = AccessCoin(entry);
+    const Coin& coin = AccessCoin(lastBindCoinInfo.first);
     assert(!coin.IsSpent());
     assert(coin.IsBindPlotter());
     assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
-    if (outpoint) *outpoint = entry;
     return coin;
 }
 
 bool CCoinsViewCache::HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const {
-    const Coin &coin = GetActiveBindPlotterCoin(plotterId);
-    return coin.refOutAccountID == accountID;
+    CBindPlotterCoinPair lastBindCoinInfo = GetLastBindPlotterInfo(plotterId);
+    return lastBindCoinInfo.second.valid && lastBindCoinInfo.second.plotterId == plotterId;
 }
 
 std::set<uint64_t> CCoinsViewCache::GetAccountBindPlotters(const CAccountID &accountID) const {
     std::set<uint64_t> plotters;
-    for (const auto& pair: GetAccountBindPlotterEntries(accountID)) {
+    for (const CBindPlotterCoinPair& pair: GetAccountBindPlotterEntries(accountID)) {
         if (pair.second.valid)
             plotters.insert(pair.second.plotterId);
     }

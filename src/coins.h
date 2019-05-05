@@ -171,9 +171,12 @@ struct CBindPlotterInfo
     bool valid;
 
     CBindPlotterInfo() : nHeight(0), accountID(0), plotterId(0), valid(true) {}
+    explicit CBindPlotterInfo(const Coin& coin) : nHeight((int)coin.nHeight), accountID(coin.refOutAccountID),
+        plotterId(BindPlotterPayload::As(coin.extraData)->GetId()), valid(!coin.IsSpent()) {}
 };
 
 typedef std::map<COutPoint, CBindPlotterInfo> CBindPlotterCoinsMap;
+typedef std::pair<COutPoint, CBindPlotterInfo> CBindPlotterCoinPair;
 
 /** Cursor template for iterating over CoinsData state */
 template <typename K, typename V>
@@ -387,8 +390,9 @@ public:
         CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
     /** Return a reference to lastest bind plotter Coin in the cache, or a pruned one if not found. */
-    COutPoint GetActiveBindPlotterEntry(const uint64_t &plotterId) const;
-    const Coin& GetActiveBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint = nullptr) const;
+    CBindPlotterCoinPair GetChangeBindPlotterInfo(const CBindPlotterCoinPair &bindCoinPair) const;
+    CBindPlotterCoinPair GetLastBindPlotterInfo(const uint64_t &plotterId) const;
+    const Coin& GetLastBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint = nullptr) const;
 
     /** Just check whether a given <accountID,plotterId> exist and lastest binded of plotterId. */
     bool HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const;
