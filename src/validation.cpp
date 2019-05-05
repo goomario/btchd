@@ -1229,7 +1229,7 @@ int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consens
     return static_cast<int>(activeCoin.nHeight) + 1;
 }
 
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& activeCoin, const Consensus::Params& consensusParams)
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& firstActiveCoin, const Consensus::Params& consensusParams)
 {
     assert(!bindCoin.IsSpent() && bindCoin.IsBindPlotter());
 

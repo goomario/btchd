@@ -179,7 +179,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
 
         // fee section
         for (const int n : confTargets) {
-            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPowTargetSpacing)).arg(n));
+            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPocTargetSpacing)).arg(n));
         }
         connect(ui->confTargetSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(updateSmartFeeLabel()));
         connect(ui->confTargetSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(coinControlUpdateLabels()));
@@ -519,7 +519,7 @@ void SendCoinsDialog::on_sendButton_clicked()
                         arg("<b>" + QString::number(BindPlotterPayload::As(payload)->GetId()) + "</b>",
                             QString::number(bindLimitHeight),
                             QString::number(bindLimitHeight - nSpendHeight),
-                            QString::number((bindLimitHeight - nSpendHeight) * params.nPowTargetSpacing / 60)));
+                            QString::number((bindLimitHeight - nSpendHeight) * params.nPocTargetSpacing / 60)));
         }
     }
 

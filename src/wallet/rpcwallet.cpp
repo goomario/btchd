@@ -3776,7 +3776,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
                     activeHeight,
                     activeHeight - nSpendHeight,
-                    (activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
+                    (activeHeight - nSpendHeight) * Params().GetConsensus().nPocTargetSpacing / 60));
         }
     }
     CAmount nFeeOut = 0;

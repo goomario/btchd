@@ -329,7 +329,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
                     strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                             arg(QString::number(activeHeight),
                                                 QString::number(activeHeight - nSpendHeight),
-                                                QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
+                                                QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPocTargetSpacing / 60));
                 }
             }
         }

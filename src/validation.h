@@ -297,7 +297,7 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
 
 /** Get bind/unbind plotter transaction lock time. */
 int GetBindPlotterLimitHeight(int nHeight, const Coin& activeCoin, const Consensus::Params& consensusParams);
-int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& activeCoin, const Consensus::Params& consensusParams);
+int GetUnbindPlotterLimitHeight(int nHeight, const Coin& bindCoin, const Coin& firstActiveCoin, const Consensus::Params& consensusParams);
 /** Utility function for active coin. If entry is active then return bindCoin, Otherwise return new coin */
 const Coin& SelfRefActiveBindCoin(const CCoinsViewCache& inputs, const Coin& bindCoin, const COutPoint& bindCoinEntry);
 

@@ -275,7 +275,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
 
         uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPowTargetSpacing * 4); // 5m * 4blocks
+        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPocTargetSpacing * 4); // 5m * 4blocks
         if (newBaseTarget > BHD_BASE_TARGET_240) {
             newBaseTarget = BHD_BASE_TARGET_240;
         }
@@ -295,7 +295,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         //   B(0) = prevBlock, B(1) = B(0).prev, ..., B(n) = B(n-1).prev
         //   Y(0) = B(0).nBaseTarget
         //   Y(n) = (Y(n-1) * (n-1) + B(n).nBaseTarget) / (n + 1); n > 0
-        const int N = nHeight < params.BHDIP006Height ? 25 : (24 * 3600 / params.nPowTargetSpacing);
+        const int N = nHeight < params.BHDIP006Height ? 25 : (24 * 3600 / params.nPocTargetSpacing);
         const CBlockIndex *pLastindex = &prevBlockIndex;
         uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
         for (int n = 1; n < N; n++) {
@@ -303,7 +303,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
             avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
         }
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = params.nPowTargetSpacing * (N - 1); // 5m * (N-1)blocks. Because "time1 = time0 + deadline + 1" about 288s, so we -1
+        int64_t targetTimespan = params.nPocTargetSpacing * (N - 1); // 5m * (N-1)blocks. Because "time1 = time0 + deadline + 1" about 288s, so we -1
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;
         }

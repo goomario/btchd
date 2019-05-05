@@ -47,7 +47,6 @@ static const char DB_COIN_PLEDGELOAN = 'E';
 static const char DB_COIN_PLEDGEDEBIT = 'e';
 /** Index flag for <Account,PlotterId> to bind plotter UTXO */
 static const char DB_COIN_BINDPLOTTER = 'P';
-static const char DB_COIN_BINDPLOTTER_INDEX = 'p';
 
 namespace {
 
@@ -172,27 +171,6 @@ struct BindPlotterRefEntry {
         s >> key;
         s >> VARINT(*accountID);
         s >> VARINT(*plotterId);
-        s >> outpoint->hash;
-        s >> VARINT(outpoint->n);
-    }
-};
-
-//! Entry for bind coin
-struct BindPlotterCoinEntry {
-    COutPoint* outpoint;
-    char key;
-    explicit BindPlotterCoinEntry(const COutPoint* ptr) : outpoint(const_cast<COutPoint*>(ptr)), key(DB_COIN_BINDPLOTTER_INDEX) {}
-
-    template<typename Stream>
-    void Serialize(Stream &s) const {
-        s << key;
-        s << outpoint->hash;
-        s << VARINT(outpoint->n);
-    }
-
-    template<typename Stream>
-    void Unserialize(Stream& s) {
-        s >> key;
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
@@ -630,17 +608,17 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             }
         }
 
-        // TODO felix Process UNBIND coin
-        ?
         // Apply modified coin
         for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
                     it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
+                BindPlotterRefEntry entry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first);
                 if (it->second.coin.IsSpent()) {
-                    if (db.Exists(CoinEntry(&it->first)))
+                    uint32_t data = 0;
+                    if (db.Read(entry, VARINT(data)) && !(data & 0x80000000))
                         *pBindPlotterBalance -= PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 } else {
-                    if (!db.Exists(CoinEntry(&it->first)))
+                    if (!db.Exists(entry))
                         *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 }
             }

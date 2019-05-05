@@ -132,16 +132,16 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
-            "  \"capacity\": nnn            (string) The net capacity\n"
+            "  \"netcapacity\": nnn         (string) The net capacity\n"
             "  \"ratio\": xxx.xxxxx         (numeric) The ratio of pledge\n"
             "  \"ratiostartheight\": nnn    (numeric) The height of ratio updated\n"
-            "  \"ratiostage\": nnn          (numeric) The ratio stage of pledge\n"
-            "  \"ratiocapacity\": nnn       (string) The capacity of pledge\n"
-            "  \"nextratio\": {             (object) Next ratio estimate by current data\n"
+            "  \"ratiostage\": nnn          (numeric) The ratio stage of pledge. -2: not start, -1: smooth decrease, others...\n"
+            "  \"rationetcapacity\": nnn    (string) The net capacity of pledge\n"
+            "  \"nextratio\": {             (object) Next ratio estimate by current status\n"
             "    \"ratio\": xxx.xxxxx       (numeric) The ratio of pledge for next period\n"
             "    \"ratiostartheight\": nnn  (numeric) The height of ratio update for next period\n"
-            "    \"ratiostage\": nnn        (numeric) The ratio stage of pledgefor next period\n"
-            "    \"ratiocapacity\": nnn     (string) The capacity of pledge for next period\n"
+            "    \"ratiostage\": nnn        (numeric) The ratio stage of pledge for next period. -1: smooth decrease, others...\n"
+            "    \"rationetcapacity\": nnn  (string) The net capacity of pledge for next period\n"
             "  },\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
@@ -165,12 +165,12 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblocktx",     (uint64_t)nLastBlockTx));
     obj.push_back(Pair("pooledtx",           (uint64_t)mempool.size()));
     obj.push_back(Pair("difficulty",         (double)GetDifficulty()));
-    obj.push_back(Pair("capacity",           ValueFromCapacity(poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget)));
+    obj.push_back(Pair("netcapacity",        ValueFromCapacity(poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget)));
     if (chainActive.Height() >= params.BHDIP007Height) {
         obj.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB))));
         obj.push_back(Pair("ratiostartheight", std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow * params.nCapacityEvalWindow));
         obj.push_back(Pair("ratiostage",       nRatioStage));
-        obj.push_back(Pair("ratiocapacity",    ValueFromCapacity(nRatioNetCapacityTB)));
+        obj.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
     }
     if (chainActive.Height() >= params.BHDIP007SmoothEndHeight) {
         nRatioNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params);
@@ -179,8 +179,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
         nextRatio.push_back(Pair("ratio",            ValueFromAmount(poc::EvalPledgeRatio(chainActive.Height() + 1, nRatioNetCapacityTB, params, &nRatioStage))));
         nextRatio.push_back(Pair("ratiostartheight", (std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow + 1) * params.nCapacityEvalWindow));
         nextRatio.push_back(Pair("ratiostage",       nRatioStage));
-        nextRatio.push_back(Pair("ratiocapacity",    ValueFromCapacity(nRatioNetCapacityTB)));
-
+        nextRatio.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
         obj.push_back(Pair("nextratio",      nextRatio));
     }
     obj.push_back(Pair("chain",              Params().NetworkIDString()));
@@ -1048,6 +1047,35 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue getbindplotterlimit(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "getbindplotterlimit \"plotterId\"\n"
+            "\nGet bind plotter limit height for plotter ID.\n"
+            "\nArguments:\n"
+            "1. plotterId           (string, required) The plotter ID.\n"
+            "\nResult:\n"
+            "Bind limit height\n"
+
+            "\nExamples:\n"
+            "\nGet bind plotter limit height for plotter ID\n"
+            + HelpExampleCli("getbindplotterlimit", "\"1234567890\"")
+            + HelpExampleRpc("getbindplotterlimit", "\"1234567890\"")
+        );
+
+    uint64_t plotterId = 0;
+    if (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &plotterId))
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
+
+    LOCK(cs_main);
+    const Coin& activeCoin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
+    if (activeCoin.IsSpent())
+        return GetBindPlotterLimitHeight(GetSpendHeight(*pcoinsTip), activeCoin, Params().GetConsensus());
+
+    return UniValue();
+}
+
 UniValue getunbindplotterlimit(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -1179,7 +1207,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
 
             objBindPlotters.pushKV(std::to_string(it->first), item);
         }
-        result.pushKV("bindPlotters", objBindPlotters);
+        result.pushKV("plotters", objBindPlotters);
     }
 
     return result;
@@ -1368,7 +1396,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                     vMinedBlocks.push_back(item);
                 }
             }
-            result.pushKV("forged", vMinedBlocks);
+            result.pushKV("blocks", vMinedBlocks);
         }
     }
 
@@ -1725,6 +1753,7 @@ static const CRPCCommand commands[] =
     { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,      {"address", "plotterId", "count"} },
     { "mining",             "createbindplotterdata",        &createbindplotterdata,         {"address", "passphrase", "lastActiveHeight"} },
     { "mining",             "verifybindplotterdata",        &verifybindplotterdata,         {"address", "hexdata"} },
+    { "mining",             "getbindplotterlimit",          &getbindplotterlimit,           {"plotterId"} },
     { "mining",             "getunbindplotterlimit",        &getunbindplotterlimit,         {"txid"} },
     { "mining",             "getpledgeofaddress",           &getpledgeofaddress,            {"address", "plotterId", "verbose"} },
     { "mining",             "getplottermininginfo",         &getplottermininginfo,          {"plotterId", "verbose"} },

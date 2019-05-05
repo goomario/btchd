@@ -94,12 +94,12 @@ public:
         };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 420000;      // About 4 years
-        consensus.nCapacityEvalWindow = 2016;            // About 1 week
-        consensus.fPocAllowMinDifficultyBlocks = false;  // For test
-        consensus.nPowTargetSpacing = 5 * 60;            // 5 minutes
-        consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
-        consensus.nMinerConfirmationWindow = 2016;       // About 1 week
+        consensus.nSubsidyHalvingInterval        = 420000; // About 4 years
+        consensus.nCapacityEvalWindow            = 2016;   // About 1 week
+        consensus.fPocAllowMinDifficultyBlocks   = false;  // For test
+        consensus.nPocTargetSpacing              = 300;    // 5 minutes
+        consensus.nRuleChangeActivationThreshold = 1916;   // 95% of 2016
+        consensus.nMinerConfirmationWindow       = 2016;   // About 1 week
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
@@ -304,12 +304,12 @@ public:
         consensus.BHDFundAddressPool = { "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw" };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 420000;
-        consensus.nCapacityEvalWindow = 2016;
-        consensus.fPocAllowMinDifficultyBlocks = false;
-        consensus.nPowTargetSpacing = 5 * 60;
+        consensus.nSubsidyHalvingInterval        = 420000;
+        consensus.nCapacityEvalWindow            = 2016;
+        consensus.fPocAllowMinDifficultyBlocks   = false;
+        consensus.nPocTargetSpacing              = 300;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
-        consensus.nMinerConfirmationWindow = 2016;
+        consensus.nMinerConfirmationWindow       = 2016;
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
@@ -488,12 +488,12 @@ public:
         consensus.BHDFundAddressPool = { "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy" };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 300;
-        consensus.nCapacityEvalWindow = 144;
-        consensus.fPocAllowMinDifficultyBlocks = true;
-        consensus.nPowTargetSpacing = 5 * 60;
+        consensus.nSubsidyHalvingInterval        = 300;
+        consensus.nCapacityEvalWindow            = 144;
+        consensus.fPocAllowMinDifficultyBlocks   = true;
+        consensus.nPocTargetSpacing              = 300;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
-        consensus.nMinerConfirmationWindow = 144;
+        consensus.nMinerConfirmationWindow       = 144;
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
