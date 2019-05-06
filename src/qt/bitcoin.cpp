@@ -50,6 +50,7 @@
 #include <QTimer>
 #include <QTranslator>
 #include <QSslConfiguration>
+#include <QStyleFactory>
 
 #if defined(QT_STATICPLUGIN)
 #include <QtPlugin>
@@ -587,6 +588,15 @@ int main(int argc, char *argv[])
     QSslConfiguration sslconf = QSslConfiguration::defaultConfiguration();
     sslconf.setProtocol(QSsl::TlsV1_0OrLater);
     QSslConfiguration::setDefaultConfiguration(sslconf);
+#endif
+#if QT_VERSION >= 0x050000
+    if (gArgs.IsArgSet("-qtstyle")) {
+        app.setPalette(QApplication::style()->standardPalette());
+        app.setStyle(QStyleFactory::create(QString::fromStdString(gArgs.GetArg("-qtstyle", ""))));
+    #ifndef QT_NO_STYLE_STYLESHEET
+        app.setStyleSheet("");
+    #endif
+    }
 #endif
 
     // Register meta types used for QMetaObject::invokeMethod
