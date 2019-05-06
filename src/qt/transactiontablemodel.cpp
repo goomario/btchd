@@ -300,53 +300,55 @@ QString TransactionTableModel::formatTxStatus(const TransactionRecord *wtx) cons
 {
     QString status;
 
-    switch(wtx->status.status)
-    {
-    case TransactionStatus::OpenUntilBlock:
-        status = tr("Open for %n more block(s)","",wtx->status.open_for);
-        break;
-    case TransactionStatus::OpenUntilDate:
-        status = tr("Open until %1").arg(GUIUtil::dateTimeStr(wtx->status.open_for));
-        break;
-    case TransactionStatus::Offline:
-        status = tr("Offline");
-        break;
-    case TransactionStatus::Unconfirmed:
-        status = tr("Unconfirmed");
-        break;
-    case TransactionStatus::Abandoned:
-        status = tr("Abandoned");
-        break;
-    case TransactionStatus::Confirming:
-        status = tr("Confirming (%1 of %2 recommended confirmations)").arg(wtx->status.depth).arg(TransactionRecord::RecommendedNumConfirmations);
-        break;
-    case TransactionStatus::Confirmed:
-        status = tr("Confirmed (%1 confirmations)").arg(wtx->status.depth);
-        break;
-    case TransactionStatus::Conflicted:
-        status = tr("Conflicted");
-        break;
-    case TransactionStatus::Immature:
-        status = tr("Immature (%1 confirmations, will be available after %2)").arg(wtx->status.depth).arg(wtx->status.depth + wtx->status.matures_in);
-        break;
-    case TransactionStatus::MaturesWarning:
-        status = tr("This block was not received by any other nodes and will probably not be accepted!");
-        break;
-    case TransactionStatus::NotAccepted:
-        status = tr("Generated but not accepted");
-        break;
-    case TransactionStatus::Inactived:
+    if (wtx->status.status & TransactionStatus::Inactived) {
         if (wtx->type == TransactionRecord::BindPlotter) {
             status = tr("This binding has been unable to mine");
         }
-        break;
-    case TransactionStatus::Disabled:
+    }
+    else if (wtx->status.status & TransactionStatus::Disabled) {
         if (wtx->type == TransactionRecord::BindPlotter) {
             status = tr("This bind plotter has unbinded");
         } else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge) {
             status = tr("This pledge has withdraw");
         }
-        break;
+    }
+    else {
+        switch((TransactionStatus::Status) wtx->status.status & 0xffff)
+        {
+        case TransactionStatus::OpenUntilBlock:
+            status = tr("Open for %n more block(s)","",wtx->status.open_for);
+            break;
+        case TransactionStatus::OpenUntilDate:
+            status = tr("Open until %1").arg(GUIUtil::dateTimeStr(wtx->status.open_for));
+            break;
+        case TransactionStatus::Offline:
+            status = tr("Offline");
+            break;
+        case TransactionStatus::Unconfirmed:
+            status = tr("Unconfirmed");
+            break;
+        case TransactionStatus::Abandoned:
+            status = tr("Abandoned");
+            break;
+        case TransactionStatus::Confirming:
+            status = tr("Confirming (%1 of %2 recommended confirmations)").arg(wtx->status.depth).arg(TransactionRecord::RecommendedNumConfirmations);
+            break;
+        case TransactionStatus::Confirmed:
+            status = tr("Confirmed (%1 confirmations)").arg(wtx->status.depth);
+            break;
+        case TransactionStatus::Conflicted:
+            status = tr("Conflicted");
+            break;
+        case TransactionStatus::Immature:
+            status = tr("Immature (%1 confirmations, will be available after %2)").arg(wtx->status.depth).arg(wtx->status.depth + wtx->status.matures_in);
+            break;
+        case TransactionStatus::MaturesWarning:
+            status = tr("This block was not received by any other nodes and will probably not be accepted!");
+            break;
+        case TransactionStatus::NotAccepted:
+            status = tr("Generated but not accepted");
+            break;
+        }
     }
 
     return status;
@@ -424,15 +426,27 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
     case TransactionRecord::SendToOther:
         return QIcon(":/icons/tx_output");
     case TransactionRecord::BindPlotter:
-        return QIcon(":/icons/tx_bindplotter");
+        if (wtx->status.status & TransactionStatus::Disabled)
+            return QIcon(":/icons/tx_unbindplotter");
+        else
+            return QIcon(":/icons/tx_bindplotter");
     case TransactionRecord::UnbindPlotter:
         return QIcon(":/icons/tx_unbindplotter");
     case TransactionRecord::RecvPledge:
-        return QIcon(":/icons/tx_pledge_in");
+        if (wtx->status.status & TransactionStatus::Disabled)
+            return QIcon(":/icons/tx_pledge_withdraw");
+        else
+            return QIcon(":/icons/tx_pledge_in");
     case TransactionRecord::SendPledge:
-        return QIcon(":/icons/tx_pledge_out");
+        if (wtx->status.status & TransactionStatus::Disabled)
+            return QIcon(":/icons/tx_pledge_withdraw");
+        else
+            return QIcon(":/icons/tx_pledge_out");
     case TransactionRecord::SelfPledge:
-        return QIcon(":/icons/tx_pledge_inout");
+        if (wtx->status.status & TransactionStatus::Disabled)
+            return QIcon(":/icons/tx_pledge_withdraw");
+        else
+            return QIcon(":/icons/tx_pledge_inout");
     case TransactionRecord::WithdrawPledge:
         return QIcon(":/icons/tx_pledge_withdraw");
     default:
@@ -490,6 +504,10 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
     case TransactionRecord::SendToSelf:
         return COLOR_BAREADDRESS;
     case TransactionRecord::BindPlotter:
+        if (wtx->status.status & TransactionStatus::Inactived)
+            return COLOR_TX_STATUS_OFFLINE;
+        else
+            return COLOR_BLACK;
     case TransactionRecord::SendPledge:
     case TransactionRecord::RecvPledge:
     case TransactionRecord::SelfPledge:
@@ -515,7 +533,7 @@ QString TransactionTableModel::formatTxAmount(const TransactionRecord *wtx, bool
 
 QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx) const
 {
-    switch(wtx->status.status)
+    switch((TransactionStatus::Status) wtx->status.status & 0xffff)
     {
     case TransactionStatus::OpenUntilBlock:
     case TransactionStatus::OpenUntilDate:
@@ -547,18 +565,6 @@ QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx)
     case TransactionStatus::MaturesWarning:
     case TransactionStatus::NotAccepted:
         return QIcon(":/icons/transaction_0");
-    case TransactionStatus::Inactived:
-        if (wtx->type == TransactionRecord::BindPlotter)
-            return QIcon(":/icons/tx_unbindplotter");
-        else
-            return COLOR_BLACK;
-    case TransactionStatus::Disabled:
-        if (wtx->type == TransactionRecord::BindPlotter)
-            return QIcon(":/icons/tx_unbindplotter");
-        else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge)
-            return QIcon(":/icons/tx_pledge_withdraw");
-        else
-            return COLOR_BLACK;
     default:
         return COLOR_BLACK;
     }

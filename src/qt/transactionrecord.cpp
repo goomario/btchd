@@ -350,13 +350,13 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
                 const Coin &coin = pcoinsTip->AccessCoin(coinEntry);
                 if (coin.IsSpent())
                 {
-                    status.status = TransactionStatus::Disabled;
+                    status.status = (TransactionStatus::Status) (status.status | TransactionStatus::Disabled);
                 }
                 else if (coin.IsBindPlotter())
                 {
                     const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(BindPlotterPayload::As(coin.extraData)->GetId());
                     if (lastBindCoinInfo.first != coinEntry)
-                        status.status = TransactionStatus::Inactived;
+                        status.status = (TransactionStatus::Status) (status.status | TransactionStatus::Inactived);
                 }
             }
         }

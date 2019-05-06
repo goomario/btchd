@@ -76,11 +76,11 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Withdrawn") + " (" + FormatTxStatus(wtx) + ")";
     }
-    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Disabled)
+    else if (rec->type == TransactionRecord::BindPlotter && (rec->status.status & TransactionStatus::Disabled))
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Unbinded Plotter ID") + " (" + FormatTxStatus(wtx) + ")";
     }
-    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Inactived)
+    else if (rec->type == TransactionRecord::BindPlotter && (rec->status.status & TransactionStatus::Inactived))
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("This binding has been unable to mine") + " (" + FormatTxStatus(wtx) + ")";
     }
