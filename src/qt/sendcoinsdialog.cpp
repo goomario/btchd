@@ -16,11 +16,12 @@
 
 #include <base58.h>
 #include <chainparams.h>
-#include <wallet/coincontrol.h>
+#include <consensus/tx_verify.h>
+#include <policy/fees.h>
+#include <txmempool.h>
 #include <validation.h> // mempool and minRelayTxFee
 #include <ui_interface.h>
-#include <txmempool.h>
-#include <policy/fees.h>
+#include <wallet/coincontrol.h>
 #include <wallet/fees.h>
 
 #include <QFontMetrics>
@@ -360,9 +361,9 @@ void SendCoinsDialog::on_sendButton_clicked()
                     return;
                 }
 
-                const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
-                if (lastBindCoinInfo.second.valid) {
-                    bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, lastBindCoinInfo, params);
+                const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
+                if (!lastBindInfo.outpoint.IsNull()) {
+                    bindLimitHeight = Consensus::GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params);
                     if (nSpendHeight < bindLimitHeight) {
                         CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
                         if (diffReward > 0) {

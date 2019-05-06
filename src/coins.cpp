@@ -106,7 +106,7 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
         fresh = !(it->second.flags & CCoinsCacheEntry::DIRTY);
     }
     it->second.coin = std::move(coin);
-    it->second.coin.refOutAccountID = GetAccountIDByScriptPubKey(it->second.coin.out.scriptPubKey);
+    it->second.coin.Refresh();
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     it->second.flags &= ~CCoinsCacheEntry::UNBIND;
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
@@ -335,7 +335,7 @@ CBindPlotterCoinsMap CCoinsViewCache::GetAccountBindPlotterEntries(const CAccoun
             if (!(it->second.flags & CCoinsCacheEntry::UNBIND) && it->second.coin.IsSpent()) {
                 outpoints.erase(it->first);
             } else {
-                CBindPlotterInfo &info = outpoints[it->first];
+                CBindPlotterCoinInfo &info = outpoints[it->first];
                 info.nHeight = it->second.coin.nHeight;
                 info.accountID = it->second.coin.refOutAccountID;
                 info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
@@ -359,7 +359,7 @@ CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntries(const uint64_t &plot
             if (!(it->second.flags & CCoinsCacheEntry::UNBIND) && it->second.coin.IsSpent()) {
                 outpoints.erase(it->first);
             } else {
-                CBindPlotterInfo &info = outpoints[it->first];
+                CBindPlotterCoinInfo &info = outpoints[it->first];
                 info.nHeight = it->second.coin.nHeight;
                 info.accountID = it->second.coin.refOutAccountID;
                 info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
@@ -377,42 +377,44 @@ CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID,
     return base->GetBalance(accountID, cacheCoins, pBindPlotterBalance, pPledgeLoanBalance, pPledgeDebitBalance);
 }
 
-CBindPlotterCoinPair CCoinsViewCache::GetChangeBindPlotterInfo(const CBindPlotterCoinPair &bindCoinPair) const {
-    CBindPlotterCoinPair changeBindPair = bindCoinPair;
-    for (const CBindPlotterCoinPair& pair : GetBindPlotterEntries(changeBindPair.second.plotterId)) {
-        if (bindCoinPair.first == pair.first ||
-                (pair.second.nHeight < bindCoinPair.second.nHeight) ||
-                (pair.second.nHeight == bindCoinPair.second.nHeight && pair.first < bindCoinPair.first))
+CBindPlotterInfo CCoinsViewCache::GetChangeBindPlotterInfo(const CBindPlotterInfo &sourceBindInfo) const {
+    assert(!sourceBindInfo.outpoint.IsNull());
+
+    CBindPlotterInfo changeBindInfo;
+    changeBindInfo.nHeight = 0x7fffffff;
+    for (const CBindPlotterCoinPair& pair : GetBindPlotterEntries(sourceBindInfo.plotterId)) {
+        if (sourceBindInfo.outpoint == pair.first ||
+                (pair.second.nHeight < sourceBindInfo.nHeight) ||
+                (pair.second.nHeight == sourceBindInfo.nHeight && pair.first < sourceBindInfo.outpoint))
             continue;
 
         // Select smallest bind
-        if (changeBindPair.second.nHeight > pair.second.nHeight ||
-                (changeBindPair.second.nHeight == pair.second.nHeight && pair.first < changeBindPair.first))
-            changeBindPair = pair;
+        if (changeBindInfo.nHeight > pair.second.nHeight ||
+                (changeBindInfo.nHeight == pair.second.nHeight && pair.first < changeBindInfo.outpoint))
+            changeBindInfo = CBindPlotterInfo(pair);
     }
-    return changeBindPair;
+    return changeBindInfo.outpoint.IsNull() ? sourceBindInfo : changeBindInfo;
 }
 
-CBindPlotterCoinPair CCoinsViewCache::GetLastBindPlotterInfo(const uint64_t &plotterId) const {
-    CBindPlotterCoinPair lastInfo = std::make_pair(COutPoint(), CBindPlotterInfo());
+CBindPlotterInfo CCoinsViewCache::GetLastBindPlotterInfo(const uint64_t &plotterId) const {
+    CBindPlotterInfo lastBindInfo;
     for (const CBindPlotterCoinPair& pair : GetBindPlotterEntries(plotterId)) {
         assert(pair.second.plotterId == plotterId);
-        if (!lastInfo.first.IsNull() ||
-                (lastInfo.second.nHeight < pair.second.nHeight) ||
-                (lastInfo.second.nHeight == pair.second.nHeight && lastInfo.first < pair.first))
-            lastInfo = pair;
+        if (lastBindInfo.outpoint.IsNull() ||
+                (lastBindInfo.nHeight < pair.second.nHeight) ||
+                (lastBindInfo.nHeight == pair.second.nHeight && lastBindInfo.outpoint < pair.first))
+            lastBindInfo = CBindPlotterInfo(pair);
     }
-    return lastInfo;
+    return lastBindInfo;
 }
 
 const Coin& CCoinsViewCache::GetLastBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint) const {
-    CBindPlotterCoinPair lastBindCoinInfo = GetLastBindPlotterInfo(plotterId);
-    if (outpoint)
-        *outpoint = lastBindCoinInfo.first;
-    if (!lastBindCoinInfo.second.valid)
+    CBindPlotterInfo lastBindInfo = GetLastBindPlotterInfo(plotterId);
+    if (outpoint) *outpoint = lastBindInfo.outpoint;
+    if (!lastBindInfo.valid)
         return coinEmpty;
 
-    const Coin& coin = AccessCoin(lastBindCoinInfo.first);
+    const Coin& coin = AccessCoin(lastBindInfo.outpoint);
     assert(!coin.IsSpent());
     assert(coin.IsBindPlotter());
     assert(BindPlotterPayload::As(coin.extraData)->GetId() == plotterId);
@@ -420,8 +422,8 @@ const Coin& CCoinsViewCache::GetLastBindPlotterCoin(const uint64_t &plotterId, C
 }
 
 bool CCoinsViewCache::HaveActiveBindPlotter(const CAccountID &accountID, const uint64_t &plotterId) const {
-    CBindPlotterCoinPair lastBindCoinInfo = GetLastBindPlotterInfo(plotterId);
-    return lastBindCoinInfo.second.valid && lastBindCoinInfo.second.plotterId == plotterId;
+    CBindPlotterInfo lastBindInfo = GetLastBindPlotterInfo(plotterId);
+    return lastBindInfo.valid && lastBindInfo.accountID == accountID;
 }
 
 std::set<uint64_t> CCoinsViewCache::GetAccountBindPlotters(const CAccountID &accountID) const {

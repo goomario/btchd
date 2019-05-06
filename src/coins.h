@@ -51,13 +51,17 @@ public:
     //! construct a Coin from a CTxOut and height/coinbase information.
     Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
     Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
+    //! empty constructor
+    Coin() : refOutAccountID(0), fCoinBase(false), nHeight(0) {}
+
+    //! Refresh memory data
+    void Refresh() {
+        refOutAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
+    }
 
     void Clear() {
         out.scriptPubKey.clear();
     }
-
-    //! empty constructor
-    Coin() : refOutAccountID(0), fCoinBase(false), nHeight(0) {}
 
     bool IsCoinBase() const {
         return fCoinBase;
@@ -163,20 +167,31 @@ struct CCoinsCacheEntry
 
 typedef std::unordered_map<COutPoint, CCoinsCacheEntry, SaltedOutpointHasher> CCoinsMap;
 
-struct CBindPlotterInfo
+/** Bind plotter coin information */
+struct CBindPlotterCoinInfo
 {
     int nHeight;
     CAccountID accountID;
     uint64_t plotterId;
     bool valid;
 
-    CBindPlotterInfo() : nHeight(0), accountID(0), plotterId(0), valid(true) {}
-    explicit CBindPlotterInfo(const Coin& coin) : nHeight((int)coin.nHeight), accountID(coin.refOutAccountID),
+    CBindPlotterCoinInfo() : nHeight(-1), accountID(0), plotterId(0), valid(false) {}
+    explicit CBindPlotterCoinInfo(const Coin& coin) : nHeight((int)coin.nHeight), accountID(coin.refOutAccountID),
         plotterId(BindPlotterPayload::As(coin.extraData)->GetId()), valid(!coin.IsSpent()) {}
 };
 
-typedef std::map<COutPoint, CBindPlotterInfo> CBindPlotterCoinsMap;
-typedef std::pair<COutPoint, CBindPlotterInfo> CBindPlotterCoinPair;
+typedef std::map<COutPoint, CBindPlotterCoinInfo> CBindPlotterCoinsMap;
+typedef std::pair<CBindPlotterCoinsMap::key_type, CBindPlotterCoinsMap::mapped_type> CBindPlotterCoinPair;
+
+/** Bind plotter information */
+struct CBindPlotterInfo : public CBindPlotterCoinInfo
+{
+    COutPoint outpoint;
+
+    CBindPlotterInfo() : CBindPlotterCoinInfo(), outpoint() {}
+    explicit CBindPlotterInfo(const CBindPlotterCoinPair& pair) : CBindPlotterCoinInfo(pair.second), outpoint(pair.first) {} 
+    CBindPlotterInfo(const COutPoint& o, const Coin& coin) : CBindPlotterCoinInfo(coin), outpoint(o) {}
+};
 
 /** Cursor template for iterating over CoinsData state */
 template <typename K, typename V>
@@ -389,9 +404,9 @@ public:
     CAmount GetAccountBalance(const CAccountID &accountID,
         CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
 
-    /** Return a reference to lastest bind plotter Coin in the cache, or a pruned one if not found. */
-    CBindPlotterCoinPair GetChangeBindPlotterInfo(const CBindPlotterCoinPair &bindCoinPair) const;
-    CBindPlotterCoinPair GetLastBindPlotterInfo(const uint64_t &plotterId) const;
+    /** Return a reference to lastest bind plotter information, or a pruned one if not found. */
+    CBindPlotterInfo GetChangeBindPlotterInfo(const CBindPlotterInfo &sourceBindInfo) const;
+    CBindPlotterInfo GetLastBindPlotterInfo(const uint64_t &plotterId) const;
     const Coin& GetLastBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint = nullptr) const;
 
     /** Just check whether a given <accountID,plotterId> exist and lastest binded of plotterId. */

@@ -714,7 +714,7 @@ CBindPlotterCoinsMap CCoinsViewDB::GetAccountBindPlotterEntries(const CAccountID
             if (!pcursor->GetValue(VARINT(data)))
                 throw std::runtime_error("Database read error");
 
-            CBindPlotterInfo &info = outpoints[entry.outpoint];
+            CBindPlotterCoinInfo &info = outpoints[entry.outpoint];
             info.nHeight = data & 0x7fffffff;
             info.accountID = entry.accountID;
             info.plotterId = entry.plotterId;
@@ -741,7 +741,7 @@ CBindPlotterCoinsMap CCoinsViewDB::GetBindPlotterEntries(const uint64_t &plotter
                 if (!pcursor->GetValue(VARINT(data)))
                     throw std::runtime_error("Database read error");
 
-                CBindPlotterInfo &info = outpoints[entry.outpoint];
+                CBindPlotterCoinInfo &info = outpoints[entry.outpoint];
                 info.nHeight = data & 0x7fffffff;
                 info.accountID = entry.accountID;
                 info.plotterId = entry.plotterId;
@@ -857,17 +857,14 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
     return true;
 }
 
+static const uint32_t currentCoinDbVersion = 0x05;
+
 /** Upgrade the database from older formats */
 bool CCoinsViewDB::Upgrade() {
-    const uint32_t currentCoinDbVersion = 0x05;
-
     // Check coin database version
-    {
-        uint32_t coinDbVersion = 0;
-        if (db.Read(DB_COIN_VERSION, VARINT(coinDbVersion)) && coinDbVersion == currentCoinDbVersion)
-            return true; // Newest version
-        db.Erase(DB_COIN_VERSION);
-    }
+    if (!IsRequireUpgrade())
+        return true;
+    db.Erase(DB_COIN_VERSION);
 
     // Reindex UTXO for address
     uiInterface.ShowProgress(_("Upgrading UTXO database"), 0, true);
@@ -996,20 +993,21 @@ bool CCoinsViewDB::Upgrade() {
         db.WriteBatch(batch);
     }
 
-    // Update coin version
-    if (!db.Write(DB_COIN_VERSION, VARINT(currentCoinDbVersion)))
-        return error("%s: cannot write UTXO upgrade flag", __func__);
-
     uiInterface.ShowProgress("", 100, false);
     LogPrintf("[%s]. remove utxo %d, add utxo %d\n", ShutdownRequested() ? "CANCELLED" : "DONE", remove, add);
 
+    return !ShutdownRequested();
+}
 
-    // Remove older database file
-    #ifdef WIN32
-        ::DeleteFileW((GetDataDir() / "chainstate/account.db3").c_str());
-    #else
-        unlink((GetDataDir() / "chainstate/account.db3").c_str());
-    #endif
+bool CCoinsViewDB::IsRequireUpgrade() {
+    uint32_t coinDbVersion = 0;
+    return !db.Read(DB_COIN_VERSION, VARINT(coinDbVersion)) || coinDbVersion != currentCoinDbVersion;
+}
+
+bool CCoinsViewDB::WriteDBVersion() {
+    // Update coin version
+    if (!db.Write(DB_COIN_VERSION, VARINT(currentCoinDbVersion)))
+        return error("%s: cannot write UTXO version", __func__);
 
     return !ShutdownRequested();
 }

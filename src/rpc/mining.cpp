@@ -9,6 +9,7 @@
 #include <chainparams.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
+#include <consensus/tx_verify.h>
 #include <consensus/params.h>
 #include <consensus/validation.h>
 #include <core_io.h>
@@ -793,16 +794,16 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
-    if (lastBindCoinInfo.second.valid) {
-        const Coin &coin = pcoinsTip->AccessCoin(lastBindCoinInfo.first);
+    const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
+    if (!lastBindInfo.outpoint.IsNull() && lastBindInfo.valid) {
+        const Coin &coin = pcoinsTip->AccessCoin(lastBindInfo.outpoint);
         UniValue item(UniValue::VOBJ);
         item.push_back(Pair("address", EncodeDestination(ExtractDestination(coin.out.scriptPubKey))));
-        item.push_back(Pair("txid", lastBindCoinInfo.first.hash.GetHex()));
+        item.push_back(Pair("txid", lastBindInfo.outpoint.hash.GetHex()));
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
         item.push_back(Pair("blockheight", static_cast<int>(coin.nHeight)));
-        item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, lastBindCoinInfo, Params().GetConsensus())));
-        item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, lastBindCoinInfo, *pcoinsTip, Params().GetConsensus())));
+        item.push_back(Pair("bindheightlimit", Consensus::GetBindPlotterLimitHeight(chainActive.Height() + 1, lastBindInfo, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", Consensus::GetUnbindPlotterLimitHeight(chainActive.Height() + 1, lastBindInfo, *pcoinsTip, Params().GetConsensus())));
 
         // Last generate block
         for (const CBlockIndex& block : poc::GetEvalBlocks(chainActive.Height(), false, Params().GetConsensus())) {
@@ -837,8 +838,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
-            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"blockheight\": xxx,                (numeric) The block height.\n"
             "    \"bindheightlimit\": xxx             (numeric) The plotter bind small fee limit height. Other require high fee.\n"
             "    \"unbindheightlimit\": xxx,          (numeric) The plotter unbind limit height.\n"
             "    \"capacity\": \"capacity TB\",         (string) The capacity.\n"
@@ -906,19 +906,18 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         for (CBindPlotterCoinsMap::const_reverse_iterator it = mapCoins.rbegin(); fContinue && it != mapCoins.rend(); ++it) {
             UniValue item(UniValue::VOBJ);
             item.push_back(Pair("address", EncodeDestination(ExtractDestination(pcoinsTip->AccessCoin(it->first).out.scriptPubKey))));
-            item.push_back(Pair("plotterId", std::to_string(plotterId)));
+            item.push_back(Pair("plotterId", std::to_string(it->second.plotterId)));
             item.push_back(Pair("txid", it->first.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockHash().GetHex()));
-            item.push_back(Pair("blocktime", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockTime()));
-            item.push_back(Pair("height", it->second.nHeight));
-            item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, *it, Params().GetConsensus())));
-            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, *it, *pcoinsTip, Params().GetConsensus())));
+            item.push_back(Pair("blockheight", it->second.nHeight));
+            item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), Params().GetConsensus())));
+            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), *pcoinsTip, Params().GetConsensus())));
             if (nBlockCount > 0) {
                 item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[plotterId]) / nBlockCount)));
             } else {
                 item.push_back(Pair("capacity", ValueFromCapacity(0)));
             }
-            item.push_back(Pair("active", it->first == pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId).first));
+            item.push_back(Pair("active", it->first == pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId).outpoint));
             ret.push_back(item);
 
             if (--count <= 0)
@@ -1058,9 +1057,9 @@ UniValue getbindplotterlimit(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
 
     LOCK(cs_main);
-    const CBindPlotterCoinPair lastBindCoinInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
-    if (lastBindCoinInfo.second.valid)
-        return GetBindPlotterLimitHeight(GetSpendHeight(*pcoinsTip), lastBindCoinInfo, Params().GetConsensus());
+    const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
+    if (!lastBindInfo.outpoint.IsNull())
+        return Consensus::GetBindPlotterLimitHeight(GetSpendHeight(*pcoinsTip), lastBindInfo, Params().GetConsensus());
 
     return UniValue();
 }
@@ -1093,7 +1092,7 @@ UniValue getunbindplotterlimit(const JSONRPCRequest& request)
     if (!coin.IsBindPlotter())
         throw JSONRPCError(RPC_INVALID_PARAMS, "Invalid bind transaction");
 
-    return GetUnbindPlotterLimitHeight(GetSpendHeight(*pcoinsTip), std::make_pair(coinEntry, CBindPlotterInfo(coin)), *pcoinsTip, Params().GetConsensus());
+    return Consensus::GetUnbindPlotterLimitHeight(GetSpendHeight(*pcoinsTip), CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
 }
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
