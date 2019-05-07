@@ -6,7 +6,6 @@
 #define BITCOIN_CONSENSUS_TX_VERIFY_H
 
 #include <amount.h>
-#include <coins.h>
 
 #include <stdint.h>
 #include <vector>
@@ -14,6 +13,7 @@
 #include <primitives/transaction.h>
 
 class CBlockIndex;
+class CBindPlotterInfo;
 class CCoinsViewCache;
 class CValidationState;
 

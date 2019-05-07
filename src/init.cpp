@@ -560,6 +560,7 @@ class CBlockChainInitTrace
 public:
     CBlockChainInitTrace(const std::string& title, const CBlockIndex* pBlockIndex) : strTitle(title), tick(0) {
         nStartHeight = pBlockIndex ? pBlockIndex->nHeight : chainActive.Height();
+        uiInterface.InitMessage(strTitle);
         uiInterface.NotifyBlockTip.connect(boost::bind(BlockTipChanged, this, _1, _2));
     }
     ~CBlockChainInitTrace() {
@@ -1634,8 +1635,6 @@ bool AppInitMain()
 
                         // Reset after block fail flags
                         if (pBeginResetIndex) {
-                            uiInterface.InitMessage(_("Verifying blocks..."));
-
                             {
                                 LOCK(cs_main);
                                 ResetBlockFailureFlags(pBeginResetIndex);
@@ -1653,7 +1652,6 @@ bool AppInitMain()
                         for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend() && it->first <= chainActive.Height();) {
                             CBlockIndex *pindex = chainActive[it->first];
                             if (*(pindex->phashBlock) != it->second) {
-                                uiInterface.InitMessage(_("Rewinding blocks..."));
                                 // Invalid
                                 CValidationState state;
                                 {

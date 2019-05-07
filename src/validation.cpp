@@ -1183,10 +1183,10 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
         reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
     } else {
         // Normal mining for BHDIP006
-        CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
-        CAmount accountBalance = view.GetAccountBalance(minerAccountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
+        CAmount balancePledgeLoan = 0, balancePledgeDebit = 0;
+        CAmount accountBalance = view.GetAccountBalance(minerAccountID, nullptr, &balancePledgeLoan, &balancePledgeDebit);
         CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(minerAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
-        if (accountBalance - pledgeLoanBalance + pledgeDebitBalance >= minerPledgeAmount) {
+        if (accountBalance - balancePledgeLoan + balancePledgeDebit >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
         } else {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
@@ -3170,7 +3170,9 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     }
 
     // Checking work
-    LogPrint(BCLog::POC, "Checking block work: height=%d hash=%s\n", pindexPrev->nHeight + 1, hashBlock.ToString());
+    LogPrint(BCLog::POC, "%s: hash=%s height=%d version=0x%08x date='%s'", __func__,
+        hashBlock.ToString(), pindexPrev->nHeight + 1, block.nVersion,
+        DateTimeStrFormat("%Y-%m-%d %H:%M:%S", block.GetBlockTime()));
     if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, chainparams.GetConsensus()))
         return state.DoS(100, false, REJECT_INVALID, "bad-work", false, "incorrect difficulty");
     if (!poc::CheckProofOfCapacity(*pindexPrev, block, chainparams.GetConsensus()))

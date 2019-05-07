@@ -158,6 +158,7 @@ struct CCoinsCacheEntry
          * flush the changes to the parent cache.  It is always safe to
          * not mark FRESH if that condition is not guaranteed.
          */
+
         UNBIND = (1 << 2), // Unbind plotter coin
     };
 
@@ -184,13 +185,21 @@ typedef std::map<COutPoint, CBindPlotterCoinInfo> CBindPlotterCoinsMap;
 typedef std::pair<CBindPlotterCoinsMap::key_type, CBindPlotterCoinsMap::mapped_type> CBindPlotterCoinPair;
 
 /** Bind plotter information */
-struct CBindPlotterInfo : public CBindPlotterCoinInfo
+class CBindPlotterInfo
 {
+public:
     COutPoint outpoint;
+    int nHeight;
+    CAccountID accountID;
+    uint64_t plotterId;
+    bool valid;
 
-    CBindPlotterInfo() : CBindPlotterCoinInfo(), outpoint() {}
-    explicit CBindPlotterInfo(const CBindPlotterCoinPair& pair) : CBindPlotterCoinInfo(pair.second), outpoint(pair.first) {} 
-    CBindPlotterInfo(const COutPoint& o, const Coin& coin) : CBindPlotterCoinInfo(coin), outpoint(o) {}
+    CBindPlotterInfo() : outpoint(), nHeight(-1), accountID(0), plotterId(0), valid(false) {}
+    explicit CBindPlotterInfo(const CBindPlotterCoinPair& pair) : outpoint(pair.first),
+        nHeight(pair.second.nHeight), accountID(pair.second.accountID), plotterId(pair.second.plotterId), valid(pair.second.valid) {} 
+    CBindPlotterInfo(const COutPoint& o, const Coin& coin) : outpoint(o),
+        nHeight((int)coin.nHeight), accountID(coin.refOutAccountID),
+        plotterId(BindPlotterPayload::As(coin.extraData)->GetId()), valid(!coin.IsSpent()) {}
 };
 
 /** Cursor template for iterating over CoinsData state */
@@ -258,8 +267,8 @@ public:
     virtual size_t EstimateSize() const { return 0; }
 
     //! Get balance. Return amount of account
-    virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const;
+    virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
+        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const;
 
     //! Get account bind plotter all coin entries. if plotterId is 0 then return all coin entries for account.
     virtual CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const;
@@ -287,8 +296,8 @@ public:
     CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
-    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
+    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
+        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
     CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };
@@ -331,8 +340,8 @@ public:
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
+    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
+        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
     CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 
@@ -402,10 +411,10 @@ public:
 
     /** Scan UTXO for the account. Return total balance. */
     CAmount GetAccountBalance(const CAccountID &accountID,
-        CAmount *pBindPlotterBalance = nullptr, CAmount *pPledgeLoanBalance = nullptr, CAmount *pPledgeDebitBalance = nullptr) const;
+        CAmount *balanceBindPlotter = nullptr, CAmount *balancePledgeLoan = nullptr, CAmount *balancePledgeDebit = nullptr) const;
 
     /** Return a reference to lastest bind plotter information, or a pruned one if not found. */
-    CBindPlotterInfo GetChangeBindPlotterInfo(const CBindPlotterInfo &sourceBindInfo) const;
+    CBindPlotterInfo GetChangeBindPlotterInfo(const CBindPlotterInfo &sourceBindInfo, bool compatible = false) const;
     CBindPlotterInfo GetLastBindPlotterInfo(const uint64_t &plotterId) const;
     const Coin& GetLastBindPlotterCoin(const uint64_t &plotterId, COutPoint *outpoint = nullptr) const;
 

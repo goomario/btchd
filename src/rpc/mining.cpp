@@ -1103,22 +1103,22 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
-    CAmount totalBalance = 0, bindPlotterBalance = 0, pledgeLoanBalance = 0, pledgeDebitBalance = 0;
-    totalBalance = pcoinsTip->GetAccountBalance(accountID, &bindPlotterBalance, &pledgeLoanBalance, &pledgeDebitBalance);
+    CAmount balance = 0, balanceBindPlotter = 0, balancePledgeLoan = 0, balancePledgeDebit = 0;
+    balance = pcoinsTip->GetAccountBalance(accountID, &balanceBindPlotter, &balancePledgeLoan, &balancePledgeDebit);
 
     UniValue result(UniValue::VOBJ);
     //! This balance belong to your
-    result.pushKV("balance", ValueFromAmount(totalBalance));
+    result.pushKV("balance", ValueFromAmount(balance));
+    //! This balance spendable
+    result.pushKV("spendableBalance", ValueFromAmount(balance - balanceBindPlotter - balancePledgeLoan));
     //! This balance freeze in bind plotter and pledge loan
-    result.pushKV("lockedBalance", ValueFromAmount(bindPlotterBalance + pledgeLoanBalance));
-    //! This balance spendable spend
-    result.pushKV("spendableBalance", ValueFromAmount(totalBalance - bindPlotterBalance - pledgeLoanBalance));
+    result.pushKV("lockedBalance", ValueFromAmount(balanceBindPlotter + balancePledgeLoan));
     //! This balance freeze in pledge loan
-    result.pushKV("pledgeLoanBalance", ValueFromAmount(pledgeLoanBalance));
+    result.pushKV("pledgeLoanBalance", ValueFromAmount(balancePledgeLoan));
     //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
-    result.pushKV("pledgeDebitBalance", ValueFromAmount(pledgeDebitBalance));
+    result.pushKV("pledgeDebitBalance", ValueFromAmount(balancePledgeDebit));
     //! This balance include pledge debit and avaliable balance. For mining pledge
-    result.pushKV("availablePledgeBalance", ValueFromAmount(totalBalance - pledgeLoanBalance + pledgeDebitBalance));
+    result.pushKV("availablePledgeBalance", ValueFromAmount(balance - balancePledgeLoan + balancePledgeDebit));
 
     const Consensus::Params &params = Params().GetConsensus();
     const CAmount pledgeRatio = poc::GetPledgeRatio(chainActive.Height() + 1, params);

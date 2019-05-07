@@ -660,7 +660,7 @@ CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& 
         }
     } else {
         // Binded plotter
-        std::set<uint64_t> plotters = view.GetAccountBindPlotters(minerAccountID);
+        const std::set<uint64_t> plotters = view.GetAccountBindPlotters(minerAccountID);
         nNetCapacityTB = GetCompatibleNetCapacity(nMiningHeight, params,
             [&nBlockCount, &nMinedCount, &plotters] (const CBlockIndex &block) {
                 nBlockCount++;

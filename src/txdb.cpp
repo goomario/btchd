@@ -550,8 +550,8 @@ size_t CCoinsViewDB::EstimateSize() const {
     return db.EstimateSize(DB_COIN, (char)(DB_COIN+1));
 }
 
-CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-    CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const
+CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
+    CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const
 {
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     CAmount availableBalance = 0;
@@ -573,7 +573,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     }
 
     // Apply modified coin
-    for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+    for (CCoinsMap::const_iterator it = mapChildCoins.cbegin(); it != mapChildCoins.cend(); it++) {
         if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID) {
             if (it->second.coin.IsSpent()) {
                 if (db.Exists(CoinEntry(&it->first)))
@@ -587,8 +587,8 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     assert(availableBalance >= 0);
 
     // The bind plotter coin
-    if (pBindPlotterBalance != nullptr) {
-        *pBindPlotterBalance = 0;
+    if (balanceBindPlotter != nullptr) {
+        *balanceBindPlotter = 0;
 
         // Read from database
         {
@@ -600,7 +600,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
                     if (!pcursor->GetValue(VARINT(data)))
                         throw std::runtime_error("Database read error");
                     if (!(data & 0x80000000))
-                        *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
+                        *balanceBindPlotter += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 } else {
                     break;
                 }
@@ -609,26 +609,26 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         }
 
         // Apply modified coin
-        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+        for (CCoinsMap::const_iterator it = mapChildCoins.cbegin(); it != mapChildCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
                     it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 BindPlotterRefEntry entry(&it->second.coin.refOutAccountID, &BindPlotterPayload::As(it->second.coin.extraData)->id, &it->first);
                 if (it->second.coin.IsSpent()) {
                     uint32_t data = 0;
                     if (db.Read(entry, VARINT(data)) && !(data & 0x80000000))
-                        *pBindPlotterBalance -= PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
+                        *balanceBindPlotter -= PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 } else {
                     if (!db.Exists(entry))
-                        *pBindPlotterBalance += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
+                        *balanceBindPlotter += PROTOCOL_BINDPLOTTER_LOCKAMOUNT;
                 }
             }
         }
-        assert(*pBindPlotterBalance >= 0);
+        assert(*balanceBindPlotter >= 0);
     }
 
     // The pledge loan
-    if (pPledgeLoanBalance != nullptr) {
-        *pPledgeLoanBalance = 0;
+    if (balancePledgeLoan != nullptr) {
+        *balancePledgeLoan = 0;
 
         // Read from database
         {
@@ -638,7 +638,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             while (pcursor->Valid()) {
                 if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGELOAN && entry.creditAccountID == accountID) {
                     if (pcursor->GetValue(VARINT(value)))
-                        *pPledgeLoanBalance += value;
+                        *balancePledgeLoan += value;
                 } else {
                     break;
                 }
@@ -647,24 +647,24 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         }
 
         // Apply modified coin
-        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+        for (CCoinsMap::const_iterator it = mapChildCoins.cbegin(); it != mapChildCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.refOutAccountID == accountID &&
                     it->second.coin.extraData && it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
-                        *pPledgeLoanBalance -= it->second.coin.out.nValue;
+                        *balancePledgeLoan -= it->second.coin.out.nValue;
                 } else {
                     if (!db.Exists(CoinEntry(&it->first)))
-                        *pPledgeLoanBalance += it->second.coin.out.nValue;
+                        *balancePledgeLoan += it->second.coin.out.nValue;
                 }
             }
         }
-        assert(*pPledgeLoanBalance >= 0);
+        assert(*balancePledgeLoan >= 0);
     }
 
     // The pledge debit
-    if (pPledgeDebitBalance != nullptr) {
-        *pPledgeDebitBalance = 0;
+    if (balancePledgeDebit != nullptr) {
+        *balancePledgeDebit = 0;
 
         // Read from database
         {
@@ -674,7 +674,7 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             while (pcursor->Valid()) {
                 if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGEDEBIT && entry.debitAccountID == accountID) {
                     if (pcursor->GetValue(VARINT(value)))
-                        *pPledgeDebitBalance += value;
+                        *balancePledgeDebit += value;
                 } else {
                     break;
                 }
@@ -683,20 +683,20 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         }
 
         // Apply modified coin
-        for (CCoinsMap::const_iterator it = mapParentModifiedCoins.cbegin(); it != mapParentModifiedCoins.cend(); it++) {
+        for (CCoinsMap::const_iterator it = mapChildCoins.cbegin(); it != mapChildCoins.cend(); it++) {
             if ((it->second.flags & CCoinsCacheEntry::DIRTY) && it->second.coin.extraData &&
                     it->second.coin.extraData->type == DATACARRIER_TYPE_PLEDGE &&
                     PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() == accountID) {
                 if (it->second.coin.IsSpent()) {
                     if (db.Exists(CoinEntry(&it->first)))
-                        *pPledgeDebitBalance -= it->second.coin.out.nValue;
+                        *balancePledgeDebit -= it->second.coin.out.nValue;
                 } else {
                     if (!db.Exists(CoinEntry(&it->first)))
-                        *pPledgeDebitBalance += it->second.coin.out.nValue;
+                        *balancePledgeDebit += it->second.coin.out.nValue;
                 }
             }
         }
-        assert(*pPledgeDebitBalance >= 0);
+        assert(*balancePledgeDebit >= 0);
     }
 
     return availableBalance;
