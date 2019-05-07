@@ -103,12 +103,24 @@ CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& par
 /**
  * Eval pledge ratio by capacity
  *
- * @param nHeight           The height of net capacity
+ * @param nMiningHeight     The height for mining
  * @param nNetCapacityTB    Network capacity of TB
  * @param params            Consensus params
  * @param pRatioStage       The stage of current ratio
  */
-CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage = nullptr);
+CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage = nullptr);
+
+/**
+ * Get net capacity for ratio
+ *
+ * @param nHeight               The height of net capacity
+ * @param nNetCapacityTB        Network capacity of TB
+ * @param nPrevNetCapacityTB    Previous eval net capacity for ratio
+ * @param params                Consensus params
+ *
+ * @return Return adjuested net capacity of TB for ratio
+ */
+int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, const Consensus::Params& params);
 
 /**
  * Get net capacity
@@ -134,14 +146,14 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
 /**
  * Get pledge ratio
  *
- * @param nHeight           The height of pledge ratio
+ * @param nHeight           The height for mining
  * @param params            Consensus params
  * @param pRatioStage       The stage of current ratio
  * @param pRatioCapacityTB  The net capacity of current stage
  *
  * @return Return pledge ratio
  */
-CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params, int* pRatioStage = nullptr, int64_t* pRatioCapacityTB = nullptr);
+CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr, int64_t* pRatioCapacityTB = nullptr);
 
 /**
  * Get capacity pledge amount

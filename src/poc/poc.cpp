@@ -481,9 +481,6 @@ CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& par
 
 int64_t GetNetCapacity(int nHeight, const Consensus::Params& params)
 {
-    AssertLockHeld(cs_main);
-    assert(nHeight >= 0 && nHeight <= chainActive.Height());
-
     uint64_t nBaseTarget = 0;
     int nBlockCount = 0;
     for (const CBlockIndex& block : GetEvalBlocks(nHeight, true, params)) {
@@ -524,10 +521,20 @@ static int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std:
 
 int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
 {
-    AssertLockHeld(cs_main);
-    assert(nHeight >= 0 && nHeight <= chainActive.Height());
-
     return GetNetCapacity<BHD_BASE_TARGET>(nHeight, params, associateBlock);
+}
+
+int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, const Consensus::Params& params)
+{
+    int64_t ratioNetCapacityTB;
+    if (nNetCapacityTB > nPrevNetCapacityTB * 12 / 10) {
+        ratioNetCapacityTB = nPrevNetCapacityTB * 12 / 10;
+    } else if (nNetCapacityTB < nPrevNetCapacityTB * 8 / 10) {
+        ratioNetCapacityTB = nPrevNetCapacityTB * 8 / 10;
+    } else {
+        ratioNetCapacityTB = nNetCapacityTB;
+    }
+    return ratioNetCapacityTB;
 }
 
 // Round to cent coin
@@ -537,33 +544,34 @@ static inline CAmount RoundPledgeRatio(CAmount amount)
     return ((amount + percise / 2) / percise) * percise;
 }
 
-CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
+CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
 {
-    if (nHeight < params.BHDIP007Height) {
+    if (nMiningHeight < params.BHDIP007Height) {
         // Legacy
         if (pRatioStage) *pRatioStage = -2;
 
         CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
         return nLegacyRatio;
-    } else if (nHeight <= params.BHDIP007SmoothEndHeight) {
+    } else if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         // Smooth
         if (pRatioStage) *pRatioStage = -1;
 
         CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
         int step = params.BHDIP007SmoothEndHeight - params.BHDIP007Height + 1;
-        int current = nHeight - params.BHDIP007Height + 1;
+        int current = nMiningHeight - params.BHDIP007Height + 1;
         return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001PledgeRatio) * current) / step);
     } else {
         // Dynamic
-        if (nNetCapacityTB <= params.BHDIP007DynPledgeStage) {
+        if (nNetCapacityTB < params.BHDIP007PledgeRatioStage) {
             if (pRatioStage) *pRatioStage = -1;
             return params.BHDIP001PledgeRatio;
         }
 
-        int nStage = std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007DynPledgeStage)) + 0.000005f), 40);
+        // Range in [0,40]
+        int nStage = std::max(std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007PledgeRatioStage) + 0.000005f) + 0.000005f), 40), 0);
         CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001PledgeRatio));
         CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001PledgeRatio));
-        int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007DynPledgeStage;
+        int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007PledgeRatioStage;
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
         assert (nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
 
@@ -574,21 +582,23 @@ CAmount EvalPledgeRatio(int nHeight, int64_t nNetCapacityTB, const Consensus::Pa
     }
 }
 
-CAmount GetPledgeRatio(int nHeight, const Consensus::Params& params, int* pRatioStage, int64_t* pRatioCapacityTB)
+CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage, int64_t* pRatioCapacityTB)
 {
     AssertLockHeld(cs_main);
-    assert(nHeight >= 0 && nHeight <= chainActive.Height() + 1);
+    assert(nMiningHeight > 0 && nMiningHeight <= chainActive.Height() + 1);
 
     int64_t nNetCapacityTB = 0;
-    if (nHeight > params.BHDIP007SmoothEndHeight) {
-        int nAdjustHeight = ((nHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
-        nNetCapacityTB = GetNetCapacity(nAdjustHeight, params);
+    if (nMiningHeight > params.BHDIP007SmoothEndHeight) {
+        int nAdjustHeight = ((nMiningHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
+        int64_t nCurrentNetCapacityTB = GetNetCapacity(nAdjustHeight, params);
+        int64_t nPrevNetCapacityTB = GetNetCapacity(std::max(nAdjustHeight - params.nCapacityEvalWindow, 0), params);
+        nNetCapacityTB = GetRatioNetCapacity(nCurrentNetCapacityTB, nPrevNetCapacityTB, params);
         if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
     } else {
-        if (pRatioCapacityTB) *pRatioCapacityTB = params.BHDIP007DynPledgeStage;
+        if (pRatioCapacityTB) *pRatioCapacityTB = params.BHDIP007PledgeRatioStage;
     }
 
-    return EvalPledgeRatio(nHeight, nNetCapacityTB, params, pRatioStage);
+    return EvalPledgeRatio(nMiningHeight, nNetCapacityTB, params, pRatioStage);
 }
 
 CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio)
@@ -616,7 +626,6 @@ CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& 
     const Consensus::Params& params)
 {
     AssertLockHeld(cs_main);
-    assert(nMiningHeight > 0 && nMiningHeight <= chainActive.Height() + 1);
     assert(GetSpendHeight(view) == nMiningHeight);
 
     if (pMinerCapacity != nullptr) *pMinerCapacity = 0;
@@ -774,6 +783,8 @@ bool StartPOC()
             }
         }
     #endif
+        if (mapSignaturePrivKeys.empty())
+            LogPrintf("WARN: mining-sign start at %d. Please use `addsignprivkey xxx` or `miningsign=xxx` import private key.\n", Params().GetConsensus().BHDIP007Height);
     } else {
         LogPrintf("Skip PoC forge thread\n");
         interruptCheckDeadline();

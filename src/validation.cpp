@@ -3170,7 +3170,7 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     }
 
     // Checking work
-    LogPrint(BCLog::POC, "%s: hash=%s height=%d version=0x%08x date='%s'", __func__,
+    LogPrint(BCLog::POC, "%s: hash=%s height=%d version=0x%08x date='%s'\n", __func__,
         hashBlock.ToString(), pindexPrev->nHeight + 1, block.nVersion,
         DateTimeStrFormat("%Y-%m-%d %H:%M:%S", block.GetBlockTime()));
     if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, chainparams.GetConsensus()))

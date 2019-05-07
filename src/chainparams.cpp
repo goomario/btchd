@@ -120,9 +120,9 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 133000; // Bind and unbind plotter limit. Active on Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006LimitBindPlotterHeight  = 134650; // Bind plotter limit. Active on Tue, 21 Jan 2019 9:00:00 GMT
 
-        consensus.BHDIP007Height          = 1600000; // NOT SURE ACTIVATE TIME
-        consensus.BHDIP007SmoothEndHeight = consensus.BHDIP007Height + 4 * consensus.nCapacityEvalWindow; // Smooth decrease base target from BHD_BASE_TARGET_240 to BHD_BASE_TARGET
-        consensus.BHDIP007DynPledgeStage  = 1500 * 1024; // 1500PB
+        consensus.BHDIP007Height           = 168000; // NOT SURE ACTIVATE TIME
+        consensus.BHDIP007SmoothEndHeight  = consensus.BHDIP007Height + 2 * consensus.nCapacityEvalWindow; // Smooth BHD_BASE_TARGET_240 to BHD_BASE_TARGET
+        consensus.BHDIP007PledgeRatioStage = 1250 * 1024; // 1250 PB
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -278,7 +278,10 @@ public:
                 { 160000, uint256S("0x5e359da309f92e13112d6dcdf653a4d7bc67734c8aee09baf70a239bb653984c") },
                 { 161000, uint256S("0x9694de8534853aece5402104c7f4933ee2950b151d343f3b0434994baa45ea9c") },
                 { 162000, uint256S("0x4e7c05d21667baae77f1a0aeb41bf7cbedbd6c8fc32c73fffd338ef57b86adfb") },
-                { 162700, uint256S("0x319dbaaba90674037a043f239da960896cf5d5148b1c1513d2def6b97dde86e3") },
+                { 163000, uint256S("0x85ddcb018897dc5aa1110a4b4e2ead2357779d9eb1be5d290bbda30abc60dff8") },
+                { 164000, uint256S("0x4e7ac62f3e8d095f40fb02432f06ba80d61a6291407ff9e52ffdc65b92611ef0") },
+                { 165000, uint256S("0x0e99ae0aa9a45eb9fb28aef672f9b51787fe7bde6fe59b9aaa3d186e0f27f556") },
+                { 165400, uint256S("0x6bf2a050af1331ad664d76172e1db123800f2d899f30a5b35ac4752e24ad8a61") },
             }
         };
 
@@ -330,9 +333,9 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 45328;
         consensus.BHDIP006LimitBindPlotterHeight  = 48790;
 
-        consensus.BHDIP007Height          = 72550;
-        consensus.BHDIP007SmoothEndHeight = 76582; // BHD_BASE_TARGET_240 -> BHD_BASE_TARGET
-        consensus.BHDIP007DynPledgeStage  = 10;
+        consensus.BHDIP007Height           = 72550;
+        consensus.BHDIP007SmoothEndHeight  = 76582; // BHD_BASE_TARGET_240 -> BHD_BASE_TARGET
+        consensus.BHDIP007PledgeRatioStage = 10;
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -514,9 +517,9 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 488;
         consensus.BHDIP006LimitBindPlotterHeight  = 493;
 
-        consensus.BHDIP007Height          = 550;
-        consensus.BHDIP007SmoothEndHeight = 586;
-        consensus.BHDIP007DynPledgeStage  = 10240;
+        consensus.BHDIP007Height           = 550;
+        consensus.BHDIP007SmoothEndHeight  = 586;
+        consensus.BHDIP007PledgeRatioStage = 10 * 1024;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

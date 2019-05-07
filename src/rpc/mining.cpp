@@ -134,11 +134,17 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
             "  \"netcapacity\": nnn         (string) The net capacity\n"
-            "  \"ratio\": xxx.xxxxx         (numeric) The ratio of pledge\n"
-            "  \"ratiostartheight\": nnn    (numeric) The height of ratio updated\n"
-            "  \"ratiostage\": nnn          (numeric) The ratio stage of pledge. -2: not start, -1: smooth decrease, others...\n"
-            "  \"rationetcapacity\": nnn    (string) The net capacity of pledge\n"
-            "  \"nextratio\": {             (object) Next ratio estimate by current status\n"
+            "  \"smoothbeginheight\": nnn   (numeric) The smooth adjust ratio begin height\n"
+            "  \"smoothendheight\": nnn     (numeric) The smooth adjust ratio end height\n"
+            "  \"stagebeginheight\": nnn    (numeric) The stage adjust ratio begin height\n"
+            "  \"stagecapacity\": nnn       (numeric) The capacity of stage\n"
+            "  \"currenteval\": {           (object) Current ratio estimate\n"
+            "    \"ratio\": xxx.xxxxx       (numeric) The ratio of pledge\n"
+            "    \"ratiostartheight\": nnn  (numeric) The height of ratio updated\n"
+            "    \"ratiostage\": nnn        (numeric) The ratio stage of pledge. -2: not start, -1: smooth decrease, others...\n"
+            "    \"rationetcapacity\": nnn  (string) The net capacity of pledge\n"
+            "  },\n"
+            "  \"nexteval\": {              (object) Next ratio estimate by current blockchain status\n"
             "    \"ratio\": xxx.xxxxx       (numeric) The ratio of pledge for next period\n"
             "    \"ratiostartheight\": nnn  (numeric) The height of ratio update for next period\n"
             "    \"ratiostage\": nnn        (numeric) The ratio stage of pledge for next period. -1: smooth decrease, others...\n"
@@ -157,9 +163,6 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     LOCK(cs_main);
     const Consensus::Params &params = Params().GetConsensus();
 
-    int nRatioStage = 0;
-    int64_t nRatioNetCapacityTB = 0;
-
     UniValue obj(UniValue::VOBJ);
     obj.push_back(Pair("blocks",             (int)chainActive.Height()));
     obj.push_back(Pair("currentblockweight", (uint64_t)nLastBlockWeight));
@@ -167,23 +170,35 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("pooledtx",           (uint64_t)mempool.size()));
     obj.push_back(Pair("difficulty",         (double)GetDifficulty()));
     obj.push_back(Pair("netcapacity",        ValueFromCapacity(poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget)));
-    if (chainActive.Height() >= params.BHDIP007Height) {
-        obj.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB))));
-        obj.push_back(Pair("ratiostartheight", std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow * params.nCapacityEvalWindow));
-        obj.push_back(Pair("ratiostage",       nRatioStage));
-        obj.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
-    }
-    if (chainActive.Height() >= params.BHDIP007SmoothEndHeight) {
-        nRatioNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params);
+    obj.push_back(Pair("smoothbeginheight",  params.BHDIP007Height));
+    obj.push_back(Pair("smoothendheight",    params.BHDIP007SmoothEndHeight));
+    obj.push_back(Pair("stagebeginheight",   params.BHDIP007SmoothEndHeight + 1));
+    obj.push_back(Pair("stagecapacity",      ValueFromCapacity(params.BHDIP007PledgeRatioStage)));
+    // Current eval
+    int64_t nRatioNetCapacityTB = 0;
+    {
+        int nRatioStage = 0;
 
-        UniValue nextRatio(UniValue::VOBJ);
-        nextRatio.push_back(Pair("ratio",            ValueFromAmount(poc::EvalPledgeRatio(chainActive.Height() + 1, nRatioNetCapacityTB, params, &nRatioStage))));
-        nextRatio.push_back(Pair("ratiostartheight", (std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow + 1) * params.nCapacityEvalWindow));
-        nextRatio.push_back(Pair("ratiostage",       nRatioStage));
-        nextRatio.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
-        obj.push_back(Pair("nextratio",      nextRatio));
+        UniValue curEval(UniValue::VOBJ);
+        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB))));
+        curEval.push_back(Pair("ratiostartheight", std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow * params.nCapacityEvalWindow));
+        curEval.push_back(Pair("ratiostage",       nRatioStage));
+        curEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
+        obj.push_back(Pair("currenteval", curEval));
     }
-    obj.push_back(Pair("chain",              Params().NetworkIDString()));
+    // Next eval by current status
+    if (chainActive.Height() + 1 > params.BHDIP007SmoothEndHeight) {
+        int nRatioStage = 0;
+        int64_t nNextEvalNetCapacityTB = poc::GetRatioNetCapacity(poc::GetNetCapacity(chainActive.Height(), params), nRatioNetCapacityTB, params);
+
+        UniValue nextEval(UniValue::VOBJ);
+        nextEval.push_back(Pair("ratio",            ValueFromAmount(poc::EvalPledgeRatio(chainActive.Height() + 1, nNextEvalNetCapacityTB, params, &nRatioStage))));
+        nextEval.push_back(Pair("ratiostartheight", (std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow + 1) * params.nCapacityEvalWindow));
+        nextEval.push_back(Pair("ratiostage",       nRatioStage));
+        nextEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nNextEvalNetCapacityTB)));
+        obj.push_back(Pair("nexteval", nextEval));
+    }
+    obj.push_back(Pair("chain", Params().NetworkIDString()));
     if (IsDeprecatedRPCEnabled("getmininginfo")) {
         obj.push_back(Pair("errors",         GetWarnings("statusbar")));
     } else {

@@ -92,7 +92,7 @@ struct Params {
     /** Block height at which BHDIP007 becomes active */
     int BHDIP007Height;
     int BHDIP007SmoothEndHeight;
-    int BHDIP007DynPledgeStage;
+    int BHDIP007PledgeRatioStage;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
