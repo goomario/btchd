@@ -159,7 +159,7 @@ struct CCoinsCacheEntry
          * not mark FRESH if that condition is not guaranteed.
          */
 
-        UNBIND = (1 << 2), // Unbind plotter coin
+        UNBIND = (1 << 2), // Unbind plotter coin. ONLY FOR BIND PLOTTER COIN
     };
 
     CCoinsCacheEntry() : flags(0) {}

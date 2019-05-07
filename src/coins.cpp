@@ -69,15 +69,7 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
     if (!base->GetCoin(outpoint, tmp))
         return cacheCoins.end();
     CCoinsMap::iterator ret = cacheCoins.emplace(std::piecewise_construct, std::forward_as_tuple(outpoint), std::forward_as_tuple(std::move(tmp))).first;
-    if (ret->second.coin.IsSpent()) {
-        // The parent only has an empty entry for this outpoint; we can consider our
-        // version as fresh.
-        ret->second.flags = CCoinsCacheEntry::FRESH;
-
-        // Append UNBIND for unbind plotter coin.
-        if (ret->second.coin.IsBindPlotter() && ret->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height)
-            ret->second.flags |= CCoinsCacheEntry::UNBIND;
-    }
+    assert(!ret->second.coin.IsSpent()); // GetCoin() only return unspent coin
     cachedCoinsUsage += ret->second.coin.DynamicMemoryUsage();
     return ret;
 }
@@ -127,11 +119,11 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
         bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
         // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
+
         Coin coin(tx.vout[i], nHeight, fCoinbase);
         // Set extra data to coin of vout[0]
         if (i == 0 && extraData)
             coin.extraData = std::move(extraData);
-
         cache.AddCoin(COutPoint(txid, i), std::move(coin), overwrite);
     }
 }
@@ -145,8 +137,12 @@ bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout, bool r
     if (moveout)
         *moveout = it->second.coin;
 
-    if (!rollback && it->second.coin.IsBindPlotter() && it->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height) {
-        it->second.flags |= CCoinsCacheEntry::DIRTY | CCoinsCacheEntry::UNBIND;
+    if (it->second.coin.IsBindPlotter() && it->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height) {
+        it->second.flags |= CCoinsCacheEntry::DIRTY;
+        if (rollback)
+            it->second.flags &= ~CCoinsCacheEntry::UNBIND;
+        else
+            it->second.flags |= CCoinsCacheEntry::UNBIND;
         it->second.coin.Clear();
     } else if (it->second.flags & CCoinsCacheEntry::FRESH) {
         cacheCoins.erase(it);
@@ -199,8 +195,8 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
         if (itUs == cacheCoins.end()) {
             // The parent cache does not have an entry, while the child does
             // We can ignore it if it's both FRESH and pruned in the child
-            // But except on UNBIND
-            if (!(it->second.flags & CCoinsCacheEntry::FRESH && it->second.coin.IsSpent()) || (it->second.flags & CCoinsCacheEntry::UNBIND)) {
+            if (!(it->second.flags & CCoinsCacheEntry::FRESH && it->second.coin.IsSpent()) ||
+                    (it->second.flags & CCoinsCacheEntry::UNBIND) != (itUs->second.flags & CCoinsCacheEntry::UNBIND)) {
                 // Otherwise we will need to create it in the parent
                 // and move the data up and mark it as dirty
                 CCoinsCacheEntry& entry = cacheCoins[it->first];
@@ -229,7 +225,8 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
             }
 
             // Found the entry in the parent cache
-            if ((itUs->second.flags & CCoinsCacheEntry::FRESH) && (it->second.coin.IsSpent() && !(it->second.flags & CCoinsCacheEntry::UNBIND))) {
+            if ((itUs->second.flags & CCoinsCacheEntry::FRESH) && it->second.coin.IsSpent() &&
+                    (it->second.flags & CCoinsCacheEntry::UNBIND) != (itUs->second.flags & CCoinsCacheEntry::UNBIND)) {
                 // The grandparent does not have an entry, and the child is
                 // modified and being pruned. This means we can just delete
                 // it from the parent.
@@ -241,6 +238,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
                 itUs->second.coin = std::move(it->second.coin);
                 cachedCoinsUsage += itUs->second.coin.DynamicMemoryUsage();
                 itUs->second.flags |= CCoinsCacheEntry::DIRTY;
+                itUs->second.flags &= ~CCoinsCacheEntry::UNBIND;
                 // Sync UNBIND from child
                 if (it->second.flags & CCoinsCacheEntry::UNBIND) {
                     assert(itUs->second.coin.IsSpent());
@@ -312,6 +310,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     } else {
                         itUs->second.coin = it->second.coin;
                         itUs->second.flags |= CCoinsCacheEntry::DIRTY;
+                        itUs->second.flags &= ~CCoinsCacheEntry::UNBIND;
                         if (it->second.flags & CCoinsCacheEntry::UNBIND) {
                             itUs->second.flags |= CCoinsCacheEntry::UNBIND;
                         }
@@ -331,8 +330,9 @@ CBindPlotterCoinsMap CCoinsViewCache::GetAccountBindPlotterEntries(const CAccoun
     for (CCoinsMap::iterator it = cacheCoins.begin(); it != cacheCoins.end(); it++) {
         if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.IsBindPlotter())
             continue;
-        if (accountID == it->second.coin.refOutAccountID && (plotterId == 0 || BindPlotterPayload::As(it->second.coin.extraData)->GetId() == plotterId)) {
-            if (!(it->second.flags & CCoinsCacheEntry::UNBIND) && it->second.coin.IsSpent()) {
+        if (accountID == it->second.coin.refOutAccountID &&
+                (plotterId == 0 || BindPlotterPayload::As(it->second.coin.extraData)->GetId() == plotterId)) {
+            if (it->second.coin.IsSpent() && !(it->second.flags & CCoinsCacheEntry::UNBIND)) {
                 outpoints.erase(it->first);
             } else {
                 CBindPlotterCoinInfo &info = outpoints[it->first];
@@ -356,7 +356,7 @@ CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntries(const uint64_t &plot
         if (!(it->second.flags & CCoinsCacheEntry::DIRTY) || !it->second.coin.IsBindPlotter())
             continue;
         if (BindPlotterPayload::As(it->second.coin.extraData)->GetId() == plotterId) {
-            if (!(it->second.flags & CCoinsCacheEntry::UNBIND) && it->second.coin.IsSpent()) {
+            if (it->second.coin.IsSpent() && !(it->second.flags & CCoinsCacheEntry::UNBIND)) {
                 outpoints.erase(it->first);
             } else {
                 CBindPlotterCoinInfo &info = outpoints[it->first];
