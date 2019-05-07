@@ -345,7 +345,7 @@ int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInf
     }
 
     // Participator mined after bind require lock <EvalWindow>
-    const int nEndHeight = std::min(lastBindInfo.nHeight + params.nCapacityEvalWindow - 1, nEvalEndHeight);
+    const int nEndHeight = std::min(lastBindInfo.nHeight + params.nCapacityEvalWindow, nEvalEndHeight);
     for (int nHeight = lastBindInfo.nHeight; nHeight <= nEndHeight; nHeight++) {
         if (chainActive[nHeight]->minerAccountID == lastBindInfo.accountID)
             return lastBindInfo.nHeight + params.nCapacityEvalWindow;
