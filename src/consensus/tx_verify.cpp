@@ -327,6 +327,10 @@ int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInf
     assert(!lastBindInfo.outpoint.IsNull() && lastBindInfo.nHeight >= 0);
     assert(nSpentHeight > lastBindInfo.nHeight);
 
+    // Spent coin unlimit
+    if (!lastBindInfo.valid)
+        return lastBindInfo.nHeight + 1;
+
     if (nSpentHeight < params.BHDIP006LimitBindPlotterHeight)
         return std::max(params.BHDIP006Height, lastBindInfo.nHeight + 1);
 
@@ -410,6 +414,7 @@ int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterI
         const CBindPlotterInfo changeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo);
         assert(!changeBindInfo.outpoint.IsNull() && changeBindInfo.nHeight >= 0);
         assert(changeBindInfo.nHeight >= bindInfo.nHeight);
+        assert(nSpentHeight > changeBindInfo.nHeight);
 
         const int nParticipateMiningBeginHeight = bindInfo.nHeight;
         const int nParticipateMiningEndHeight = (bindInfo.outpoint == changeBindInfo.outpoint) ? nEvalEndHeight : changeBindInfo.nHeight;
