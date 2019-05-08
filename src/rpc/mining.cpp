@@ -928,7 +928,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), Params().GetConsensus())));
             item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), *pcoinsTip, Params().GetConsensus())));
             if (nBlockCount > 0) {
-                item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[plotterId]) / nBlockCount)));
+                item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[it->second.plotterId]) / nBlockCount)));
             } else {
                 item.push_back(Pair("capacity", ValueFromCapacity(0)));
             }
