@@ -1535,7 +1535,8 @@ bool AppInitMain()
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                if (!pcoinsdbview->Upgrade()) {
+                bool fCoinDBUpgraded = false;
+                if (!pcoinsdbview->Upgrade(fCoinDBUpgraded)) {
                     strLoadError = _("Error upgrading chainstate database");
                     break;
                 }
@@ -1559,7 +1560,7 @@ bool AppInitMain()
                     assert(chainActive.Tip() != nullptr);
 
                     // Upgrade UTXO after reconnect block
-                    if (pcoinsdbview->IsRequireUpgrade() && chainActive.Height() >= chainparams.GetConsensus().BHDIP007Height) {
+                    if (fCoinDBUpgraded && chainActive.Height() >= chainparams.GetConsensus().BHDIP007Height) {
                         CBlockChainInitTrace upgradeTracer(_("Upgrading UTXO database"), chainActive.Tip());
 
                         CValidationState state;
@@ -1691,12 +1692,6 @@ bool AppInitMain()
                         strLoadError = _("Corrupted block database detected");
                         break;
                     }
-                }
-
-                // Last write chainstate version
-                if (!pcoinsdbview->WriteDBVersion()) {
-                    strLoadError = _("Error upgrading chainstate database");
-                    break;
                 }
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());

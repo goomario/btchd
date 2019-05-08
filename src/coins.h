@@ -22,6 +22,9 @@
 #include <set>
 #include <unordered_map>
 
+// Max height of coin
+static const uint32_t COIN_MAXHEIGHT = 0x3FFFFFFF;
+
 /**
  * A UTXO entry.
  *
@@ -49,8 +52,12 @@ public:
     CDatacarrierPayloadRef extraData;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
-    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
-    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
+    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {
+        assert(nHeight <= COIN_MAXHEIGHT);
+    }
+    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {
+        assert(nHeight <= COIN_MAXHEIGHT);
+    }
     //! empty constructor
     Coin() : refOutAccountID(0), fCoinBase(false), nHeight(0) {}
 
@@ -70,6 +77,7 @@ public:
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
+        assert(nHeight <= COIN_MAXHEIGHT);
         uint32_t code = (extraData ? 0x80000000 : 0) | (nHeight << 1) | (fCoinBase ? 1 : 0);
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
@@ -159,7 +167,7 @@ struct CCoinsCacheEntry
          * not mark FRESH if that condition is not guaranteed.
          */
 
-        UNBIND = (1 << 2), // Unbind plotter coin. ONLY FOR BIND PLOTTER COIN
+        UNBIND = (1 << 2), // Spent for unbind
     };
 
     CCoinsCacheEntry() : flags(0) {}
