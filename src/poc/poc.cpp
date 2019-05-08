@@ -783,8 +783,8 @@ bool StartPOC()
             }
         }
     #endif
-        if (mapSignaturePrivKeys.empty())
-            LogPrintf("WARN: mining-sign start at %d. Please use `addsignprivkey xxx` or `miningsign=xxx` import private key.\n", Params().GetConsensus().BHDIP007Height);
+
+        LogPrintf("WARN: mining-sign start at %d. Please use `addsignprivkey xxx` or `miningsign=xxx` import private key.\n", Params().GetConsensus().BHDIP007Height);
     } else {
         LogPrintf("Skip PoC forge thread\n");
         interruptCheckDeadline();

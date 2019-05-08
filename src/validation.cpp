@@ -3596,6 +3596,11 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
                 }
             }
         }
+        // Update Progress
+        {
+            LOCK(cs_main);
+            NotifyHeaderTip();
+        }
         // Required verify work
         while (index < headers.size()) {
             // Hold cs_main too long time maybe block GUI thread
