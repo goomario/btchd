@@ -80,13 +80,13 @@ public:
     CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
-    bool Upgrade();
+    bool Upgrade(bool &fUpgraded);
     size_t EstimateSize() const override;
 
-    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapParentModifiedCoins,
-        CAmount *pBindPlotterBalance, CAmount *pPledgeLoanBalance, CAmount *pPledgeDebitBalance) const override;
-    void GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
-    void GetBindPlotterAccountEntries(const uint64_t &plotterId, std::set<COutPoint> &outpoints) const override;
+    CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
+        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
+    CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
+    CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };
 
 /** Access to the block database (blocks/index/) */

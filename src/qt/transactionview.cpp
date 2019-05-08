@@ -418,7 +418,7 @@ void TransactionView::contextualMenu(const QPoint &point)
     abandonAction->setEnabled(model->transactionCanBeAbandoned(hash));
     bumpFeeAction->setEnabled(model->transactionCanBeBumped(hash));
     unbindPlotterAction->setEnabled(model->transactionCanBeUnlock(hash, DATACARRIER_TYPE_BINDPLOTTER));
-    withdrawPledgeAction->setEnabled(model->transactionCanBeUnlock(hash, DATACARRIER_TYPE_PLEDGELOAN));
+    withdrawPledgeAction->setEnabled(model->transactionCanBeUnlock(hash, DATACARRIER_TYPE_PLEDGE));
 
     if(index.isValid())
     {

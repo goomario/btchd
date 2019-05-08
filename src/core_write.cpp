@@ -165,7 +165,7 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
     out.pushKV("addresses", a);
 }
 
-void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry, bool include_hex, int serialize_flags)
+void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry, bool include_hex, int serialize_flags, int nHeight)
 {
     entry.pushKV("txid", tx.GetHash().GetHex());
     entry.pushKV("hash", tx.GetWitnessHash().GetHex());
@@ -221,7 +221,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
     }
 
     if (tx.IsUniform()) {
-        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx);
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nHeight);
         if (payload) {
             UniValue extra(UniValue::VOBJ);;
             DatacarrierPayloadToUniv(*payload, tx.vout[0], extra);
@@ -242,7 +242,7 @@ void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& t
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
         out.push_back(Pair("address", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
         out.push_back(Pair("id", std::to_string(ptr->GetId())));
-    } else if (payload.type == DATACARRIER_TYPE_PLEDGELOAN) {
+    } else if (payload.type == DATACARRIER_TYPE_PLEDGE) {
         auto ptr = (const PledgeLoanPayload *) &payload;
         out.push_back(Pair("type", "pledge"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));

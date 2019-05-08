@@ -16,11 +16,12 @@
 
 #include <base58.h>
 #include <chainparams.h>
-#include <wallet/coincontrol.h>
+#include <consensus/tx_verify.h>
+#include <policy/fees.h>
+#include <txmempool.h>
 #include <validation.h> // mempool and minRelayTxFee
 #include <ui_interface.h>
-#include <txmempool.h>
-#include <policy/fees.h>
+#include <wallet/coincontrol.h>
 #include <wallet/fees.h>
 
 #include <QFontMetrics>
@@ -179,7 +180,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
 
         // fee section
         for (const int n : confTargets) {
-            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPowTargetSpacing)).arg(n));
+            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPocTargetSpacing)).arg(n));
         }
         connect(ui->confTargetSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(updateSmartFeeLabel()));
         connect(ui->confTargetSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(coinControlUpdateLabels()));
@@ -360,9 +361,9 @@ void SendCoinsDialog::on_sendButton_clicked()
                     return;
                 }
 
-                const Coin &coin = pcoinsTip->GetActiveBindPlotterCoin(plotterId);
-                if (!coin.IsSpent()) {
-                    bindLimitHeight = GetBindPlotterLimitHeight(nSpendHeight, coin, params);
+                const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
+                if (!lastBindInfo.outpoint.IsNull()) {
+                    bindLimitHeight = Consensus::GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params);
                     if (nSpendHeight < bindLimitHeight) {
                         CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
                         if (diffReward > 0) {
@@ -393,12 +394,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     CDatacarrierPayloadRef payload;
     if (prepareStatus.status == WalletModel::OK) {
         LOCK(cs_main);
-        if (operateMethod == PayOperateMethod::SendPledge) {
-            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
-            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGELOAN) {
-                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
-            }
-        } else if (operateMethod == PayOperateMethod::BindPlotter) {
+        if (operateMethod == PayOperateMethod::BindPlotter) {
             payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
             if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
                 fNewRecipientAllowed = true;
@@ -410,6 +406,11 @@ void SendCoinsDialog::on_sendButton_clicked()
             if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
                     QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
+        } else if (operateMethod == PayOperateMethod::SendPledge) {
+            payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
+            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE) {
+                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
+            }
         }
     }
 
@@ -465,7 +466,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     switch (operateMethod)
     {
     case PayOperateMethod::SendPledge:
-        assert(payload && payload->type == DATACARRIER_TYPE_PLEDGELOAN);
+        assert(payload && payload->type == DATACARRIER_TYPE_PLEDGE);
         titleString = tr("Confirm send pledge coins");
         questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to send pledge?") + "</b></span>";
         break;
@@ -519,7 +520,7 @@ void SendCoinsDialog::on_sendButton_clicked()
                         arg("<b>" + QString::number(BindPlotterPayload::As(payload)->GetId()) + "</b>",
                             QString::number(bindLimitHeight),
                             QString::number(bindLimitHeight - nSpendHeight),
-                            QString::number((bindLimitHeight - nSpendHeight) * params.nPowTargetSpacing / 60)));
+                            QString::number((bindLimitHeight - nSpendHeight) * params.nPocTargetSpacing / 60)));
         }
     }
 

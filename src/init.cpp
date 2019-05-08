@@ -555,18 +555,20 @@ static void BlockNotifyCallback(bool initialSync, const CBlockIndex *pBlockIndex
     }
 }
 
-class CVerifyingBlocksTracer
+class CBlockChainInitTrace
 {
 public:
-    explicit CVerifyingBlocksTracer(const CBlockIndex *pBlockIndex) {
+    CBlockChainInitTrace(const std::string& title, const CBlockIndex* pBlockIndex) : strTitle(title), tick(0) {
         nStartHeight = pBlockIndex ? pBlockIndex->nHeight : chainActive.Height();
+        uiInterface.InitMessage(strTitle);
         uiInterface.NotifyBlockTip.connect(boost::bind(BlockTipChanged, this, _1, _2));
     }
-    ~CVerifyingBlocksTracer() {
+    ~CBlockChainInitTrace() {
         uiInterface.NotifyBlockTip.disconnect(boost::bind(BlockTipChanged, this, _1, _2));
     }
 
-    static void BlockTipChanged(CVerifyingBlocksTracer *tracer, bool initialSync, const CBlockIndex *pBlockIndex) {
+    static void BlockTipChanged(CBlockChainInitTrace *tracer, bool initialSync, const CBlockIndex *pBlockIndex) {
+        static const std::string ticks[] = {"   ", ".  ", ".. ","..."};
         if (!pBlockIndex || pBlockIndex->nHeight % 10 != 0)
             return;
 
@@ -576,20 +578,24 @@ public:
         int startMiningHeight = Params().GetConsensus().BHDIP001StartMingingHeight;
         if (pBlockIndex->nHeight < startMiningHeight) {
             if (pBlockIndex->nHeight >= tracer->nStartHeight && startMiningHeight > tracer->nStartHeight)
-                uiInterface.ShowProgress(_("Verifying blocks..."), std::min(1, std::max(1, (int) (50 * (pBlockIndex->nHeight - tracer->nStartHeight) / (startMiningHeight - tracer->nStartHeight)))), false);
+                uiInterface.ShowProgress(tracer->strTitle + ticks[(++tracer->tick) % 4],
+                    std::min(1, std::max(1, (int) (50 * (pBlockIndex->nHeight - tracer->nStartHeight) / (startMiningHeight - tracer->nStartHeight)))), false);
         } else {
             const CBlockIndex *pBeginBlockIndex = chainActive[tracer->nStartHeight];
             if (pBeginBlockIndex) {
                 int64_t blockTimestep = pBlockIndex->GetBlockTime() - pBeginBlockIndex->GetBlockTime();
                 int64_t requireTimestep = GetTime() - pBeginBlockIndex->GetBlockTime();
                 if (blockTimestep >= 0 && requireTimestep > 0)
-                    uiInterface.ShowProgress(_("Verifying blocks..."), 50 + std::min(50, (int) (50 * blockTimestep / requireTimestep)), false);
+                    uiInterface.ShowProgress(tracer->strTitle + ticks[(++tracer->tick) % 4],
+                        50 + std::min(50, (int) (50 * blockTimestep / requireTimestep)), false);
             }
         }
     }
 
 private:
+    const std::string strTitle;
     int64_t nStartHeight;
+    int tick;
 };
 
 static bool fHaveGenesis = false;
@@ -1529,7 +1535,8 @@ bool AppInitMain()
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                if (!pcoinsdbview->Upgrade()) {
+                bool fCoinDBUpgraded = false;
+                if (!pcoinsdbview->Upgrade(fCoinDBUpgraded)) {
                     strLoadError = _("Error upgrading chainstate database");
                     break;
                 }
@@ -1551,6 +1558,27 @@ bool AppInitMain()
                         break;
                     }
                     assert(chainActive.Tip() != nullptr);
+
+                    // Upgrade UTXO after reconnect block
+                    if (fCoinDBUpgraded && chainActive.Height() >= chainparams.GetConsensus().BHDIP007Height) {
+                        CBlockChainInitTrace upgradeTracer(_("Upgrading UTXO database"), chainActive.Tip());
+
+                        CValidationState state;
+                        {
+                            LOCK(cs_main);
+                            CBlockIndex *pindex = chainActive[chainparams.GetConsensus().BHDIP007Height];
+                            InvalidateBlock(state, chainparams, pindex);
+                            if (state.IsValid())
+                                ResetBlockFailureFlags(pindex);
+                        }
+                        if (state.IsValid())
+                            ActivateBestChain(state, chainparams);
+                        if (!state.IsValid()) {
+                            LogPrintf("%s: %s\n", __func__, FormatStateMessage(state));
+                            strLoadError = _("Error upgrading chainstate database");
+                            break;
+                        }
+                    }
                 }
 
                 if (!fReset) {
@@ -1567,8 +1595,7 @@ bool AppInitMain()
                 if (!is_coinsview_empty) {
                     uiInterface.InitMessage(_("Verifying blocks..."));
                     if (fHavePruned && gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS) > MIN_BLOCKS_TO_KEEP) {
-                        LogPrintf("Prune: pruned datadir may not have more than %d blocks; only checking available blocks",
-                            MIN_BLOCKS_TO_KEEP);
+                        LogPrintf("Prune: pruned datadir may not have more than %d blocks; only checking available blocks", MIN_BLOCKS_TO_KEEP);
                     }
 
                     // Verify checkpoints
@@ -1605,13 +1632,10 @@ bool AppInitMain()
                             }
                         }
 
-                        // Trace verify progress
-                        CVerifyingBlocksTracer tracer(pBeginResetIndex);
+                        CBlockChainInitTrace verifyBlockTracer(_("Verifying blocks..."), pBeginResetIndex);
 
                         // Reset after block fail flags
                         if (pBeginResetIndex) {
-                            uiInterface.InitMessage(_("Verifying blocks..."));
-
                             {
                                 LOCK(cs_main);
                                 ResetBlockFailureFlags(pBeginResetIndex);
@@ -1629,7 +1653,6 @@ bool AppInitMain()
                         for (auto it = mapCheckpoints.cbegin(); it != mapCheckpoints.cend() && it->first <= chainActive.Height();) {
                             CBlockIndex *pindex = chainActive[it->first];
                             if (*(pindex->phashBlock) != it->second) {
-                                uiInterface.InitMessage(_("Rewinding blocks..."));
                                 // Invalid
                                 CValidationState state;
                                 {
@@ -1643,8 +1666,9 @@ bool AppInitMain()
                                     strLoadError = _("Error initializing block database");
                                     break;
                                 }
-                            } else
+                            } else {
                                 it++;
+                            }
                         }
                         if (!strLoadError.empty())
                             break; // Got error
@@ -1663,8 +1687,8 @@ bool AppInitMain()
                         }
                     }
 
-                    if (!CVerifyDB().VerifyDB(chainparams, pcoinsTip.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
-                                  gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
+                    if (!CVerifyDB().VerifyDB(chainparams, pcoinsTip.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL), 
+                            gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
                         strLoadError = _("Corrupted block database detected");
                         break;
                     }

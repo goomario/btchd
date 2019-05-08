@@ -212,7 +212,7 @@ enum DatacarrierType : unsigned int {
     //! See https://btchd.org/wiki/datacarrier/bind-plotter
     DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
     //! See https://btchd.org/wiki/datacarrier/pledge-loan
-    DATACARRIER_TYPE_PLEDGELOAN  = 0x00000011,
+    DATACARRIER_TYPE_PLEDGE      = 0x00000011,
     //! See https://btchd.org/wiki/datacarrier/contract
     DATACARRIER_TYPE_CONTRACT    = 0x00000012,
     //! See https://btchd.org/wiki/datacarrier/text
@@ -249,17 +249,17 @@ struct BindPlotterPayload : public DatacarrierPayload
 /** For pledge loan */
 struct PledgeLoanPayload : public DatacarrierPayload
 {
-    PledgeLoanPayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGELOAN) {}
+    PledgeLoanPayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGE) {}
     const CAccountID& GetDebitAccountID() const;
     CScriptID scriptID;
 
     // Checkable cast for CDatacarrierPayloadRef
     static PledgeLoanPayload * As(CDatacarrierPayloadRef &ref) {
-        assert(ref->type == DATACARRIER_TYPE_PLEDGELOAN);
+        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
         return (PledgeLoanPayload*) ref.get();
     }
     static const PledgeLoanPayload * As(const CDatacarrierPayloadRef &ref) {
-        assert(ref->type == DATACARRIER_TYPE_PLEDGELOAN);
+        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
         return (const PledgeLoanPayload*) ref.get();
     }
 };

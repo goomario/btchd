@@ -908,9 +908,9 @@ void RPCConsole::updatePledge()
             // Primary address total balance
             CAmount balance;
             {
-                CAmount pledgeLoanBalance = 0, pledgeDebitBalance = 0;
-                balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &pledgeLoanBalance, &pledgeDebitBalance);
-                balance = balance - pledgeLoanBalance + pledgeDebitBalance;
+                CAmount balancePledgeLoan = 0, balancePledgeDebit = 0;
+                balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &balancePledgeLoan, &balancePledgeDebit);
+                balance = balance - balancePledgeLoan + balancePledgeDebit;
             }
             ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
@@ -931,12 +931,10 @@ void RPCConsole::updatePledge()
                     existPlotterId.insert(block.nPlotterId);
                 }
             } else {
-                std::set<uint64_t> plotters;
-                pcoinsTip->GetAccountBindPlotters(accountID, plotters);
-                for (const uint64_t &id : plotters) {
+                for (const uint64_t& plotterId : pcoinsTip->GetAccountBindPlotters(accountID)) {
                     if (!strBindPlotters.isEmpty())
                         strBindPlotters += ",";
-                    strBindPlotters += QString::number(id);
+                    strBindPlotters += QString::number(plotterId);
                 }
             }
             bool fMiningEnabled = !strBindPlotters.isEmpty();

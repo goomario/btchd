@@ -11,6 +11,7 @@
 
 #include <base58.h>
 #include <consensus/consensus.h>
+#include <consensus/tx_verify.h>
 #include <validation.h>
 #include <script/script.h>
 #include <timedata.h>
@@ -76,11 +77,11 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Withdrawn") + " (" + FormatTxStatus(wtx) + ")";
     }
-    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Disabled)
+    else if (rec->type == TransactionRecord::BindPlotter && (rec->status.status & TransactionStatus::Disabled))
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Unbinded Plotter ID") + " (" + FormatTxStatus(wtx) + ")";
     }
-    else if (rec->type == TransactionRecord::BindPlotter && rec->status.status == TransactionStatus::Inactived)
+    else if (rec->type == TransactionRecord::BindPlotter && (rec->status.status & TransactionStatus::Inactived))
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("This binding has been unable to mine") + " (" + FormatTxStatus(wtx) + ")";
     }
@@ -321,15 +322,14 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         if (IsValidPlotterID(wtx.mapValue["plotter_id"], &plotterId)) {
             const COutPoint coinEntry(wtx.tx->GetHash(), 0);
             const Coin &bindCoin = pcoinsTip->AccessCoin(coinEntry);
-            if (!bindCoin.IsSpent() && bindCoin.extraData && bindCoin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                const Coin &activeBindCoin = SelfRefActiveBindCoin(*pcoinsTip, bindCoin, coinEntry);
+            if (!bindCoin.IsSpent() && bindCoin.IsBindPlotter()) {
                 int nSpendHeight = GetSpendHeight(*pcoinsTip);
-                int activeHeight = GetUnbindPlotterLimitHeight(nSpendHeight, bindCoin, activeBindCoin, Params().GetConsensus());
+                int activeHeight = Consensus::GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(coinEntry, bindCoin), *pcoinsTip, Params().GetConsensus());
                 if (nSpendHeight < activeHeight) {
                     strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                             arg(QString::number(activeHeight),
                                                 QString::number(activeHeight - nSpendHeight),
-                                                QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPowTargetSpacing / 60));
+                                                QString::number((activeHeight - nSpendHeight) * Params().GetConsensus().nPocTargetSpacing / 60));
                 }
             }
         }

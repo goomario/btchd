@@ -13,6 +13,7 @@
 #include <primitives/transaction.h>
 
 class CBlockIndex;
+class CBindPlotterInfo;
 class CCoinsViewCache;
 class CValidationState;
 
@@ -31,7 +32,12 @@ struct Params;
  * Preconditions: tx.IsCoinBase() is false.
  */
 bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID &minerAccountID, const Consensus::Params& params);
+    int nSpendHeight, CAmount& txfee, const CAccountID &minerAccountID, const Params& params);
+
+/** Get bind/unbind plotter transaction lock height. */
+int GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Params& params);
+int GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& bindInfo, const CCoinsViewCache& inputs, const Params& params);
+
 } // namespace Consensus
 
 /** Auxiliary functions for transaction validation (ideally should not be exposed) */

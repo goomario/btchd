@@ -4,16 +4,14 @@
 
 #include <consensus/tx_verify.h>
 
+#include <chain.h>
+#include <coins.h>
 #include <consensus/consensus.h>
 #include <consensus/params.h>
+#include <consensus/validation.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <script/script.h>
-#include <consensus/validation.h>
-
-// TODO remove the following dependencies
-#include <chain.h>
-#include <coins.h>
 #include <utilmoneystr.h>
 #include <validation.h>
 
@@ -270,54 +268,50 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
     // Check for bind plotter fee and unbind plotter limit
     if (tx.IsUniform() && nSpendHeight >= params.BHDIP006CheckRelayHeight) {
-        // Unbind plotter
         if (tx.vin.size() == 1 && tx.vout.size() == 1) {
+            // Unbind & Withdraw
             const Coin& coin = inputs.AccessCoin(tx.vin[0].prevout);
+            if (!coin.extraData && nSpendHeight >= params.BHDIP007Height)
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-invaliduniform-unlock");
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 if (nSpendHeight < params.BHDIP006LimitBindPlotterHeight) {
                     // Delay check. Old consensus flexiable 6 blocks active check
-                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, coin, coin /* Don't care */, params)) {
+                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
-                    }
                 } else {
                     // Strict check
-                    const Coin &activeBindCoin = SelfRefActiveBindCoin(prevInputs, coin, tx.vin[0].prevout);
-                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, coin, activeBindCoin, params)) {
+                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
                         return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
-                    }
                 }
             }
-        }
-
-        // Bind plotter
-        if (tx.vout.size() >= 2 && tx.vout.size() <= 3) {
+        } else {
+            // Bind & Pledge
             CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nSpendHeight);
-            if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
+            if (nSpendHeight >= params.BHDIP007Height && !payload)
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-invaliduniform-type");
+
+            // Bind plotter
+            if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER && nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
                 // Low fee
-                //! Bug. old consensus skip check bind tx fee when vin more then 1, but fixed on BHDIP006LimitBindPlotterHeight
-                if ((tx.vin.size() == 1 || nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) && txfee_aux < PROTOCOL_BINDPLOTTER_MINFEE)
-                    return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-lowfee");
+                if (txfee_aux < PROTOCOL_BINDPLOTTER_MINFEE)
+                    return state.DoS(100, false, REJECT_INVALID, "bad-bindplotter-lowfee");
 
-                // Bind limit
-                if (nSpendHeight >= params.BHDIP006LimitBindPlotterHeight) {
-                    // Limit bind
-                    const Coin &coin = prevInputs.GetActiveBindPlotterCoin(BindPlotterPayload::As(payload)->GetId());
-                    if (!coin.IsSpent()) {
-                        // Forbidden mined self change active bind
-                        if (minerAccountID != 0 && minerAccountID == GetAccountIDByScriptPubKey(tx.vout[0].scriptPubKey))
-                            return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-selfmined");
+                // Limit bind by last
+                const CBindPlotterInfo lastBindInfo = prevInputs.GetLastBindPlotterInfo(BindPlotterPayload::As(payload)->GetId());
+                if (!lastBindInfo.outpoint.IsNull()) {
+                    // Forbidden self-packaging change active bind tx
+                    if (lastBindInfo.valid && minerAccountID != 0 && minerAccountID == GetAccountIDByScriptPubKey(tx.vout[0].scriptPubKey))
+                        return state.DoS(100, false, REJECT_INVALID, "bad-bindplotter-selfpackaging");
 
-                        if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, coin, params)) {
-                            // Change bind require high transaction fee. Diff reward between full pledge and low pledge reward.
-                            // Example transaction fee require 16.25BHD.
-                            // See https://btchd.org/wiki/pledge-cheat#bind-unbind-plotter
-                            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
-                            if (txfee_aux < diffReward + PROTOCOL_BINDPLOTTER_MINFEE)
-                                return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-limitlowfee");
+                    if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params)) {
+                        // Change bind require high transaction fee. Diff reward between full-pledge and low-pledge.
+                        // 23.75 - 7.5 = 16.25
+                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+                        if (txfee_aux < diffReward + PROTOCOL_BINDPLOTTER_MINFEE)
+                            return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-limitlowfee");
 
-                            // Only pay small transaction fee to miner. Other fee to black hole
-                            txfee_aux -= diffReward;
-                        }
+                        // Only pay small transaction fee to miner. Other fee to black hole
+                        txfee_aux -= diffReward;
                     }
                 }
             }
@@ -326,4 +320,109 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
     txfee = txfee_aux;
     return true;
+}
+
+int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Consensus::Params& params)
+{
+    assert(!lastBindInfo.outpoint.IsNull() && lastBindInfo.nHeight >= 0);
+    assert(nSpentHeight > lastBindInfo.nHeight);
+
+    // Spent coin unlimit
+    if (!lastBindInfo.valid)
+        return lastBindInfo.nHeight + 1;
+
+    if (nSpentHeight < params.BHDIP006LimitBindPlotterHeight)
+        return std::max(params.BHDIP006Height, lastBindInfo.nHeight + 1);
+
+    // Current height overflow <EvalWindow>
+    if (nSpentHeight >= lastBindInfo.nHeight + params.nCapacityEvalWindow)
+        return lastBindInfo.nHeight + params.nCapacityEvalWindow;
+
+    // Checking range [nEvalBeginHeight, nEvalEndHeight]
+    const int nEvalBeginHeight = std::max(nSpentHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
+    const int nEvalEndHeight = nSpentHeight - 1;
+
+    // Mined block in <EvalWindow>, next block unlimit
+    for (int nHeight = nEvalBeginHeight; nHeight <= nEvalEndHeight; nHeight++) {
+        if (chainActive[nHeight]->nPlotterId == lastBindInfo.plotterId)
+            return std::max(nHeight, lastBindInfo.nHeight) + 1;
+    }
+
+    // Participator mined after bind require lock <EvalWindow>
+    const int nEndHeight = std::min(lastBindInfo.nHeight + params.nCapacityEvalWindow, nEvalEndHeight);
+    for (int nHeight = lastBindInfo.nHeight; nHeight <= nEndHeight; nHeight++) {
+        if (chainActive[nHeight]->minerAccountID == lastBindInfo.accountID)
+            return lastBindInfo.nHeight + params.nCapacityEvalWindow;
+    }
+
+    return lastBindInfo.nHeight + 1;
+}
+
+int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& bindInfo, const CCoinsViewCache& inputs, const Consensus::Params& params)
+{
+    assert(!bindInfo.outpoint.IsNull() && bindInfo.valid && bindInfo.nHeight >= 0);
+    assert(nSpentHeight > bindInfo.nHeight);
+
+    if (nSpentHeight < params.BHDIP006CheckRelayHeight)
+        return std::max(params.BHDIP006Height, bindInfo.nHeight + 1);
+
+    // Checking range [nEvalBeginHeight, nEvalEndHeight]
+    int nEvalBeginHeight = std::max(nSpentHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
+    int nEvalEndHeight = nSpentHeight - 1;
+
+    // 2.5%, Large capacity unlimit
+    for (int height = nEvalBeginHeight + 1, nMinedBlockCount = 0; height <= nEvalEndHeight; height++) {
+        if (chainActive[height]->nPlotterId == bindInfo.plotterId) {
+            if (++nMinedBlockCount > params.nCapacityEvalWindow / 40)
+                return std::min(height, bindInfo.nHeight + params.nCapacityEvalWindow);
+        }
+    }
+
+    if (nSpentHeight < params.BHDIP006LimitBindPlotterHeight) {
+        //! Issues: Infinitely +<EvalWindow> when mine to any address
+        // Delay unbind EvalWindow blocks when mined block
+        for (int nHeight = nEvalEndHeight; nHeight > nEvalBeginHeight; nHeight--) {
+            if (chainActive[nHeight]->nPlotterId == bindInfo.plotterId)
+                return nHeight + params.nCapacityEvalWindow;
+        }
+    } else if (nSpentHeight < params.BHDIP007Height) {
+        //! Issues: Infinitely +<EvalWindow>
+        const CBindPlotterInfo activeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo, true);
+        assert(!activeBindInfo.outpoint.IsNull() && activeBindInfo.valid && activeBindInfo.nHeight >= 0);
+        assert(activeBindInfo.nHeight >= bindInfo.nHeight);
+
+        const int nParticipateMiningBeginHeight = std::max(nEvalBeginHeight, bindInfo.nHeight);
+        const int nParticipateMiningEndHeight = (bindInfo.outpoint == activeBindInfo.outpoint) ? nEvalEndHeight : activeBindInfo.nHeight;
+
+        // Last mining in current wallet will lock +<EvalWindow>
+        for (int nHeight = nParticipateMiningEndHeight; nHeight >= nParticipateMiningBeginHeight; nHeight--) {
+            CBlockIndex *pindex = chainActive[nHeight];
+            if (pindex->minerAccountID == bindInfo.accountID && pindex->nPlotterId == bindInfo.plotterId)
+                return nHeight + params.nCapacityEvalWindow;
+        }
+
+        // Participate mining lock <EvalWindow>
+        for (int nHeight = nParticipateMiningEndHeight; nHeight >= nParticipateMiningBeginHeight; nHeight--) {
+            if (chainActive[nHeight]->minerAccountID == bindInfo.accountID)
+                return bindInfo.nHeight + params.nCapacityEvalWindow;
+        }
+    } else {
+        // Participate mining lock <EvalWindow>
+        if (nSpentHeight >= bindInfo.nHeight + params.nCapacityEvalWindow)
+            return bindInfo.nHeight + params.nCapacityEvalWindow;
+
+        const CBindPlotterInfo changeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo);
+        assert(!changeBindInfo.outpoint.IsNull() && changeBindInfo.nHeight >= 0);
+        assert(changeBindInfo.nHeight >= bindInfo.nHeight);
+        assert(nSpentHeight > changeBindInfo.nHeight);
+
+        const int nParticipateMiningBeginHeight = bindInfo.nHeight;
+        const int nParticipateMiningEndHeight = (bindInfo.outpoint == changeBindInfo.outpoint) ? nEvalEndHeight : changeBindInfo.nHeight;
+        for (int nHeight = nParticipateMiningBeginHeight; nHeight <= nParticipateMiningEndHeight; nHeight++) {
+            if (chainActive[nHeight]->minerAccountID == bindInfo.accountID)
+                return bindInfo.nHeight + params.nCapacityEvalWindow;
+        }
+    }
+
+    return bindInfo.nHeight + 1;
 }

@@ -38,7 +38,7 @@ public:
             ::Serialize(s, VARINT((unsigned int&)txout->extraData->type));
             if (txout->extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
-            } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGELOAN) {
+            } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGE) {
                 ::Serialize(s, REF(PledgeLoanPayload::As(txout->extraData)->scriptID));
             } else
                 assert(false);
@@ -76,7 +76,7 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 txout->extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
-            } else if (extraDataType == DATACARRIER_TYPE_PLEDGELOAN) {
+            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
                 txout->extraData = std::make_shared<PledgeLoanPayload>();
                 ::Unserialize(s, REF(PledgeLoanPayload::As(txout->extraData)->scriptID));
             } else

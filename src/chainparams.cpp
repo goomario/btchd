@@ -94,12 +94,12 @@ public:
         };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 420000; // About 4 years
-        consensus.nCapacityEvalWindow = 2016; // About a week
-        consensus.fPocAllowMinDifficultyBlocks = false;
-        consensus.nPowTargetSpacing = 5 * 60; // 5 minutes
-        consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
-        consensus.nMinerConfirmationWindow = 2016;
+        consensus.nSubsidyHalvingInterval        = 420000; // About 4 years
+        consensus.nCapacityEvalWindow            = 2016;   // About 1 week
+        consensus.fPocAllowMinDifficultyBlocks   = false;  // For test
+        consensus.nPocTargetSpacing              = 300;    // 5 minutes
+        consensus.nRuleChangeActivationThreshold = 1916;   // 95% of 2016
+        consensus.nMinerConfirmationWindow       = 2016;   // About 1 week
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
@@ -107,8 +107,8 @@ public:
         consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.BHDIP001StartMingingHeight            = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
-        consensus.BHDIP001FundRoyaltyPercent            = 5; // 5% to fund
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70% to fund
+        consensus.BHDIP001FundRoyaltyPercent            = 5;     // 5% to fund
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70;    // 70% to fund
         consensus.BHDIP001NoPledgeHeight                = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
         consensus.BHDIP001PledgeRatio                   = 3 * COIN;
 
@@ -120,9 +120,9 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 133000; // Bind and unbind plotter limit. Active on Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006LimitBindPlotterHeight  = 134650; // Bind plotter limit. Active on Tue, 21 Jan 2019 9:00:00 GMT
 
-        consensus.BHDIP007Height          = 1600000; // NOT SURE ACTIVATE TIME
-        consensus.BHDIP007SmoothEndHeight = consensus.BHDIP007Height + 4 * consensus.nCapacityEvalWindow; // Smooth decrease base target from BHD_BASE_TARGET_240 to BHD_BASE_TARGET
-        consensus.BHDIP007DynPledgeStage  = 1500 * 1024; // 1500PB
+        consensus.BHDIP007Height           = 168000; // NOT SURE ACTIVATE TIME
+        consensus.BHDIP007SmoothEndHeight  = consensus.BHDIP007Height + 2 * consensus.nCapacityEvalWindow; // Smooth BHD_BASE_TARGET_240 to BHD_BASE_TARGET
+        consensus.BHDIP007PledgeRatioStage = 1250 * 1024; // 1250 PB
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -278,7 +278,10 @@ public:
                 { 160000, uint256S("0x5e359da309f92e13112d6dcdf653a4d7bc67734c8aee09baf70a239bb653984c") },
                 { 161000, uint256S("0x9694de8534853aece5402104c7f4933ee2950b151d343f3b0434994baa45ea9c") },
                 { 162000, uint256S("0x4e7c05d21667baae77f1a0aeb41bf7cbedbd6c8fc32c73fffd338ef57b86adfb") },
-                { 162700, uint256S("0x319dbaaba90674037a043f239da960896cf5d5148b1c1513d2def6b97dde86e3") },
+                { 163000, uint256S("0x85ddcb018897dc5aa1110a4b4e2ead2357779d9eb1be5d290bbda30abc60dff8") },
+                { 164000, uint256S("0x4e7ac62f3e8d095f40fb02432f06ba80d61a6291407ff9e52ffdc65b92611ef0") },
+                { 165000, uint256S("0x0e99ae0aa9a45eb9fb28aef672f9b51787fe7bde6fe59b9aaa3d186e0f27f556") },
+                { 165400, uint256S("0x6bf2a050af1331ad664d76172e1db123800f2d899f30a5b35ac4752e24ad8a61") },
             }
         };
 
@@ -304,12 +307,12 @@ public:
         consensus.BHDFundAddressPool = { "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw" };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 420000;
-        consensus.nCapacityEvalWindow = 2016;
-        consensus.fPocAllowMinDifficultyBlocks = false;
-        consensus.nPowTargetSpacing = 5 * 60;
+        consensus.nSubsidyHalvingInterval        = 420000;
+        consensus.nCapacityEvalWindow            = 2016;
+        consensus.fPocAllowMinDifficultyBlocks   = false;
+        consensus.nPocTargetSpacing              = 300;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
-        consensus.nMinerConfirmationWindow = 2016;
+        consensus.nMinerConfirmationWindow       = 2016;
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
@@ -317,8 +320,8 @@ public:
         consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.BHDIP001StartMingingHeight            = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
-        consensus.BHDIP001FundRoyaltyPercent            = 5; // 5%
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
+        consensus.BHDIP001FundRoyaltyPercent            = 5;    // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70;   // 70%
         consensus.BHDIP001NoPledgeHeight                = 12400;
         consensus.BHDIP001PledgeRatio                   = 3 * COIN;
 
@@ -330,9 +333,9 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 45328;
         consensus.BHDIP006LimitBindPlotterHeight  = 48790;
 
-        consensus.BHDIP007Height          = 72550;
-        consensus.BHDIP007SmoothEndHeight = 76582; // BHD_BASE_TARGET_240 -> BHD_BASE_TARGET
-        consensus.BHDIP007DynPledgeStage  = 10;
+        consensus.BHDIP007Height           = 72550;
+        consensus.BHDIP007SmoothEndHeight  = 76582; // BHD_BASE_TARGET_240 -> BHD_BASE_TARGET
+        consensus.BHDIP007PledgeRatioStage = 10;
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -488,12 +491,12 @@ public:
         consensus.BHDFundAddressPool = { "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy" };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval = 300;
-        consensus.nCapacityEvalWindow = 144;
-        consensus.fPocAllowMinDifficultyBlocks = true;
-        consensus.nPowTargetSpacing = 5 * 60;
+        consensus.nSubsidyHalvingInterval        = 300;
+        consensus.nCapacityEvalWindow            = 144;
+        consensus.fPocAllowMinDifficultyBlocks   = true;
+        consensus.nPocTargetSpacing              = 300;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
-        consensus.nMinerConfirmationWindow = 144;
+        consensus.nMinerConfirmationWindow       = 144;
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
@@ -501,7 +504,7 @@ public:
         consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.BHDIP001StartMingingHeight            = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
-        consensus.BHDIP001FundRoyaltyPercent            = 5; // 5%
+        consensus.BHDIP001FundRoyaltyPercent            = 5;  // 5%
         consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
         consensus.BHDIP001NoPledgeHeight                = 94;
         consensus.BHDIP001PledgeRatio                   = 3 * COIN;
@@ -514,9 +517,9 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 488;
         consensus.BHDIP006LimitBindPlotterHeight  = 493;
 
-        consensus.BHDIP007Height          = 550;
-        consensus.BHDIP007SmoothEndHeight = 586;
-        consensus.BHDIP007DynPledgeStage  = 10240;
+        consensus.BHDIP007Height           = 550;
+        consensus.BHDIP007SmoothEndHeight  = 586;
+        consensus.BHDIP007PledgeRatioStage = 10 * 1024;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

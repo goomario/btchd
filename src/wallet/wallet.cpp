@@ -1086,7 +1086,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
-        } else if (payload->type == DATACARRIER_TYPE_PLEDGELOAN) {
+        } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "pledge";
@@ -1192,7 +1192,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
                         fRelevantToMe = (type == "bindplotter" || type == "pledge");
                     }
                 }
-            } else if (payload->type == DATACARRIER_TYPE_PLEDGELOAN) {
+            } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
                 // Pledge to me
                 fRelevantToMe = ::IsMine(*this, PledgeLoanPayload::As(payload)->scriptID) != 0;
             }

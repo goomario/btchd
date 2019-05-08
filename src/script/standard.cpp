@@ -491,7 +491,7 @@ CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
     if (scriptID != nullptr) {
         script << OP_RETURN;
-        script << ToByteVector(DATACARRIER_TYPE_PLEDGELOAN);
+        script << ToByteVector(DATACARRIER_TYPE_PLEDGE);
         script << ToByteVector(*scriptID);
     }
 
@@ -564,7 +564,7 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
         payload->id = plotterId;
         return payload;
-    } else if (type == DATACARRIER_TYPE_PLEDGELOAN) {
+    } else if (type == DATACARRIER_TYPE_PLEDGE) {
         // Plege transaction
         if (tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != PROTOCOL_PLEDGELOAN_SCRIPTSIZE)
             return nullptr;

@@ -92,11 +92,11 @@ struct Params {
     /** Block height at which BHDIP007 becomes active */
     int BHDIP007Height;
     int BHDIP007SmoothEndHeight;
-    int BHDIP007DynPledgeStage;
+    int BHDIP007PledgeRatioStage;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
-     * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
+     * (nPocTargetTimespan / nPocTargetSpacing) which is also used for BIP9 deployments.
      * Examples: 1916 for 95%, 1512 for testchains.
      */
     int nRuleChangeActivationThreshold;
@@ -105,7 +105,7 @@ struct Params {
 
     /** Proof of Capacity parameters */
     bool fPocAllowMinDifficultyBlocks;
-    int64_t nPowTargetSpacing;
+    int64_t nPocTargetSpacing;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 };
