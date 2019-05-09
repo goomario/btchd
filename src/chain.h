@@ -206,8 +206,8 @@ public:
     //! Verification status of this block. See enum BlockStatus
     uint32_t nStatus;
 
-    //! Miner account ID. From P2SH destination 8 bytes
-    CAccountID minerAccountID;
+    //! The geneartor from P2SH destination
+    CAccountID160 generator;
 
     //! block header
     int32_t nVersion;
@@ -245,7 +245,7 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
-        minerAccountID = 0;
+        generator.SetNull();
         nSequenceId = 0;
         nTimeMax = 0;
         generationSignature = nullptr;
@@ -383,8 +383,13 @@ public:
     CBlockIndex* GetAncestor(int height);
     const CBlockIndex* GetAncestor(int height) const;
 
-    //! Build generation signature
-    void BuildGenerationSignature(const Consensus::Params& params);
+    //! Update block index
+    void Update(const Consensus::Params& params);
+
+    const CAccountID160& GetGenerator() const
+    {
+        return generator;
+    }
 
     const uint256& GetGenerationSignature() const
     {
@@ -431,7 +436,7 @@ public:
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
-        READWRITE(VARINT(minerAccountID));
+        READWRITE(VARINT(*reinterpret_cast<uint64_t*>(generator.begin())));
         if (nStatus & (BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO))
             READWRITE(VARINT(nFile));
         if (nStatus & BLOCK_HAVE_DATA)

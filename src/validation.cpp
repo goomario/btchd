@@ -2980,7 +2980,7 @@ CBlockIndex* CChainState::AddToBlockIndex(const CBlockHeader& block)
     pindexNew->RaiseValidity(BLOCK_VALID_TREE);
     if (pindexBestHeader == nullptr || pindexBestHeader->nChainWork < pindexNew->nChainWork)
         pindexBestHeader = pindexNew;
-    pindexNew->BuildGenerationSignature(Params().GetConsensus());
+    pindexNew->Update(Params().GetConsensus());
 
     setDirtyBlockIndex.insert(pindexNew);
 
@@ -4058,7 +4058,7 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
             pindex->BuildSkip();
         if (pindex->IsValid(BLOCK_VALID_TREE) && (pindexBestHeader == nullptr || CBlockIndexWorkComparator()(pindexBestHeader, pindex)))
             pindexBestHeader = pindex;
-        pindex->BuildGenerationSignature(consensus_params);
+        pindex->Update(consensus_params);
     }
 
     return true;
