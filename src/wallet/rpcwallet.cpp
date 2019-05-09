@@ -3957,7 +3957,7 @@ UniValue getpledge(const JSONRPCRequest& request)
             "Get mortage amount of wallet.\n"
             "\nArguments:\n"
             "1. plotterId       (string, optional) Plotter ID\n"
-            "2. verbose         (bool, optional, default=true) If true, return detail pledge\n"
+            "2. verbose         (bool, optional, default=false) If true, return detail pledge\n"
             "\nResult:\n"
             "[\n"
             "  {\n"
@@ -3986,7 +3986,7 @@ UniValue getpledge(const JSONRPCRequest& request)
     if (!request.params[0].isNull() && (!request.params[0].isStr() || !IsValidPlotterID(request.params[0].get_str(), &nPlotterId)))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
 
-    bool fVerbose = true;
+    bool fVerbose = false;
     if (!request.params[1].isNull()) {
         fVerbose = request.params[1].isNum() ? (request.params[1].get_int() != 0) : request.params[1].get_bool();
     }
