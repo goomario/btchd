@@ -475,7 +475,7 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-printpriority", strprintf("Log transaction fee per kB when mining blocks (default: %u)", DEFAULT_PRINTPRIORITY));
     }
     strUsage += HelpMessageOpt("-shrinkdebugfile", _("Shrink debug.log file on client startup (default: 1 when no -debug)"));
-    strUsage += HelpMessageOpt("-miningsign", _("Import private key for block generation signature"));
+    strUsage += HelpMessageOpt("-signprivkey", _("Import private key for block generation signature"));
 
     AppendParamsHelpMessages(strUsage, showDebug);
 
@@ -558,7 +558,7 @@ static void BlockNotifyCallback(bool initialSync, const CBlockIndex *pBlockIndex
 class CBlockChainInitTrace
 {
 public:
-    CBlockChainInitTrace(const std::string& title, const CBlockIndex* pBlockIndex) : strTitle(title), tick(0) {
+    CBlockChainInitTrace(const std::string& title, const CBlockIndex* pBlockIndex) : strTitle(title), prevTickTime(GetTime()), tick(0) {
         nStartHeight = pBlockIndex ? pBlockIndex->nHeight : chainActive.Height();
         uiInterface.InitMessage(strTitle);
         uiInterface.NotifyBlockTip.connect(boost::bind(BlockTipChanged, this, _1, _2));
@@ -577,24 +577,38 @@ public:
 
         int startMiningHeight = Params().GetConsensus().BHDIP001StartMingingHeight;
         if (pBlockIndex->nHeight < startMiningHeight) {
-            if (pBlockIndex->nHeight >= tracer->nStartHeight && startMiningHeight > tracer->nStartHeight)
-                uiInterface.ShowProgress(tracer->strTitle + ticks[(++tracer->tick) % 4],
+            if (pBlockIndex->nHeight >= tracer->nStartHeight && startMiningHeight > tracer->nStartHeight) {
+                tracer->NextTick(4);
+                uiInterface.ShowProgress(tracer->strTitle + ticks[tracer->tick],
                     std::min(1, std::max(1, (int) (50 * (pBlockIndex->nHeight - tracer->nStartHeight) / (startMiningHeight - tracer->nStartHeight)))), false);
+            }
         } else {
             const CBlockIndex *pBeginBlockIndex = chainActive[tracer->nStartHeight];
             if (pBeginBlockIndex) {
                 int64_t blockTimestep = pBlockIndex->GetBlockTime() - pBeginBlockIndex->GetBlockTime();
                 int64_t requireTimestep = GetTime() - pBeginBlockIndex->GetBlockTime();
-                if (blockTimestep >= 0 && requireTimestep > 0)
-                    uiInterface.ShowProgress(tracer->strTitle + ticks[(++tracer->tick) % 4],
+                if (blockTimestep >= 0 && requireTimestep > 0) {
+                    tracer->NextTick(4);
+                    uiInterface.ShowProgress(tracer->strTitle + ticks[tracer->tick],
                         50 + std::min(50, (int) (50 * blockTimestep / requireTimestep)), false);
+                }
             }
         }
     }
 
 private:
+    void NextTick(int m) {
+        int64_t now = GetTime();
+        if (now + 2 > prevTickTime) {
+            prevTickTime = now;
+            tick = (++tick) % m;
+        }
+    }
+
     const std::string strTitle;
     int64_t nStartHeight;
+
+    int64_t prevTickTime;
     int tick;
 };
 

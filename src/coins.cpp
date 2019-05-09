@@ -100,10 +100,14 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
         }
         fresh = !(it->second.flags & CCoinsCacheEntry::DIRTY);
     }
+    if (fresh && it->second.coin.IsBindPlotter())
+        fresh = false;
     it->second.coin = std::move(coin);
     it->second.coin.Refresh();
     it->second.flags |= CCoinsCacheEntry::DIRTY | (fresh ? CCoinsCacheEntry::FRESH : 0);
     it->second.flags &= ~CCoinsCacheEntry::UNBIND;
+    if (it->second.coin.IsBindPlotter())
+        it->second.flags &= ~CCoinsCacheEntry::FRESH;
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 }
 
@@ -140,12 +144,15 @@ bool CCoinsViewCache::SpendCoin(const COutPoint &outpoint, Coin* moveout, bool r
 
     if (!rollback && it->second.coin.IsBindPlotter() && it->second.coin.nHeight >= Params().GetConsensus().BHDIP007Height) {
         it->second.flags |= CCoinsCacheEntry::DIRTY | CCoinsCacheEntry::UNBIND;
+        it->second.flags &= ~CCoinsCacheEntry::FRESH;
         it->second.coin.Clear();
     } else if (it->second.flags & CCoinsCacheEntry::FRESH) {
         cacheCoins.erase(it);
     } else {
         it->second.flags |= CCoinsCacheEntry::DIRTY;
         it->second.flags &= ~CCoinsCacheEntry::UNBIND;
+        if (it->second.coin.IsBindPlotter())
+            it->second.flags &= ~CCoinsCacheEntry::FRESH;
         it->second.coin.Clear();
     }
     return true;
@@ -192,8 +199,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
         if (itUs == cacheCoins.end()) {
             // The parent cache does not have an entry, while the child does
             // We can ignore it if it's both FRESH and pruned in the child
-            if (!(it->second.flags & CCoinsCacheEntry::FRESH && it->second.coin.IsSpent()) ||
-                    (it->second.coin.IsBindPlotter() && !(it->second.flags & CCoinsCacheEntry::UNBIND))) {
+            if (!(it->second.flags & CCoinsCacheEntry::FRESH && it->second.coin.IsSpent())) {
                 // Otherwise we will need to create it in the parent
                 // and move the data up and mark it as dirty
                 CCoinsCacheEntry& entry = cacheCoins[it->first];
@@ -204,6 +210,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
                 // Otherwise it might have just been flushed from the parent's cache
                 // and already exist in the grandparent
                 if (it->second.flags & CCoinsCacheEntry::FRESH) {
+                    assert(!entry.coin.IsBindPlotter());
                     entry.flags |= CCoinsCacheEntry::FRESH;
                 }
                 // Sync UNBIND from child
@@ -211,13 +218,15 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
                     assert(entry.coin.IsSpent());
                     entry.flags |= CCoinsCacheEntry::UNBIND;
                 }
-                LogPrint(BCLog::COINDB, "%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) <Add new>\n", __func__,
-                    it->first.hash.ToString(), it->first.n,
-                    entry.coin.nHeight, entry.coin.IsSpent() ? 1 : 0, entry.flags, entry.coin.extraData ? entry.coin.extraData->type : 0);
+                if (LogAcceptCategory(BCLog::COINDB))
+                    LogPrintf("%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) <Add new>\n", __func__,
+                        it->first.hash.ToString(), it->first.n,
+                        entry.coin.nHeight, entry.coin.IsSpent() ? 1 : 0, entry.flags, entry.coin.extraData ? entry.coin.extraData->type : 0);
             } else {
-                LogPrint(BCLog::COINDB, "%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) <Discard>\n", __func__,
-                    it->first.hash.ToString(), it->first.n,
-                    it->second.coin.nHeight, it->second.coin.IsSpent() ? 1 : 0, it->second.flags, it->second.coin.extraData ? it->second.coin.extraData->type : 0);
+                if (LogAcceptCategory(BCLog::COINDB))
+                    LogPrintf("%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) <Discard>\n", __func__,
+                        it->first.hash.ToString(), it->first.n,
+                        it->second.coin.nHeight, it->second.coin.IsSpent() ? 1 : 0, it->second.flags, it->second.coin.extraData ? it->second.coin.extraData->type : 0);
             }
         } else {
             // Assert that the child cache entry was not marked FRESH if the
@@ -229,28 +238,32 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
             }
 
             // Found the entry in the parent cache
-            if ((itUs->second.flags & CCoinsCacheEntry::FRESH) && it->second.coin.IsSpent() &&
-                    !((it->second.coin.IsBindPlotter() && !(it->second.flags & CCoinsCacheEntry::UNBIND)))) {
-                LogPrint(BCLog::COINDB, "%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) => (height=%u spent=%d flags=%08x type=%08x) <Discard>\n", __func__,
-                    it->first.hash.ToString(), it->first.n,
-                    it->second.coin.nHeight, it->second.coin.IsSpent() ? 1 : 0, it->second.flags, it->second.coin.extraData ? it->second.coin.extraData->type : 0,
-                    itUs->second.coin.nHeight, itUs->second.coin.IsSpent() ? 1 : 0, itUs->second.flags, itUs->second.coin.extraData ? itUs->second.coin.extraData->type : 0);
+            if ((itUs->second.flags & CCoinsCacheEntry::FRESH) && it->second.coin.IsSpent() && !it->second.coin.IsBindPlotter()) {
+                if (LogAcceptCategory(BCLog::COINDB))
+                    LogPrintf("%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) => (height=%u spent=%d flags=%08x type=%08x) <Discard>\n", __func__,
+                        it->first.hash.ToString(), it->first.n,
+                        it->second.coin.nHeight, it->second.coin.IsSpent() ? 1 : 0, it->second.flags, it->second.coin.extraData ? it->second.coin.extraData->type : 0,
+                        itUs->second.coin.nHeight, itUs->second.coin.IsSpent() ? 1 : 0, itUs->second.flags, itUs->second.coin.extraData ? itUs->second.coin.extraData->type : 0);
                 // The grandparent does not have an entry, and the child is
                 // modified and being pruned. This means we can just delete
                 // it from the parent.
                 cachedCoinsUsage -= itUs->second.coin.DynamicMemoryUsage();
                 cacheCoins.erase(itUs);
             } else {
-                LogPrint(BCLog::COINDB, "%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) => (height=%u spent=%d flags=%08x type=%08x) <Merge>\n", __func__,
-                    it->first.hash.ToString(), it->first.n,
-                    it->second.coin.nHeight, it->second.coin.IsSpent() ? 1 : 0, it->second.flags, it->second.coin.extraData ? it->second.coin.extraData->type : 0,
-                    itUs->second.coin.nHeight, itUs->second.coin.IsSpent() ? 1 : 0, itUs->second.flags, itUs->second.coin.extraData ? itUs->second.coin.extraData->type : 0);
+                if (LogAcceptCategory(BCLog::COINDB))
+                    LogPrintf("%s: <%s,%3u> (height=%u spent=%d flags=%08x type=%08x) => (height=%u spent=%d flags=%08x type=%08x) <Merge>\n", __func__,
+                        it->first.hash.ToString(), it->first.n,
+                        it->second.coin.nHeight, it->second.coin.IsSpent() ? 1 : 0, it->second.flags, it->second.coin.extraData ? it->second.coin.extraData->type : 0,
+                        itUs->second.coin.nHeight, itUs->second.coin.IsSpent() ? 1 : 0, itUs->second.flags, itUs->second.coin.extraData ? itUs->second.coin.extraData->type : 0);
                 // A normal modification.
                 cachedCoinsUsage -= itUs->second.coin.DynamicMemoryUsage();
                 itUs->second.coin = std::move(it->second.coin);
                 cachedCoinsUsage += itUs->second.coin.DynamicMemoryUsage();
                 itUs->second.flags |= CCoinsCacheEntry::DIRTY;
                 itUs->second.flags &= ~CCoinsCacheEntry::UNBIND;
+                if (itUs->second.coin.IsBindPlotter()) {
+                    itUs->second.flags &= ~CCoinsCacheEntry::FRESH;
+                }
                 // Sync UNBIND from child
                 if (it->second.flags & CCoinsCacheEntry::UNBIND) {
                     assert(itUs->second.coin.IsSpent());
@@ -302,12 +315,12 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                 }
                 CCoinsMap::iterator itUs = mapCoinsMerged.find(it->first);
                 if (itUs == mapCoinsMerged.end()) {
-                    if (!(it->second.flags & CCoinsCacheEntry::FRESH && it->second.coin.IsSpent()) ||
-                            (it->second.coin.IsBindPlotter() && !(it->second.flags & CCoinsCacheEntry::UNBIND))) {
+                    if (!(it->second.flags & CCoinsCacheEntry::FRESH && it->second.coin.IsSpent())) {
                         CCoinsCacheEntry& entry = mapCoinsMerged[it->first];
                         entry.coin = it->second.coin;
                         entry.flags = CCoinsCacheEntry::DIRTY;
                         if (it->second.flags & CCoinsCacheEntry::FRESH) {
+                            assert(!entry.coin.IsBindPlotter());
                             entry.flags |= CCoinsCacheEntry::FRESH;
                         }
                         if (it->second.flags & CCoinsCacheEntry::UNBIND) {
@@ -319,13 +332,15 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     if ((it->second.flags & CCoinsCacheEntry::FRESH) && !itUs->second.coin.IsSpent()) {
                         throw std::logic_error("FRESH flag misapplied to cache entry for base transaction with spendable outputs");
                     }
-                    if ((itUs->second.flags & CCoinsCacheEntry::FRESH) && it->second.coin.IsSpent() &&
-                            !((it->second.coin.IsBindPlotter() && !(it->second.flags & CCoinsCacheEntry::UNBIND)))) {
+                    if ((itUs->second.flags & CCoinsCacheEntry::FRESH) && it->second.coin.IsSpent() && !it->second.coin.IsBindPlotter()) {
                         mapCoinsMerged.erase(itUs);
                     } else {
                         itUs->second.coin = it->second.coin;
                         itUs->second.flags |= CCoinsCacheEntry::DIRTY;
                         itUs->second.flags &= ~CCoinsCacheEntry::UNBIND;
+                        if (itUs->second.coin.IsBindPlotter()) {
+                            itUs->second.flags &= ~CCoinsCacheEntry::FRESH;
+                        }
                         if (it->second.flags & CCoinsCacheEntry::UNBIND) {
                             assert(itUs->second.coin.IsSpent());
                             itUs->second.flags |= CCoinsCacheEntry::UNBIND;
@@ -347,29 +362,36 @@ CBindPlotterCoinsMap CCoinsViewCache::GetAccountBindPlotterEntries(const CAccoun
         if (!(it->second.flags & CCoinsCacheEntry::DIRTY))
             continue;
 
+        if (accountID != it->second.coin.refOutAccountID) {
+            outpoints.erase(it->first);
+            continue;
+        }
+
         auto itSelected = outpoints.find(it->first);
         if (itSelected != outpoints.end()) {
             if (it->second.coin.IsSpent() && !(it->second.flags & CCoinsCacheEntry::UNBIND)) {
                 outpoints.erase(itSelected);
             } else if (it->second.coin.IsBindPlotter()) {
-                if (accountID != it->second.coin.refOutAccountID ||
-                        (plotterId != 0 && plotterId != BindPlotterPayload::As(it->second.coin.extraData)->GetId())) {
-                    outpoints.erase(itSelected);
-                } else {
+                if (plotterId == 0 || plotterId == BindPlotterPayload::As(it->second.coin.extraData)->GetId()) {
                     itSelected->second.nHeight = it->second.coin.nHeight;
                     itSelected->second.accountID = it->second.coin.refOutAccountID;
                     itSelected->second.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
                     itSelected->second.valid = !it->second.coin.IsSpent();
+                } else {
+                    outpoints.erase(itSelected);
                 }
+            } else {
+                outpoints.erase(itSelected);
             }
         } else {
-            if (it->second.coin.refOutAccountID == accountID && it->second.coin.IsBindPlotter() && !it->second.coin.IsSpent() &&
-                    (plotterId == 0 || plotterId == BindPlotterPayload::As(it->second.coin.extraData)->GetId())) {
-                CBindPlotterCoinInfo &info = outpoints[it->first];
-                info.nHeight = it->second.coin.nHeight;
-                info.accountID = it->second.coin.refOutAccountID;
-                info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
-                info.valid = !it->second.coin.IsSpent();
+            if (it->second.coin.IsBindPlotter() && (plotterId == 0 || plotterId == BindPlotterPayload::As(it->second.coin.extraData)->GetId())) {
+                if (!it->second.coin.IsSpent() || (it->second.flags & CCoinsCacheEntry::UNBIND)) {
+                    CBindPlotterCoinInfo &info = outpoints[it->first];
+                    info.nHeight = it->second.coin.nHeight;
+                    info.accountID = it->second.coin.refOutAccountID;
+                    info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
+                    info.valid = !it->second.coin.IsSpent();
+                }
             }
         }
     }
@@ -391,23 +413,26 @@ CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntries(const uint64_t &plot
             if (it->second.coin.IsSpent() && !(it->second.flags & CCoinsCacheEntry::UNBIND)) {
                 outpoints.erase(itSelected);
             } else if (it->second.coin.IsBindPlotter()) {
-                if (plotterId != BindPlotterPayload::As(it->second.coin.extraData)->GetId()) {
-                    outpoints.erase(itSelected);
-                } else {
+                if (plotterId == BindPlotterPayload::As(it->second.coin.extraData)->GetId()) {
                     itSelected->second.nHeight = it->second.coin.nHeight;
                     itSelected->second.accountID = it->second.coin.refOutAccountID;
                     itSelected->second.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
                     itSelected->second.valid = !it->second.coin.IsSpent();
+                } else {
+                    outpoints.erase(itSelected);
                 }
+            } else {
+                outpoints.erase(itSelected);
             }
         } else {
-            if (it->second.coin.IsBindPlotter() && !it->second.coin.IsSpent() &&
-                    plotterId == BindPlotterPayload::As(it->second.coin.extraData)->GetId()) {
-                CBindPlotterCoinInfo &info = outpoints[it->first];
-                info.nHeight = it->second.coin.nHeight;
-                info.accountID = it->second.coin.refOutAccountID;
-                info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
-                info.valid = !it->second.coin.IsSpent();
+            if (it->second.coin.IsBindPlotter() && plotterId == BindPlotterPayload::As(it->second.coin.extraData)->GetId()) {
+                if (!it->second.coin.IsSpent() || (it->second.flags & CCoinsCacheEntry::UNBIND)) {
+                    CBindPlotterCoinInfo &info = outpoints[it->first];
+                    info.nHeight = it->second.coin.nHeight;
+                    info.accountID = it->second.coin.refOutAccountID;
+                    info.plotterId = BindPlotterPayload::As(it->second.coin.extraData)->GetId();
+                    info.valid = !it->second.coin.IsSpent();
+                }
             }
         }
     }

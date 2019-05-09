@@ -327,16 +327,8 @@ int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInf
     assert(!lastBindInfo.outpoint.IsNull() && lastBindInfo.nHeight >= 0);
     assert(nSpentHeight > lastBindInfo.nHeight);
 
-    // Spent coin unlimit
-    if (!lastBindInfo.valid)
-        return lastBindInfo.nHeight + 1;
-
     if (nSpentHeight < params.BHDIP006LimitBindPlotterHeight)
         return std::max(params.BHDIP006Height, lastBindInfo.nHeight + 1);
-
-    // Current height overflow <EvalWindow>
-    if (nSpentHeight >= lastBindInfo.nHeight + params.nCapacityEvalWindow)
-        return lastBindInfo.nHeight + params.nCapacityEvalWindow;
 
     // Checking range [nEvalBeginHeight, nEvalEndHeight]
     const int nEvalBeginHeight = std::max(nSpentHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
@@ -349,8 +341,9 @@ int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInf
     }
 
     // Participator mined after bind require lock <EvalWindow>
-    const int nEndHeight = std::min(lastBindInfo.nHeight + params.nCapacityEvalWindow, nEvalEndHeight);
-    for (int nHeight = lastBindInfo.nHeight; nHeight <= nEndHeight; nHeight++) {
+    const int nBeginMiningHeight = lastBindInfo.nHeight;
+    const int nEndMiningHeight = std::min(lastBindInfo.nHeight + params.nCapacityEvalWindow, nEvalEndHeight);
+    for (int nHeight = nBeginMiningHeight; nHeight <= nEndMiningHeight; nHeight++) {
         if (chainActive[nHeight]->minerAccountID == lastBindInfo.accountID)
             return lastBindInfo.nHeight + params.nCapacityEvalWindow;
     }
@@ -391,34 +384,31 @@ int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterI
         assert(!activeBindInfo.outpoint.IsNull() && activeBindInfo.valid && activeBindInfo.nHeight >= 0);
         assert(activeBindInfo.nHeight >= bindInfo.nHeight);
 
-        const int nParticipateMiningBeginHeight = std::max(nEvalBeginHeight, bindInfo.nHeight);
-        const int nParticipateMiningEndHeight = (bindInfo.outpoint == activeBindInfo.outpoint) ? nEvalEndHeight : activeBindInfo.nHeight;
+        const int nBeginMiningHeight = std::max(nEvalBeginHeight, bindInfo.nHeight);
+        const int nEndMiningHeight = (bindInfo.outpoint == activeBindInfo.outpoint) ? nEvalEndHeight : activeBindInfo.nHeight;
 
         // Last mining in current wallet will lock +<EvalWindow>
-        for (int nHeight = nParticipateMiningEndHeight; nHeight >= nParticipateMiningBeginHeight; nHeight--) {
+        for (int nHeight = nEndMiningHeight; nHeight >= nBeginMiningHeight; nHeight--) {
             CBlockIndex *pindex = chainActive[nHeight];
             if (pindex->minerAccountID == bindInfo.accountID && pindex->nPlotterId == bindInfo.plotterId)
                 return nHeight + params.nCapacityEvalWindow;
         }
 
         // Participate mining lock <EvalWindow>
-        for (int nHeight = nParticipateMiningEndHeight; nHeight >= nParticipateMiningBeginHeight; nHeight--) {
+        for (int nHeight = nEndMiningHeight; nHeight >= nBeginMiningHeight; nHeight--) {
             if (chainActive[nHeight]->minerAccountID == bindInfo.accountID)
                 return bindInfo.nHeight + params.nCapacityEvalWindow;
         }
     } else {
         // Participate mining lock <EvalWindow>
-        if (nSpentHeight >= bindInfo.nHeight + params.nCapacityEvalWindow)
-            return bindInfo.nHeight + params.nCapacityEvalWindow;
-
         const CBindPlotterInfo changeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo);
         assert(!changeBindInfo.outpoint.IsNull() && changeBindInfo.nHeight >= 0);
         assert(changeBindInfo.nHeight >= bindInfo.nHeight);
         assert(nSpentHeight > changeBindInfo.nHeight);
 
-        const int nParticipateMiningBeginHeight = bindInfo.nHeight;
-        const int nParticipateMiningEndHeight = (bindInfo.outpoint == changeBindInfo.outpoint) ? nEvalEndHeight : changeBindInfo.nHeight;
-        for (int nHeight = nParticipateMiningBeginHeight; nHeight <= nParticipateMiningEndHeight; nHeight++) {
+        const int nBeginMiningHeight = bindInfo.nHeight;
+        const int nEndMiningHeight = (bindInfo.outpoint == changeBindInfo.outpoint) ? nEvalEndHeight : changeBindInfo.nHeight;
+        for (int nHeight = nBeginMiningHeight; nHeight <= nEndMiningHeight; nHeight++) {
             if (chainActive[nHeight]->minerAccountID == bindInfo.accountID)
                 return bindInfo.nHeight + params.nCapacityEvalWindow;
         }

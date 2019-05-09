@@ -28,7 +28,7 @@
 
 /** UTXO version flag */
 static const char DB_COIN_VERSION = 'V';
-static const uint32_t DB_VERSION = 0x07;
+static const uint32_t DB_VERSION = 0x10;
 
 static const char DB_COIN = 'C';
 static const char DB_BLOCK_FILES = 'f';
@@ -44,6 +44,7 @@ static const char DB_LAST_BLOCK = 'l';
 static const char DB_COIN_INDEX = 'T';
 static const char DB_COIN_BINDPLOTTER = 'P';
 static const char DB_COIN_PLEDGE = 'E';
+static const char DB_COIN_PLEDGEDEBIT = 'e'; //! DEPRECTED
 
 namespace {
 
@@ -832,10 +833,10 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
     pcursor->SeekToFirst();
     if (pcursor->Valid()) {
         CDBBatch batch(db);
-        while (pcursor->Valid()) {
-            const leveldb::Slice slice = pcursor->GetKey();
-            if (slice.size() > 32 && (slice[0] == DB_COIN_INDEX || slice[0] == DB_COIN_BINDPLOTTER || slice[0] == DB_COIN_PLEDGE || slice[0] == 'e')) {
-                batch.EraseSlice(slice);
+        for (; pcursor->Valid(); pcursor->Next()) {
+            const leveldb::Slice key = pcursor->GetKey();
+            if (key.size() > 32 && (key[0] == DB_COIN_INDEX || key[0] == DB_COIN_BINDPLOTTER || key[0] == DB_COIN_PLEDGE || key[0] == DB_COIN_PLEDGEDEBIT)) {
+                batch.EraseSlice(key);
                 remove++;
 
                 if (batch.SizeEstimate() > batch_size) {
@@ -843,7 +844,6 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
                     batch.Clear();
                 }
             }
-            pcursor->Next();
         }
         db.WriteBatch(batch);
     }
@@ -856,7 +856,7 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
         CDBBatch batch(db);
         COutPoint outpoint;
         CoinEntry entry(&outpoint);
-        while (pcursor->Valid()) {
+        for (; pcursor->Valid(); pcursor->Next()) {
             if (pcursor->GetKey(entry) && entry.key == DB_COIN) {
                 Coin coin;
                 if (!pcursor->GetValue(coin))
@@ -897,7 +897,6 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
             } else {
                 break;
             }
-            pcursor->Next();
         }
         db.WriteBatch(batch);
     }

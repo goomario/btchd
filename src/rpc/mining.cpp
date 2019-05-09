@@ -838,14 +838,15 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
 
 UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
         throw std::runtime_error(
-            "listbindplotterofaddress \"address\" (plotterId count)\n"
+            "listbindplotterofaddress \"address\" (plotterId count verbose)\n"
             "\nReturns up to binded plotter of address.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
             "2. plotterId           (string, optional) The filter plotter ID. If 0 or not set then output all binded plotter ID\n"
             "3. count               (numeric, optional) The result of count binded to list. If not set then output all binded plotter ID\n"
+            "4. verbose             (bool, optional, default=false) If true, return bindheightlimit, unbindheightlimit and active\n"
             "\nResult:\n"
             "[\n"
             "  {\n"
@@ -854,10 +855,10 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blockheight\": xxx,                (numeric) The block height.\n"
-            "    \"bindheightlimit\": xxx             (numeric) The plotter bind small fee limit height. Other require high fee.\n"
-            "    \"unbindheightlimit\": xxx,          (numeric) The plotter unbind limit height.\n"
-            "    \"capacity\": \"capacity TB\",         (string) The capacity.\n"
-            "    \"active\": true|false,              (bool, default false) The bind active status.\n"
+            "    \"capacity\": \"xxx TB/PB\",           (string) The plotter capacity.\n"
+            "    \"bindheightlimit\": xxx             (numeric) The plotter bind small fee limit height. Other require high fee. Only for verbose mode.\n"
+            "    \"unbindheightlimit\": xxx,          (numeric) The plotter unbind limit height.Only for verbose mode.\n"
+            "    \"active\": true|false,              (bool, default false) The bind active status.Only for verbose mode.\n"
             "  }\n"
             "]\n"
 
@@ -882,6 +883,11 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
         count = request.params[2].get_int();
     if (count < 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid count");
+
+    bool fVerbose = false;
+    if (!request.params[3].isNull()) {
+        fVerbose = request.params[3].isNum() ? (request.params[3].get_int() != 0) : request.params[3].get_bool();
+    }
 
     UniValue ret(UniValue::VARR);
     if (count == 0)
@@ -925,14 +931,17 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("txid", it->first.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockHash().GetHex()));
             item.push_back(Pair("blockheight", it->second.nHeight));
-            item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), Params().GetConsensus())));
-            item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), *pcoinsTip, Params().GetConsensus())));
             if (nBlockCount > 0) {
                 item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[it->second.plotterId]) / nBlockCount)));
             } else {
                 item.push_back(Pair("capacity", ValueFromCapacity(0)));
             }
-            item.push_back(Pair("active", it->first == pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId).outpoint));
+            if (fVerbose) {
+                item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), Params().GetConsensus())));
+                item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), *pcoinsTip, Params().GetConsensus())));
+                item.push_back(Pair("active", it->first == pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId).outpoint));
+            }
+
             ret.push_back(item);
 
             if (--count <= 0)
@@ -1224,7 +1233,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. address         (string, required) The BitcoinHD address.\n"
             "2. plotterId       (string, optional) DEPRECTED after BHDIP006. Plotter ID\n"
-            "3. verbose         (bool, optional, default=true) If true, return detail pledge\n"
+            "3. verbose         (bool, optional, default=false) If true, return detail pledge\n"
             "\nResult:\n"
             "[\n"
             "  {\n"
@@ -1255,7 +1264,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_TYPE_ERROR, "Invalid plotter ID");
     }
 
-    bool fVerbose = true;
+    bool fVerbose = false;
     if (!request.params[2].isNull()) {
         fVerbose = request.params[2].isNum() ? (request.params[2].get_int() != 0) : request.params[2].get_bool();
     }
@@ -1752,7 +1761,7 @@ static const CRPCCommand commands[] =
     { "mining",             "submitblock",                  &submitblock,                   {"hexdata","dummy"} },
     { "mining",             "getactivebindplotteraddress",  &getactivebindplotteraddress,   {"plotterId"} },
     { "mining",             "getactivebindplotter",         &getactivebindplotter,          {"plotterId"} },
-    { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,      {"address", "plotterId", "count"} },
+    { "mining",             "listbindplotterofaddress",     &listbindplotterofaddress,      {"address", "plotterId", "count", "verbose"} },
     { "mining",             "createbindplotterdata",        &createbindplotterdata,         {"address", "passphrase", "lastActiveHeight"} },
     { "mining",             "verifybindplotterdata",        &verifybindplotterdata,         {"address", "hexdata"} },
     { "mining",             "getbindplotterlimit",          &getbindplotterlimit,           {"plotterId"} },
