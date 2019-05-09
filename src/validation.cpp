@@ -671,7 +671,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
 
         CAmount nFees = 0;
-        if (!Consensus::CheckTxInputs(tx, state, view, *pcoinsTip, GetSpendHeight(view), nFees, 0, chainparams.GetConsensus())) {
+        if (!Consensus::CheckTxInputs(tx, state, view, *pcoinsTip, GetSpendHeight(view), nFees, CAccountID(), chainparams.GetConsensus())) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
@@ -1145,7 +1145,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     return nSubsidy;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& minerAccountID, const uint64_t& nPlotterId, const CCoinsViewCache& view, const Consensus::Params& consensusParams)
+BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId, const CCoinsViewCache& view, const Consensus::Params& consensusParams)
 {
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
@@ -1169,8 +1169,8 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
         // See https://btchd.org/wiki/developer/BHD004-soft-fork-for-multimining
         //
         CAmount minerPledgeAmountAtOldConsensus;
-        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(minerAccountID, nPlotterId, nHeight, view, nullptr, &minerPledgeAmountAtOldConsensus, consensusParams);
-        CAmount accountBalance = view.GetAccountBalance(minerAccountID);
+        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(generatorAccountID, nPlotterId, nHeight, view, nullptr, &minerPledgeAmountAtOldConsensus, consensusParams);
+        CAmount accountBalance = view.GetAccountBalance(generatorAccountID);
         if (accountBalance >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
             if (nHeight < consensusParams.BHDIP004InActiveHeight && accountBalance < minerPledgeAmountAtOldConsensus) {
@@ -1184,8 +1184,8 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
     } else {
         // Normal mining for BHDIP006
         CAmount balancePledgeLoan = 0, balancePledgeDebit = 0;
-        CAmount accountBalance = view.GetAccountBalance(minerAccountID, nullptr, &balancePledgeLoan, &balancePledgeDebit);
-        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(minerAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
+        CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balancePledgeLoan, &balancePledgeDebit);
+        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
         if (accountBalance - balancePledgeLoan + balancePledgeDebit >= minerPledgeAmount) {
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
         } else {
@@ -1928,7 +1928,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if (!tx.IsCoinBase())
         {
             CAmount txfee = 0;
-            if (!Consensus::CheckTxInputs(tx, state, mutableView, view, pindex->nHeight, txfee, pindex->minerAccountID, chainparams.GetConsensus())) {
+            if (!Consensus::CheckTxInputs(tx, state, mutableView, view, pindex->nHeight, txfee, pindex->generatorAccountID, chainparams.GetConsensus())) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
             nFees += txfee;
@@ -1980,15 +1980,15 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    // Check miner account ID
-    if (pindex->minerAccountID == 0) {
+    // Check generator
+    if (pindex->generatorAccountID.IsNull()) {
         return state.DoS(100,
                         error("ConnectBlock(): Invalidate miner address"),
                         REJECT_INVALID, "bad-cb-address");
     }
 
     // Check bind
-    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight && !view.HaveActiveBindPlotter(pindex->minerAccountID, pindex->nPlotterId)) {
+    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006BindPlotterActiveHeight && !view.HaveActiveBindPlotter(pindex->generatorAccountID, pindex->nPlotterId)) {
         std::string address = EncodeDestination(ExtractDestination(block.vtx[0]->vout[0].scriptPubKey));
         return state.DoS(100,
                         error("ConnectBlock(): Not active bind %" PRIu64 " to %s", pindex->nPlotterId, address),
@@ -1996,7 +1996,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
 
     // GetBlockReward() must use pre CCoinsView
-    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->minerAccountID, pindex->nPlotterId, view, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->generatorAccountID, pindex->nPlotterId, view, chainparams.GetConsensus());
     // Check coinbase amount
     if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.minerBHDIP004Compatiable + blockReward.fund)
         return state.DoS(100,
@@ -2980,6 +2980,8 @@ CBlockIndex* CChainState::AddToBlockIndex(const CBlockHeader& block)
     pindexNew->RaiseValidity(BLOCK_VALID_TREE);
     if (pindexBestHeader == nullptr || pindexBestHeader->nChainWork < pindexNew->nChainWork)
         pindexBestHeader = pindexNew;
+    if (!pindexNew->vchPubKey.empty())
+        pindexNew->nStatus |= BLOCK_HAVE_SIGNATURE;
     pindexNew->Update(Params().GetConsensus());
 
     setDirtyBlockIndex.insert(pindexNew);
@@ -2999,7 +3001,7 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
     if (IsWitnessEnabled(pindexNew->pprev, consensusParams)) {
         pindexNew->nStatus |= BLOCK_OPT_WITNESS;
     }
-    pindexNew->minerAccountID = GetAccountIDByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
+    pindexNew->generatorAccountID = ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey);
     pindexNew->RaiseValidity(BLOCK_VALID_TRANSACTIONS);
     setDirtyBlockIndex.insert(pindexNew);
 
@@ -3151,10 +3153,20 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
         return state.DoS(10, error("%s: prev block not found", __func__), 0, "prev-blk-not-found");
     const CBlockIndex* pindexPrev = miPrev->second;
 
-    // Skip when reindexing
-    if (!fForceCheckDeadline && fReindex && !chainparams.Checkpoints().mapCheckpoints.empty() &&
-            pindexPrev->nHeight + 1 <= chainparams.Checkpoints().mapCheckpoints.rbegin()->first)
-        return true;
+    // Checkpoint
+    if (!chainparams.Checkpoints().mapCheckpoints.empty()) {
+        auto &mapCheckpoints = chainparams.Checkpoints().mapCheckpoints;
+
+        // Checkpoint
+        auto itCheckpoint = mapCheckpoints.find(pindexPrev->nHeight + 1);
+        if (itCheckpoint != mapCheckpoints.end() && itCheckpoint->second != hashBlock)
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk", false, "diff checkpoint");
+
+        // Skip when reindexing
+        int nLastCheckpointHeight = mapCheckpoints.rbegin()->first;
+        if (!fForceCheckDeadline && fReindex && pindexPrev->nHeight + 1 <= nLastCheckpointHeight)
+            return true;
+    }
 
     // Block signature for BHDIP007
     if (pindexPrev->nHeight + 1 >= chainparams.GetConsensus().BHDIP007Height) {
@@ -3239,7 +3251,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const CChainParams
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
     // Block signature
-    if (!block.vchPubKey.empty() && !CheckRawPubKeyAndScriptRelationForMining(CPubKey(block.vchPubKey), block.vtx[0]->vout[0].scriptPubKey))
+    if (!block.vchPubKey.empty() && ExtractAccountID(CPubKey(block.vchPubKey)) != ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey))
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "incorrect signatory");
 
     if (fCheckWork && fCheckMerkleRoot)
@@ -3776,7 +3788,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     CBlockIndex indexDummy(block);
     indexDummy.pprev = pindexPrev;
     indexDummy.nHeight = pindexPrev->nHeight + 1;
-    indexDummy.minerAccountID = GetAccountIDByScriptPubKey(block.vtx[0]->vout[0].scriptPubKey);
+    indexDummy.generatorAccountID = ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey);
 
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
@@ -4058,7 +4070,6 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
             pindex->BuildSkip();
         if (pindex->IsValid(BLOCK_VALID_TREE) && (pindexBestHeader == nullptr || CBlockIndexWorkComparator()(pindexBestHeader, pindex)))
             pindexBestHeader = pindex;
-        pindex->Update(consensus_params);
     }
 
     return true;
@@ -4395,7 +4406,7 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             // Reduce validity
             pindexIter->nStatus = std::min<unsigned int>(pindexIter->nStatus & BLOCK_VALID_MASK, BLOCK_VALID_TREE) | (pindexIter->nStatus & ~BLOCK_VALID_MASK);
             // Remove have-data flags.
-            pindexIter->nStatus &= ~(BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO);
+            pindexIter->nStatus &= ~(BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO | BLOCK_HAVE_SIGNATURE);
             // Remove storage location.
             pindexIter->nFile = 0;
             pindexIter->nDataPos = 0;
@@ -4404,7 +4415,7 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             pindexIter->nTx = 0;
             pindexIter->nChainTx = 0;
             pindexIter->nSequenceId = 0;
-            pindexIter->minerAccountID = 0;
+            pindexIter->generatorAccountID.SetNull();
             // Make sure it gets written.
             setDirtyBlockIndex.insert(pindexIter);
             // Update indexes

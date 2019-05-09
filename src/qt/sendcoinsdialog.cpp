@@ -403,7 +403,7 @@ void SendCoinsDialog::on_sendButton_clicked()
                 return;
             }
 
-            if (pcoinsTip->HaveActiveBindPlotter(GetAccountIDByTxDestination(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
+            if (pcoinsTip->HaveActiveBindPlotter(ExtractAccountID(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
                     QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
         } else if (operateMethod == PayOperateMethod::SendPledge) {

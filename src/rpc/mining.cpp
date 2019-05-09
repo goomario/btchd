@@ -870,8 +870,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0)
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
     uint64_t plotterId = 0;
     if (request.params.size() >= 2) {
@@ -1122,8 +1122,8 @@ UniValue getunbindplotterlimit(const JSONRPCRequest& request)
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
 {
     LOCK(cs_main);
-    CAccountID accountID = GetAccountIDByAddress(address);
-    if (accountID == 0) {
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(address));
+    if (accountID.IsNull()) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
@@ -1159,7 +1159,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params,
             [&nBlockCount, &nMinedBlockCount, &accountID, &mapBindPlotter](const CBlockIndex &block) {
                 nBlockCount++;
-                if (block.minerAccountID == accountID) {
+                if (block.generatorAccountID == accountID) {
                     nMinedBlockCount++;
 
                     PlotterItem &item = mapBindPlotter[block.nPlotterId];
@@ -1334,13 +1334,9 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
             std::map<CAccountID, BindInfo> mapBindInfo;
             for (const CBlockIndex &block : vBlocks) {
                 if (block.nPlotterId == nPlotterId) {
-                    auto it = mapBindInfo.find(block.minerAccountID);
-                    if (it == mapBindInfo.end()) {
-                        mapBindInfo.insert(std::make_pair(block.minerAccountID, BindInfo{1, &block}));
-                    } else {
-                        it->second.forgeCount++;
-                        it->second.pindexLast = &block;
-                    }
+                    BindInfo &info = mapBindInfo[block.generatorAccountID];
+                    info.forgeCount++;
+                    info.pindexLast = &block;
                 }
             }
 
@@ -1427,7 +1423,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
 
             UniValue item(UniValue::VOBJ);
             item.push_back(Pair("from", EncodeDestination(ExtractDestination(coin.out.scriptPubKey))));
-            item.push_back(Pair("to", EncodeDestination(PledgeLoanPayload::As(coin.extraData)->scriptID)));
+            item.push_back(Pair("to", EncodeDestination(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID())));
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("txid", key.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
@@ -1470,8 +1466,8 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
 
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0)
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
 
     LOCK(cs_main);
@@ -1509,8 +1505,8 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
 
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0)
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
 
     LOCK(cs_main);
@@ -1744,8 +1740,8 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
 
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0) {
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull()) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, BitcoinHD address of P2SH");
     }
 

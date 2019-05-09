@@ -187,20 +187,10 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
-/** Check raw pubkey and script relation mining */
-bool CheckRawPubKeyAndScriptRelationForMining(const CPubKey& pubkey, const CScript &scriptPubKey);
-
-/** Utility function to get account id with given CScriptID. */
-CAccountID GetAccountIDByScriptID(const CScriptID &scriptID);
-
-/** Utility function to get account id with given scriptPubKey. */
-CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey);
-
-/** Utility function to get account id with given CTxDestination. */
-CAccountID GetAccountIDByTxDestination(const CTxDestination &dest);
-
-/** Utility function to get account id with given address. */
-CAccountID GetAccountIDByAddress(const std::string &address);
+/** Utility function to get account ID. */
+CAccountID ExtractAccountID(const CPubKey& pubkey);
+CAccountID ExtractAccountID(const CScript& scriptPubKey);
+CAccountID ExtractAccountID(const CTxDestination& dest);
 
 /** opreturn type. See https://btchd.org/wiki/datacarrier */
 enum DatacarrierType : unsigned int {
@@ -222,18 +212,20 @@ enum DatacarrierType : unsigned int {
 /** Datacarrier payload */
 struct DatacarrierPayload
 {
+    const DatacarrierType type;
+
     explicit DatacarrierPayload(DatacarrierType typeIn) : type(typeIn) {}
     virtual ~DatacarrierPayload() {}
-    const DatacarrierType type;
 };
 typedef std::shared_ptr<DatacarrierPayload> CDatacarrierPayloadRef;
 
 /** For bind plotter */
 struct BindPlotterPayload : public DatacarrierPayload
 {
+    uint64_t id;
+
     BindPlotterPayload() : DatacarrierPayload(DATACARRIER_TYPE_BINDPLOTTER), id(0) {}
     const uint64_t& GetId() const { return id; }
-    uint64_t id;
 
     // Checkable cast for CDatacarrierPayloadRef
     static BindPlotterPayload * As(CDatacarrierPayloadRef &ref) {
@@ -249,9 +241,10 @@ struct BindPlotterPayload : public DatacarrierPayload
 /** For pledge loan */
 struct PledgeLoanPayload : public DatacarrierPayload
 {
+    CAccountID debitAccountID;
+
     PledgeLoanPayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGE) {}
-    const CAccountID& GetDebitAccountID() const;
-    CScriptID scriptID;
+    const CAccountID& GetDebitAccountID() const { return debitAccountID; }
 
     // Checkable cast for CDatacarrierPayloadRef
     static PledgeLoanPayload * As(CDatacarrierPayloadRef &ref) {

@@ -1487,7 +1487,7 @@ UniValue listunspentofaddress(const JSONRPCRequest& request)
             + HelpExampleRpc("listunspentofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );
 
-    const CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
 
     LOCK(cs_main);
     const int nSpendHeight = GetSpendHeight(*pcoinsTip);

@@ -3670,10 +3670,11 @@ UniValue bindplotter(const JSONRPCRequest& request)
         }
 
         // Active
-        const CAccountID account = GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey);
+        const CAccountID accountID = ExtractAccountID(vecSend[0].scriptPubKey);
         const uint64_t &plotterId = BindPlotterPayload::As(payload)->GetId();
-        if (pcoinsTip->HaveActiveBindPlotter(account, plotterId))
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s and actived.", std::to_string(plotterId), EncodeDestination(bindToDest)));
+        if (pcoinsTip->HaveActiveBindPlotter(accountID, plotterId))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s and actived.",
+                std::to_string(plotterId), EncodeDestination(bindToDest)));
     }
 
     CValidationState state;
@@ -4328,9 +4329,8 @@ UniValue listpledges(const JSONRPCRequest& request)
         if (!fIncludeInvalid && !fValid)
             continue;
 
-        CTxDestination fromDest, toDest;
-        ExtractDestination(wtx.tx->vout[0].scriptPubKey, fromDest);
-        toDest = PledgeLoanPayload::As(payload)->scriptID;
+        CTxDestination fromDest = ExtractDestination(wtx.tx->vout[0].scriptPubKey);
+        CTxDestination toDest = CScriptID(PledgeLoanPayload::As(payload)->GetDebitAccountID());
         isminetype sendIsmine = ::IsMine(*pwallet, fromDest);
         isminetype receiveIsmine = ::IsMine(*pwallet, toDest);
         bool fSendIsmine = (sendIsmine & filter) != 0;

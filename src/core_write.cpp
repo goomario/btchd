@@ -247,6 +247,6 @@ void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& t
         out.push_back(Pair("type", "pledge"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
         out.push_back(Pair("from", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
-        out.push_back(Pair("to", EncodeDestination(ptr->scriptID)));
+        out.push_back(Pair("to", EncodeDestination(CScriptID(ptr->GetDebitAccountID()))));
     }
 }

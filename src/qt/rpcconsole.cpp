@@ -903,8 +903,8 @@ void RPCConsole::updatePledge()
         const Consensus::Params& params = Params().GetConsensus();
 
         // Get account id of address
-        CAccountID accountID = GetAccountIDByAddress(primaryAddress.toStdString());
-        if (accountID != 0) {
+        const CAccountID accountID = ExtractAccountID(DecodeDestination(primaryAddress.toStdString()));
+        if (!accountID.IsNull()) {
             // Primary address total balance
             CAmount balance;
             {
@@ -923,7 +923,7 @@ void RPCConsole::updatePledge()
             if (chainActive.Height() < params.BHDIP006BindPlotterActiveHeight) {
                 std::set<uint64_t> existPlotterId;
                 for (const CBlockIndex& block : poc::GetEvalBlocks(chainActive.Height(), false, params)) {
-                    if (block.minerAccountID != accountID || existPlotterId.count(block.nPlotterId))
+                    if (block.generatorAccountID != accountID || existPlotterId.count(block.nPlotterId))
                         continue;
                     if (!strBindPlotters.isEmpty())
                         strBindPlotters += ",";

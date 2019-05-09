@@ -705,7 +705,7 @@ UniValue dumpprivkeys(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + EncodeDestination(dest) + " is not known");
         }
 
-        CAmount balance = pcoinsTip->GetAccountBalance(GetAccountIDByTxDestination(dest));
+        CAmount balance = pcoinsTip->GetAccountBalance(ExtractAccountID(dest));
 
         UniValue item(UniValue::VOBJ);
         item.pushKV("privkey", CBitcoinSecret(vchSecret).ToString());

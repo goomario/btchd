@@ -251,8 +251,8 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
             return rec->address;
         case Amount:
             if (rec->fReloadAmount) {
-                CAccountID accountID = GetAccountIDByAddress(rec->address.toStdString());
-                if (accountID != 0) {
+                CAccountID accountID = ExtractAccountID(DecodeDestination(rec->address.toStdString()));
+                if (!accountID.IsNull()) {
                     LOCK(cs_main);
                     rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->bindPlotterAmount, &rec->pledgeLoanAmount, &rec->pledgeDebitAmount);
                 } else {

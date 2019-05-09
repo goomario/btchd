@@ -207,7 +207,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
 }
 
 bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID &minerAccountID, const Consensus::Params& params)
+    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -300,7 +300,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                 const CBindPlotterInfo lastBindInfo = prevInputs.GetLastBindPlotterInfo(BindPlotterPayload::As(payload)->GetId());
                 if (!lastBindInfo.outpoint.IsNull()) {
                     // Forbidden self-packaging change active bind tx
-                    if (lastBindInfo.valid && minerAccountID != 0 && minerAccountID == GetAccountIDByScriptPubKey(tx.vout[0].scriptPubKey))
+                    if (lastBindInfo.valid && !generatorAccountID.IsNull() && generatorAccountID == ExtractAccountID(tx.vout[0].scriptPubKey))
                         return state.DoS(100, false, REJECT_INVALID, "bad-bindplotter-selfpackaging");
 
                     if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params)) {
@@ -344,7 +344,7 @@ int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInf
     const int nBeginMiningHeight = lastBindInfo.nHeight;
     const int nEndMiningHeight = std::min(lastBindInfo.nHeight + params.nCapacityEvalWindow, nEvalEndHeight);
     for (int nHeight = nBeginMiningHeight; nHeight <= nEndMiningHeight; nHeight++) {
-        if (chainActive[nHeight]->minerAccountID == lastBindInfo.accountID)
+        if (chainActive[nHeight]->generatorAccountID == lastBindInfo.accountID)
             return lastBindInfo.nHeight + params.nCapacityEvalWindow;
     }
 
@@ -390,13 +390,13 @@ int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterI
         // Last mining in current wallet will lock +<EvalWindow>
         for (int nHeight = nEndMiningHeight; nHeight >= nBeginMiningHeight; nHeight--) {
             CBlockIndex *pindex = chainActive[nHeight];
-            if (pindex->minerAccountID == bindInfo.accountID && pindex->nPlotterId == bindInfo.plotterId)
+            if (pindex->generatorAccountID == bindInfo.accountID && pindex->nPlotterId == bindInfo.plotterId)
                 return nHeight + params.nCapacityEvalWindow;
         }
 
         // Participate mining lock <EvalWindow>
         for (int nHeight = nEndMiningHeight; nHeight >= nBeginMiningHeight; nHeight--) {
-            if (chainActive[nHeight]->minerAccountID == bindInfo.accountID)
+            if (chainActive[nHeight]->generatorAccountID == bindInfo.accountID)
                 return bindInfo.nHeight + params.nCapacityEvalWindow;
         }
     } else {
@@ -409,7 +409,7 @@ int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterI
         const int nBeginMiningHeight = bindInfo.nHeight;
         const int nEndMiningHeight = (bindInfo.outpoint == changeBindInfo.outpoint) ? nEvalEndHeight : changeBindInfo.nHeight;
         for (int nHeight = nBeginMiningHeight; nHeight <= nEndMiningHeight; nHeight++) {
-            if (chainActive[nHeight]->minerAccountID == bindInfo.accountID)
+            if (chainActive[nHeight]->generatorAccountID == bindInfo.accountID)
                 return bindInfo.nHeight + params.nCapacityEvalWindow;
         }
     }

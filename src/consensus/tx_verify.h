@@ -32,7 +32,7 @@ struct Params;
  * Preconditions: tx.IsCoinBase() is false.
  */
 bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID &minerAccountID, const Params& params);
+    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, const Params& params);
 
 /** Get bind/unbind plotter transaction lock height. */
 int GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Params& params);

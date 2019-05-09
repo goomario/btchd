@@ -6,6 +6,7 @@
 #include <chain.h>
 #include <crypto/shabal256.h>
 #include <poc/poc.h>
+#include <script/standard.h>
 #include <util.h>
 
 /**
@@ -175,9 +176,8 @@ void CBlockIndex::Update(const Consensus::Params& params)
     }
 
     // Generator
-    if (!vchPubKey.empty()) {
-        generator = ;
-    }
+    if (!vchPubKey.empty())
+        generatorAccountID = ExtractAccountID(CPubKey(vchPubKey));
 }
 
 void CBlockIndex::BuildSkip()

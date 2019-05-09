@@ -153,13 +153,15 @@ enum BlockStatus: uint32_t {
 
     BLOCK_HAVE_DATA          =    8, //!< full block available in blk*.dat
     BLOCK_HAVE_UNDO          =   16, //!< undo data available in rev*.dat
-    BLOCK_HAVE_MASK          =   BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO,
 
     BLOCK_FAILED_VALID       =   32, //!< stage after last reached validness failed
     BLOCK_FAILED_CHILD       =   64, //!< descends from failed block
     BLOCK_FAILED_MASK        =   BLOCK_FAILED_VALID | BLOCK_FAILED_CHILD,
 
-    BLOCK_OPT_WITNESS       =   128, //!< block data in blk*.data was received with a witness-enforcing client
+    BLOCK_OPT_WITNESS        =  128, //!< block data in blk*.data was received with a witness-enforcing client
+
+    BLOCK_HAVE_SIGNATURE     =  256, //!< signature data for block
+    BLOCK_HAVE_MASK          =   BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO | BLOCK_HAVE_SIGNATURE,
 };
 
 /** The block chain is a tree shaped structure starting with the
@@ -206,8 +208,8 @@ public:
     //! Verification status of this block. See enum BlockStatus
     uint32_t nStatus;
 
-    //! The geneartor from P2SH destination
-    CAccountID160 generator;
+    //! The miner account ID from P2SH destination
+    CAccountID generatorAccountID;
 
     //! block header
     int32_t nVersion;
@@ -245,7 +247,7 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
-        generator.SetNull();
+        generatorAccountID.SetNull();
         nSequenceId = 0;
         nTimeMax = 0;
         generationSignature = nullptr;
@@ -386,11 +388,6 @@ public:
     //! Update block index
     void Update(const Consensus::Params& params);
 
-    const CAccountID160& GetGenerator() const
-    {
-        return generator;
-    }
-
     const uint256& GetGenerationSignature() const
     {
         assert(generationSignature);
@@ -436,7 +433,7 @@ public:
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
-        READWRITE(VARINT(*reinterpret_cast<uint64_t*>(generator.begin())));
+        READWRITE(VARINT(*reinterpret_cast<uint64_t*>(generatorAccountID.begin()))); //! Compatible pre-version wallet
         if (nStatus & (BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO))
             READWRITE(VARINT(nFile));
         if (nStatus & BLOCK_HAVE_DATA)
@@ -445,16 +442,14 @@ public:
             READWRITE(VARINT(nUndoPos));
 
         // block header
-        uint64_t nSignatureFlags = nBaseTarget | (vchPubKey.empty() ? 0 : BLOCKSIGNATURE_FLAG);
         READWRITE(this->nVersion);
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nSignatureFlags);
+        READWRITE(nBaseTarget);
         READWRITE(nNonce);
         READWRITE(nPlotterId);
-        nBaseTarget = nSignatureFlags & BASETARGET_MASK;
-        if (nSignatureFlags & BLOCKSIGNATURE_FLAG) {
+        if (nStatus & BLOCK_HAVE_SIGNATURE) {
             READWRITE(LIMITED_VECTOR(vchPubKey, CPubKey::COMPRESSED_PUBLIC_KEY_SIZE));
             READWRITE(LIMITED_VECTOR(vchSignature, CPubKey::SIGNATURE_SIZE));
         }

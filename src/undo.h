@@ -39,7 +39,7 @@ public:
             if (txout->extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
             } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                ::Serialize(s, REF(PledgeLoanPayload::As(txout->extraData)->scriptID));
+                ::Serialize(s, REF(PledgeLoanPayload::As(txout->extraData)->GetDebitAccountID()));
             } else
                 assert(false);
         }
@@ -67,7 +67,7 @@ public:
             ::Unserialize(s, VARINT(nVersionDummy));
         }
         ::Unserialize(s, REF(CTxOutCompressor(REF(txout->out))));
-        txout->refOutAccountID = GetAccountIDByScriptPubKey(txout->out.scriptPubKey);
+        txout->Refresh();
 
         txout->extraData = nullptr;
         if (nCode & 0x80000000) {
@@ -78,7 +78,7 @@ public:
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
             } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
                 txout->extraData = std::make_shared<PledgeLoanPayload>();
-                ::Unserialize(s, REF(PledgeLoanPayload::As(txout->extraData)->scriptID));
+                ::Unserialize(s, REF(PledgeLoanPayload::As(txout->extraData)->GetDebitAccountID()));
             } else
                 assert(false);
         }
