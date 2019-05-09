@@ -406,11 +406,12 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
             if (accountID == 0)
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BitcoinHD address");
             if (!pcoinsTip->HaveActiveBindPlotter(accountID, nPlotterId))
-                throw JSONRPCError(RPC_INVALID_REQUEST, strprintf("%" PRIu64 " with %s not active bind", nPlotterId, EncodeDestination(dest)));
+                throw JSONRPCError(RPC_INVALID_REQUEST,
+                    strprintf("%" PRIu64 " with %s not active bind", nPlotterId, EncodeDestination(dest)));
         }
 
-        // Update private key for signature
-        if (miningBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
+        // Update private key for signature. Pre-set
+        {
             uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
 
             // From cache
@@ -434,7 +435,8 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
         #endif
 
             if (!privKey)
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Require private key for block signature");
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,
+                    strprintf("Please pre-set %s private key for mining-sign. The consensus verify at %d.", EncodeDestination(dest), params.BHDIP007Height));
 
             if (!mapSignaturePrivKeys.count(destId))
                 mapSignaturePrivKeys[destId] = privKey;
@@ -526,15 +528,15 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
 
 int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, const Consensus::Params& params)
 {
-    int64_t ratioNetCapacityTB;
+    int64_t nTargetNetCapacityTB;
     if (nNetCapacityTB > nPrevNetCapacityTB * 12 / 10) {
-        ratioNetCapacityTB = nPrevNetCapacityTB * 12 / 10;
+        nTargetNetCapacityTB = std::max(nPrevNetCapacityTB * 12 / 10, (int64_t) 1);
     } else if (nNetCapacityTB < nPrevNetCapacityTB * 8 / 10) {
-        ratioNetCapacityTB = nPrevNetCapacityTB * 8 / 10;
+        nTargetNetCapacityTB = std::max(nPrevNetCapacityTB * 8 / 10, (int64_t) 1);
     } else {
-        ratioNetCapacityTB = nNetCapacityTB;
+        nTargetNetCapacityTB = std::max(nNetCapacityTB, (int64_t) 1);
     }
-    return ratioNetCapacityTB;
+    return nTargetNetCapacityTB;
 }
 
 // Round to cent coin
@@ -755,15 +757,13 @@ bool StartPOC()
         threadCheckDeadline = std::thread(CheckDeadlineThread);
 
         // import private key
-        for (const std::string &privkey : gArgs.GetArgs("-miningsign")) {
-            std::string strkeyLog = (privkey.size() > 5 ? privkey.substr(0, 5) : privkey) +
-                                    "******************************************" +
-                                    (privkey.size() > 5 ? privkey.substr(privkey.size() - 5, 5) : privkey);
+        for (const std::string &privkey : gArgs.GetArgs("-signprivkey")) {
+            std::string strkeyLog = (privkey.size() > 2 ? privkey.substr(0, 2) : privkey) + "**************************************************";
             std::string address;
             if (poc::AddMiningSignaturePrivkey(privkey, &address)) {
-                LogPrintf("Import mining-sign address %s from %s\n", address, strkeyLog);
+                LogPrintf("Success import mining-sign address %s from `-signprivkey` \"%s\"\n", address, strkeyLog);
             } else {
-                LogPrintf("Import invalid mining-sign private key from -miningsign=\"%s\"\n", strkeyLog);
+                LogPrintf("Fail import mining-sign private key from `-signprivkey` \"%s\"\n", strkeyLog);
             }
         }
 
@@ -778,13 +778,15 @@ bool StartPOC()
                     LOCK(cs_main);
                     mapSignaturePrivKeys[boost::get<CScriptID>(&dest)->GetUint64(0)] = privKey;
 
-                    LogPrintf("Import mining-sign from wallet primary address %s\n", EncodeDestination(dest));
+                    LogPrintf("Import mining-sign private key from wallet primary address %s\n", EncodeDestination(dest));
                 }
             }
         }
     #endif
 
-        LogPrintf("WARN: mining-sign start at %d. Please use `addsignprivkey xxx` or `miningsign=xxx` import private key.\n", Params().GetConsensus().BHDIP007Height);
+        LogPrintf("WARN: The minig-sign consensus verify at %d. Please import private key by:\n"
+            "\t1.RPC interface: `addsignprivkey <privkey>`\n"
+            "\t2.Write `signprivkey=<privkey>` to btchd.conf (Delete after startup)\n", Params().GetConsensus().BHDIP007Height);
     } else {
         LogPrintf("Skip PoC forge thread\n");
         interruptCheckDeadline();
