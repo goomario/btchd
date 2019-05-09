@@ -540,10 +540,10 @@ int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, 
 }
 
 // Round to cent coin
+static const CAmount ratio_percise = COIN / 10000;
 static inline CAmount RoundPledgeRatio(CAmount amount)
 {
-    const CAmount percise = COIN / 10000;
-    return ((amount + percise / 2) / percise) * percise;
+    return ((amount + ratio_percise / 2) / ratio_percise) * ratio_percise;
 }
 
 CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
@@ -569,15 +569,20 @@ CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
             return params.BHDIP001PledgeRatio;
         }
 
-        // Range in [0,40]
-        int nStage = std::max(std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007PledgeRatioStage) + 0.000005f) + 0.000005f), 40), 0);
+        // Range in [0,20]
+        if (nNetCapacityTB > params.BHDIP007PledgeRatioStage * 1024 * 1024)
+            nNetCapacityTB = params.BHDIP007PledgeRatioStage * 1024 * 1024;
+        int nStage = std::max(std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007PledgeRatioStage) + 0.000005f) + 0.000005f), 20), 0);
+        assert(nStage <= 20);
+        if (pRatioStage) *pRatioStage = nStage;
+
         CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001PledgeRatio));
         CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001PledgeRatio));
+        assert (nTargetRatio > ratio_percise && nStartRatio > nTargetRatio);
+
         int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007PledgeRatioStage;
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
-        assert (nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
-
-        if (pRatioStage) *pRatioStage = nStage;
+        assert (0 < nStartCapacityTB && nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
 
         int64_t nPartCapacityTB = std::max(nEndCapacityTB - nNetCapacityTB, (int64_t) 0);
         return nTargetRatio + RoundPledgeRatio(((nStartRatio - nTargetRatio) * nPartCapacityTB) / (nEndCapacityTB - nStartCapacityTB));
