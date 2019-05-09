@@ -152,6 +152,10 @@ public:
         return piter->key();
     }
 
+    leveldb::Slice GetValue() {
+        return piter->value();
+    }
+
     template<typename K> bool GetKey(K& key) {
         leveldb::Slice slKey = piter->key();
         try {
