@@ -1650,7 +1650,7 @@ std::string generatePassPhrase()
         phrase.append(PassPhrase[rand() % sizeof(PassPhrase) / sizeof(PassPhrase[0])]);
     }
 
-    return std::move(phrase);
+    return phrase;
 }
 
 }
