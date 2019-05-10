@@ -589,7 +589,8 @@ CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
     }
 }
 
-CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage, int64_t* pRatioCapacityTB)
+CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage,
+    int64_t* pRatioCapacityTB, int *pRatioBeginHeight)
 {
     AssertLockHeld(cs_main);
     assert(nMiningHeight > 0 && nMiningHeight <= chainActive.Height() + 1);
@@ -601,8 +602,10 @@ CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* 
         int64_t nPrevNetCapacityTB = GetNetCapacity(std::max(nAdjustHeight - params.nCapacityEvalWindow, 0), params);
         nNetCapacityTB = GetRatioNetCapacity(nCurrentNetCapacityTB, nPrevNetCapacityTB, params);
         if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
+        if (pRatioBeginHeight) *pRatioBeginHeight = nAdjustHeight;
     } else {
-        if (pRatioCapacityTB) *pRatioCapacityTB = params.BHDIP007PledgeRatioStage;
+        if (pRatioCapacityTB) *pRatioCapacityTB = GetNetCapacity(nMiningHeight - 1, params);
+        if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight);
     }
 
     return EvalPledgeRatio(nMiningHeight, nNetCapacityTB, params, pRatioStage);

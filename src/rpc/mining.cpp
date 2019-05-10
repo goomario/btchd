@@ -178,15 +178,16 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     int64_t nRatioNetCapacityTB = 0;
     {
         int nRatioStage = 0;
+        int nRatioStageBeginHeight = 0;
 
         UniValue curEval(UniValue::VOBJ);
-        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB))));
-        curEval.push_back(Pair("ratiostartheight", std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow * params.nCapacityEvalWindow));
+        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB, &nRatioStageBeginHeight))));
+        curEval.push_back(Pair("ratiostartheight", nRatioStageBeginHeight));
         curEval.push_back(Pair("ratiostage",       nRatioStage));
         curEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
         obj.push_back(Pair("currenteval", curEval));
     }
-    // Next eval by current status
+    // Next eval by current net capacity
     if (chainActive.Height() + 1 > params.BHDIP007SmoothEndHeight) {
         int nRatioStage = 0;
         int64_t nNextEvalNetCapacityTB = poc::GetRatioNetCapacity(poc::GetNetCapacity(chainActive.Height(), params), nRatioNetCapacityTB, params);

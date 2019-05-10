@@ -150,10 +150,12 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
  * @param params            Consensus params
  * @param pRatioStage       The stage of current ratio
  * @param pRatioCapacityTB  The net capacity of current stage
+ * @param pRatioBeginHeight The begin block height of current stage
  *
  * @return Return pledge ratio
  */
-CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr, int64_t* pRatioCapacityTB = nullptr);
+CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr,
+    int64_t* pRatioCapacityTB = nullptr, int *pRatioBeginHeight = nullptr);
 
 /**
  * Get capacity pledge amount
