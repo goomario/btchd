@@ -65,11 +65,11 @@
     </message>
     <message>
         <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>這些是你要付款過去的 BitcoinHD 位址。在付錢之前，務必要檢查金額和收款位址是否正確。</translation>
+        <translation>這些是你要付款過去的比特硬盤位址。在付錢之前，務必要檢查金額和收款位址是否正確。</translation>
     </message>
     <message>
         <source>These are your BitcoinHD addresses for receiving payments.</source>
-        <translation>這些是你用來收款的 BitcoinHD 位址。</translation>
+        <translation>這些是你用來收款的比特硬盤位址。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -215,7 +215,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINHDS&lt;/b&gt;!</source>
-        <translation>警告: 如果把錢包加密後又忘記密碼，你就會從此&lt;b&gt;失去其中所有的 BitcoinHD &lt;/b&gt;！</translation>
+        <translation>警告: 如果把錢包加密後又忘記密碼，你就會從此&lt;b&gt;失去其中所有的 BHD &lt;/b&gt;！</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>
@@ -385,7 +385,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Send coins to a BitcoinHD address</source>
-        <translation>付錢給一個 BitcoinHD 位址</translation>
+        <translation>付錢給一個比特硬盤位址</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -409,7 +409,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>BitcoinHD</source>
-        <translation>BitcoinHD</translation>
+        <translation>比特硬盤</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -437,11 +437,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
-        <translation>用 BitcoinHD 位址簽署訊息來證明位址是你的</translation>
+        <translation>用比特硬盤位址簽署訊息來證明位址是你的</translation>
     </message>
     <message>
         <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
-        <translation>驗證訊息是用來確定訊息是用指定的 BitcoinHD 位址簽署的</translation>
+        <translation>驗證訊息是用來確定訊息是用指定的比特硬盤位址簽署的</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -469,7 +469,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Request payments (generates QR codes and btchd: URIs)</source>
-        <translation>要求付款(產生 QR Code 和 BitcoinHD 付款協議的資源識別碼: URI)</translation>
+        <translation>要求付款(產生 QR Code 和比特硬盤付款協議的資源識別碼: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -481,7 +481,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Open a btchd: URI or payment request</source>
-        <translation>開啓 BitcoinHD 協議的資源識別碼(URI)或付款要求</translation>
+        <translation>開啓比特硬盤協議的資源識別碼(URI)或付款要求</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -490,7 +490,7 @@ Available for mining: %5</source>
     <message numerus="yes">
         <source>%n active connection(s) to BitcoinHD network</source>
         <translation>
-            <numerusform>%n 個運作中的 BitcoinHD 網路連線</numerusform>
+            <numerusform>%n 個運作中的比特硬盤網路連線</numerusform>
         </translation>
     </message>
     <message>
@@ -607,7 +607,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
-        <translation>發生了致命的錯誤。BitcoinHD 軟體沒辦法再繼續安全執行，只好結束。</translation>
+        <translation>發生了致命的錯誤。比特硬盤軟體沒辦法再繼續安全執行，只好結束。</translation>
     </message>
     <message>
         <source>Please save your mining account.</source>
@@ -813,7 +813,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The entered address &quot;%1&quot; is not a valid BitcoinHD address.</source>
-        <translation>輸入的位址 %1 並不是有效的 BitcoinHD 位址。</translation>
+        <translation>輸入的位址 %1 並不是有效的比特硬盤位址。</translation>
     </message>
     <message>
         <source>The entered address &quot;%1&quot; is already in the address book.</source>
@@ -942,7 +942,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>BitcoinHD</source>
-        <translation>BitcoinHD</translation>
+        <translation>比特硬盤</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -954,7 +954,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>%1 will download and store a copy of the BitcoinHD block chain.</source>
-        <translation>%1 會下載 BitcoinHD 區塊鏈並且儲存一份副本。</translation>
+        <translation>%1 會下載比特硬盤區塊鏈並且儲存一份副本。</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -989,11 +989,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Recent transactions may not yet be visible, and therefore your wallet&apos;s balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
-        <translation>最近的交易可能還看不到，因此錢包餘額可能不正確。在錢包軟體完成跟 BitcoinHD 網路的同步後，這裡的資訊就會正確。詳情請見下面。</translation>
+        <translation>最近的交易可能還看不到，因此錢包餘額可能不正確。在錢包軟體完成跟比特硬盤網路的同步後，這裡的資訊就會正確。詳情請見下面。</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
-        <translation>使用還沒顯示出來的交易所影響到的 BitcoinHD 可能會不被網路所接受。</translation>
+        <translation>使用還沒顯示出來的交易所影響到的比特硬盤可能會不被網路所接受。</translation>
     </message>
     <message>
         <source>Number of blocks left</source>
@@ -1095,7 +1095,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>透過另外的 SOCKS&amp;5 代理伺服器來連線到 BitcoinHD 網路中的 Tor 隱藏服務:</translation>
+        <translation>透過另外的 SOCKS&amp;5 代理伺服器來連線到比特硬盤網路中的 Tor 隱藏服務:</translation>
     </message>
     <message>
         <source>Hide the icon from the system tray.</source>
@@ -1163,7 +1163,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>自動在路由器上開放 BitcoinHD 的客戶端通訊埠。只有在你的路由器支援且開啓「通用即插即用」協定(UPnP)時才有作用。</translation>
+        <translation>自動在路由器上開放比特硬盤的客戶端通訊埠。只有在你的路由器支援且開啓「通用即插即用」協定(UPnP)時才有作用。</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1179,7 +1179,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
-        <translation>透過 SOCKS5 代理伺服器來連線到 BitcoinHD 網路。</translation>
+        <translation>透過 SOCKS5 代理伺服器來連線到比特硬盤網路。</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1215,7 +1215,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>透過另外的 SOCKS5 代理伺服器來連線到 BitcoinHD 網路中的 Tor 隱藏服務。</translation>
+        <translation>透過另外的 SOCKS5 代理伺服器來連線到比特硬盤網路中的 Tor 隱藏服務。</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1322,7 +1322,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>顯示的資訊可能是過期的。跟 BitcoinHD 網路的連線建立後，你的錢包會自動和網路同步，但是這個步驟還沒完成。</translation>
+        <translation>顯示的資訊可能是過期的。跟比特硬盤網路的連線建立後，你的錢包會自動和網路同步，但是這個步驟還沒完成。</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1433,7 +1433,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Cannot start btchd: click-to-pay handler</source>
-        <translation>沒辦法啟動 BitcoinHD 協議的「按就付」處理器</translation>
+        <translation>沒辦法啟動比特硬盤協議的「按就付」處理器</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1449,7 +1449,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
-        <translation>沒辦法解析 URI 位址！可能是因為 BitcoinHD 位址無效，或是 URI 參數格式錯誤。</translation>
+        <translation>沒辦法解析 URI 位址！可能是因為比特硬盤位址無效，或是 URI 參數格式錯誤。</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1551,7 +1551,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Enter a BitcoinHD address (e.g. %1)</source>
-        <translation>輸入 BitcoinHD 位址 (比如說 %1)</translation>
+        <translation>輸入比特硬盤位址 (比如說 %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -2019,7 +2019,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
-        <translation>附加在付款要求中的訊息，可以不填，打開要求內容時會顯示。注意: 這個訊息不會隨著付款送到 BitcoinHD 網路上。</translation>
+        <translation>附加在付款要求中的訊息，可以不填，打開要求內容時會顯示。注意: 這個訊息不會隨著付款送到比特硬盤網路上。</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2468,7 +2468,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Warning: Invalid BitcoinHD address</source>
-        <translation>警告: BitcoinHD 位址無效</translation>
+        <translation>警告: 比特硬盤位址無效</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2595,7 +2595,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The BitcoinHD address to send the payment to</source>
-        <translation>接收付款的 BitcoinHD 位址</translation>
+        <translation>接收付款的比特硬盤位址</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2643,7 +2643,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
-        <translation>附加在 BitcoinHD 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息不會送到 BitcoinHD 網路上。</translation>
+        <translation>附加在 BitcoinHD 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息不會送到比特硬盤網路上。</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2696,7 +2696,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The BitcoinHD address to sign the message with</source>
-        <translation>用來簽署訊息的 BitcoinHD 位址</translation>
+        <translation>用來簽署訊息的比特硬盤位址</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2728,7 +2728,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Sign the message to prove you own this BitcoinHD address</source>
-        <translation>簽署這個訊息來證明這個 BitcoinHD 位址是你的</translation>
+        <translation>簽署這個訊息來證明這個比特硬盤位址是你的</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2752,11 +2752,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The BitcoinHD address the message was signed with</source>
-        <translation>簽署這個訊息的 BitcoinHD 位址</translation>
+        <translation>簽署這個訊息的比特硬盤位址</translation>
     </message>
     <message>
         <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
-        <translation>驗證這個訊息來確定是用指定的 BitcoinHD 位址簽署的</translation>
+        <translation>驗證這個訊息來確定是用指定的比特硬盤位址簽署的</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -3605,7 +3605,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>BitcoinHD Core</source>
-        <translation>BitcoinHD Core</translation>
+        <translation>比特硬盤核心</translation>
     </message>
     <message>
         <source>The %s developers</source>
