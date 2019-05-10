@@ -3251,8 +3251,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const CChainParams
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
     // Block signature
-    if (!block.vchPubKey.empty() && ExtractAccountID(CPubKey(block.vchPubKey)) != ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey))
-        return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "incorrect signatory");
+    if (!block.vchPubKey.empty()) {
+        const CAccountID signatoryAccountID = ExtractAccountID(CPubKey(block.vchPubKey));
+        const CAccountID generatorAccountID = ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey);
+        if (signatoryAccountID != generatorAccountID || signatoryAccountID.IsNull() || generatorAccountID.IsNull())
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "incorrect signatory");
+    }
 
     if (fCheckWork && fCheckMerkleRoot)
         block.fChecked = true;
