@@ -825,6 +825,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
             if (block.nPlotterId == plotterId) {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.push_back(Pair("blockhash", block.GetBlockHash().GetHex()));
+                lastBlock.push_back(Pair("blocktime", block.GetBlockTime()));
                 lastBlock.push_back(Pair("blockheight", block.nHeight));
                 item.push_back(Pair("lastBlock", lastBlock));
                 break;
@@ -930,6 +931,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("plotterId", std::to_string(it->second.plotterId)));
             item.push_back(Pair("txid", it->first.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockHash().GetHex()));
+            item.push_back(Pair("blocktime", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockTime()));
             item.push_back(Pair("blockheight", it->second.nHeight));
             if (nBlockCount > 0) {
                 item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[it->second.plotterId]) / nBlockCount)));
@@ -1359,6 +1361,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                     {
                         UniValue lastBlock(UniValue::VOBJ);
                         lastBlock.pushKV("blockhash", it->second.pindexLast->GetBlockHash().GetHex());
+                        lastBlock.pushKV("blocktime", it->second.pindexLast->GetBlockTime());
                         lastBlock.pushKV("blockheight", it->second.pindexLast->nHeight);
                         item.pushKV("lastBlock", lastBlock);
                     }
@@ -1379,6 +1382,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                 item.push_back(Pair("txid", outpoint.hash.GetHex()));
                 item.push_back(Pair("vout", 0));
                 item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
+                item.push_back(Pair("blocktime", chainActive[coin.nHeight]->GetBlockTime()));
                 item.push_back(Pair("blockheight", (int) coin.nHeight));
                 UniValue objBindAddress(UniValue::VOBJ);
                 objBindAddress.pushKV(EncodeDestination(ExtractDestination(coin.out.scriptPubKey)), item);
@@ -1394,6 +1398,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                 if (blockIndex.nPlotterId == nPlotterId) {
                     UniValue item(UniValue::VOBJ);
                     item.push_back(Pair("blockhash", blockIndex.GetBlockHash().GetHex()));
+                    item.push_back(Pair("blocktime", blockIndex.GetBlockTime()));
                     item.push_back(Pair("blockheight", blockIndex.nHeight));
                     if (blockIndex.nTx > 0) {
                         CBlock block;

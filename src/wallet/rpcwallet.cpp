@@ -3927,7 +3927,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
-            item.push_back(Pair("height", pblockIndex->nHeight));
+            item.push_back(Pair("blockheight", pblockIndex->nHeight));
 
             const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId);
             item.push_back(Pair("active", lastBindInfo.valid && lastBindInfo.outpoint == COutPoint(wtx.GetHash(), 0)));
@@ -4369,6 +4369,7 @@ UniValue listpledges(const JSONRPCRequest& request)
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
+            item.push_back(Pair("blockheight", pblockIndex->nHeight));
         }
         item.push_back(Pair("valid", it->second.fValid));
         if (filter & ISMINE_WATCH_ONLY) {
