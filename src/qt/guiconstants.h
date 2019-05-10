@@ -50,7 +50,7 @@ static const int MAX_URI_LENGTH = 255;
 
 #define QAPP_ORG_NAME "BitcoinHD"
 #define QAPP_ORG_DOMAIN "btchd.org"
-#define QAPP_APP_NAME_DEFAULT "BitcoinHD Chain"
-#define QAPP_APP_NAME_TESTNET "BitcoinHD Chain [testnet]"
+#define QAPP_APP_NAME_DEFAULT "BitcoinHD"
+#define QAPP_APP_NAME_TESTNET "BitcoinHD [testnet]"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H
