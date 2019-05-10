@@ -362,7 +362,7 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) 
     {
     public:
         CCoinsViewDBPledgeCreditCursor(const CAccountID& accountIDIn, const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn)
-            : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
+                : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
             // Seek cursor
             pcursor->Seek(PledgeEntry(&outpoint, &accountID));
             TestKey();
@@ -409,10 +409,10 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
     {
     public:
         CCoinsViewDBPledgeDebitCursor(const CAccountID& accountIDIn, const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn)
-            : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
-            // Seek cursor
-            pcursor->Seek(PledgeEntry(&outpoint, &accountID));
-            NextEntry();
+                : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0), loanAccountID() {
+            // Seek cursor to first pledge coin
+            pcursor->Seek(DB_COIN_PLEDGE);
+            GotoValidEntry();
         }
 
         bool GetKey(COutPoint &key) const override {
@@ -430,14 +430,13 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
         bool Valid() const override { return !outpoint.IsNull(); }
         void Next() override {
             pcursor->Next();
-            NextEntry();
+            GotoValidEntry();
         }
 
     private:
-        void NextEntry() {
-            CAccountID tempAccountID;
+        void GotoValidEntry() {
             CAccountID debitAccountID;
-            PledgeEntry entry(&outpoint, &tempAccountID);
+            PledgeEntry entry(&outpoint, &loanAccountID);
             while (true) {
                 if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGE || !pcursor->GetValue(debitAccountID)) {
                     outpoint.SetNull();
@@ -447,14 +446,13 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
                     break;
                 pcursor->Next();
             }
-            if (!outpoint.IsNull() && debitAccountID != accountID)
-                outpoint.SetNull();
         }
 
         const CAccountID accountID;
         const CCoinsViewDB* pcoinviewdb;
         std::unique_ptr<CDBIterator> pcursor;
         COutPoint outpoint;
+        CAccountID loanAccountID;
     };
 
     return std::make_shared<CCoinsViewDBPledgeDebitCursor>(accountID, this, db.NewIterator(), GetBestBlock());
@@ -801,7 +799,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->vchSignature       = diskindex.vchSignature;
 
                 // Load external generator
-                if ((pindexNew->nStatus & BLOCK_HAVE_DATA) && !pindexNew->vchPubKey.empty() && pindexNew->nHeight > 0) {
+                if ((pindexNew->nStatus & BLOCK_HAVE_DATA) && pindexNew->vchPubKey.empty() && pindexNew->nHeight > 0) {
                     bool fRequireStore = false;
                     CAccountID generatorAccountID;
                     if (!Read(std::make_pair(DB_BLOCK_GENERATOR_INDEX, pindexNew->GetBlockHash()), REF(generatorAccountID))) {
