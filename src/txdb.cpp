@@ -799,12 +799,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->generatorAccountID = diskindex.generatorAccountID;
                 pindexNew->vchPubKey          = diskindex.vchPubKey;
                 pindexNew->vchSignature       = diskindex.vchSignature;
-                pindexNew->Update(consensusParams);
 
                 // Load external generator
-                if ((pindexNew->nStatus & BLOCK_HAVE_DATA) &&
-                        pindexNew->generatorAccountID.GetUint64(1) == 0 &&
-                        pindexNew->nHeight > 0) {
+                if ((pindexNew->nStatus & BLOCK_HAVE_DATA) && !pindexNew->vchPubKey.empty() && pindexNew->nHeight > 0) {
                     bool fRequireStore = false;
                     CAccountID generatorAccountID;
                     if (!Read(std::make_pair(DB_BLOCK_GENERATOR_INDEX, pindexNew->GetBlockHash()), REF(generatorAccountID))) {
@@ -815,9 +812,10 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                         generatorAccountID = ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey);
                         fRequireStore = !generatorAccountID.IsNull();
                     }
-                    if (generatorAccountID.GetUint64(0) != pindexNew->generatorAccountID.GetUint64(0) || generatorAccountID.GetUint64(1) == 0)
+                    if (generatorAccountID.GetUint64(0) != pindexNew->generatorAccountID.GetUint64(0))
                         return error("%s: failed to read external generator value", __func__);
                     pindexNew->generatorAccountID = generatorAccountID;
+
                     if (fRequireStore) {
                         batch.Write(std::make_pair(DB_BLOCK_GENERATOR_INDEX, pindexNew->GetBlockHash()), REF(generatorAccountID));
                         if (batch.SizeEstimate() > batch_size) {

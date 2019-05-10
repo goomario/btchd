@@ -167,7 +167,7 @@ void CBlockIndex::Update(const Consensus::Params& params)
             .Finalize(nextGenerationSignature.begin());
     } else {
         //! generationSignature + nPlotterId
-        assert(generationSignature != nullptr);
+        assert(generationSignature != nullptr && !generationSignature->IsNull());
         uint64_t plotterId = htobe64(nPlotterId);
         CShabal256()
             .Write(generationSignature->begin(), generationSignature->size())
