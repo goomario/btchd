@@ -120,7 +120,7 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 133000; // Bind and unbind plotter limit. Active on Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006LimitBindPlotterHeight  = 134650; // Bind plotter limit. Active on Tue, 21 Jan 2019 9:00:00 GMT
 
-        consensus.BHDIP007Height           = 168000; // Begin BHDIP007 consensus
+        consensus.BHDIP007Height           = 168200; // Begin BHDIP007 consensus
         consensus.BHDIP007SmoothEndHeight  = consensus.BHDIP007Height + 2 * consensus.nCapacityEvalWindow; // Smooth BHD_BASE_TARGET_240 to BHD_BASE_TARGET
         consensus.BHDIP007PledgeRatioStage = 1250 * 1024; // 1250 PB
 
@@ -138,10 +138,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000914d47b9c1ae0bb119");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000a50bae3b4ce9b9b06e");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x4e7c05d21667baae77f1a0aeb41bf7cbedbd6c8fc32c73fffd338ef57b86adfb"); // 162000
+        consensus.defaultAssumeValid = uint256S("0x446840af87879836fa00ea01cfe8d7dbca9fcd434f2ba0f789a9b8504d9eb874"); // 166000
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -281,16 +281,17 @@ public:
                 { 163000, uint256S("0x85ddcb018897dc5aa1110a4b4e2ead2357779d9eb1be5d290bbda30abc60dff8") },
                 { 164000, uint256S("0x4e7ac62f3e8d095f40fb02432f06ba80d61a6291407ff9e52ffdc65b92611ef0") },
                 { 165000, uint256S("0x0e99ae0aa9a45eb9fb28aef672f9b51787fe7bde6fe59b9aaa3d186e0f27f556") },
-                { 165400, uint256S("0x6bf2a050af1331ad664d76172e1db123800f2d899f30a5b35ac4752e24ad8a61") },
+                { 166000, uint256S("0x446840af87879836fa00ea01cfe8d7dbca9fcd434f2ba0f789a9b8504d9eb874") },
+                { 166100, uint256S("0xd41f714816eff16a2ed558f9c5e55a98b6a3df97dc9a8214850150a284798a4d") },
             }
         };
 
         chainTxData = ChainTxData{
             // Data from getchaintxstats
-            1556446612, // * UNIX timestamp of last known number of transactions
-            215952,     // * total number of transactions between genesis and that timestamp
+            1557456751, // * UNIX timestamp of last known number of transactions
+            223694,     // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
-            0.007237    // * estimated number of transactions per second after that timestamp
+            0.007765    // * estimated number of transactions per second after that timestamp
         };
     }
 };
@@ -351,10 +352,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000011a5ddd9dc58850");
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000012da7e2ee9a2610");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xc6b2a4c3680909bb80d0f3728f56fecbca726739098a8071adc002a4fe5323f2"); // 77000
+        consensus.defaultAssumeValid = uint256S("0x2a099ed535d307ce75ac18638b8bf7dd41cf5624e7b66bda4c100c03caca80cb"); // 80000
 
         pchMessageStart[0] = 0x1e;
         pchMessageStart[1] = 0x12;
@@ -466,13 +467,15 @@ public:
                 {  75000, uint256S("0x1c0104c50e11591420eb5bde8aeeaf2149bcb9351bfb5bac658f87b8ec53b4ed") },
                 {  76000, uint256S("0xc6163360b107368ebc89556acb2c27235e210dc11809b92dfb03120f65fdcc99") },
                 {  77000, uint256S("0xc6b2a4c3680909bb80d0f3728f56fecbca726739098a8071adc002a4fe5323f2") },
-                {  77400, uint256S("0x03ae0f477a73b3203a69b06a8cfb184299dcaacc7469c0b78846b4171d3da337") },
+                {  78000, uint256S("0xb089b8275035b1e07efe568bc33e7169738e50fba59393840aafaa73f4c708e8") },
+                {  79000, uint256S("0xd8966c3db28ef38eaeaf14fa99ccc90a193afd6bb6c0f9c8a60c6d0ef5ab477d") },
+                {  80000, uint256S("0x2a099ed535d307ce75ac18638b8bf7dd41cf5624e7b66bda4c100c03caca80cb") },
             }
         };
 
         chainTxData = ChainTxData{
-            1556446328,
-            77747,
+            1557456341,
+            81133,
             0.003338
         };
 
