@@ -120,7 +120,7 @@ public:
         consensus.BHDIP006CheckRelayHeight        = 133000; // Bind and unbind plotter limit. Active on Tue, 15 Jan 2019 11:00:00 GMT
         consensus.BHDIP006LimitBindPlotterHeight  = 134650; // Bind plotter limit. Active on Tue, 21 Jan 2019 9:00:00 GMT
 
-        consensus.BHDIP007Height           = 168200; // Begin BHDIP007 consensus
+        consensus.BHDIP007Height           = 168300; // Begin BHDIP007 consensus
         consensus.BHDIP007SmoothEndHeight  = consensus.BHDIP007Height + 2 * consensus.nCapacityEvalWindow; // Smooth BHD_BASE_TARGET_240 to BHD_BASE_TARGET
         consensus.BHDIP007PledgeRatioStage = 1250 * 1024; // 1250 PB
 
