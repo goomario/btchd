@@ -6,6 +6,7 @@
 #include <chain.h>
 #include <crypto/shabal256.h>
 #include <poc/poc.h>
+#include <script/standard.h>
 #include <util.h>
 
 /**
@@ -148,16 +149,15 @@ CBlockIndex* CBlockIndex::GetAncestor(int height)
     return const_cast<CBlockIndex*>(static_cast<const CBlockIndex*>(this)->GetAncestor(height));
 }
 
-void CBlockIndex::BuildGenerationSignature(const Consensus::Params& params)
+void CBlockIndex::Update(const Consensus::Params& params)
 {
+    // Genearation signature
     static uint256 dummyGenerationSignature;
     generationSignature = pprev ? &pprev->nextGenerationSignature : &dummyGenerationSignature;
-
-    int nNextHeight = nHeight + 1;
-    if (nNextHeight <= params.BHDIP001StartMingingHeight) {
+    if (nHeight + 1 <= params.BHDIP001StartMingingHeight) {
         //! Pre-Mining not exist generation signature
         nextGenerationSignature.SetNull();
-    } else if (nNextHeight <= params.BHDIP007Height) {
+    } else if (nHeight + 1 <= params.BHDIP007Height) {
         //! hashMerkleRoot + nPlotterId. Unsafe
         // Legacy consensus use little endian
         uint64_t plotterId = htole64(nPlotterId);
@@ -167,13 +167,17 @@ void CBlockIndex::BuildGenerationSignature(const Consensus::Params& params)
             .Finalize(nextGenerationSignature.begin());
     } else {
         //! generationSignature + nPlotterId
-        assert(generationSignature != nullptr);
+        assert(generationSignature != nullptr && !generationSignature->IsNull());
         uint64_t plotterId = htobe64(nPlotterId);
         CShabal256()
             .Write(generationSignature->begin(), generationSignature->size())
             .Write((const unsigned char*)&plotterId, 8)
             .Finalize(nextGenerationSignature.begin());
     }
+
+    // Generator
+    if (!vchPubKey.empty())
+        generatorAccountID = ExtractAccountID(CPubKey(vchPubKey));
 }
 
 void CBlockIndex::BuildSkip()

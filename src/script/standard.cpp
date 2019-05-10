@@ -368,50 +368,34 @@ CScript GetScriptForWitness(const CScript& redeemscript)
     return GetScriptForDestination(WitnessV0ScriptHash(hash));
 }
 
-bool CheckRawPubKeyAndScriptRelationForMining(const CPubKey& pubkey, const CScript &scriptPubKey)
+bool IsValidDestination(const CTxDestination& dest) {
+    return dest.which() != 0;
+}
+
+CAccountID ExtractAccountID(const CPubKey& pubkey)
 {
-    if (!pubkey.IsValid() || !pubkey.IsCompressed() || scriptPubKey.empty())
-        return false;
+    if (!pubkey.IsValid() || !pubkey.IsCompressed())
+        return CAccountID();
 
     // P2SH-Segwit
     CKeyID keyid = pubkey.GetID();
     CTxDestination segwit = WitnessV0KeyHash(keyid);
     CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
-    return GetScriptForDestination(p2sh) == scriptPubKey;
+    return ExtractAccountID(p2sh);
 }
 
-bool IsValidDestination(const CTxDestination& dest) {
-    return dest.which() != 0;
+CAccountID ExtractAccountID(const CScript& scriptPubKey)
+{
+    return ExtractAccountID(ExtractDestination(scriptPubKey));
 }
 
-CAccountID GetAccountIDByScriptID(const CScriptID &scriptID) {
-    return scriptID.GetUint64(0);
-}
-
-CAccountID GetAccountIDByScriptPubKey(const CScript &scriptPubKey) {
-    CTxDestination dest;
-    if (ExtractDestination(scriptPubKey, dest)) {
-        return GetAccountIDByTxDestination(dest);
-    } else {
-        return 0;
-    }
-}
-
-CAccountID GetAccountIDByTxDestination(const CTxDestination &dest) {
+CAccountID ExtractAccountID(const CTxDestination& dest)
+{
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
     if (scriptID != nullptr) {
-        return GetAccountIDByScriptID(*scriptID);
+        return CAccountID(*scriptID);
     } else {
-        return 0;
-    }
-}
-
-CAccountID GetAccountIDByAddress(const std::string &address) {
-    CTxDestination dest = DecodeDestination(address);
-    if (IsValidDestination(dest)) {
-        return GetAccountIDByTxDestination(dest);
-    } else {
-        return 0;
+        return CAccountID();
     }
 }
 
@@ -499,11 +483,6 @@ CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
     return script;
 }
 
-const CAccountID& PledgeLoanPayload::GetDebitAccountID() const {
-    // For performance
-    return ((const uint64_t *) scriptID.begin())[0];
-}
-
 CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *pReject, int *pLastActiveHeight) {
     if (pReject) *pReject = false;
     if (pLastActiveHeight) *pLastActiveHeight = 0;
@@ -574,8 +553,8 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
             return nullptr;
 
         std::shared_ptr<PledgeLoanPayload> payload = std::make_shared<PledgeLoanPayload>();
-        payload->scriptID = uint160(vData);
-        if (payload->GetDebitAccountID() == 0)
+        payload->debitAccountID = uint160(vData);
+        if (payload->GetDebitAccountID().IsNull())
             return nullptr;
         return payload;
     }

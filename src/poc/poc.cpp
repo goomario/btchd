@@ -402,8 +402,8 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
 
         // Check bind
         if (miningBlockIndex.nHeight + 1 >= params.BHDIP006Height) {
-            CAccountID accountID = GetAccountIDByTxDestination(dest);
-            if (accountID == 0)
+            const CAccountID accountID = ExtractAccountID(dest);
+            if (accountID.IsNull())
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BitcoinHD address");
             if (!pcoinsTip->HaveActiveBindPlotter(accountID, nPlotterId))
                 throw JSONRPCError(RPC_INVALID_REQUEST,
@@ -411,7 +411,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
         }
 
         // Update private key for signature. Pre-set
-        {
+        if (miningBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
             uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
 
             // From cache
@@ -589,7 +589,8 @@ CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
     }
 }
 
-CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage, int64_t* pRatioCapacityTB)
+CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage,
+    int64_t* pRatioCapacityTB, int *pRatioBeginHeight)
 {
     AssertLockHeld(cs_main);
     assert(nMiningHeight > 0 && nMiningHeight <= chainActive.Height() + 1);
@@ -601,8 +602,10 @@ CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* 
         int64_t nPrevNetCapacityTB = GetNetCapacity(std::max(nAdjustHeight - params.nCapacityEvalWindow, 0), params);
         nNetCapacityTB = GetRatioNetCapacity(nCurrentNetCapacityTB, nPrevNetCapacityTB, params);
         if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
+        if (pRatioBeginHeight) *pRatioBeginHeight = nAdjustHeight;
     } else {
-        if (pRatioCapacityTB) *pRatioCapacityTB = params.BHDIP007PledgeRatioStage;
+        if (pRatioCapacityTB) *pRatioCapacityTB = GetNetCapacity(nMiningHeight - 1, params);
+        if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight);
     }
 
     return EvalPledgeRatio(nMiningHeight, nNetCapacityTB, params, pRatioStage);
@@ -628,7 +631,7 @@ static inline int64_t GetCompatibleNetCapacity(int nMiningHeight, const Consensu
         return GetNetCapacity<BHD_BASE_TARGET>(nMiningHeight - 1, params, associateBlock);
 }
 
-CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight,
+CAmount GetMiningPledgeAmount(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
     const CCoinsViewCache& view, int64_t* pMinerCapacity, CAmount* pOldMinerPledge,
     const Consensus::Params& params)
 {
@@ -646,15 +649,15 @@ CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& 
         // Mined by plotter ID
         int nOldMinedCount = 0;
         nNetCapacityTB = GetCompatibleNetCapacity(nMiningHeight, params,
-            [&nBlockCount, &nMinedCount, &nOldMinedCount, &minerAccountID, &nPlotterId] (const CBlockIndex &block) {
+            [&nBlockCount, &nMinedCount, &nOldMinedCount, &generatorAccountID, &nPlotterId] (const CBlockIndex &block) {
                 nBlockCount++;
 
                 // 1. Multi plotter generate to same wallet (like pool)
                 // 2. Same plotter generate to multi wallets (for decrease pledge)
-                if (block.minerAccountID == minerAccountID || block.nPlotterId == nPlotterId) {
+                if (block.generatorAccountID == generatorAccountID || block.nPlotterId == nPlotterId) {
                     nMinedCount++;
 
-                    if (block.minerAccountID != minerAccountID) {
+                    if (block.generatorAccountID != generatorAccountID) {
                         // Old consensus: multi mining. Plotter ID bind to multi miner
                         nOldMinedCount = -1;
                     } else if (nOldMinedCount != -1) {
@@ -676,7 +679,7 @@ CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& 
         }
     } else {
         // Binded plotter
-        const std::set<uint64_t> plotters = view.GetAccountBindPlotters(minerAccountID);
+        const std::set<uint64_t> plotters = view.GetAccountBindPlotters(generatorAccountID);
         nNetCapacityTB = GetCompatibleNetCapacity(nMiningHeight, params,
             [&nBlockCount, &nMinedCount, &plotters] (const CBlockIndex &block) {
                 nBlockCount++;

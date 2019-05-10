@@ -15,7 +15,7 @@
 static CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     CAmount nFees = 0;
-    CAccountID accountID = 0;
+    CAccountID accountID;
     uint64_t nPlotterId = 0;
     CCoinsView view;
     BlockReward nBlockReward = GetBlockReward(nHeight, nFees, accountID, nPlotterId, view, consensusParams);

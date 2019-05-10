@@ -142,7 +142,7 @@ private:
     CTxMemPool::setEntries inBlock;
 
     // Current mined account
-    CAccountID minerAccountID;
+    CAccountID generatorAccountID;
 
     // Chain context for the block
     int nHeight;

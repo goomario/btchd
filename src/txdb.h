@@ -65,7 +65,7 @@ struct CDiskTxPos : public CDiskBlockPos
 class CCoinsViewDB final : public CCoinsView
 {
 protected:
-    mutable CDBWrapper  db;
+    mutable CDBWrapper db;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);

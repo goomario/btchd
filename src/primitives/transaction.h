@@ -423,9 +423,7 @@ typedef std::shared_ptr<const CTransaction> CTransactionRef;
 static inline CTransactionRef MakeTransactionRef() { return std::make_shared<const CTransaction>(); }
 template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txIn) { return std::make_shared<const CTransaction>(std::forward<Tx>(txIn)); }
 
-/** Account ID. The 8 bytes of CScriptID head */
-typedef uint64_t CAccountID;
-
-typedef uint160 CAccountID160;
+/** Account ID (CScriptID). */
+typedef uint160 CAccountID;
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

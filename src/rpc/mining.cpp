@@ -178,15 +178,16 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     int64_t nRatioNetCapacityTB = 0;
     {
         int nRatioStage = 0;
+        int nRatioStageBeginHeight = 0;
 
         UniValue curEval(UniValue::VOBJ);
-        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB))));
-        curEval.push_back(Pair("ratiostartheight", std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow * params.nCapacityEvalWindow));
+        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB, &nRatioStageBeginHeight))));
+        curEval.push_back(Pair("ratiostartheight", nRatioStageBeginHeight));
         curEval.push_back(Pair("ratiostage",       nRatioStage));
         curEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
         obj.push_back(Pair("currenteval", curEval));
     }
-    // Next eval by current status
+    // Next eval by current net capacity
     if (chainActive.Height() + 1 > params.BHDIP007SmoothEndHeight) {
         int nRatioStage = 0;
         int64_t nNextEvalNetCapacityTB = poc::GetRatioNetCapacity(poc::GetNetCapacity(chainActive.Height(), params), nRatioNetCapacityTB, params);
@@ -825,6 +826,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
             if (block.nPlotterId == plotterId) {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.push_back(Pair("blockhash", block.GetBlockHash().GetHex()));
+                lastBlock.push_back(Pair("blocktime", block.GetBlockTime()));
                 lastBlock.push_back(Pair("blockheight", block.nHeight));
                 item.push_back(Pair("lastBlock", lastBlock));
                 break;
@@ -870,8 +872,8 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
 
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0)
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
     uint64_t plotterId = 0;
     if (request.params.size() >= 2) {
@@ -930,6 +932,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             item.push_back(Pair("plotterId", std::to_string(it->second.plotterId)));
             item.push_back(Pair("txid", it->first.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockHash().GetHex()));
+            item.push_back(Pair("blocktime", chainActive[static_cast<int>(it->second.nHeight)]->GetBlockTime()));
             item.push_back(Pair("blockheight", it->second.nHeight));
             if (nBlockCount > 0) {
                 item.push_back(Pair("capacity", ValueFromCapacity((nNetCapacityTB * mapPlotterMiningCount[it->second.plotterId]) / nBlockCount)));
@@ -1122,8 +1125,8 @@ UniValue getunbindplotterlimit(const JSONRPCRequest& request)
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)
 {
     LOCK(cs_main);
-    CAccountID accountID = GetAccountIDByAddress(address);
-    if (accountID == 0) {
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(address));
+    if (accountID.IsNull()) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
@@ -1159,7 +1162,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         nNetCapacityTB = poc::GetNetCapacity(chainActive.Height(), params,
             [&nBlockCount, &nMinedBlockCount, &accountID, &mapBindPlotter](const CBlockIndex &block) {
                 nBlockCount++;
-                if (block.minerAccountID == accountID) {
+                if (block.generatorAccountID == accountID) {
                     nMinedBlockCount++;
 
                     PlotterItem &item = mapBindPlotter[block.nPlotterId];
@@ -1334,13 +1337,9 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
             std::map<CAccountID, BindInfo> mapBindInfo;
             for (const CBlockIndex &block : vBlocks) {
                 if (block.nPlotterId == nPlotterId) {
-                    auto it = mapBindInfo.find(block.minerAccountID);
-                    if (it == mapBindInfo.end()) {
-                        mapBindInfo.insert(std::make_pair(block.minerAccountID, BindInfo{1, &block}));
-                    } else {
-                        it->second.forgeCount++;
-                        it->second.pindexLast = &block;
-                    }
+                    BindInfo &info = mapBindInfo[block.generatorAccountID];
+                    info.forgeCount++;
+                    info.pindexLast = &block;
                 }
             }
 
@@ -1363,6 +1362,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                     {
                         UniValue lastBlock(UniValue::VOBJ);
                         lastBlock.pushKV("blockhash", it->second.pindexLast->GetBlockHash().GetHex());
+                        lastBlock.pushKV("blocktime", it->second.pindexLast->GetBlockTime());
                         lastBlock.pushKV("blockheight", it->second.pindexLast->nHeight);
                         item.pushKV("lastBlock", lastBlock);
                     }
@@ -1383,6 +1383,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                 item.push_back(Pair("txid", outpoint.hash.GetHex()));
                 item.push_back(Pair("vout", 0));
                 item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
+                item.push_back(Pair("blocktime", chainActive[coin.nHeight]->GetBlockTime()));
                 item.push_back(Pair("blockheight", (int) coin.nHeight));
                 UniValue objBindAddress(UniValue::VOBJ);
                 objBindAddress.pushKV(EncodeDestination(ExtractDestination(coin.out.scriptPubKey)), item);
@@ -1398,6 +1399,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                 if (blockIndex.nPlotterId == nPlotterId) {
                     UniValue item(UniValue::VOBJ);
                     item.push_back(Pair("blockhash", blockIndex.GetBlockHash().GetHex()));
+                    item.push_back(Pair("blocktime", blockIndex.GetBlockTime()));
                     item.push_back(Pair("blockheight", blockIndex.nHeight));
                     if (blockIndex.nTx > 0) {
                         CBlock block;
@@ -1427,7 +1429,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
 
             UniValue item(UniValue::VOBJ);
             item.push_back(Pair("from", EncodeDestination(ExtractDestination(coin.out.scriptPubKey))));
-            item.push_back(Pair("to", EncodeDestination(PledgeLoanPayload::As(coin.extraData)->scriptID)));
+            item.push_back(Pair("to", EncodeDestination(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID())));
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("txid", key.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
@@ -1470,8 +1472,8 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
 
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0)
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
 
     LOCK(cs_main);
@@ -1509,8 +1511,8 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
 
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0)
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
 
     LOCK(cs_main);
@@ -1744,8 +1746,8 @@ UniValue getbalanceofheight(const JSONRPCRequest& request)
     if (!request.params[0].isStr())
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
 
-    CAccountID accountID = GetAccountIDByAddress(request.params[0].get_str());
-    if (accountID == 0) {
+    const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull()) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, BitcoinHD address of P2SH");
     }
 

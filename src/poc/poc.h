@@ -150,10 +150,12 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
  * @param params            Consensus params
  * @param pRatioStage       The stage of current ratio
  * @param pRatioCapacityTB  The net capacity of current stage
+ * @param pRatioBeginHeight The begin block height of current stage
  *
  * @return Return pledge ratio
  */
-CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr, int64_t* pRatioCapacityTB = nullptr);
+CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr,
+    int64_t* pRatioCapacityTB = nullptr, int *pRatioBeginHeight = nullptr);
 
 /**
  * Get capacity pledge amount
@@ -168,7 +170,7 @@ CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio);
 /**
  * Get mining pledge amount for miner
  *
- * @param minerAccountID            Miner address digit ID
+ * @param generatorAccountID        Block generator
  * @param nPlotterId                Proof of capacity ID
  * @param nMiningHeight             The height of mining
  * @param view                      The coin view
@@ -178,7 +180,7 @@ CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio);
  *
  * @return Mining pledge amount for miner
  */
-CAmount GetMiningPledgeAmount(const CAccountID& minerAccountID, const uint64_t& nPlotterId, int nMiningHeight,
+CAmount GetMiningPledgeAmount(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
     const CCoinsViewCache& view, int64_t* pMinerCapacityTB, CAmount* pOldMinerPledge,
     const Consensus::Params& params);
 

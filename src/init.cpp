@@ -599,7 +599,7 @@ public:
 private:
     void NextTick(int m) {
         int64_t now = GetTime();
-        if (now + 2 > prevTickTime) {
+        if (now > prevTickTime + 2) {
             prevTickTime = now;
             tick = (++tick) % m;
         }

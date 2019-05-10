@@ -970,7 +970,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
             questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[lockedDest].name)).append(")");
         questionString.append("</td></tr>");
         {
-            CTxDestination dest = PledgeLoanPayload::As(coin.extraData)->scriptID;
+            CTxDestination dest = CScriptID(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID());
             questionString.append("<tr><td>").append(tr("To address:")).append("</td><td>").append(QString::fromStdString(EncodeDestination(dest)));
             if (wallet->mapAddressBook.count(dest) && !wallet->mapAddressBook[dest].name.empty())
                 questionString.append("(").append(GUIUtil::HtmlEscape(wallet->mapAddressBook[dest].name)).append(")");

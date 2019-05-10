@@ -28,12 +28,13 @@
 
 /** UTXO version flag */
 static const char DB_COIN_VERSION = 'V';
-static const uint32_t DB_VERSION = 0x10;
+static const uint32_t DB_VERSION = 0x11;
 
 static const char DB_COIN = 'C';
 static const char DB_BLOCK_FILES = 'f';
 static const char DB_TXINDEX = 't';
 static const char DB_BLOCK_INDEX = 'b';
+static const char DB_BLOCK_GENERATOR_INDEX = 'g';
 
 static const char DB_BEST_BLOCK = 'B';
 static const char DB_HEAD_BLOCKS = 'H';
@@ -82,7 +83,7 @@ struct CoinIndexEntry {
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(*accountID);
+        s << *accountID;
         s << outpoint->hash;
         s << VARINT(outpoint->n);
     }
@@ -90,7 +91,7 @@ struct CoinIndexEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(*accountID);
+        s >> *accountID;
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
@@ -108,7 +109,7 @@ struct BindPlotterEntry {
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(*accountID);
+        s << *accountID;
         s << outpoint->hash;
         s << VARINT(outpoint->n);
     }
@@ -116,7 +117,7 @@ struct BindPlotterEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(*accountID);
+        s >> *accountID;
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
@@ -158,7 +159,7 @@ struct PledgeEntry {
     template<typename Stream>
     void Serialize(Stream &s) const {
         s << key;
-        s << VARINT(*accountID);
+        s << *accountID;
         s << outpoint->hash;
         s << VARINT(outpoint->n);
     }
@@ -166,7 +167,7 @@ struct PledgeEntry {
     template<typename Stream>
     void Unserialize(Stream& s) {
         s >> key;
-        s >> VARINT(*accountID);
+        s >> *accountID;
         s >> outpoint->hash;
         s >> VARINT(outpoint->n);
     }
@@ -228,17 +229,17 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) {
             if (it->second.coin.IsSpent()) {
                 batch.Erase(CoinEntry(&it->first));
-                if (it->second.coin.refOutAccountID != 0)
+                if (!it->second.coin.refOutAccountID.IsNull())
                     batch.Erase(CoinIndexEntry(&it->first, &it->second.coin.refOutAccountID));
             } else {
                 batch.Write(CoinEntry(&it->first), it->second.coin);
-                if (it->second.coin.refOutAccountID != 0)
+                if (!it->second.coin.refOutAccountID.IsNull())
                     batch.Write(CoinIndexEntry(&it->first, &it->second.coin.refOutAccountID), VARINT(it->second.coin.out.nValue));
             }
             changed++;
 
             // Extra indexes. ONLY FOR vout[0]
-            if (it->first.n == 0 && it->second.coin.refOutAccountID != 0) {
+            if (it->first.n == 0 && !it->second.coin.refOutAccountID.IsNull()) {
                 bool fTryEraseBind = true, fTryErasePledge = true;
                 if (it->second.coin.IsSpent()) {
                     if (it->second.coin.IsBindPlotter() && (it->second.flags & CCoinsCacheEntry::UNBIND)) {
@@ -261,7 +262,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     else if (it->second.coin.IsPledge()) {
                         fTryErasePledge = false;
 
-                        batch.Write(PledgeEntry(&it->first, &it->second.coin.refOutAccountID), VARINT(PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID()));
+                        batch.Write(PledgeEntry(&it->first, &it->second.coin.refOutAccountID), REF(PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID()));
                     }
                 }
 
@@ -361,12 +362,10 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) 
     {
     public:
         CCoinsViewDBPledgeCreditCursor(const CAccountID& accountIDIn, const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn)
-            : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
-            if (accountID != 0) {
-                // Seek cursor
-                pcursor->Seek(PledgeEntry(&outpoint, &accountID));
-                TestKey();
-            }
+                : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
+            // Seek cursor
+            pcursor->Seek(PledgeEntry(&outpoint, &accountID));
+            TestKey();
         }
 
         bool GetKey(COutPoint &key) const override {
@@ -389,7 +388,7 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) 
 
     private:
         void TestKey() {
-            CAccountID tempAccountID = 0;
+            CAccountID tempAccountID;
             PledgeEntry entry(&outpoint, &tempAccountID);
             if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGE || tempAccountID != accountID) {
                 outpoint.SetNull();
@@ -410,12 +409,10 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
     {
     public:
         CCoinsViewDBPledgeDebitCursor(const CAccountID& accountIDIn, const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn)
-            : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
-            if (accountID != 0) {
-                // Seek cursor
-                pcursor->Seek(PledgeEntry(&outpoint, &accountID));
-                NextEntry();
-            }
+                : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0), loanAccountID() {
+            // Seek cursor to first pledge coin
+            pcursor->Seek(DB_COIN_PLEDGE);
+            GotoValidEntry();
         }
 
         bool GetKey(COutPoint &key) const override {
@@ -433,16 +430,15 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
         bool Valid() const override { return !outpoint.IsNull(); }
         void Next() override {
             pcursor->Next();
-            NextEntry();
+            GotoValidEntry();
         }
 
     private:
-        void NextEntry() {
-            CAccountID tempAccountID = 0;
-            CAccountID debitAccountID = 0;
-            PledgeEntry entry(&outpoint, &tempAccountID);
+        void GotoValidEntry() {
+            CAccountID debitAccountID;
+            PledgeEntry entry(&outpoint, &loanAccountID);
             while (true) {
-                if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGE || !pcursor->GetValue(VARINT(debitAccountID))) {
+                if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGE || !pcursor->GetValue(debitAccountID)) {
                     outpoint.SetNull();
                     break;
                 }
@@ -450,14 +446,13 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
                     break;
                 pcursor->Next();
             }
-            if (!outpoint.IsNull() && debitAccountID != accountID)
-                outpoint.SetNull();
         }
 
         const CAccountID accountID;
         const CCoinsViewDB* pcoinviewdb;
         std::unique_ptr<CDBIterator> pcursor;
         COutPoint outpoint;
+        CAccountID loanAccountID;
     };
 
     return std::make_shared<CCoinsViewDBPledgeDebitCursor>(accountID, this, db.NewIterator(), GetBestBlock());
@@ -603,15 +598,15 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
 
         // Read from database
         std::map<COutPoint, CAmount> selected;
-        CAccountID tempDebitAccountID = 0;
-        CAccountID tempAccountID = 0;
+        CAccountID tempDebitAccountID;
+        CAccountID tempAccountID;
         COutPoint tempOutpoint(uint256(), 0);
         Coin coin;
         PledgeEntry entry(&tempOutpoint, &tempAccountID);
         pcursor->Seek(entry);
         while (pcursor->Valid()) {
             if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGE) {
-                if (!pcursor->GetValue(VARINT(tempDebitAccountID)))
+                if (!pcursor->GetValue(tempDebitAccountID))
                     throw std::runtime_error("Database read error");
                 if (tempDebitAccountID == accountID) {
                     if (!db.Read(CoinEntry(entry.outpoint), coin))
@@ -683,7 +678,7 @@ CBindPlotterCoinsMap CCoinsViewDB::GetBindPlotterEntries(const uint64_t &plotter
 
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
     COutPoint tempOutpoint(uint256(), 0);
-    CAccountID tempAccountID = 0;
+    CAccountID tempAccountID;
     uint64_t tempPlotterId = 0;
     uint32_t tempHeight = 0;
     bool tempValid = 0;
@@ -740,6 +735,8 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     batch.Write(DB_LAST_BLOCK, nLastFile);
     for (std::vector<const CBlockIndex*>::const_iterator it=blockinfo.begin(); it != blockinfo.end(); it++) {
         batch.Write(std::make_pair(DB_BLOCK_INDEX, (*it)->GetBlockHash()), CDiskBlockIndex(*it));
+        if ((*it)->vchPubKey.empty() && !(*it)->generatorAccountID.IsNull())
+            batch.Write(std::make_pair(DB_BLOCK_GENERATOR_INDEX, (*it)->GetBlockHash()), REF((*it)->generatorAccountID));
     }
     return WriteBatch(batch, true);
 }
@@ -769,6 +766,8 @@ bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
 
 bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex)
 {
+    size_t batch_size = (size_t) gArgs.GetArg("-dbbatchsize", nDefaultDbBatchSize);
+    CDBBatch batch(*this);
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
 
     pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
@@ -782,22 +781,47 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
             if (pcursor->GetValue(diskindex)) {
                 // Construct block index object
                 CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
-                pindexNew->pprev           = insertBlockIndex(diskindex.hashPrev);
-                pindexNew->nHeight         = diskindex.nHeight;
-                pindexNew->nFile           = diskindex.nFile;
-                pindexNew->nDataPos        = diskindex.nDataPos;
-                pindexNew->nUndoPos        = diskindex.nUndoPos;
-                pindexNew->nVersion        = diskindex.nVersion;
-                pindexNew->hashMerkleRoot  = diskindex.hashMerkleRoot;
-                pindexNew->nTime           = diskindex.nTime;
-                pindexNew->nBaseTarget     = diskindex.nBaseTarget;
-                pindexNew->nNonce          = diskindex.nNonce;
-                pindexNew->nPlotterId      = diskindex.nPlotterId;
-                pindexNew->nStatus         = diskindex.nStatus;
-                pindexNew->nTx             = diskindex.nTx;
-                pindexNew->minerAccountID  = diskindex.minerAccountID;
-                pindexNew->vchPubKey       = diskindex.vchPubKey;
-                pindexNew->vchSignature    = diskindex.vchSignature;
+                pindexNew->pprev              = insertBlockIndex(diskindex.hashPrev);
+                pindexNew->nHeight            = diskindex.nHeight;
+                pindexNew->nFile              = diskindex.nFile;
+                pindexNew->nDataPos           = diskindex.nDataPos;
+                pindexNew->nUndoPos           = diskindex.nUndoPos;
+                pindexNew->nVersion           = diskindex.nVersion;
+                pindexNew->hashMerkleRoot     = diskindex.hashMerkleRoot;
+                pindexNew->nTime              = diskindex.nTime;
+                pindexNew->nBaseTarget        = diskindex.nBaseTarget;
+                pindexNew->nNonce             = diskindex.nNonce;
+                pindexNew->nPlotterId         = diskindex.nPlotterId;
+                pindexNew->nStatus            = diskindex.nStatus;
+                pindexNew->nTx                = diskindex.nTx;
+                pindexNew->generatorAccountID = diskindex.generatorAccountID;
+                pindexNew->vchPubKey          = diskindex.vchPubKey;
+                pindexNew->vchSignature       = diskindex.vchSignature;
+
+                // Load external generator
+                if ((pindexNew->nStatus & BLOCK_HAVE_DATA) && pindexNew->vchPubKey.empty() && pindexNew->nHeight > 0) {
+                    bool fRequireStore = false;
+                    CAccountID generatorAccountID;
+                    if (!Read(std::make_pair(DB_BLOCK_GENERATOR_INDEX, pindexNew->GetBlockHash()), REF(generatorAccountID))) {
+                        //! Slowly: Read from full block data
+                        CBlock block;
+                        if (!ReadBlockFromDisk(block, pindexNew, consensusParams))
+                            return error("%s: failed to read block value", __func__);
+                        generatorAccountID = ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey);
+                        fRequireStore = !generatorAccountID.IsNull();
+                    }
+                    if (generatorAccountID.GetUint64(0) != pindexNew->generatorAccountID.GetUint64(0))
+                        return error("%s: failed to read external generator value", __func__);
+                    pindexNew->generatorAccountID = generatorAccountID;
+
+                    if (fRequireStore) {
+                        batch.Write(std::make_pair(DB_BLOCK_GENERATOR_INDEX, pindexNew->GetBlockHash()), REF(generatorAccountID));
+                        if (batch.SizeEstimate() > batch_size) {
+                            WriteBatch(batch);
+                            batch.Clear();
+                        }
+                    }
+                }
 
                 pcursor->Next();
             } else {
@@ -808,7 +832,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
         }
     }
 
-    return true;
+    return WriteBatch(batch);
 }
 
 /** Upgrade the database from older formats */
@@ -862,7 +886,7 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
                 if (!pcursor->GetValue(coin))
                     return error("%s: cannot parse coin record", __func__);
 
-                if (coin.refOutAccountID != 0) {
+                if (!coin.refOutAccountID.IsNull()) {
                     // Coin index
                     batch.Write(CoinIndexEntry(&outpoint, &coin.refOutAccountID), VARINT(coin.out.nValue));
                     add++;
@@ -876,7 +900,7 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
                         add++;
                     }
                     else if (coin.IsPledge()) {
-                        batch.Write(PledgeEntry(&outpoint, &coin.refOutAccountID), VARINT(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID()));
+                        batch.Write(PledgeEntry(&outpoint, &coin.refOutAccountID), REF(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID()));
                         add++;
                     }
 

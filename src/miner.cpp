@@ -83,7 +83,7 @@ BlockAssembler::BlockAssembler(const CChainParams& params) : BlockAssembler(para
 void BlockAssembler::resetBlock()
 {
     inBlock.clear();
-    minerAccountID = 0;
+    generatorAccountID.SetNull();
 
     // Reserve space for coinbase tx
     nBlockWeight = 4000;
@@ -108,8 +108,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         return nullptr;
     pblock = &pblocktemplate->block; // pointer for convenience
 
-    minerAccountID = GetAccountIDByScriptPubKey(scriptPubKeyIn);
-    assert (minerAccountID != 0);
+    generatorAccountID = ExtractAccountID(scriptPubKeyIn);
+    assert (!generatorAccountID.IsNull());
 
     // Add dummy coinbase tx as first transaction
     pblock->vtx.emplace_back();
@@ -160,7 +160,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(static_cast<int64_t>(nonce)) << CScriptNum(static_cast<int64_t>(plotterId))) + COINBASE_FLAGS;
     assert(coinbaseTx.vin[0].scriptSig.size() <= 100);
     // Reward
-    BlockReward blockReward = GetBlockReward(nHeight, nFees, minerAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(nHeight, nFees, generatorAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
     if (blockReward.minerBHDIP004Compatiable != 0) {
         // Let old wallet can verify
@@ -255,7 +255,7 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
         if (it->GetTx().IsUniform()) {
             CValidationState state;
             CAmount txfee;
-            if (!Consensus::CheckTxInputs(it->GetTx(), state, *pcoinsTip, *pcoinsTip, nHeight, txfee, minerAccountID, chainparams.GetConsensus()))
+            if (!Consensus::CheckTxInputs(it->GetTx(), state, *pcoinsTip, *pcoinsTip, nHeight, txfee, generatorAccountID, chainparams.GetConsensus()))
                 return false;
         }
     }
@@ -477,7 +477,7 @@ bool BlockAssembler::sign(CBlock &block, const CKey &privKey)
 {
     assert (privKey.IsValid());
     CPubKey pubKey = privKey.GetPubKey();
-    if (!CheckRawPubKeyAndScriptRelationForMining(pubKey, block.vtx[0]->vout[0].scriptPubKey)) {
+    if (ExtractAccountID(pubKey) != ExtractAccountID(block.vtx[0]->vout[0].scriptPubKey)) {
         return false;
     }
     block.vchPubKey = std::vector<unsigned char>(pubKey.begin(), pubKey.end());

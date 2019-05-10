@@ -52,18 +52,18 @@ public:
     CDatacarrierPayloadRef extraData;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
-    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {
+    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), refOutAccountID(), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {
         assert(nHeight <= COIN_MAXHEIGHT);
     }
-    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), refOutAccountID(0), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {
+    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), refOutAccountID(), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {
         assert(nHeight <= COIN_MAXHEIGHT);
     }
     //! empty constructor
-    Coin() : refOutAccountID(0), fCoinBase(false), nHeight(0) {}
+    Coin() : refOutAccountID(), fCoinBase(false), nHeight(0) {}
 
     //! Refresh memory data
     void Refresh() {
-        refOutAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
+        refOutAccountID = ExtractAccountID(out.scriptPubKey);
     }
 
     void Clear() {
@@ -87,7 +87,7 @@ public:
             if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
             } else if (extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                ::Serialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
+                ::Serialize(s, REF(PledgeLoanPayload::As(extraData)->GetDebitAccountID()));
             } else
                 assert(false);
         }
@@ -100,7 +100,7 @@ public:
         nHeight = (code&0x7fffffff) >> 1;
         fCoinBase = code & 0x01;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
-        refOutAccountID = GetAccountIDByScriptPubKey(out.scriptPubKey);
+        Refresh();
 
         extraData = nullptr;
         if (code & 0x80000000) {
@@ -111,7 +111,7 @@ public:
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
             } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
                 extraData = std::make_shared<PledgeLoanPayload>();
-                ::Unserialize(s, REF(PledgeLoanPayload::As(extraData)->scriptID));
+                ::Unserialize(s, REF(PledgeLoanPayload::As(extraData)->GetDebitAccountID()));
             } else
                 assert(false);
         }
@@ -122,7 +122,7 @@ public:
     }
 
     size_t DynamicMemoryUsage() const {
-        return memusage::DynamicUsage(out.scriptPubKey);
+        return memusage::DynamicUsage(out.scriptPubKey) + CAccountID::WIDTH * 2;
     }
 
     bool IsBindPlotter() const {
@@ -184,7 +184,7 @@ struct CBindPlotterCoinInfo
     uint64_t plotterId;
     bool valid;
 
-    CBindPlotterCoinInfo() : nHeight(-1), accountID(0), plotterId(0), valid(false) {}
+    CBindPlotterCoinInfo() : nHeight(-1), accountID(), plotterId(0), valid(false) {}
     explicit CBindPlotterCoinInfo(const Coin& coin) : nHeight((int)coin.nHeight), accountID(coin.refOutAccountID),
         plotterId(BindPlotterPayload::As(coin.extraData)->GetId()), valid(!coin.IsSpent()) {}
 };
@@ -202,7 +202,7 @@ public:
     uint64_t plotterId;
     bool valid;
 
-    CBindPlotterInfo() : outpoint(), nHeight(-1), accountID(0), plotterId(0), valid(false) {}
+    CBindPlotterInfo() : outpoint(), nHeight(-1), accountID(), plotterId(0), valid(false) {}
     explicit CBindPlotterInfo(const CBindPlotterCoinPair& pair) : outpoint(pair.first),
         nHeight(pair.second.nHeight), accountID(pair.second.accountID), plotterId(pair.second.plotterId), valid(pair.second.valid) {} 
     CBindPlotterInfo(const COutPoint& o, const Coin& coin) : outpoint(o),

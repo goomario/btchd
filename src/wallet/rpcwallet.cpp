@@ -3670,10 +3670,11 @@ UniValue bindplotter(const JSONRPCRequest& request)
         }
 
         // Active
-        const CAccountID account = GetAccountIDByScriptPubKey(vecSend[0].scriptPubKey);
+        const CAccountID accountID = ExtractAccountID(vecSend[0].scriptPubKey);
         const uint64_t &plotterId = BindPlotterPayload::As(payload)->GetId();
-        if (pcoinsTip->HaveActiveBindPlotter(account, plotterId))
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s and actived.", std::to_string(plotterId), EncodeDestination(bindToDest)));
+        if (pcoinsTip->HaveActiveBindPlotter(accountID, plotterId))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The plotter %s already binded to %s and actived.",
+                std::to_string(plotterId), EncodeDestination(bindToDest)));
     }
 
     CValidationState state;
@@ -3926,7 +3927,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
-            item.push_back(Pair("height", pblockIndex->nHeight));
+            item.push_back(Pair("blockheight", pblockIndex->nHeight));
 
             const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId);
             item.push_back(Pair("active", lastBindInfo.valid && lastBindInfo.outpoint == COutPoint(wtx.GetHash(), 0)));
@@ -4328,9 +4329,8 @@ UniValue listpledges(const JSONRPCRequest& request)
         if (!fIncludeInvalid && !fValid)
             continue;
 
-        CTxDestination fromDest, toDest;
-        ExtractDestination(wtx.tx->vout[0].scriptPubKey, fromDest);
-        toDest = PledgeLoanPayload::As(payload)->scriptID;
+        CTxDestination fromDest = ExtractDestination(wtx.tx->vout[0].scriptPubKey);
+        CTxDestination toDest = CScriptID(PledgeLoanPayload::As(payload)->GetDebitAccountID());
         isminetype sendIsmine = ::IsMine(*pwallet, fromDest);
         isminetype receiveIsmine = ::IsMine(*pwallet, toDest);
         bool fSendIsmine = (sendIsmine & filter) != 0;
@@ -4369,6 +4369,7 @@ UniValue listpledges(const JSONRPCRequest& request)
             CBlockIndex *pblockIndex = mapBlockIndex[wtx.hashBlock];
             item.push_back(Pair("blockhash", pblockIndex->phashBlock->GetHex()));
             item.push_back(Pair("blocktime", pblockIndex->GetBlockTime()));
+            item.push_back(Pair("blockheight", pblockIndex->nHeight));
         }
         item.push_back(Pair("valid", it->second.fValid));
         if (filter & ISMINE_WATCH_ONLY) {
