@@ -546,41 +546,41 @@ static inline CAmount RoundPledgeRatio(CAmount amount)
     return ((amount + ratio_percise / 2) / ratio_percise) * ratio_percise;
 }
 
-CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
+CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
 {
     if (nMiningHeight < params.BHDIP007Height) {
         // Legacy
         if (pRatioStage) *pRatioStage = -2;
 
-        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
+        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001MiningRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
         return nLegacyRatio;
     } else if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         // Smooth
         if (pRatioStage) *pRatioStage = -1;
 
-        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001PledgeRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
+        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001MiningRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
         int step = params.BHDIP007SmoothEndHeight - params.BHDIP007Height + 1;
         int current = nMiningHeight - params.BHDIP007Height + 1;
-        return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001PledgeRatio) * current) / step);
+        return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001MiningRatio) * current) / step);
     } else {
         // Dynamic
-        if (nNetCapacityTB < params.BHDIP007PledgeRatioStage) {
+        if (nNetCapacityTB < params.BHDIP007MiningRatioStage) {
             if (pRatioStage) *pRatioStage = -1;
-            return params.BHDIP001PledgeRatio;
+            return params.BHDIP001MiningRatio;
         }
 
         // Range in [0,20]
-        if (nNetCapacityTB > params.BHDIP007PledgeRatioStage * 1024 * 1024)
-            nNetCapacityTB = params.BHDIP007PledgeRatioStage * 1024 * 1024;
-        int nStage = std::max(std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007PledgeRatioStage) + 0.000005f) + 0.000005f), 20), 0);
+        if (nNetCapacityTB > params.BHDIP007MiningRatioStage * 1024 * 1024)
+            nNetCapacityTB = params.BHDIP007MiningRatioStage * 1024 * 1024;
+        int nStage = std::max(std::min((int) (std::log2((float) (nNetCapacityTB / params.BHDIP007MiningRatioStage) + 0.000005f) + 0.000005f), 20), 0);
         assert(nStage <= 20);
         if (pRatioStage) *pRatioStage = nStage;
 
-        CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001PledgeRatio));
-        CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001PledgeRatio));
+        CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001MiningRatio));
+        CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001MiningRatio));
         assert (nTargetRatio > ratio_percise && nStartRatio > nTargetRatio);
 
-        int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007PledgeRatioStage;
+        int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007MiningRatioStage;
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
         assert (0 < nStartCapacityTB && nStartCapacityTB <= nNetCapacityTB && nNetCapacityTB <= nEndCapacityTB);
 
@@ -589,7 +589,7 @@ CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
     }
 }
 
-CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage,
+CAmount GetMiningRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage,
     int64_t* pRatioCapacityTB, int *pRatioBeginHeight)
 {
     AssertLockHeld(cs_main);
@@ -608,18 +608,18 @@ CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* 
         if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight);
     }
 
-    return EvalPledgeRatio(nMiningHeight, nNetCapacityTB, params, pRatioStage);
+    return EvalMiningRatio(nMiningHeight, nNetCapacityTB, params, pRatioStage);
 }
 
-CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio)
+CAmount GetCapacityRequireBalance(int64_t nCapacityTB, CAmount miningRatio)
 {
-    return ((pledgeRatio * nCapacityTB + COIN/2) / COIN) * COIN;
+    return ((miningRatio * nCapacityTB + COIN/2) / COIN) * COIN;
 }
 
 // Compatible BHD007 before consensus
 static inline CAmount GetCompatiblePledgeRatio(int nMiningHeight, const Consensus::Params& params)
 {
-    return nMiningHeight < params.BHDIP007Height ? params.BHDIP001PledgeRatio : GetPledgeRatio(nMiningHeight, params);
+    return nMiningHeight < params.BHDIP007Height ? params.BHDIP001MiningRatio : GetMiningRatio(nMiningHeight, params);
 }
 
 // Compatible BHD007 before consensus
@@ -631,17 +631,17 @@ static inline int64_t GetCompatibleNetCapacity(int nMiningHeight, const Consensu
         return GetNetCapacity<BHD_BASE_TARGET>(nMiningHeight - 1, params, associateBlock);
 }
 
-CAmount GetMiningPledgeAmount(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
-    const CCoinsViewCache& view, int64_t* pMinerCapacity, CAmount* pOldMinerPledge,
+CAmount GetMiningRequireBalance(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
+    const CCoinsViewCache& view, int64_t* pMinerCapacity, CAmount* pOldMiningRequireBalance,
     const Consensus::Params& params)
 {
     AssertLockHeld(cs_main);
     assert(GetSpendHeight(view) == nMiningHeight);
 
     if (pMinerCapacity != nullptr) *pMinerCapacity = 0;
-    if (pOldMinerPledge != nullptr) *pOldMinerPledge = 0;
+    if (pOldMiningRequireBalance != nullptr) *pOldMiningRequireBalance = 0;
 
-    const CAmount pledgeRatio = GetCompatiblePledgeRatio(nMiningHeight, params);
+    const CAmount miningRatio = GetCompatiblePledgeRatio(nMiningHeight, params);
 
     int64_t nNetCapacityTB = 0;
     int nBlockCount = 0, nMinedCount = 0;
@@ -668,13 +668,13 @@ CAmount GetMiningPledgeAmount(const CAccountID& generatorAccountID, const uint64
         );
 
         // Old consensus pledge
-        if (pOldMinerPledge != nullptr && nBlockCount > 0) {
+        if (pOldMiningRequireBalance != nullptr && nBlockCount > 0) {
             if (nOldMinedCount == -1) {
                 // Multi mining
-                *pOldMinerPledge = MAX_MONEY;
+                *pOldMiningRequireBalance = MAX_MONEY;
             } else if (nOldMinedCount > 0) {
                 int64_t nOldMinerCapacityTB = std::max((nNetCapacityTB * nOldMinedCount) / nBlockCount, (int64_t) 1);
-                *pOldMinerPledge = GetCapacityPledgeAmount(nOldMinerCapacityTB, pledgeRatio);
+                *pOldMiningRequireBalance = GetCapacityRequireBalance(nOldMinerCapacityTB, miningRatio);
             }
         }
     } else {
@@ -696,7 +696,7 @@ CAmount GetMiningPledgeAmount(const CAccountID& generatorAccountID, const uint64
 
     int64_t nMinerCapacityTB = std::max((nNetCapacityTB * nMinedCount) / nBlockCount, (int64_t) 1);
     if (pMinerCapacity != nullptr) *pMinerCapacity = nMinerCapacityTB;
-    return GetCapacityPledgeAmount(nMinerCapacityTB, pledgeRatio);
+    return GetCapacityRequireBalance(nMinerCapacityTB, miningRatio);
 }
 
 bool CheckProofOfCapacity(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)

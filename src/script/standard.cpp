@@ -469,17 +469,17 @@ uint64_t GetBindPlotterIdFromScript(const CScript &script)
     return PocLegacy::ToPlotterId(&script[12]);
 }
 
-CScript GetPledgeScriptForDestination(const CTxDestination& dest) {
+CScript GetRentalScriptForDestination(const CTxDestination& dest) {
     CScript script;
 
     const CScriptID *scriptID = boost::get<CScriptID>(&dest);
     if (scriptID != nullptr) {
         script << OP_RETURN;
-        script << ToByteVector(DATACARRIER_TYPE_PLEDGE);
+        script << ToByteVector(DATACARRIER_TYPE_RENTAL);
         script << ToByteVector(*scriptID);
     }
 
-    assert(script.empty() || script.size() == PROTOCOL_PLEDGELOAN_SCRIPTSIZE);
+    assert(script.empty() || script.size() == PROTOCOL_RENTAL_SCRIPTSIZE);
     return script;
 }
 
@@ -543,18 +543,18 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         std::shared_ptr<BindPlotterPayload> payload = std::make_shared<BindPlotterPayload>();
         payload->id = plotterId;
         return payload;
-    } else if (type == DATACARRIER_TYPE_PLEDGE) {
+    } else if (type == DATACARRIER_TYPE_RENTAL) {
         // Plege transaction
-        if (tx.vout[0].nValue < PROTOCOL_PLEDGELOAN_AMOUNT_MIN || scriptPubKey.size() != PROTOCOL_PLEDGELOAN_SCRIPTSIZE)
+        if (tx.vout[0].nValue < PROTOCOL_RENTAL_AMOUNT_MIN || scriptPubKey.size() != PROTOCOL_RENTAL_SCRIPTSIZE)
             return nullptr;
 
         // Debit account
         if (!scriptPubKey.GetOp(pc, opcode, vData) || opcode != CScriptID::WIDTH)
             return nullptr;
 
-        std::shared_ptr<PledgeLoanPayload> payload = std::make_shared<PledgeLoanPayload>();
-        payload->debitAccountID = uint160(vData);
-        if (payload->GetDebitAccountID().IsNull())
+        std::shared_ptr<RentalPayload> payload = std::make_shared<RentalPayload>();
+        payload->borrowerAccountID = uint160(vData);
+        if (payload->GetBorrowerAccountID().IsNull())
             return nullptr;
         return payload;
     }

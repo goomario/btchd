@@ -44,8 +44,8 @@ static const char DB_LAST_BLOCK = 'l';
 
 static const char DB_COIN_INDEX = 'T';
 static const char DB_COIN_BINDPLOTTER = 'P';
-static const char DB_COIN_PLEDGE = 'E';
-static const char DB_COIN_PLEDGEDEBIT = 'e'; //! DEPRECTED
+static const char DB_COIN_RENTAL = 'E';
+static const char DB_COIN_BORROW = 'e'; //! DEPRECTED
 
 namespace {
 
@@ -154,7 +154,7 @@ struct PledgeEntry {
     PledgeEntry(const COutPoint* outpointIn, const CAccountID* accountIDIn) :
         outpoint(const_cast<COutPoint*>(outpointIn)),
         accountID(const_cast<CAccountID*>(accountIDIn)),
-        key(DB_COIN_PLEDGE) {}
+        key(DB_COIN_RENTAL) {}
 
     template<typename Stream>
     void Serialize(Stream &s) const {
@@ -262,7 +262,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
                     else if (it->second.coin.IsPledge()) {
                         fTryErasePledge = false;
 
-                        batch.Write(PledgeEntry(&it->first, &it->second.coin.refOutAccountID), REF(PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID()));
+                        batch.Write(PledgeEntry(&it->first, &it->second.coin.refOutAccountID), REF(RentalPayload::As(it->second.coin.extraData)->GetBorrowerAccountID()));
                     }
                 }
 
@@ -357,7 +357,7 @@ CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
     return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
 }
 
-CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) const {
+CCoinsViewCursorRef CCoinsViewDB::RentalLoanCursor(const CAccountID &accountID) const {
     class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
     {
     public:
@@ -390,7 +390,7 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) 
         void TestKey() {
             CAccountID tempAccountID;
             PledgeEntry entry(&outpoint, &tempAccountID);
-            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGE || tempAccountID != accountID) {
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_RENTAL || tempAccountID != accountID) {
                 outpoint.SetNull();
             }
         }
@@ -404,14 +404,14 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) 
     return std::make_shared<CCoinsViewDBPledgeCreditCursor>(accountID, this, db.NewIterator(), GetBestBlock());
 }
 
-CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID) const {
+CCoinsViewCursorRef CCoinsViewDB::RentalBorrowCursor(const CAccountID &accountID) const {
     class CCoinsViewDBPledgeDebitCursor : public CCoinsViewCursor
     {
     public:
         CCoinsViewDBPledgeDebitCursor(const CAccountID& accountIDIn, const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn)
                 : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0), loanAccountID() {
             // Seek cursor to first pledge coin
-            pcursor->Seek(DB_COIN_PLEDGE);
+            pcursor->Seek(DB_COIN_RENTAL);
             GotoValidEntry();
         }
 
@@ -435,14 +435,14 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID)
 
     private:
         void GotoValidEntry() {
-            CAccountID debitAccountID;
+            CAccountID borrowerAccountID;
             PledgeEntry entry(&outpoint, &loanAccountID);
             while (true) {
-                if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_PLEDGE || !pcursor->GetValue(debitAccountID)) {
+                if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_RENTAL || !pcursor->GetValue(borrowerAccountID)) {
                     outpoint.SetNull();
                     break;
                 }
-                if (debitAccountID == accountID)
+                if (borrowerAccountID == accountID)
                     break;
                 pcursor->Next();
             }
@@ -463,7 +463,7 @@ size_t CCoinsViewDB::EstimateSize() const {
 }
 
 CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-    CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const
+    CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const
 {
     std::unique_ptr<CDBIterator> pcursor(db.NewIterator());
 
@@ -552,8 +552,8 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
     }
 
     // Balance of pledge ->
-    if (balancePledgeLoan != nullptr) {
-        *balancePledgeLoan = 0;
+    if (balanceLoan != nullptr) {
+        *balanceLoan = 0;
 
         // Read from database
         std::map<COutPoint, CAmount> selected;
@@ -563,10 +563,10 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         PledgeEntry entry(&tempOutpoint, &tempAccountID);
         pcursor->Seek(entry);
         while (pcursor->Valid()) {
-            if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGE && *entry.accountID == accountID) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_RENTAL && *entry.accountID == accountID) {
                 if (!db.Read(CoinEntry(entry.outpoint), coin))
                     throw std::runtime_error("Database read error");
-                *balancePledgeLoan += coin.out.nValue;
+                *balanceLoan += coin.out.nValue;
                 selected[*entry.outpoint] = coin.out.nValue;
             } else {
                 break;
@@ -582,19 +582,19 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             auto itSelected = selected.find(it->first);
             if (itSelected != selected.cend()) {
                 if (it->second.coin.IsSpent()) {
-                    *balancePledgeLoan -= itSelected->second;
+                    *balanceLoan -= itSelected->second;
                 }
             } else if (it->second.coin.refOutAccountID == accountID && it->second.coin.IsPledge() && !it->second.coin.IsSpent()) {
-                *balancePledgeLoan += it->second.coin.out.nValue;
+                *balanceLoan += it->second.coin.out.nValue;
             }
         }
 
-        assert(*balancePledgeLoan >= 0);
+        assert(*balanceLoan >= 0);
     }
 
     // Balance of pledge <-
-    if (balancePledgeDebit != nullptr) {
-        *balancePledgeDebit = 0;
+    if (balanceBorrow != nullptr) {
+        *balanceBorrow = 0;
 
         // Read from database
         std::map<COutPoint, CAmount> selected;
@@ -605,13 +605,13 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
         PledgeEntry entry(&tempOutpoint, &tempAccountID);
         pcursor->Seek(entry);
         while (pcursor->Valid()) {
-            if (pcursor->GetKey(entry) && entry.key == DB_COIN_PLEDGE) {
+            if (pcursor->GetKey(entry) && entry.key == DB_COIN_RENTAL) {
                 if (!pcursor->GetValue(tempDebitAccountID))
                     throw std::runtime_error("Database read error");
                 if (tempDebitAccountID == accountID) {
                     if (!db.Read(CoinEntry(entry.outpoint), coin))
                         throw std::runtime_error("Database read error");
-                    *balancePledgeDebit += coin.out.nValue;
+                    *balanceBorrow += coin.out.nValue;
                     selected[*entry.outpoint] = coin.out.nValue;
                 }
             } else {
@@ -628,14 +628,14 @@ CAmount CCoinsViewDB::GetBalance(const CAccountID &accountID, const CCoinsMap &m
             auto itSelected = selected.find(it->first);
             if (itSelected != selected.cend()) {
                 if (it->second.coin.IsSpent()) {
-                    *balancePledgeDebit -= itSelected->second;
+                    *balanceBorrow -= itSelected->second;
                 }
-            } else if (it->second.coin.IsPledge() && PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() == accountID && !it->second.coin.IsSpent()) {
-                *balancePledgeDebit += it->second.coin.out.nValue;
+            } else if (it->second.coin.IsPledge() && RentalPayload::As(it->second.coin.extraData)->GetBorrowerAccountID() == accountID && !it->second.coin.IsSpent()) {
+                *balanceBorrow += it->second.coin.out.nValue;
             }
         }
 
-        assert(*balancePledgeDebit >= 0);
+        assert(*balanceBorrow >= 0);
     }
 
     return availableBalance;
@@ -859,7 +859,7 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
         CDBBatch batch(db);
         for (; pcursor->Valid(); pcursor->Next()) {
             const leveldb::Slice key = pcursor->GetKey();
-            if (key.size() > 32 && (key[0] == DB_COIN_INDEX || key[0] == DB_COIN_BINDPLOTTER || key[0] == DB_COIN_PLEDGE || key[0] == DB_COIN_PLEDGEDEBIT)) {
+            if (key.size() > 32 && (key[0] == DB_COIN_INDEX || key[0] == DB_COIN_BINDPLOTTER || key[0] == DB_COIN_RENTAL || key[0] == DB_COIN_BORROW)) {
                 batch.EraseSlice(key);
                 remove++;
 
@@ -900,7 +900,7 @@ bool CCoinsViewDB::Upgrade(bool &fUpgraded) {
                         add++;
                     }
                     else if (coin.IsPledge()) {
-                        batch.Write(PledgeEntry(&outpoint, &coin.refOutAccountID), REF(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID()));
+                        batch.Write(PledgeEntry(&outpoint, &coin.refOutAccountID), REF(RentalPayload::As(coin.extraData)->GetBorrowerAccountID()));
                         add++;
                     }
 

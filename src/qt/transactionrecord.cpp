@@ -35,7 +35,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     uint256 hash = wtx.GetHash();
     std::map<std::string, std::string> mapValue = wtx.mapValue;
 
-    // Bind plotter, Pledge
+    // Bind plotter, Rental
     auto itType = mapValue.find("type");
     if (itType != mapValue.end())
     {
@@ -72,42 +72,42 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 // Mine -> Mine
                 sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = false;
-                sub.type = TransactionRecord::SelfPledge;
+                sub.type = TransactionRecord::SelfRental;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (sendIsmine & ISMINE_SPENDABLE) {
                 // Mine -> Other
                 sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = false;
-                sub.type = TransactionRecord::SendPledge;
+                sub.type = TransactionRecord::LoanTo;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (toIsmine & ISMINE_SPENDABLE) {
                 // Other -> Mine
                 sub.credit = wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = false;
-                sub.type = TransactionRecord::RecvPledge;
+                sub.type = TransactionRecord::BorrowFrom;
                 sub.address = mapValue["from"];
                 parts.append(sub);
             } else if ((sendIsmine & ISMINE_WATCH_ONLY) && (toIsmine & ISMINE_WATCH_ONLY)) {
                 // WatchOnly -> WatchOnly
                 sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = true;
-                sub.type = TransactionRecord::SelfPledge;
+                sub.type = TransactionRecord::SelfRental;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (sendIsmine & ISMINE_WATCH_ONLY) {
                 // WatchOnly -> Other
                 sub.debit = -wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = true;
-                sub.type = TransactionRecord::SendPledge;
+                sub.type = TransactionRecord::LoanTo;
                 sub.address = mapValue["to"];
                 parts.append(sub);
             } else if (toIsmine & ISMINE_WATCH_ONLY) {
                 // Other -> WatchOnly
                 sub.credit = wtx.tx->vout[0].nValue + nNet;
                 sub.involvesWatchAddress = true;
-                sub.type = TransactionRecord::RecvPledge;
+                sub.type = TransactionRecord::BorrowFrom;
                 sub.address = mapValue["from"];
                 parts.append(sub);
             }
@@ -122,7 +122,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             sub.credit = wtx.tx->vout[0].nValue;
             sub.involvesWatchAddress = ((sendIsmine & ISMINE_WATCH_ONLY) || (toIsmine & ISMINE_WATCH_ONLY)) &&
                 (!(sendIsmine & ISMINE_SPENDABLE) && !(toIsmine & ISMINE_SPENDABLE));
-            sub.type = TransactionRecord::WithdrawPledge;
+            sub.type = TransactionRecord::WithdrawRental;
             sub.address = sendIsmine ? mapValue["to"] : mapValue["from"];
 
             parts.append(sub);
@@ -343,8 +343,8 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
         // Rewrite special tx status
         if (status.status == TransactionStatus::Confirming || status.status == TransactionStatus::Confirmed)
         {
-            if (type == TransactionRecord::BindPlotter || type == TransactionRecord::SendPledge ||
-                type == TransactionRecord::RecvPledge || type == TransactionRecord::SelfPledge)
+            if (type == TransactionRecord::BindPlotter || type == TransactionRecord::LoanTo ||
+                type == TransactionRecord::BorrowFrom || type == TransactionRecord::SelfRental)
             {
                 COutPoint coinEntry(wtx.tx->GetHash(), 0);
                 const Coin &coin = pcoinsTip->AccessCoin(coinEntry);

@@ -106,11 +106,11 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP001StartMingingHeight            = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
-        consensus.BHDIP001FundRoyaltyPercent            = 5;     // 5% to fund
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70;    // 70% to fund
-        consensus.BHDIP001NoPledgeHeight                = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
-        consensus.BHDIP001PledgeRatio                   = 3 * COIN;
+        consensus.BHDIP001StartMingingHeight        = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
+        consensus.BHDIP001FundZeroPercentLastHeight = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BHDIP001FundRoyaltyPercentOnFull  = 5;     // 5% to fund
+        consensus.BHDIP001FundRoyaltyPercentOnLow   = 70;    // 70% to fund
+        consensus.BHDIP001MiningRatio               = 3 * COIN;
 
         consensus.BHDIP004ActiveHeight   = 96264; // BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
@@ -122,7 +122,7 @@ public:
 
         consensus.BHDIP007Height           = 168300; // Begin BHDIP007 consensus
         consensus.BHDIP007SmoothEndHeight  = consensus.BHDIP007Height + 2 * consensus.nCapacityEvalWindow; // Smooth BHD_BASE_TARGET_240 to BHD_BASE_TARGET
-        consensus.BHDIP007PledgeRatioStage = 1250 * 1024; // 1250 PB
+        consensus.BHDIP007MiningRatioStage = 1250 * 1024; // 1250 PB
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -320,11 +320,11 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP001StartMingingHeight            = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
-        consensus.BHDIP001FundRoyaltyPercent            = 5;    // 5%
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70;   // 70%
-        consensus.BHDIP001NoPledgeHeight                = 12400;
-        consensus.BHDIP001PledgeRatio                   = 3 * COIN;
+        consensus.BHDIP001StartMingingHeight        = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
+        consensus.BHDIP001FundZeroPercentLastHeight = 12400;
+        consensus.BHDIP001FundRoyaltyPercentOnFull  = 5;    // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLow   = 70;   // 70%
+        consensus.BHDIP001MiningRatio               = 3 * COIN;
 
         consensus.BHDIP004ActiveHeight   = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
         consensus.BHDIP004InActiveHeight = 21000;
@@ -336,7 +336,7 @@ public:
 
         consensus.BHDIP007Height           = 72550;
         consensus.BHDIP007SmoothEndHeight  = 76582; // BHD_BASE_TARGET_240 -> BHD_BASE_TARGET
-        consensus.BHDIP007PledgeRatioStage = 10;
+        consensus.BHDIP007MiningRatioStage = 10;
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -506,11 +506,11 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP001StartMingingHeight            = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
-        consensus.BHDIP001FundRoyaltyPercent            = 5;  // 5%
-        consensus.BHDIP001FundRoyaltyPercentOnLowPledge = 70; // 70%
-        consensus.BHDIP001NoPledgeHeight                = 94;
-        consensus.BHDIP001PledgeRatio                   = 3 * COIN;
+        consensus.BHDIP001StartMingingHeight        = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
+        consensus.BHDIP001FundZeroPercentLastHeight = 94;
+        consensus.BHDIP001FundRoyaltyPercentOnFull  = 5;  // 5%
+        consensus.BHDIP001FundRoyaltyPercentOnLow   = 70; // 70%
+        consensus.BHDIP001MiningRatio               = 3 * COIN;
 
         consensus.BHDIP004ActiveHeight   = 0;
         consensus.BHDIP004InActiveHeight = 0;
@@ -522,7 +522,7 @@ public:
 
         consensus.BHDIP007Height           = 550;
         consensus.BHDIP007SmoothEndHeight  = 586;
-        consensus.BHDIP007PledgeRatioStage = 10 * 1024;
+        consensus.BHDIP007MiningRatioStage = 10 * 1024;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

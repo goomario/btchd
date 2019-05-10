@@ -201,8 +201,8 @@ enum DatacarrierType : unsigned int {
     // Type of consensus relevant
     //! See https://btchd.org/wiki/datacarrier/bind-plotter
     DATACARRIER_TYPE_BINDPLOTTER = 0x00000010,
-    //! See https://btchd.org/wiki/datacarrier/pledge-loan
-    DATACARRIER_TYPE_PLEDGE      = 0x00000011,
+    //! See https://btchd.org/wiki/datacarrier/rental
+    DATACARRIER_TYPE_RENTAL      = 0x00000011,
     //! See https://btchd.org/wiki/datacarrier/contract
     DATACARRIER_TYPE_CONTRACT    = 0x00000012,
     //! See https://btchd.org/wiki/datacarrier/text
@@ -238,22 +238,22 @@ struct BindPlotterPayload : public DatacarrierPayload
     }
 };
 
-/** For pledge loan */
-struct PledgeLoanPayload : public DatacarrierPayload
+/** For rental */
+struct RentalPayload : public DatacarrierPayload
 {
-    CAccountID debitAccountID;
+    CAccountID borrowerAccountID;
 
-    PledgeLoanPayload() : DatacarrierPayload(DATACARRIER_TYPE_PLEDGE) {}
-    const CAccountID& GetDebitAccountID() const { return debitAccountID; }
+    RentalPayload() : DatacarrierPayload(DATACARRIER_TYPE_RENTAL) {}
+    const CAccountID& GetBorrowerAccountID() const { return borrowerAccountID; }
 
     // Checkable cast for CDatacarrierPayloadRef
-    static PledgeLoanPayload * As(CDatacarrierPayloadRef &ref) {
-        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
-        return (PledgeLoanPayload*) ref.get();
+    static RentalPayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_RENTAL);
+        return (RentalPayload*) ref.get();
     }
-    static const PledgeLoanPayload * As(const CDatacarrierPayloadRef &ref) {
-        assert(ref->type == DATACARRIER_TYPE_PLEDGE);
-        return (const PledgeLoanPayload*) ref.get();
+    static const RentalPayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_RENTAL);
+        return (const RentalPayload*) ref.get();
     }
 };
 
@@ -283,14 +283,14 @@ CScript GetBindPlotterScriptForDestination(const CTxDestination& dest, const std
 
 uint64_t GetBindPlotterIdFromScript(const CScript &script);
 
-/** The minimal pledge loan amount */
-static const CAmount PROTOCOL_PLEDGELOAN_AMOUNT_MIN = 1 * COIN;
+/** The minimal rental amount */
+static const CAmount PROTOCOL_RENTAL_AMOUNT_MIN = 1 * COIN;
 
-/** The pledge loan script size */
-static const int PROTOCOL_PLEDGELOAN_SCRIPTSIZE = 27;
+/** The rental script size */
+static const int PROTOCOL_RENTAL_SCRIPTSIZE = 27;
 
-/** Generate a pledge script. */
-CScript GetPledgeScriptForDestination(const CTxDestination& dest);
+/** Generate a rental script. */
+CScript GetRentalScriptForDestination(const CTxDestination& dest);
 
 /** Parse a datacarrier transaction. */
 CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *pReject = nullptr, int *pLastActiveHeight = nullptr);

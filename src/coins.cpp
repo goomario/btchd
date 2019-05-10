@@ -16,13 +16,13 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
-CCoinsViewCursorRef CCoinsView::PledgeLoanCursor(const CAccountID &accountID) const { return nullptr; }
-CCoinsViewCursorRef CCoinsView::PledgeDebitCursor(const CAccountID &accountID) const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::RentalLoanCursor(const CAccountID &accountID) const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::RentalBorrowCursor(const CAccountID &accountID) const { return nullptr; }
 CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const {
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const {
     if (balanceBindPlotter != nullptr) *balanceBindPlotter = 0;
-    if (balancePledgeLoan != nullptr) *balancePledgeLoan = 0;
-    if (balancePledgeDebit != nullptr) *balancePledgeDebit = 0;
+    if (balanceLoan != nullptr) *balanceLoan = 0;
+    if (balanceBorrow != nullptr) *balanceBorrow = 0;
     return 0;
 }
 CBindPlotterCoinsMap CCoinsView::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const { return {}; }
@@ -40,12 +40,12 @@ std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetH
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursorRef CCoinsViewBacked::Cursor() const { return base->Cursor(); }
-CCoinsViewCursorRef CCoinsViewBacked::PledgeLoanCursor(const CAccountID &accountID) const { return base->PledgeLoanCursor(accountID); }
-CCoinsViewCursorRef CCoinsViewBacked::PledgeDebitCursor(const CAccountID &accountID) const { return base->PledgeDebitCursor(accountID); }
+CCoinsViewCursorRef CCoinsViewBacked::RentalLoanCursor(const CAccountID &accountID) const { return base->RentalLoanCursor(accountID); }
+CCoinsViewCursorRef CCoinsViewBacked::RentalBorrowCursor(const CAccountID &accountID) const { return base->RentalBorrowCursor(accountID); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const {
-    return base->GetBalance(accountID, mapChildCoins, balanceBindPlotter, balancePledgeLoan, balancePledgeDebit);
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const {
+    return base->GetBalance(accountID, mapChildCoins, balanceBindPlotter, balanceLoan, balanceBorrow);
 }
 CBindPlotterCoinsMap CCoinsViewBacked::GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId) const {
     return base->GetAccountBindPlotterEntries(accountID, plotterId);
@@ -283,24 +283,24 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
 }
 
 CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const {
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const {
     if (cacheCoins.empty()) {
-        return base->GetBalance(accountID, mapChildCoins, balanceBindPlotter, balancePledgeLoan, balancePledgeDebit);
+        return base->GetBalance(accountID, mapChildCoins, balanceBindPlotter, balanceLoan, balanceBorrow);
     } else if (mapChildCoins.empty()) {
-        return base->GetBalance(accountID, cacheCoins, balanceBindPlotter, balancePledgeLoan, balancePledgeDebit);
+        return base->GetBalance(accountID, cacheCoins, balanceBindPlotter, balanceLoan, balanceBorrow);
     } else {
         CCoinsMap mapCoinsMerged;
         // Copy mine relative coins
         for (CCoinsMap::const_iterator it = cacheCoins.cbegin(); it != cacheCoins.cend(); it++) {
             if (it->second.coin.refOutAccountID != accountID &&
-                (!it->second.coin.IsPledge() || PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
+                (!it->second.coin.IsPledge() || RentalPayload::As(it->second.coin.extraData)->GetBorrowerAccountID() != accountID)) {
                 // NOT mine and NOT debit to me
                 continue;
             }
             mapCoinsMerged[it->first] = it->second;
         }
         if (mapCoinsMerged.empty()) {
-            return base->GetBalance(accountID, mapChildCoins, balanceBindPlotter, balancePledgeLoan, balancePledgeDebit);
+            return base->GetBalance(accountID, mapChildCoins, balanceBindPlotter, balanceLoan, balanceBorrow);
         } else {
             // Merge child and mine coins
             // See CCoinsViewCache::BatchWrite()
@@ -309,7 +309,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     continue;
                 }
                 if (it->second.coin.refOutAccountID != accountID &&
-                    (!it->second.coin.IsPledge() || PledgeLoanPayload::As(it->second.coin.extraData)->GetDebitAccountID() != accountID)) {
+                    (!it->second.coin.IsPledge() || RentalPayload::As(it->second.coin.extraData)->GetBorrowerAccountID() != accountID)) {
                     // NOT mine and NOT debit to me
                     continue;
                 }
@@ -348,7 +348,7 @@ CAmount CCoinsViewCache::GetBalance(const CAccountID &accountID, const CCoinsMap
                     }
                 }
             }
-            return base->GetBalance(accountID, mapCoinsMerged, balanceBindPlotter, balancePledgeLoan, balancePledgeDebit);
+            return base->GetBalance(accountID, mapCoinsMerged, balanceBindPlotter, balanceLoan, balanceBorrow);
         }
     }
 }
@@ -441,9 +441,9 @@ CBindPlotterCoinsMap CCoinsViewCache::GetBindPlotterEntries(const uint64_t &plot
 }
 
 CAmount CCoinsViewCache::GetAccountBalance(const CAccountID &accountID,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const {
-    // Merge with base cache coins
-    return base->GetBalance(accountID, cacheCoins, balanceBindPlotter, balancePledgeLoan, balancePledgeDebit);
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const {
+    // Merge to parent
+    return base->GetBalance(accountID, cacheCoins, balanceBindPlotter, balanceLoan, balanceBorrow);
 }
 
 CBindPlotterInfo CCoinsViewCache::GetChangeBindPlotterInfo(const CBindPlotterInfo &sourceBindInfo, bool compatible) const {

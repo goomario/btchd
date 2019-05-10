@@ -76,15 +76,15 @@ public:
     std::vector<uint256> GetHeadBlocks() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
-    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
-    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade(bool &fUpgraded);
     size_t EstimateSize() const override;
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const override;
     CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };

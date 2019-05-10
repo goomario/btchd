@@ -1154,8 +1154,8 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
     if (nHeight <= consensusParams.BHDIP001StartMingingHeight) {
         // Fund pre-mining
         reward.fund = nSubsidy + nFees;
-    } else if (nHeight <= consensusParams.BHDIP001NoPledgeHeight) {
-        // No pledge
+    } else if (nHeight <= consensusParams.BHDIP001FundZeroPercentLastHeight) {
+        // All to miner
         reward.miner = nSubsidy + nFees;
     } else if (nHeight < consensusParams.BHDIP006Height) {
         // Soft fork. Bad idea
@@ -1168,28 +1168,28 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
         //
         // See https://btchd.org/wiki/developer/BHD004-soft-fork-for-multimining
         //
-        CAmount minerPledgeAmountAtOldConsensus;
-        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(generatorAccountID, nPlotterId, nHeight, view, nullptr, &minerPledgeAmountAtOldConsensus, consensusParams);
+        CAmount miningRequireBalanceAtOldConsensus;
+        CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, &miningRequireBalanceAtOldConsensus, consensusParams);
         CAmount accountBalance = view.GetAccountBalance(generatorAccountID);
-        if (accountBalance >= minerPledgeAmount) {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
-            if (nHeight < consensusParams.BHDIP004InActiveHeight && accountBalance < minerPledgeAmountAtOldConsensus) {
+        if (accountBalance >= miningRequireBalance) {
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnFull) / 100;
+            if (nHeight < consensusParams.BHDIP004InActiveHeight && accountBalance < miningRequireBalanceAtOldConsensus) {
                 // Old consensus => fund
-                reward.minerBHDIP004Compatiable = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
+                reward.minerBHDIP004Compatiable = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLow) / 100;
             }
         } else {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLow) / 100;
         }
         reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
     } else {
         // Normal mining for BHDIP006
-        CAmount balancePledgeLoan = 0, balancePledgeDebit = 0;
-        CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balancePledgeLoan, &balancePledgeDebit);
-        CAmount minerPledgeAmount = poc::GetMiningPledgeAmount(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
-        if (accountBalance - balancePledgeLoan + balancePledgeDebit >= minerPledgeAmount) {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercent) / 100;
+        CAmount balanceLoan = 0, balanceBorrow = 0;
+        CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balanceLoan, &balanceBorrow);
+        CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
+        if (accountBalance - balanceLoan + balanceBorrow >= miningRequireBalance) {
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnFull) / 100;
         } else {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLowPledge) / 100;
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLow) / 100;
         }
         reward.miner = nSubsidy + nFees - reward.fund - reward.minerBHDIP004Compatiable;
     }

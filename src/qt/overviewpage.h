@@ -39,9 +39,9 @@ public:
 
 public Q_SLOTS:
     void setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                    const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                    const CAmount& loanBalance, const CAmount& borrowBalance, const CAmount& lockedBalance,
                     const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                    const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
+                    const CAmount& watchLoanBalance, const CAmount& watchBorrowBalance, const CAmount& watchLockedBalance);
 
 Q_SIGNALS:
     void transactionClicked(const QModelIndex &index);
@@ -54,14 +54,14 @@ private:
     CAmount currentBalance;
     CAmount currentUnconfirmedBalance;
     CAmount currentImmatureBalance;
-    CAmount currentPledgeCreditBalance;
-    CAmount currentPledgeDebitBalance;
+    CAmount currentLoanBalance;
+    CAmount currentBorrowBalance;
     CAmount currentLockedBalance;
     CAmount currentWatchBalance;
     CAmount currentWatchUnconfBalance;
     CAmount currentWatchImmatureBalance;
-    CAmount currentWatchPledgeCreditBalance;
-    CAmount currentWatchPledgeDebitBalance;
+    CAmount currentWatchLoanBalance;
+    CAmount currentWatchBorrowBalance;
     CAmount currentWatchLockedBalance;
 
     TxViewDelegate *txdelegate;

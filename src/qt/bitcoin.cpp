@@ -589,15 +589,6 @@ int main(int argc, char *argv[])
     sslconf.setProtocol(QSsl::TlsV1_0OrLater);
     QSslConfiguration::setDefaultConfiguration(sslconf);
 #endif
-#if QT_VERSION >= 0x050000
-    if (gArgs.IsArgSet("-qtstyle")) {
-        app.setPalette(QApplication::style()->standardPalette());
-        app.setStyle(QStyleFactory::create(QString::fromStdString(gArgs.GetArg("-qtstyle", ""))));
-    #ifndef QT_NO_STYLE_STYLESHEET
-        app.setStyleSheet("");
-    #endif
-    }
-#endif
 
     // Register meta types used for QMetaObject::invokeMethod
     qRegisterMetaType< bool* >();
@@ -658,6 +649,16 @@ int main(int argc, char *argv[])
                               QObject::tr("Error: Cannot parse configuration file: %1. Only use key=value syntax.").arg(e.what()));
         return EXIT_FAILURE;
     }
+
+#if QT_VERSION >= 0x050000
+    if (gArgs.IsArgSet("-qtstyle")) {
+        app.setPalette(QApplication::style()->standardPalette());
+        app.setStyle(QStyleFactory::create(QString::fromStdString(gArgs.GetArg("-qtstyle", ""))));
+    #ifndef QT_NO_STYLE_STYLESHEET
+        app.setStyleSheet("");
+    #endif
+    }
+#endif
 
     /// 7. Determine network (and switch to network specific options)
     // - Do not call Params() before this step

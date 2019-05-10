@@ -69,14 +69,14 @@ struct Params {
 
     /** BitcoinHD fund pre-mining height */
     int BHDIP001StartMingingHeight;
-    /** BitcoinHD fund royalty percent */
-    int BHDIP001FundRoyaltyPercent;
-    /** BitcoinHD fund royalty percent on low pledge */
-    int BHDIP001FundRoyaltyPercentOnLowPledge;
-    /** BitcoinHD miner no pledge height before */
-    int BHDIP001NoPledgeHeight;
-    /** BitcoinHD miner pledge amount per TB */
-    CAmount BHDIP001PledgeRatio;
+    /** BitcoinHD fund zero percent height */
+    int BHDIP001FundZeroPercentLastHeight;
+    /** BitcoinHD fund royalty percent on full */
+    int BHDIP001FundRoyaltyPercentOnFull;
+    /** BitcoinHD fund royalty percent on low */
+    int BHDIP001FundRoyaltyPercentOnLow;
+    /** BitcoinHD miner mining ratio per TB */
+    CAmount BHDIP001MiningRatio;
 
     /** View all BHDIP document on https://btchd.org/wiki/BHDIP */
     /** Block height at which BHDIP004 becomes active */
@@ -92,7 +92,7 @@ struct Params {
     /** Block height at which BHDIP007 becomes active */
     int BHDIP007Height;
     int BHDIP007SmoothEndHeight;
-    int64_t BHDIP007PledgeRatioStage;
+    int64_t BHDIP007MiningRatioStage;
 
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,

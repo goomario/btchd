@@ -34,8 +34,8 @@ public:
         Address = 3,    /**< BitcoinHD address */
         Amount = 4,     /**< BitcoinHD amount */
         LockedAmount = 5, /**< BitcoinHD locked amount */
-        LoanAmount = 6,   /**< BitcoinHD loan amount */
-        DebitAmount = 7,  /**< BitcoinHD debit amount */
+        LoanAmount = 6,   /**< BitcoinHD rental loan amount */
+        BorrowAmount = 7,  /**< BitcoinHD  rental borrow amount */
     };
 
     enum RoleIndex {

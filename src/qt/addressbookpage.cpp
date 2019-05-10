@@ -164,12 +164,12 @@ void AddressBookPage::setModel(AddressTableModel *_model)
         ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
-        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::BorrowAmount, QHeaderView::ResizeToContents);
     } else {
         ui->tableView->setColumnHidden(AddressTableModel::Amount, true);
         ui->tableView->setColumnHidden(AddressTableModel::LockedAmount, true);
         ui->tableView->setColumnHidden(AddressTableModel::LoanAmount, true);
-        ui->tableView->setColumnHidden(AddressTableModel::DebitAmount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::BorrowAmount, true);
     }
 #else
     if (tab == ReceivingTab) {
@@ -185,12 +185,12 @@ void AddressBookPage::setModel(AddressTableModel *_model)
         ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
-        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::DebitAmount, QHeaderView::ResizeToContents);
+        ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::BorrowAmount, QHeaderView::ResizeToContents);
     } else {
         ui->tableView->setColumnHidden(AddressTableModel::Amount, true);
         ui->tableView->setColumnHidden(AddressTableModel::LockedAmount, true);
         ui->tableView->setColumnHidden(AddressTableModel::LoanAmount, true);
-        ui->tableView->setColumnHidden(AddressTableModel::DebitAmount, true);
+        ui->tableView->setColumnHidden(AddressTableModel::BorrowAmount, true);
     }
 #endif
 
@@ -360,8 +360,8 @@ void AddressBookPage::on_exportButton_clicked()
     writer.addColumn("Address", AddressTableModel::Address, Qt::EditRole);
     writer.addColumn("Amount", AddressTableModel::Amount, Qt::EditRole);
     writer.addColumn("Locked amount", AddressTableModel::LockedAmount, Qt::EditRole);
-    writer.addColumn("Pledge loan amount", AddressTableModel::LoanAmount, Qt::EditRole);
-    writer.addColumn("Pledge debit amount", AddressTableModel::DebitAmount, Qt::EditRole);
+    writer.addColumn("Loan amount", AddressTableModel::LoanAmount, Qt::EditRole);
+    writer.addColumn("Borrow amount", AddressTableModel::BorrowAmount, Qt::EditRole);
 
     if(!writer.write()) {
         QMessageBox::critical(this, tr("Exporting Failed"),

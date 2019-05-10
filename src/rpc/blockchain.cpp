@@ -1065,7 +1065,7 @@ UniValue gettxout(const JSONRPCRequest& request)
 
     if (coin.extraData) {
         UniValue extra(UniValue::VOBJ);;
-        DatacarrierPayloadToUniv(*coin.extraData, coin.out, extra);
+        DatacarrierPayloadToUniv(coin.extraData, coin.out, extra);
         ret.push_back(Pair("extra", extra));
     }
 

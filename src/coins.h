@@ -86,8 +86,8 @@ public:
             ::Serialize(s, VARINT((unsigned int&)extraData->type));
             if (extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-            } else if (extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                ::Serialize(s, REF(PledgeLoanPayload::As(extraData)->GetDebitAccountID()));
+            } else if (extraData->type == DATACARRIER_TYPE_RENTAL) {
+                ::Serialize(s, REF(RentalPayload::As(extraData)->GetBorrowerAccountID()));
             } else
                 assert(false);
         }
@@ -109,9 +109,9 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(extraData)->id));
-            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
-                extraData = std::make_shared<PledgeLoanPayload>();
-                ::Unserialize(s, REF(PledgeLoanPayload::As(extraData)->GetDebitAccountID()));
+            } else if (extraDataType == DATACARRIER_TYPE_RENTAL) {
+                extraData = std::make_shared<RentalPayload>();
+                ::Unserialize(s, REF(RentalPayload::As(extraData)->GetBorrowerAccountID()));
             } else
                 assert(false);
         }
@@ -130,7 +130,7 @@ public:
     }
 
     bool IsPledge() const {
-        return extraData && extraData->type == DATACARRIER_TYPE_PLEDGE;
+        return extraData && extraData->type == DATACARRIER_TYPE_RENTAL;
     }
 };
 
@@ -264,9 +264,9 @@ public:
     //! Get a cursor to iterate over the whole spendable state
     virtual CCoinsViewCursorRef Cursor() const;
 
-    //! Get a cursor to iterate over the whole pledge loan and debit state
-    virtual CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const;
-    virtual CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const;
+    //! Get a cursor to iterate over the whole rental loan and borrow state
+    virtual CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const;
+    virtual CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
     virtual ~CCoinsView() {}
@@ -276,7 +276,7 @@ public:
 
     //! Get balance. Return amount of account
     virtual CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const;
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const;
 
     //! Get account bind plotter all coin entries. if plotterId is 0 then return all coin entries for account.
     virtual CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const;
@@ -301,11 +301,11 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
-    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
-    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const override;
     CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };
@@ -342,14 +342,14 @@ public:
     CCoinsViewCursorRef Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override {
+    CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override {
+    CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const override;
     CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 
@@ -419,7 +419,7 @@ public:
 
     /** Scan UTXO for the account. Return total balance. */
     CAmount GetAccountBalance(const CAccountID &accountID,
-        CAmount *balanceBindPlotter = nullptr, CAmount *balancePledgeLoan = nullptr, CAmount *balancePledgeDebit = nullptr) const;
+        CAmount *balanceBindPlotter = nullptr, CAmount *balanceLoan = nullptr, CAmount *balanceBorrow = nullptr) const;
 
     /** Return a reference to lastest bind plotter information, or a pruned one if not found. */
     CBindPlotterInfo GetChangeBindPlotterInfo(const CBindPlotterInfo &sourceBindInfo, bool compatible = false) const;

@@ -2748,8 +2748,8 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
             "  \"balance\": xxxxxxx,              (numeric) the total confirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"unconfirmed_balance\": xxx,      (numeric) the total unconfirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"immature_balance\": xxxxxx,      (numeric) the total immature balance of the wallet in " + CURRENCY_UNIT + "\n"
-            "  \"pledgeload_balance\": xxxxxx,    (numeric) the total pledge loan balance of the wallet in " + CURRENCY_UNIT + "\n"
-            "  \"pledgedebit_balance\": xxxxxx,   (numeric) the total pledge debit balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"loan_balance\": xxxxxx,          (numeric) the total loan balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"borrow_balance\": xxxxxx,        (numeric) the total borrow balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"locked_balance\": xxxxxx,        (numeric) the total locked balance of the wallet in " + CURRENCY_UNIT + "\n"
             "  \"txcount\": xxxxxxx,              (numeric) the total number of transactions in the wallet\n"
             "  \"keypoololdest\": xxxxxx,         (numeric) the timestamp (seconds since Unix epoch) of the oldest pre-generated key in the key pool\n"
@@ -2780,9 +2780,9 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
     obj.push_back(Pair("balance",       ValueFromAmount(pwallet->GetBalance())));
     obj.push_back(Pair("unconfirmed_balance", ValueFromAmount(pwallet->GetUnconfirmedBalance())));
     obj.push_back(Pair("immature_balance",    ValueFromAmount(pwallet->GetImmatureBalance())));
-    obj.push_back(Pair("pledgeload_balance",  ValueFromAmount(pwallet->GetPledgeLoanBalance())));
-    obj.push_back(Pair("pledgedebit_balance", ValueFromAmount(pwallet->GetPledgeDebitBalance())));
-    obj.push_back(Pair("locked_balance",      ValueFromAmount(pwallet->GetLockedBalance())));
+    obj.push_back(Pair("loan_balance",  ValueFromAmount(pwallet->GetLoanBalance())));
+    obj.push_back(Pair("borrow_balance", ValueFromAmount(pwallet->GetBorrowBalance())));
+    obj.push_back(Pair("locked_balance", ValueFromAmount(pwallet->GetLockedBalance())));
     obj.push_back(Pair("txcount",       (int)pwallet->mapWallet.size()));
     obj.push_back(Pair("keypoololdest", pwallet->GetOldestKeyPoolTime()));
     obj.push_back(Pair("keypoolsize", (int64_t)kpExternalSize));
@@ -2795,7 +2795,7 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
     }
     obj.push_back(Pair("paytxfee",      ValueFromAmount(payTxFee.GetFeePerK())));
     if (!masterKeyID.IsNull())
-         obj.push_back(Pair("hdmasterkeyid", masterKeyID.GetHex()));
+        obj.push_back(Pair("hdmasterkeyid", masterKeyID.GetHex()));
     return obj;
 }
 
@@ -3032,7 +3032,7 @@ UniValue listunspent(const JSONRPCRequest& request)
             const Coin &coin = pcoinsTip->AccessCoin(COutPoint(out.tx->GetHash(), out.i));
             if (coin.extraData) {
                 UniValue extra(UniValue::VOBJ);
-                DatacarrierPayloadToUniv(*coin.extraData, out.tx->tx->vout[out.i], extra);
+                DatacarrierPayloadToUniv(coin.extraData, out.tx->tx->vout[out.i], extra);
                 entry.push_back(Pair("extra", extra));
             }
         }
@@ -3637,7 +3637,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
 
         const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
         if (!lastBindInfo.outpoint.IsNull() && nSpendHeight < Consensus::GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params)) {
-            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLow - params.BHDIP001FundRoyaltyPercentOnFull)) / 100;
             if (diffReward > 0) {
                 coin_control.m_fee_mode = FeeEstimateMode::FIXED;
                 coin_control.fixedFee = std::max(coin_control.fixedFee, diffReward + PROTOCOL_BINDPLOTTER_MINFEE);
@@ -3828,7 +3828,7 @@ UniValue listbindplotters(const JSONRPCRequest& request)
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
             "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"height\": xxx,                     (numeric) The block height.\n"
+            "    \"blockheight\": xxx,                (numeric) The block height.\n"
             "    \"active\": true|false,              (bool, default false) The bind active status.\n"
             "    \"valid\": valid,                    (bool) The bind valid (Maybe not last bind for plotterId).\n"
             "    \"watchonly\": watchonly,            (bool) The bind to watchonly address.\n"
@@ -3965,11 +3965,11 @@ UniValue getpledge(const JSONRPCRequest& request)
             "    \"balance\": xxx,                     (numeric) All amounts belonging to this address\n"
             "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and pledge loan\n"
             "    \"spendableBalance\": xxx,            (numeric) Spendable amount. Include immarture and exclude locked amount\n"
-            "    \"pledgeLoanBalance\": xxx,           (numeric) Pledge loan amount\n"
-            "    \"pledgeDebitBalance\": xxx,          (numeric) Pledge debit amount\n"
-            "    \"availablePledgeBalance\": xxx,      (numeric) Available for mining pledge amount. balance + pledgeDebitBalance - pledgeLoanBalance\n"
-            "    \"pledge\": xxx,                      (numeric) Require mining pledge for next block\n"
-            "    \"capacity\": \"xxx TB\",                (numeric) The address capacity\n"
+            "    \"loanBalance\": xxx,                 (numeric) Rental loan amount\n"
+            "    \"borrowBalance\": xxx,               (numeric) Rental borrow amount\n"
+            "    \"availableMiningBalance\": xxx,      (numeric) Available for mining amount. balance + borrowBalance - loanBalance\n"
+            "    \"miningRequireBalance\": xxx,        (numeric) Require balance on mining next block\n"
+            "    \"capacity\": \"xxx TB/PB\",              (string) The address capacity\n"
             "    ...\n"
             "  }\n"
             "]\n"
@@ -4048,8 +4048,8 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     CAmount nAmount = AmountFromValue(request.params[1]);
     if (nAmount <= 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount for send");
-    else if (nAmount <= PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require big then %s", FormatMoney(PROTOCOL_PLEDGELOAN_AMOUNT_MIN)));
+    else if (nAmount <= PROTOCOL_RENTAL_AMOUNT_MIN)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require big then %s", FormatMoney(PROTOCOL_RENTAL_AMOUNT_MIN)));
 
     // Wallet comments
     CWalletTx wtx;
@@ -4103,7 +4103,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     std::string strError;
     std::vector<CRecipient> vecSend = {
         {GetScriptForDestination(primaryDest), nAmount, fSubtractFeeFromAmount}, //! Real output to self
-        {GetPledgeScriptForDestination(rentToDest), 0, false}, //! Tx datacarrier
+        {GetRentalScriptForDestination(rentToDest), 0, false}, //! Tx datacarrier
     };
     if (vecSend[1].scriptPubKey.empty())
         throw JSONRPCError(RPC_WALLET_ERROR, "Invalid pledge loan script");
@@ -4111,13 +4111,13 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     if (!pwallet->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, CTransaction::UNIFORM_VERSION)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
-    if (nAmount - nFeeRequired < PROTOCOL_PLEDGELOAN_AMOUNT_MIN)
+    if (nAmount - nFeeRequired < PROTOCOL_RENTAL_AMOUNT_MIN)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Error: This pledge amount %s (requires fee of at least %s) small then %s",
-            FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_PLEDGELOAN_AMOUNT_MIN)));
+            FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_RENTAL_AMOUNT_MIN)));
 
     // Check
     CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
-    if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
+    if (!payload || payload->type != DATACARRIER_TYPE_RENTAL)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error on create pledge loan data");
 
     CValidationState state;
@@ -4258,13 +4258,14 @@ UniValue listpledges(const JSONRPCRequest& request)
             "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
             "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
             "    \"category\":\"loan|debit|self\",      (string) The pledge transaction category.\n"
-            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
-            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"valid\": valid,                      (string) The pledge valid.\n"
-            "    \"fromWatchonly\": watchonly,          (string) The pledge from watchonly address.\n"
-            "    \"toWatchonly\": watchonly,            (string) The pledge to watchonly address.\n"
+            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"blockheight\": xxx,                (numeric) The block height.\n"
+            "    \"valid\": valid,                    (string) The pledge valid.\n"
+            "    \"fromWatchonly\": watchonly,        (string) The pledge from watchonly address.\n"
+            "    \"toWatchonly\": watchonly,          (string) The pledge to watchonly address.\n"
             "  }\n"
             "]\n"
 
@@ -4323,14 +4324,14 @@ UniValue listpledges(const JSONRPCRequest& request)
         // Extract tx
         int nHeight = (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) ? mapBlockIndex[wtx.hashBlock]->nHeight : 0;
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
-        if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE)
+        if (!payload || payload->type != DATACARRIER_TYPE_RENTAL)
             continue;
         bool fValid = pcoinsTip->HaveCoin(COutPoint(wtx.GetHash(), 0));
         if (!fIncludeInvalid && !fValid)
             continue;
 
         CTxDestination fromDest = ExtractDestination(wtx.tx->vout[0].scriptPubKey);
-        CTxDestination toDest = CScriptID(PledgeLoanPayload::As(payload)->GetDebitAccountID());
+        CTxDestination toDest = CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID());
         isminetype sendIsmine = ::IsMine(*pwallet, fromDest);
         isminetype receiveIsmine = ::IsMine(*pwallet, toDest);
         bool fSendIsmine = (sendIsmine & filter) != 0;

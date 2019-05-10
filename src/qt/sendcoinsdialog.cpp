@@ -74,7 +74,7 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
 
     // Operate method
     ui->operateMethodComboBox->addItem(tr("Pay to"), (int)PayOperateMethod::Pay);
-    ui->operateMethodComboBox->addItem(tr("Pledge to"), (int)PayOperateMethod::SendPledge);
+    ui->operateMethodComboBox->addItem(tr("Loan to"), (int)PayOperateMethod::LoanTo);
     ui->operateMethodComboBox->addItem(tr("Bind to"), (int)PayOperateMethod::BindPlotter);
     addEntry();
 
@@ -164,9 +164,9 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         }
 
         setBalance(_model->getBalance(), _model->getUnconfirmedBalance(), _model->getImmatureBalance(),
-                   _model->getPledgeCreditBalance(), _model->getPledgeDebitBalance(), _model->getLockedBalance(), 
+                   _model->getLoanBalance(), _model->getBorrowBalance(), _model->getLockedBalance(), 
                    _model->getWatchBalance(), _model->getWatchUnconfirmedBalance(), _model->getWatchImmatureBalance(),
-                   _model->getWatchPledgeCreditBalance(), _model->getWatchPledgeDebitBalance(), _model->getWatchLockedBalance());
+                   _model->getWatchLoanBalance(), _model->getWatchBorrowBalance(), _model->getWatchLockedBalance());
         connect(_model, SIGNAL(balanceChanged(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)),
             this, SLOT(setBalance(CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount,CAmount)));
         connect(_model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
@@ -251,7 +251,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
         int opMethodValue = ui->operateMethodComboBox->itemData(index).toInt();
         switch ((PayOperateMethod)opMethodValue)
         {
-        case PayOperateMethod::SendPledge:
+        case PayOperateMethod::LoanTo:
         case PayOperateMethod::BindPlotter:
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
@@ -328,12 +328,12 @@ void SendCoinsDialog::on_sendButton_clicked()
     CCoinControl ctrl;
     switch (operateMethod)
     {
-    case PayOperateMethod::SendPledge:
+    case PayOperateMethod::LoanTo:
     case PayOperateMethod::BindPlotter:
         if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized())
             return;
         ctrl.coinPickPolicy = CoinControlDialog::coinControl()->coinPickPolicy;
-        if (operateMethod == PayOperateMethod::SendPledge) {
+        if (operateMethod == PayOperateMethod::LoanTo) {
             ctrl.destPick = ctrl.destChange = CoinControlDialog::coinControl()->destPick;
             updateCoinControlState(ctrl);
         } else {
@@ -365,12 +365,12 @@ void SendCoinsDialog::on_sendButton_clicked()
                 if (!lastBindInfo.outpoint.IsNull()) {
                     bindLimitHeight = Consensus::GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params);
                     if (nSpendHeight < bindLimitHeight) {
-                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLowPledge - params.BHDIP001FundRoyaltyPercent)) / 100;
+                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLow - params.BHDIP001FundRoyaltyPercentOnFull)) / 100;
                         if (diffReward > 0) {
                             ctrl.m_fee_mode = FeeEstimateMode::FIXED;
                             ctrl.fixedFee = std::max(ctrl.fixedFee, diffReward + PROTOCOL_BINDPLOTTER_MINFEE);
 
-                            QString information = tr("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.")
+                            QString information = tr("This binding operation triggers anti-cheating mechanism and therefore requires a large transaction fee %1.")
                                 .arg("<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), ctrl.fixedFee) + "</span>");
                             QMessageBox msgBox(QMessageBox::Warning, tr("Confirm bind plotter"), information, QMessageBox::Ok, this);
                             msgBox.exec();
@@ -406,9 +406,9 @@ void SendCoinsDialog::on_sendButton_clicked()
             if (pcoinsTip->HaveActiveBindPlotter(ExtractAccountID(ctrl.destPick), BindPlotterPayload::As(payload)->GetId()))
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::BindPlotterExist,
                     QString::number(BindPlotterPayload::As(payload)->GetId()) + "\n" + QString::fromStdString(EncodeDestination(ctrl.destPick)));
-        } else if (operateMethod == PayOperateMethod::SendPledge) {
+        } else if (operateMethod == PayOperateMethod::LoanTo) {
             payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
-            if (!payload || payload->type != DATACARRIER_TYPE_PLEDGE) {
+            if (!payload || payload->type != DATACARRIER_TYPE_RENTAL) {
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
             }
         }
@@ -465,10 +465,10 @@ void SendCoinsDialog::on_sendButton_clicked()
     QString titleString, questionString;
     switch (operateMethod)
     {
-    case PayOperateMethod::SendPledge:
-        assert(payload && payload->type == DATACARRIER_TYPE_PLEDGE);
-        titleString = tr("Confirm send pledge coins");
-        questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to send pledge?") + "</b></span>";
+    case PayOperateMethod::LoanTo:
+        assert(payload && payload->type == DATACARRIER_TYPE_RENTAL);
+        titleString = tr("Confirm loan to");
+        questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want loan?") + "</b></span>";
         break;
     case PayOperateMethod::BindPlotter:
         assert(payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER);
@@ -512,7 +512,7 @@ void SendCoinsDialog::on_sendButton_clicked()
                     "<span style='color:#aa0000;'>" + BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee - PROTOCOL_BINDPLOTTER_MINFEE) + "</span>"));
             questionString.append("<br />").
                 append("<span style='color:#aa0000;'>").
-                append(tr("This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.").
+                append(tr("This binding operation triggers anti-cheating mechanism and therefore requires a large transaction fee %1.").
                     arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), txFee))).
                 append("</span>");
             questionString.append("<br />").
@@ -764,20 +764,20 @@ bool SendCoinsDialog::handlePaymentRequest(const SendCoinsRecipient &rv)
 }
 
 void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                                 const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                                 const CAmount& loanBalance, const CAmount& borrowBalance, const CAmount& lockedBalance,
                                  const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                                 const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance)
+                                 const CAmount& watchLoanBalance, const CAmount& watchBorrowBalance, const CAmount& watchLockedBalance)
 {
     Q_UNUSED(unconfirmedBalance);
     Q_UNUSED(immatureBalance);
-    Q_UNUSED(pledgeLoanBalance);
-    Q_UNUSED(pledgeDebitBalance);
+    Q_UNUSED(loanBalance);
+    Q_UNUSED(borrowBalance);
     Q_UNUSED(lockedBalance);
     Q_UNUSED(watchBalance);
     Q_UNUSED(watchUnconfBalance);
     Q_UNUSED(watchImmatureBalance);
-    Q_UNUSED(watchPledgeLoanBalance);
-    Q_UNUSED(watchPledgeDebitBalance);
+    Q_UNUSED(watchLoanBalance);
+    Q_UNUSED(watchBorrowBalance);
     Q_UNUSED(watchLockedBalance);
 
     if(model && model->getOptionsModel())
@@ -844,7 +844,7 @@ void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn 
             msgParams.first = tr("The bind plotter consensus active on %1 after.")
                 .arg(QString::number(Params().GetConsensus().BHDIP006Height));
         } else {
-            msgParams.first = tr("The pledge loan consensus active on %1 after.")
+            msgParams.first = tr("The rental consensus active on %1 after.")
                 .arg(QString::number(Params().GetConsensus().BHDIP006Height));
         }
         break;
@@ -859,13 +859,13 @@ void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn 
             msgParams.first = tr("The plotter %1 already binded to %2.").arg(args.size() > 0 ? args[0] : "", args.size() > 1 ? args[1] : "");
         }
         break;
-    case WalletModel::SmallPledgeLoanAmount:
-        msgParams.first = tr("The valid amount to pledge loan must be larger than %1.")
-            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_PLEDGELOAN_AMOUNT_MIN));
+    case WalletModel::SmallLoanAmount:
+        msgParams.first = tr("Loan to amount must be larger than %1.")
+            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_RENTAL_AMOUNT_MIN));
         break;
-    case WalletModel::SmallPledgeLoanAmountExcludeFee:
-        msgParams.first = tr("The valid amount to pledge loan must be larger than %1 on exclude fee %2.")
-            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_PLEDGELOAN_AMOUNT_MIN), msgArg);
+    case WalletModel::SmallLoanAmountExcludeFee:
+        msgParams.first = tr("Loan to amount must be larger than %1 on exclude fee %2.")
+            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), PROTOCOL_RENTAL_AMOUNT_MIN), msgArg);
         break;
     // included to prevent a compiler warning.
     case WalletModel::OK:

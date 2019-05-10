@@ -39,7 +39,7 @@ QT_END_NAMESPACE
 /** Pay operate method */
 enum class PayOperateMethod {
     Pay,
-    SendPledge,
+    LoanTo,
     BindPlotter,
 };
 
@@ -131,8 +131,8 @@ public:
         InactivedBHDIP006,
         InvalidBindPlotterAmount,
         BindPlotterExist,
-        SmallPledgeLoanAmount,
-        SmallPledgeLoanAmountExcludeFee,
+        SmallLoanAmount,
+        SmallLoanAmountExcludeFee,
     };
 
     enum EncryptionStatus
@@ -150,15 +150,15 @@ public:
     CAmount getBalance(const CCoinControl *coinControl = nullptr) const;
     CAmount getUnconfirmedBalance() const;
     CAmount getImmatureBalance() const;
-    CAmount getPledgeCreditBalance() const;
-    CAmount getPledgeDebitBalance() const;
+    CAmount getLoanBalance() const;
+    CAmount getBorrowBalance() const;
     CAmount getLockedBalance() const;
     bool haveWatchOnly() const;
     CAmount getWatchBalance() const;
     CAmount getWatchUnconfirmedBalance() const;
     CAmount getWatchImmatureBalance() const;
-    CAmount getWatchPledgeCreditBalance() const;
-    CAmount getWatchPledgeDebitBalance() const;
+    CAmount getWatchLoanBalance() const;
+    CAmount getWatchBorrowBalance() const;
     CAmount getWatchLockedBalance() const;
     EncryptionStatus getEncryptionStatus() const;
 
@@ -265,14 +265,14 @@ private:
     CAmount cachedBalance;
     CAmount cachedUnconfirmedBalance;
     CAmount cachedImmatureBalance;
-    CAmount cachedPledgeLoanBalance;
-    CAmount cachedPledgeDebitBalance;
+    CAmount cachedLoanBalance;
+    CAmount cachedBorrowBalance;
     CAmount cachedLockedBalance;
     CAmount cachedWatchBalance;
     CAmount cachedWatchUnconfBalance;
     CAmount cachedWatchImmatureBalance;
-    CAmount cachedWatchPledgeLoanBalance;
-    CAmount cachedWatchPledgeDebitBalance;
+    CAmount cachedWatchLoanBalance;
+    CAmount cachedWatchBorrowBalance;
     CAmount cachedWatchLockedBalance;
     EncryptionStatus cachedEncryptionStatus;
     int cachedNumBlocks;
@@ -286,9 +286,9 @@ private:
 Q_SIGNALS:
     // Signal that balance in wallet changed
     void balanceChanged(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
-                        const CAmount& pledgeLoanBalance, const CAmount& pledgeDebitBalance, const CAmount& lockedBalance,
+                        const CAmount& loanBalance, const CAmount& borrowBalance, const CAmount& lockedBalance,
                         const CAmount& watchBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                        const CAmount& watchPledgeLoanBalance, const CAmount& watchPledgeDebitBalance, const CAmount& watchLockedBalance);
+                        const CAmount& watchLoanBalance, const CAmount& watchBorrowBalance, const CAmount& watchLockedBalance);
 
     // Encryption status of wallet changed
     void encryptionStatusChanged(int status);
