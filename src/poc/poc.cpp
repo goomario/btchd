@@ -411,7 +411,7 @@ uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
         }
 
         // Update private key for signature. Pre-set
-        {
+        if (miningBlockIndex.nHeight + 1 >= params.BHDIP007Height) {
             uint64_t destId = boost::get<CScriptID>(&dest)->GetUint64(0);
 
             // From cache
