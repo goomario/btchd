@@ -1086,7 +1086,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             CTxDestination address;
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
-        } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
+        } else if (payload->type == DATACARRIER_TYPE_RENTAL) {
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "pledge";
@@ -1095,7 +1095,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
             wtx.mapValue["from"] = EncodeDestination(address);
 
-            wtx.mapValue["to"] = EncodeDestination(CScriptID(PledgeLoanPayload::As(payload)->GetDebitAccountID()));
+            wtx.mapValue["to"] = EncodeDestination(CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID()));
         }
     }
 
@@ -1192,9 +1192,9 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
                         fRelevantToMe = (type == "bindplotter" || type == "pledge");
                     }
                 }
-            } else if (payload->type == DATACARRIER_TYPE_PLEDGE) {
+            } else if (payload->type == DATACARRIER_TYPE_RENTAL) {
                 // Pledge to me
-                fRelevantToMe = ::IsMine(*this, CScriptID(PledgeLoanPayload::As(payload)->GetDebitAccountID())) != 0;
+                fRelevantToMe = ::IsMine(*this, CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID())) != 0;
             }
         }
         if (fRelevantToMe) {
@@ -2346,7 +2346,7 @@ CAmount CWallet::GetImmatureBalance() const
     return nTotal;
 }
 
-CAmount CWallet::GetPledgeLoanBalance() const
+CAmount CWallet::GetLoanBalance() const
 {
     CAmount nTotal = 0;
     {
@@ -2362,7 +2362,7 @@ CAmount CWallet::GetPledgeLoanBalance() const
     return nTotal;
 }
 
-CAmount CWallet::GetPledgeDebitBalance() const
+CAmount CWallet::GetBorrowBalance() const
 {
     CAmount nTotal = 0;
     {
@@ -2443,7 +2443,7 @@ CAmount CWallet::GetImmatureWatchOnlyBalance() const
     return nTotal;
 }
 
-CAmount CWallet::GetPledgeLoanWatchOnlyBalance() const
+CAmount CWallet::GetLoanWatchOnlyBalance() const
 {
     CAmount nTotal = 0;
     {
@@ -2459,7 +2459,7 @@ CAmount CWallet::GetPledgeLoanWatchOnlyBalance() const
     return nTotal;
 }
 
-CAmount CWallet::GetPledgeDebitWatchOnlyBalance() const
+CAmount CWallet::GetBorrowWatchOnlyBalance() const
 {
     CAmount nTotal = 0;
     {

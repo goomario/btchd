@@ -140,8 +140,8 @@ private:
     /** show detailed information on ui about selected node */
     void updateNodeDetail(const CNodeCombinedStats *stats);
 
-    /** update pledge */
-    void updatePledge();
+    /** update wallet info */
+    void updateWalletInfo();
 
     enum ColumnWidths
     {

@@ -101,14 +101,14 @@ typedef std::vector< std::reference_wrapper<const CBlockIndex> > CBlockList;
 CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& params);
 
 /**
- * Eval pledge ratio by capacity
+ * Eval mining ratio by capacity
  *
  * @param nMiningHeight     The height for mining
  * @param nNetCapacityTB    Network capacity of TB
  * @param params            Consensus params
  * @param pRatioStage       The stage of current ratio
  */
-CAmount EvalPledgeRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage = nullptr);
+CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage = nullptr);
 
 /**
  * Get net capacity for ratio
@@ -144,7 +144,7 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params);
 int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex &block)> associateBlock);
 
 /**
- * Get pledge ratio
+ * Get mining ratio
  *
  * @param nHeight           The height for mining
  * @param params            Consensus params
@@ -152,36 +152,36 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::functi
  * @param pRatioCapacityTB  The net capacity of current stage
  * @param pRatioBeginHeight The begin block height of current stage
  *
- * @return Return pledge ratio
+ * @return Return mining ratio
  */
-CAmount GetPledgeRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr,
+CAmount GetMiningRatio(int nMiningHeight, const Consensus::Params& params, int* pRatioStage = nullptr,
     int64_t* pRatioCapacityTB = nullptr, int *pRatioBeginHeight = nullptr);
 
 /**
- * Get capacity pledge amount
+ * Get capacity required balance
  *
  * @param nCapacityTB       Miner capacity
- * @param pledgeRatio       The pledge ratio
+ * @param miningRatio       The mining ratio
  *
- * @return Return pledge amount
+ * @return Required balance
  */
-CAmount GetCapacityPledgeAmount(int64_t nCapacityTB, CAmount pledgeRatio);
+CAmount GetCapacityRequireBalance(int64_t nCapacityTB, CAmount miningRatio);
 
 /**
- * Get mining pledge amount for miner
+ * Get mining required balance
  *
  * @param generatorAccountID        Block generator
  * @param nPlotterId                Proof of capacity ID
  * @param nMiningHeight             The height of mining
  * @param view                      The coin view
  * @param pMinerCapacityTB          Miner capacity by estimate
- * @param pOldMinerPledge           Only in BHDIP004. See https://btchd.org/wiki/BHDIP/004#getminerpledge
+ * @param pOldMiningRequireBalance  Only in BHDIP004. See https://btchd.org/wiki/BHDIP/004#getminingrequire
  * @param params                    Consensus params
  *
- * @return Mining pledge amount for miner
+ * @return Required balance
  */
-CAmount GetMiningPledgeAmount(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
-    const CCoinsViewCache& view, int64_t* pMinerCapacityTB, CAmount* pOldMinerPledge,
+CAmount GetMiningRequireBalance(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
+    const CCoinsViewCache& view, int64_t* pMinerCapacityTB, CAmount* pOldMiningRequireBalance,
     const Consensus::Params& params);
 
 /**

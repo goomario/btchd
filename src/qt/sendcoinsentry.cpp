@@ -55,8 +55,8 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
     connect(ui->useAvailableBalanceButton, SIGNAL(clicked()), this, SLOT(useAvailableBalanceClicked()));
 
     // Pay method
-    if (payOperateMethod == PayOperateMethod::SendPledge) {
-        ui->payToLabel->setText(tr("Pledge &To:"));
+    if (payOperateMethod == PayOperateMethod::LoanTo) {
+        ui->payToLabel->setText(tr("Loan &To:"));
     } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
         ui->payToLabel->setText(tr("Bind &To:"));
         ui->labellLabel->setVisible(false);
@@ -195,10 +195,10 @@ bool SendCoinsEntry::validate()
     }
 
     // Special tx amount
-    if (payOperateMethod == PayOperateMethod::SendPledge)
+    if (payOperateMethod == PayOperateMethod::LoanTo)
     {
-        if (ui->payAmount->value() < PROTOCOL_PLEDGELOAN_AMOUNT_MIN ||
-                (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked && ui->payAmount->value() <= PROTOCOL_PLEDGELOAN_AMOUNT_MIN)) {
+        if (ui->payAmount->value() < PROTOCOL_RENTAL_AMOUNT_MIN ||
+                (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked && ui->payAmount->value() <= PROTOCOL_RENTAL_AMOUNT_MIN)) {
             ui->payAmount->setValid(false);
             retval = false;
         }

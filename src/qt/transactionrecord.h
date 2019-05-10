@@ -85,10 +85,10 @@ public:
         SendToSelf,
         BindPlotter,
         UnbindPlotter,
-        SendPledge,
-        RecvPledge,
-        SelfPledge,
-        WithdrawPledge,
+        LoanTo,
+        BorrowFrom,
+        SelfRental,
+        WithdrawRental,
     };
 
     /** Number of confirmation recommended for accepting a transaction */

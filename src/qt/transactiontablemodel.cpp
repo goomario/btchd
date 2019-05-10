@@ -308,8 +308,8 @@ QString TransactionTableModel::formatTxStatus(const TransactionRecord *wtx) cons
     else if (wtx->status.status & TransactionStatus::Disabled) {
         if (wtx->type == TransactionRecord::BindPlotter) {
             status = tr("This bind plotter has unbinded");
-        } else if (wtx->type == TransactionRecord::SendPledge || wtx->type == TransactionRecord::RecvPledge || wtx->type == TransactionRecord::SelfPledge) {
-            status = tr("This pledge has withdraw");
+        } else if (wtx->type == TransactionRecord::LoanTo || wtx->type == TransactionRecord::BorrowFrom || wtx->type == TransactionRecord::SelfRental) {
+            status = tr("This rental has withdraw");
         }
     }
     else {
@@ -400,14 +400,14 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("Binded plotter");
     case TransactionRecord::UnbindPlotter:
         return tr("Unbinded plotter");
-    case TransactionRecord::SendPledge:
-        return tr("Sent pledge to");
-    case TransactionRecord::RecvPledge:
-        return tr("Received pledge with");
-    case TransactionRecord::SelfPledge:
-        return tr("Self pledge");
-    case TransactionRecord::WithdrawPledge:
-        return tr("Withdrawn pledge");
+    case TransactionRecord::LoanTo:
+        return tr("Loan to");
+    case TransactionRecord::BorrowFrom:
+        return tr("Borrow from");
+    case TransactionRecord::SelfRental:
+        return tr("Loan to yourself");
+    case TransactionRecord::WithdrawRental:
+        return tr("Withdrawn loan");
     default:
         return QString();
     }
@@ -432,22 +432,22 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
             return QIcon(":/icons/tx_bindplotter");
     case TransactionRecord::UnbindPlotter:
         return QIcon(":/icons/tx_unbindplotter");
-    case TransactionRecord::RecvPledge:
+    case TransactionRecord::BorrowFrom:
         if (wtx->status.status & TransactionStatus::Disabled)
             return QIcon(":/icons/tx_pledge_withdraw");
         else
             return QIcon(":/icons/tx_pledge_in");
-    case TransactionRecord::SendPledge:
+    case TransactionRecord::LoanTo:
         if (wtx->status.status & TransactionStatus::Disabled)
             return QIcon(":/icons/tx_pledge_withdraw");
         else
             return QIcon(":/icons/tx_pledge_out");
-    case TransactionRecord::SelfPledge:
+    case TransactionRecord::SelfRental:
         if (wtx->status.status & TransactionStatus::Disabled)
             return QIcon(":/icons/tx_pledge_withdraw");
         else
             return QIcon(":/icons/tx_pledge_inout");
-    case TransactionRecord::WithdrawPledge:
+    case TransactionRecord::WithdrawRental:
         return QIcon(":/icons/tx_pledge_withdraw");
     default:
         return QIcon(":/icons/tx_inout");
@@ -475,10 +475,10 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     case TransactionRecord::Generated:
     case TransactionRecord::BindPlotter:
     case TransactionRecord::UnbindPlotter:
-    case TransactionRecord::SendPledge:
-    case TransactionRecord::RecvPledge:
-    case TransactionRecord::SelfPledge:
-    case TransactionRecord::WithdrawPledge:
+    case TransactionRecord::LoanTo:
+    case TransactionRecord::BorrowFrom:
+    case TransactionRecord::SelfRental:
+    case TransactionRecord::WithdrawRental:
         return lookupAddress(wtx->address, tooltip) + watchAddress + comment;
     case TransactionRecord::SendToOther:
         return QString::fromStdString(wtx->address) + watchAddress + comment;
@@ -508,9 +508,9 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
             return COLOR_TX_STATUS_OFFLINE;
         else
             return COLOR_BLACK;
-    case TransactionRecord::SendPledge:
-    case TransactionRecord::RecvPledge:
-    case TransactionRecord::SelfPledge:
+    case TransactionRecord::LoanTo:
+    case TransactionRecord::BorrowFrom:
+    case TransactionRecord::SelfRental:
         return COLOR_BLACK;
     default:
         break;
@@ -584,8 +584,8 @@ QString TransactionTableModel::formatTooltip(const TransactionRecord *rec) const
     if (rec->type==TransactionRecord::RecvFromOther || rec->type==TransactionRecord::SendToOther ||
         rec->type==TransactionRecord::SendToAddress || rec->type==TransactionRecord::RecvWithAddress ||
         rec->type == TransactionRecord::BindPlotter || rec->type == TransactionRecord::UnbindPlotter ||
-        rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge ||
-        rec->type == TransactionRecord::SelfPledge || rec->type == TransactionRecord::WithdrawPledge)
+        rec->type == TransactionRecord::LoanTo || rec->type == TransactionRecord::BorrowFrom ||
+        rec->type == TransactionRecord::SelfRental || rec->type == TransactionRecord::WithdrawRental)
     {
         tooltip += QString(" ") + formatTxToAddress(rec, true);
     }
@@ -742,9 +742,9 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             {
                 return tr("Unbinded plotter");
             }
-            else if (rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge)
+            else if (rec->type == TransactionRecord::LoanTo || rec->type == TransactionRecord::BorrowFrom || rec->type == TransactionRecord::SelfRental)
             {
-                return tr("Withdrawn pledge");
+                return tr("Withdrawn loan");
             }
         }
         return rec->status.countsForBalance;

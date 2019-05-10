@@ -319,16 +319,16 @@
              </widget>
             </item>
             <item row="4" column="0">
-             <widget class="QLabel" name="labelPledgeLoanText">
+             <widget class="QLabel" name="labelLoanText">
               <property name="text">
-               <string>Pledge loan:</string>
+               <string>Load to:</string>
               </property>
              </widget>
             </item>
             <item row="5" column="0">
-             <widget class="QLabel" name="labelPledgeDebitText">
+             <widget class="QLabel" name="labelBorrowText">
               <property name="text">
-               <string>Pledge debit:</string>
+               <string>Borrow from:</string>
               </property>
              </widget>
             </item>
@@ -340,7 +340,7 @@
              </widget>
             </item>
             <item row="4" column="1">
-             <widget class="QLabel" name="labelPledgeLoan">
+             <widget class="QLabel" name="labelLoan">
               <property name="font">
                <font>
                 <weight>75</weight>
@@ -351,7 +351,7 @@
                <cursorShape>IBeamCursor</cursorShape>
               </property>
               <property name="toolTip">
-               <string>Total of balance that have to be pledge loan, and do not yet count toward the spendable balance</string>
+               <string>Total of balance that have to be loan, and do not yet count toward the spendable balance</string>
               </property>
               <property name="text">
                <string notr="true">0.000 000 00 BHD</string>
@@ -365,7 +365,7 @@
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="QLabel" name="labelPledgeDebit">
+             <widget class="QLabel" name="labelBorrow">
               <property name="font">
                <font>
                 <weight>75</weight>
@@ -376,7 +376,7 @@
                <cursorShape>IBeamCursor</cursorShape>
               </property>
               <property name="toolTip">
-               <string>Total of balance that have to be pledge debit, and do not yet count toward the spendable balance</string>
+               <string>Total of balance that have to be borrow, and do not yet count toward the spendable balance</string>
               </property>
               <property name="text">
                <string notr="true">0.000 000 00 BHD</string>
@@ -401,7 +401,7 @@
                <cursorShape>IBeamCursor</cursorShape>
               </property>
               <property name="toolTip">
-               <string>Total of balance that have to be locked (for bind plotter and pledge loan), and do not yet count toward the spendable balance</string>
+               <string>Total of balance that have to be locked (for bind plotter and loan), and do not yet count toward the spendable balance</string>
               </property>
               <property name="text">
                <string notr="true">0.000 000 00 BHD</string>
@@ -415,7 +415,7 @@
              </widget>
             </item>
             <item row="4" column="2">
-             <widget class="QLabel" name="labelWatchPledgeCredit">
+             <widget class="QLabel" name="labelWatchLoan">
               <property name="font">
                <font>
                 <weight>75</weight>
@@ -426,7 +426,7 @@
                <cursorShape>IBeamCursor</cursorShape>
               </property>
               <property name="toolTip">
-               <string>Pledge loan balance to watch-only addresses</string>
+               <string>Loan to watch-only addresses</string>
               </property>
               <property name="text">
                <string notr="true">0.000 000 00 BHD</string>
@@ -440,7 +440,7 @@
              </widget>
             </item>
             <item row="5" column="2">
-             <widget class="QLabel" name="labelWatchPledgeDebit">
+             <widget class="QLabel" name="labelWatchBorrow">
               <property name="font">
                <font>
                 <weight>75</weight>
@@ -451,7 +451,7 @@
                <cursorShape>IBeamCursor</cursorShape>
               </property>
               <property name="toolTip">
-               <string>Pledge debit balance to watch-only addresses</string>
+               <string>Borrow balance to watch-only addresses</string>
               </property>
               <property name="text">
                <string notr="true">0.000 000 00 BHD</string>
@@ -476,7 +476,7 @@
                <cursorShape>IBeamCursor</cursorShape>
               </property>
               <property name="toolTip">
-               <string>Locked (for bind plotter and pledge loan) balance to watch-only addresses</string>
+               <string>Locked (for bind plotter and loan) balance to watch-only addresses</string>
               </property>
               <property name="text">
                <string notr="true">0.000 000 00 BHD</string>

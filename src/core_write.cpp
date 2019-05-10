@@ -224,7 +224,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
         CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(tx, nHeight);
         if (payload) {
             UniValue extra(UniValue::VOBJ);;
-            DatacarrierPayloadToUniv(*payload, tx.vout[0], extra);
+            DatacarrierPayloadToUniv(payload, tx.vout[0], extra);
             entry.push_back(Pair("extra", extra));
         }
     }
@@ -234,19 +234,18 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
     }
 }
 
-void DatacarrierPayloadToUniv(const DatacarrierPayload& payload, const CTxOut& txOut, UniValue& out)
+void DatacarrierPayloadToUniv(const CDatacarrierPayloadRef& payload, const CTxOut& txOut, UniValue& out)
 {
-    if (payload.type == DATACARRIER_TYPE_BINDPLOTTER) {
-        auto ptr = (const BindPlotterPayload *) &payload;
+    assert(payload != nullptr);
+    if (payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
         out.push_back(Pair("type", "bindplotter"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
         out.push_back(Pair("address", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
-        out.push_back(Pair("id", std::to_string(ptr->GetId())));
-    } else if (payload.type == DATACARRIER_TYPE_PLEDGE) {
-        auto ptr = (const PledgeLoanPayload *) &payload;
+        out.push_back(Pair("id", std::to_string(BindPlotterPayload::As(payload)->GetId())));
+    } else if (payload->type == DATACARRIER_TYPE_RENTAL) {
         out.push_back(Pair("type", "pledge"));
         out.push_back(Pair("amount", ValueFromAmount(txOut.nValue)));
         out.push_back(Pair("from", EncodeDestination(ExtractDestination(txOut.scriptPubKey))));
-        out.push_back(Pair("to", EncodeDestination(CScriptID(ptr->GetDebitAccountID()))));
+        out.push_back(Pair("to", EncodeDestination(CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID()))));
     }
 }

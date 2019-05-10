@@ -173,7 +173,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("smoothbeginheight",  params.BHDIP007Height));
     obj.push_back(Pair("smoothendheight",    params.BHDIP007SmoothEndHeight));
     obj.push_back(Pair("stagebeginheight",   params.BHDIP007SmoothEndHeight + 1));
-    obj.push_back(Pair("stagecapacity",      ValueFromCapacity(params.BHDIP007PledgeRatioStage)));
+    obj.push_back(Pair("stagecapacity",      ValueFromCapacity(params.BHDIP007MiningRatioStage)));
     // Current eval
     int64_t nRatioNetCapacityTB = 0;
     {
@@ -181,7 +181,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
         int nRatioStageBeginHeight = 0;
 
         UniValue curEval(UniValue::VOBJ);
-        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetPledgeRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB, &nRatioStageBeginHeight))));
+        curEval.push_back(Pair("ratio",            ValueFromAmount(poc::GetMiningRatio(chainActive.Height() + 1, params, &nRatioStage, &nRatioNetCapacityTB, &nRatioStageBeginHeight))));
         curEval.push_back(Pair("ratiostartheight", nRatioStageBeginHeight));
         curEval.push_back(Pair("ratiostage",       nRatioStage));
         curEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nRatioNetCapacityTB)));
@@ -193,7 +193,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
         int64_t nNextEvalNetCapacityTB = poc::GetRatioNetCapacity(poc::GetNetCapacity(chainActive.Height(), params), nRatioNetCapacityTB, params);
 
         UniValue nextEval(UniValue::VOBJ);
-        nextEval.push_back(Pair("ratio",            ValueFromAmount(poc::EvalPledgeRatio(chainActive.Height() + 1, nNextEvalNetCapacityTB, params, &nRatioStage))));
+        nextEval.push_back(Pair("ratio",            ValueFromAmount(poc::EvalMiningRatio(chainActive.Height() + 1, nNextEvalNetCapacityTB, params, &nRatioStage))));
         nextEval.push_back(Pair("ratiostartheight", (std::max(chainActive.Height(), params.BHDIP007SmoothEndHeight) / params.nCapacityEvalWindow + 1) * params.nCapacityEvalWindow));
         nextEval.push_back(Pair("ratiostage",       nRatioStage));
         nextEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nNextEvalNetCapacityTB)));
@@ -1130,25 +1130,28 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address, must from BitcoinHD wallet (P2SH address)");
     }
 
-    CAmount balance = 0, balanceBindPlotter = 0, balancePledgeLoan = 0, balancePledgeDebit = 0;
-    balance = pcoinsTip->GetAccountBalance(accountID, &balanceBindPlotter, &balancePledgeLoan, &balancePledgeDebit);
+    CAmount balance = 0, balanceBindPlotter = 0, balanceLoan = 0, balanceBorrow = 0;
+    balance = pcoinsTip->GetAccountBalance(accountID, &balanceBindPlotter, &balanceLoan, &balanceBorrow);
 
     UniValue result(UniValue::VOBJ);
     //! This balance belong to your
     result.pushKV("balance", ValueFromAmount(balance));
     //! This balance spendable
-    result.pushKV("spendableBalance", ValueFromAmount(balance - balanceBindPlotter - balancePledgeLoan));
+    result.pushKV("spendableBalance", ValueFromAmount(balance - balanceBindPlotter - balanceLoan));
     //! This balance freeze in bind plotter and pledge loan
-    result.pushKV("lockedBalance", ValueFromAmount(balanceBindPlotter + balancePledgeLoan));
-    //! This balance freeze in pledge loan
-    result.pushKV("pledgeLoanBalance", ValueFromAmount(balancePledgeLoan));
-    //! This balance recevied from pledge debit. YOUR CANNOT SPENT IT.
-    result.pushKV("pledgeDebitBalance", ValueFromAmount(balancePledgeDebit));
-    //! This balance include pledge debit and avaliable balance. For mining pledge
-    result.pushKV("availablePledgeBalance", ValueFromAmount(balance - balancePledgeLoan + balancePledgeDebit));
+    result.pushKV("lockedBalance", ValueFromAmount(balanceBindPlotter + balanceLoan));
+    //! This balance freeze in rental loan
+    result.pushKV("loanBalance", ValueFromAmount(balanceLoan));
+    result.pushKV("pledgeLoanBalance", ValueFromAmount(balanceLoan));
+    //! This balance recevied from rental borrow. YOUR CANNOT SPENT IT.
+    result.pushKV("borrowBalance", ValueFromAmount(balanceBorrow));
+    result.pushKV("pledgeDebitBalance", ValueFromAmount(balanceBorrow));
+    //! This balance include rental loan and avaliable balance. For mining require balance
+    result.pushKV("availableMiningBalance", ValueFromAmount(balance - balanceLoan + balanceBorrow));
+    result.pushKV("availablePledgeBalance", ValueFromAmount(balance - balanceLoan + balanceBorrow));
 
     const Consensus::Params &params = Params().GetConsensus();
-    const CAmount pledgeRatio = poc::GetPledgeRatio(chainActive.Height() + 1, params);
+    const CAmount miningRatio = poc::GetMiningRatio(chainActive.Height() + 1, params);
 
     typedef struct {
         int minedCount;
@@ -1199,7 +1202,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     }
 
     result.pushKV("capacity", ValueFromCapacity(nCapacityTB));
-    result.pushKV("pledge", ValueFromAmount(poc::GetCapacityPledgeAmount(nCapacityTB, pledgeRatio)));
+    result.pushKV("pledge", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio)));
     result.pushKV("height", chainActive.Height());
     result.pushKV("address", address);
 
@@ -1211,7 +1214,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
 
             UniValue item(UniValue::VOBJ);
             item.pushKV("capacity", ValueFromCapacity(nCapacityTB));
-            item.pushKV("pledge", ValueFromAmount(poc::GetCapacityPledgeAmount(nCapacityTB, pledgeRatio)));
+            item.pushKV("pledge", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio)));
             if (it->second.pindexLast != nullptr) {
                 UniValue lastBlock(UniValue::VOBJ);
                 lastBlock.pushKV("blockhash", it->second.pindexLast->GetBlockHash().GetHex());
@@ -1243,9 +1246,9 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "    \"balance\": xxx,                     (numeric) All amounts belonging to this address\n"
             "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and pledge loan\n"
             "    \"spendableBalance\": xxx,            (numeric) Spendable amount. Include immarture and exclude locked amount\n"
-            "    \"pledgeLoanBalance\": xxx,           (numeric) Pledge loan amount\n"
-            "    \"pledgeDebitBalance\": xxx,          (numeric) Pledge debit amount\n"
-            "    \"availablePledgeBalance\": xxx,      (numeric) Available for mining pledge amount. balance + pledgeDebitBalance - pledgeLoanBalance\n"
+            "    \"loanBalance\": xxx,                 (numeric) Rental loan amount\n"
+            "    \"borrowBalance\": xxx,               (numeric) Rental borrow amount\n"
+            "    \"availableMiningBalance\": xxx,      (numeric) Available for mining amount. balance + borrowBalance - loanBalance\n"
             "    \"pledge\": xxx,                      (numeric) Require mining pledge for next block\n"
             "    \"capacity\": \"xxx TB\",                (numeric) The address capacity\n"
             "    ...\n"
@@ -1303,7 +1306,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     LOCK(cs_main);
     const Consensus::Params& params = Params().GetConsensus();
-    const CAmount pledgeRatio = poc::GetPledgeRatio(chainActive.Height() + 1, params);
+    const CAmount miningRatio = poc::GetMiningRatio(chainActive.Height() + 1, params);
     const poc::CBlockList vBlocks = poc::GetEvalBlocks(chainActive.Height(), true, params);
 
     int64_t nNetCapacityTB = 0, nCapacityTB = 0;
@@ -1325,7 +1328,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     UniValue result(UniValue::VOBJ);
     result.pushKV("plotterId", std::to_string(nPlotterId));
     result.pushKV("capacity", ValueFromCapacity(nCapacityTB));
-    result.pushKV("pledge", ValueFromAmount(poc::GetCapacityPledgeAmount(nCapacityTB, pledgeRatio)));
+    result.pushKV("pledge", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio)));
 
     if (chainActive.Height() < params.BHDIP006BindPlotterActiveHeight) {
         // Mined by plotter ID
@@ -1358,7 +1361,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
                     UniValue item(UniValue::VOBJ);
                     nCapacityTB = std::max((int64_t) ((nNetCapacityTB * it->second.forgeCount) / vBlocks.size()), (int64_t) 1);
                     item.pushKV("capacity", ValueFromCapacity(nCapacityTB));
-                    item.pushKV("pledge", ValueFromAmount(poc::GetCapacityPledgeAmount(nCapacityTB, pledgeRatio)));
+                    item.pushKV("pledge", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio)));
                     {
                         UniValue lastBlock(UniValue::VOBJ);
                         lastBlock.pushKV("blockhash", it->second.pindexLast->GetBlockHash().GetHex());
@@ -1379,7 +1382,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
             if (!coin.IsSpent()) {
                 UniValue item(UniValue::VOBJ);
                 item.push_back(Pair("capacity", ValueFromCapacity(nCapacityTB)));
-                item.push_back(Pair("pledge", ValueFromAmount(poc::GetCapacityPledgeAmount(nCapacityTB, pledgeRatio))));
+                item.push_back(Pair("pledge", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio))));
                 item.push_back(Pair("txid", outpoint.hash.GetHex()));
                 item.push_back(Pair("vout", 0));
                 item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
@@ -1429,7 +1432,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
 
             UniValue item(UniValue::VOBJ);
             item.push_back(Pair("from", EncodeDestination(ExtractDestination(coin.out.scriptPubKey))));
-            item.push_back(Pair("to", EncodeDestination(PledgeLoanPayload::As(coin.extraData)->GetDebitAccountID())));
+            item.push_back(Pair("to", EncodeDestination(RentalPayload::As(coin.extraData)->GetBorrowerAccountID())));
             item.push_back(Pair("amount", ValueFromAmount(coin.out.nValue)));
             item.push_back(Pair("txid", key.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));

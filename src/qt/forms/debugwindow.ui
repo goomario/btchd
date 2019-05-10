@@ -524,14 +524,14 @@
         </widget>
        </item>
        <item row="20" column="0">
-        <widget class="QLabel" name="labelMiningRequirePledge">
+        <widget class="QLabel" name="labelMiningRequireBalance">
          <property name="text">
-          <string>Pledge</string>
+          <string>Balance for mining</string>
          </property>
         </widget>
        </item>
        <item row="20" column="1">
-        <widget class="QLabel" name="miningRequirePledge">
+        <widget class="QLabel" name="miningRequireBalance">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>

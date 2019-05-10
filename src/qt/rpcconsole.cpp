@@ -507,8 +507,8 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     ui->bindPlotterIdContainer->setVisible(fCurrentWalletVisible);
     ui->labelEstimateCapacity->setVisible(fCurrentWalletVisible);
     ui->estimateCapacity->setVisible(fCurrentWalletVisible);
-    ui->labelMiningRequirePledge->setVisible(fCurrentWalletVisible);
-    ui->miningRequirePledge->setVisible(fCurrentWalletVisible);
+    ui->labelMiningRequireBalance->setVisible(fCurrentWalletVisible);
+    ui->miningRequireBalance->setVisible(fCurrentWalletVisible);
 
     // Register RPC timer interface
     rpcTimerInterface = new QtRPCTimerInterface();
@@ -869,7 +869,7 @@ void RPCConsole::setNumBlocks(int count, const QDateTime& blockDate, double nVer
         ui->numberOfBlocks->setText(QString::number(count));
         ui->lastBlockTime->setText(blockDate.toString(Qt::SystemLocaleLongDate));
 
-        updatePledge();
+        updateWalletInfo();
     }
 }
 
@@ -891,11 +891,11 @@ void RPCConsole::currentWalletPrimaryAddressChanged(CWallet *wallet)
     } else {
         ui->primaryAddress->clear();
     }
-    updatePledge();
+    updateWalletInfo();
 }
 #endif
 
-void RPCConsole::updatePledge()
+void RPCConsole::updateWalletInfo()
 {
     const QString primaryAddress = ui->primaryAddress->text();
     if (!primaryAddress.isEmpty() && !IsInitialBlockDownload()) {
@@ -908,15 +908,15 @@ void RPCConsole::updatePledge()
             // Primary address total balance
             CAmount balance;
             {
-                CAmount balancePledgeLoan = 0, balancePledgeDebit = 0;
-                balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &balancePledgeLoan, &balancePledgeDebit);
-                balance = balance - balancePledgeLoan + balancePledgeDebit;
+                CAmount balanceLoan = 0, balanceBorrow = 0;
+                balance = pcoinsTip->GetAccountBalance(accountID, nullptr, &balanceLoan, &balanceBorrow);
+                balance = balance - balanceLoan + balanceBorrow;
             }
             ui->primaryAddressBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balance, false, BitcoinUnits::separatorAlways));
 
             // Primary address capacity and pledge
             int64_t nCapacityTB;
-            CAmount nPledgeAmount = poc::GetMiningPledgeAmount(accountID, 0, chainActive.Height() + 1, *pcoinsTip, &nCapacityTB, nullptr, params);
+            CAmount balanceRequire = poc::GetMiningRequireBalance(accountID, 0, chainActive.Height() + 1, *pcoinsTip, &nCapacityTB, nullptr, params);
 
             // Binded plotter
             QString strBindPlotters;
@@ -941,21 +941,21 @@ void RPCConsole::updatePledge()
             if (fMiningEnabled) {
                 ui->bindPlotterId->setText(strBindPlotters);
                 ui->estimateCapacity->setText(BitcoinUnits::formatCapacity(nCapacityTB * 1024));
-                ui->miningRequirePledge->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, nPledgeAmount, false, BitcoinUnits::separatorAlways));
-                ui->miningRequirePledge->setStyleSheet(nPledgeAmount > balance ? "QLabel { color: red; }" : "");
+                ui->miningRequireBalance->setText(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, balanceRequire, false, BitcoinUnits::separatorAlways));
+                ui->miningRequireBalance->setStyleSheet(balanceRequire > balance ? "QLabel { color: red; }" : "");
             } else {
                 ui->bindPlotterId->setText(tr("None"));
                 ui->estimateCapacity->setText(tr("None"));
-                ui->miningRequirePledge->setText(tr("None"));
-                ui->miningRequirePledge->setStyleSheet("");
+                ui->miningRequireBalance->setText(tr("None"));
+                ui->miningRequireBalance->setStyleSheet("");
             }
 
             ui->labelBindPlotter->setVisible(fMiningEnabled);
             ui->bindPlotterIdContainer->setVisible(fMiningEnabled);
             ui->labelEstimateCapacity->setVisible(fMiningEnabled);
             ui->estimateCapacity->setVisible(fMiningEnabled);
-            ui->labelMiningRequirePledge->setVisible(fMiningEnabled);
-            ui->miningRequirePledge->setVisible(fMiningEnabled);
+            ui->labelMiningRequireBalance->setVisible(fMiningEnabled);
+            ui->miningRequireBalance->setVisible(fMiningEnabled);
         }
     } else {
         // Pending
@@ -965,8 +965,8 @@ void RPCConsole::updatePledge()
         ui->bindPlotterIdContainer->setVisible(false);
         ui->labelEstimateCapacity->setVisible(false);
         ui->estimateCapacity->setVisible(false);
-        ui->labelMiningRequirePledge->setVisible(false);
-        ui->miningRequirePledge->setVisible(false);
+        ui->labelMiningRequireBalance->setVisible(false);
+        ui->miningRequireBalance->setVisible(false);
     }
 }
 

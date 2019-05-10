@@ -123,7 +123,7 @@
         <translation>借出金額</translation>
     </message>
     <message>
-        <source>Debit</source>
+        <source>Borrow</source>
         <translation>借入金額</translation>
     </message>
     <message>
@@ -145,14 +145,14 @@
         <message>
         <source>Spendable: %1
 Locked: %2
-Loan: %3
-Debit: %4
-Available pledge: %5</source>
+Load to: %3
+Borrow from: %4
+Available for mining: %5</source>
         <translation>可花費的金額: %1
 鎖定的金額: %2
-借出抵押金額: %3
-借入抵押金額: %4
-可用於開採的抵押金額: %5</translation>
+借出的金額: %3
+借入的金額: %4
+可用於開採的金額: %5</translation>
     </message>
 </context>
 <context>
@@ -1357,24 +1357,24 @@ Available pledge: %5</source>
         <translation>鎖定的金額:</translation>
     </message>
     <message>
-        <source>Total of balance that have to be locked (for bind plotter and pledge loan), and do not yet count toward the spendable balance</source>
+        <source>Total of balance that have to be locked (for bind plotter and loan), and do not yet count toward the spendable balance</source>
         <translation>被鎖定的總額(綁定算力和抵押租出)，未計入當前金額</translation>
     </message>
     <message>
-        <source>Pledge loan:</source>
-        <translation>借出的抵押額:</translation>
+        <source>Load to:</source>
+        <translation>借出的總額:</translation>
     </message>
     <message>
-        <source>Total of balance that have to be pledge loan, and do not yet count toward the spendable balance</source>
-        <translation>借出的抵押總額，未計入當前餘額</translation>
+        <source>Total of balance that have to be loan, and do not yet count toward the spendable balance</source>
+        <translation>借出的總額，未計入當前餘額</translation>
     </message>
     <message>
-        <source>Pledge debit:</source>
-        <translation>借入的抵押額:</translation>
+        <source>Borrow from:</source>
+        <translation>借入的總額:</translation>
     </message>
     <message>
-        <source>Total of balance that have to be pledge debit, and do not yet count toward the spendable balance</source>
-        <translation>借到的抵押總額，未計入當前餘額</translation>
+        <source>Total of balance that have to be borrow, and do not yet count toward the spendable balance</source>
+        <translation>借到的總額，未計入當前餘額</translation>
     </message>
     <message>
         <source>Balances</source>
@@ -1413,16 +1413,16 @@ Available pledge: %5</source>
         <translation>所有只能看位址的目前全部餘額</translation>
     </message>
     <message>
-        <source>Locked (for bind plotter and pledge loan) balance to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和抵押租出)</translation>
+        <source>Locked (for bind plotter and loan) balance to watch-only addresses</source>
+        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和租出)</translation>
     </message>
     <message>
-        <source>Pledge loan to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)借出的抵押金額</translation>
+        <source>Loan to to watch-only addresses</source>
+        <translation>只能看位址(watch-only address)借出的金額</translation>
     </message>
     <message>
-        <source>Pledge debit to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)借入的抵押金額</translation>
+        <source>Borrow from watch-only addresses</source>
+        <translation>只能看位址(watch-only address)借入的金額</translation>
     </message>
 </context>
 <context>
@@ -1771,8 +1771,8 @@ Available pledge: %5</source>
         <translation>估算的算力</translation>
     </message>
     <message>
-        <source>Pledge</source>
-        <translation>挖礦需要的抵押額</translation>
+        <source>Balance for mining</source>
+        <translation>挖礦需要的金額</translation>
     </message>
     <message>
         <source>None</source>
@@ -2491,7 +2491,7 @@ Available pledge: %5</source>
         <translation>支付到</translation>
     </message>
     <message>
-        <source>Pledge to</source>
+        <source>Loan to</source>
         <translation>借出到</translation>
     </message>
     <message>
@@ -2499,12 +2499,12 @@ Available pledge: %5</source>
         <translation>綁定到</translation>
     </message>
     <message>
-        <source>Confirm send pledge coins</source>
-        <translation>確認發送抵押</translation>
+        <source>Confirm loan to</source>
+        <translation>確認發送借出</translation>
     </message>
     <message>
-        <source>Are you sure you want to send pledge?</source>
-        <translation>您確定要發送抵押嗎？</translation>
+        <source>Are you sure you want loan?</source>
+        <translation>您確定要借出嗎？</translation>
     </message>
     <message>
         <source>Confirm bind plotter</source>
@@ -2523,8 +2523,8 @@ Available pledge: %5</source>
         <translation>此操作將會在 %2 鎖定 %1。</translation>
     </message>
     <message>
-        <source>This binding operation triggers a pledge anti-cheating mechanism and therefore requires a large transaction fee %1.</source>
-        <translation>此綁定操作觸發了抵押防作弊機制，因此需要巨額的交易費 %1。</translation>
+        <source>This binding operation triggers anti-cheating mechanism and therefore requires a large transaction fee %1.</source>
+        <translation>此綁定操作觸發了防作弊機制，因此需要巨額的交易費 %1。</translation>
     </message>
     <message>
         <source>%1 small bind plotter fee active on %2 block height (%3 blocks after, about %4 minute).</source>
@@ -2535,8 +2535,8 @@ Available pledge: %5</source>
         <translation>綁定算力共識將在 %1 高度之後啟用。</translation>
     </message>
     <message>
-        <source>The pledge loan consensus active on %1 after.</source>
-        <translation>抵押租借共識將在 %1 高度之後啟用。</translation>
+        <source>The rental consensus active on %1 after.</source>
+        <translation>租借共識將在 %1 高度之後啟用。</translation>
     </message>
     <message>
         <source>The lock amount to bind plotter must be %1.</source>
@@ -2547,12 +2547,12 @@ Available pledge: %5</source>
         <translation>算力 %1 和地址 %2 已經綁定過。</translation>
     </message>
     <message>
-        <source>The valid amount to pledge loan must be larger than %1.</source>
-        <translation>有效的抵押借出額除必須大於 %1 。</translation>
+        <source>Loan to amount must be larger than %1.</source>
+        <translation>有效的借出額除必須大於 %1 。</translation>
     </message>
     <message>
-        <source>The valid amount to pledge loan must be larger than %1 on exclude fee %2.</source>
-        <translation>有效的抵押借出額除去交易費用 %2 後必須大於 %1 。</translation>
+        <source>Loan to amount must be larger than %1 on exclude fee %2.</source>
+        <translation>有效的借出額除去交易費用 %2 後必須大於 %1 。</translation>
     </message>
     <message>
         <source>Copy bind data</source>
@@ -2570,7 +2570,7 @@ Available pledge: %5</source>
         <translation>付給(&amp;T):</translation>
     </message>
     <message>
-        <source>Pledge &amp;To:</source>
+        <source>Loan &amp;To:</source>
         <translation>借給(&amp;T)：</translation>
     </message>
     <message>
@@ -3158,24 +3158,24 @@ Available pledge: %5</source>
         <translation>此綁定已經不能挖礦</translation>
     </message>
     <message>
-        <source>Sent pledge to</source>
-        <translation>借出抵押</translation>
+        <source>Loan to</source>
+        <translation>借出</translation>
     </message>
     <message>
-        <source>Received pledge with</source>
-        <translation>借入抵押</translation>
+        <source>Borrow from</source>
+        <translation>借入</translation>
     </message>
     <message>
-        <source>This pledge has withdraw</source>
-        <translation>此抵押已被贖回</translation>
+        <source>This rental has withdraw</source>
+        <translation>此租借已被贖回</translation>
     </message>
     <message>
-        <source>Self pledge</source>
-        <translation>抵押給自己</translation>
+        <source>Loan to yourself</source>
+        <translation>借給自己</translation>
     </message>
     <message>
-        <source>Withdrawn pledge</source>
-        <translation>贖回抵押</translation>
+        <source>Withdrawn loan</source>
+        <translation>贖回借出</translation>
     </message>
     <message>
         <source>Transaction status. Hover over this field to show number of confirmations.</source>
@@ -3257,24 +3257,24 @@ Available pledge: %5</source>
         <translation>解綁算力</translation>
     </message>
     <message>
-        <source>Sent pledge to</source>
-        <translation>借出抵押</translation>
+        <source>Loan to</source>
+        <translation>借出</translation>
     </message>
     <message>
-        <source>Received pledge with</source>
-        <translation>借入抵押</translation>
+        <source>Borrow from</source>
+        <translation>借入</translation>
     </message>
     <message>
-        <source>This pledge has withdraw</source>
-        <translation>此抵押已被贖回</translation>
+        <source>This rental has withdraw</source>
+        <translation>此租借已被贖回</translation>
     </message>
     <message>
-        <source>Self pledge</source>
-        <translation>抵押給自己</translation>
+        <source>Loan to yourself</source>
+        <translation>借給自己</translation>
     </message>
     <message>
-        <source>Withdrawn pledge</source>
-        <translation>贖回抵押</translation>
+        <source>Withdrawn loan</source>
+        <translation>贖回借出</translation>
     </message>
     <message>
         <source>Other</source>
@@ -3301,8 +3301,8 @@ Available pledge: %5</source>
         <translation>解綁算力</translation>
     </message>
     <message>
-        <source>Withdraw pledge</source>
-        <translation>贖回抵押</translation>
+        <source>Withdraw rental</source>
+        <translation>贖回租借</translation>
     </message>
     <message>
         <source>Copy address</source>
@@ -3458,24 +3458,24 @@ Available pledge: %5</source>
         <translation>解綁算力</translation>
     </message>
     <message>
-        <source>Withdraw pledge</source>
-        <translation>贖回抵押</translation>
+        <source>Withdraw rental</source>
+        <translation>贖回租借</translation>
     </message>
     <message>
         <source>Unbind plotter error</source>
         <translation>解綁算力失敗</translation>
     </message>
     <message>
-        <source>Withdraw pledge error</source>
-        <translation>贖回抵押失敗</translation>
+        <source>Withdraw rental error</source>
+        <translation>贖回租借失敗</translation>
     </message>
     <message>
         <source>Are you sure you want to unbind plotter?</source>
         <translation>你是否確認解綁算力?</translation>
     </message>
     <message>
-        <source>Are you sure you want to withdraw pledge?</source>
-        <translation>你是否確認贖回抵押?</translation>
+        <source>Are you sure you want to withdraw loan?</source>
+        <translation>你是否確認贖回借出?</translation>
     </message>
     <message>
         <source>Transaction fee:</source>

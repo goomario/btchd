@@ -84,7 +84,7 @@ public:
     size_t EstimateSize() const override;
 
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
-        CAmount *balanceBindPlotter, CAmount *balancePledgeLoan, CAmount *balancePledgeDebit) const override;
+        CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const override;
     CBindPlotterCoinsMap GetAccountBindPlotterEntries(const CAccountID &accountID, const uint64_t &plotterId = 0) const override;
     CBindPlotterCoinsMap GetBindPlotterEntries(const uint64_t &plotterId) const override;
 };

@@ -38,8 +38,8 @@ public:
             ::Serialize(s, VARINT((unsigned int&)txout->extraData->type));
             if (txout->extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
                 ::Serialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
-            } else if (txout->extraData->type == DATACARRIER_TYPE_PLEDGE) {
-                ::Serialize(s, REF(PledgeLoanPayload::As(txout->extraData)->GetDebitAccountID()));
+            } else if (txout->extraData->type == DATACARRIER_TYPE_RENTAL) {
+                ::Serialize(s, REF(RentalPayload::As(txout->extraData)->GetBorrowerAccountID()));
             } else
                 assert(false);
         }
@@ -76,9 +76,9 @@ public:
             if (extraDataType == DATACARRIER_TYPE_BINDPLOTTER) {
                 txout->extraData = std::make_shared<BindPlotterPayload>();
                 ::Unserialize(s, VARINT(BindPlotterPayload::As(txout->extraData)->id));
-            } else if (extraDataType == DATACARRIER_TYPE_PLEDGE) {
-                txout->extraData = std::make_shared<PledgeLoanPayload>();
-                ::Unserialize(s, REF(PledgeLoanPayload::As(txout->extraData)->GetDebitAccountID()));
+            } else if (extraDataType == DATACARRIER_TYPE_RENTAL) {
+                txout->extraData = std::make_shared<RentalPayload>();
+                ::Unserialize(s, REF(RentalPayload::As(txout->extraData)->GetBorrowerAccountID()));
             } else
                 assert(false);
         }

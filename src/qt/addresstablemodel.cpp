@@ -37,15 +37,15 @@ struct AddressTableEntry
     bool fWatchonly;
 
     CAmount amount;
-    CAmount pledgeLoanAmount;
-    CAmount pledgeDebitAmount;
+    CAmount loanAmount;
+    CAmount borrowAmount;
     CAmount bindPlotterAmount;
     bool fReloadAmount;
 
     AddressTableEntry() {}
     AddressTableEntry(Type _type, const QString &_label, const QString &_address):
         type(_type), label(_label), address(_address), fPrimary(false), fWatchonly(false),
-        amount(0), pledgeLoanAmount(0), pledgeDebitAmount(0), bindPlotterAmount(0), fReloadAmount(true) {}
+        amount(0), loanAmount(0), borrowAmount(0), bindPlotterAmount(0), fReloadAmount(true) {}
 };
 
 struct AddressTableEntryLessThan
@@ -197,7 +197,7 @@ AddressTableModel::AddressTableModel(const PlatformStyle *_platformStyle, CWalle
     wallet(_wallet),
     priv(0)
 {
-    columns << "" << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Locked") << tr("Loan") << tr("Debit");
+    columns << "" << "" << tr("Label") << tr("Address") << tr("Amount") << tr("Locked") << tr("Loan") << tr("Borrow");
     priv = new AddressTablePriv(wallet, this);
     priv->refreshAddressTable();
 }
@@ -254,23 +254,23 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
                 CAccountID accountID = ExtractAccountID(DecodeDestination(rec->address.toStdString()));
                 if (!accountID.IsNull()) {
                     LOCK(cs_main);
-                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->bindPlotterAmount, &rec->pledgeLoanAmount, &rec->pledgeDebitAmount);
+                    rec->amount = pcoinsTip->GetAccountBalance(accountID, &rec->bindPlotterAmount, &rec->loanAmount, &rec->borrowAmount);
                 } else {
                     rec->amount = 0;
-                    rec->pledgeLoanAmount = 0;
-                    rec->pledgeDebitAmount = 0;
+                    rec->loanAmount = 0;
+                    rec->borrowAmount = 0;
                     rec->bindPlotterAmount = 0;
                 }
 
                 rec->fReloadAmount = false;
             }
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->pledgeLoanAmount - rec->bindPlotterAmount, false, BitcoinUnits::separatorNever);
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->loanAmount - rec->bindPlotterAmount, false, BitcoinUnits::separatorNever);
         case LockedAmount:
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever);
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->loanAmount, false, BitcoinUnits::separatorNever);
         case LoanAmount:
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever);
-        case DebitAmount:
-            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever);
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->loanAmount, false, BitcoinUnits::separatorNever);
+        case BorrowAmount:
+            return BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->borrowAmount, false, BitcoinUnits::separatorNever);
         }
     }
     else if (role == Qt::FontRole)
@@ -329,13 +329,13 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         case Amount:
         case LockedAmount:
         case LoanAmount:
-        case DebitAmount:
-            return tr("Spendable: %1\nLocked: %2\nLoan: %3\nDebit: %4\nAvailable pledge: %5")
-                    .arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->bindPlotterAmount - rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
-                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
-                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeLoanAmount, false, BitcoinUnits::separatorNever),
-                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever),
-                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->pledgeLoanAmount +rec->pledgeDebitAmount, false, BitcoinUnits::separatorNever));
+        case BorrowAmount:
+            return tr("Spendable: %1\nLocked: %2\nLoan: %3\nBorrow: %4\nAvailable for mining: %5")
+                    .arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->bindPlotterAmount - rec->loanAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->bindPlotterAmount + rec->loanAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->loanAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->borrowAmount, false, BitcoinUnits::separatorNever),
+                        BitcoinUnits::formatWithUnit(BitcoinUnits::BHD, rec->amount - rec->loanAmount +rec->borrowAmount, false, BitcoinUnits::separatorNever));
         }
     }
     return QVariant();

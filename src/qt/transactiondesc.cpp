@@ -73,7 +73,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
 
-    if ((rec->type == TransactionRecord::SendPledge || rec->type == TransactionRecord::RecvPledge || rec->type == TransactionRecord::SelfPledge) && rec->status.status == TransactionStatus::Disabled)
+    if ((rec->type == TransactionRecord::LoanTo || rec->type == TransactionRecord::BorrowFrom || rec->type == TransactionRecord::SelfRental) && rec->status.status == TransactionStatus::Disabled)
     {
         strHTML += "<b>" + tr("Status") + ":</b> " + tr("Withdrawn") + " (" + FormatTxStatus(wtx) + ")";
     }
@@ -158,7 +158,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         if (rec->type == TransactionRecord::UnbindPlotter)
             strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
     }
-    else if (rec->type == TransactionRecord::WithdrawPledge)
+    else if (rec->type == TransactionRecord::WithdrawRental)
     {
         strHTML += "<b>" + tr("Relevant transaction ID") + ":</b> " + AddLinkToTx(QString::fromStdString(wtx.mapValue["relevant_txid"])) + "<br>";
     }

@@ -86,24 +86,24 @@ TransactionView::TransactionView(const PlatformStyle *platformStyle, QWidget *pa
     typeWidget->addItem(tr("All"), TransactionFilterProxy::ALL_TYPES);
     typeWidget->addItem(tr("Received with"), TransactionFilterProxy::TYPE(TransactionRecord::RecvWithAddress) |
         TransactionFilterProxy::TYPE(TransactionRecord::RecvFromOther) |
-        TransactionFilterProxy::TYPE(TransactionRecord::RecvPledge) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
+        TransactionFilterProxy::TYPE(TransactionRecord::BorrowFrom) |
+        TransactionFilterProxy::TYPE(TransactionRecord::SelfRental));
     typeWidget->addItem(tr("Sent to"), TransactionFilterProxy::TYPE(TransactionRecord::SendToAddress) |
         TransactionFilterProxy::TYPE(TransactionRecord::SendToOther) |
         TransactionFilterProxy::TYPE(TransactionRecord::BindPlotter) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SendPledge) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
+        TransactionFilterProxy::TYPE(TransactionRecord::LoanTo) |
+        TransactionFilterProxy::TYPE(TransactionRecord::SelfRental));
     typeWidget->addItem(tr("To yourself"), TransactionFilterProxy::TYPE(TransactionRecord::SendToSelf) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
+        TransactionFilterProxy::TYPE(TransactionRecord::SelfRental));
     typeWidget->addItem(tr("Mined"), TransactionFilterProxy::TYPE(TransactionRecord::Generated));
     typeWidget->addItem(tr("Binded plotter"), TransactionFilterProxy::TYPE(TransactionRecord::BindPlotter));
-    typeWidget->addItem(tr("Sent pledge to"), TransactionFilterProxy::TYPE(TransactionRecord::SendPledge) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
-    typeWidget->addItem(tr("Received pledge with"), TransactionFilterProxy::TYPE(TransactionRecord::RecvPledge) |
-        TransactionFilterProxy::TYPE(TransactionRecord::SelfPledge));
+    typeWidget->addItem(tr("Loan to"), TransactionFilterProxy::TYPE(TransactionRecord::LoanTo) |
+        TransactionFilterProxy::TYPE(TransactionRecord::SelfRental));
+    typeWidget->addItem(tr("Borrow from"), TransactionFilterProxy::TYPE(TransactionRecord::BorrowFrom) |
+        TransactionFilterProxy::TYPE(TransactionRecord::SelfRental));
     typeWidget->addItem(tr("Other"), TransactionFilterProxy::TYPE(TransactionRecord::Other) |
         TransactionFilterProxy::TYPE(TransactionRecord::UnbindPlotter) |
-        TransactionFilterProxy::TYPE(TransactionRecord::WithdrawPledge));
+        TransactionFilterProxy::TYPE(TransactionRecord::WithdrawRental));
 
     hlayout->addWidget(typeWidget);
 
@@ -168,7 +168,7 @@ TransactionView::TransactionView(const PlatformStyle *platformStyle, QWidget *pa
     bumpFeeAction->setObjectName("bumpFeeAction");
     unbindPlotterAction = new QAction(tr("Unbind plotter"), this);
     unbindPlotterAction->setObjectName("unbindPlotterAction");
-    withdrawPledgeAction = new QAction(tr("Withdraw pledge"), this);
+    withdrawPledgeAction = new QAction(tr("Withdraw rental"), this);
     withdrawPledgeAction->setObjectName("withdrawPledgeAction");
     QAction *copyAddressAction = new QAction(tr("Copy address"), this);
     QAction *copyLabelAction = new QAction(tr("Copy label"), this);
@@ -418,7 +418,7 @@ void TransactionView::contextualMenu(const QPoint &point)
     abandonAction->setEnabled(model->transactionCanBeAbandoned(hash));
     bumpFeeAction->setEnabled(model->transactionCanBeBumped(hash));
     unbindPlotterAction->setEnabled(model->transactionCanBeUnlock(hash, DATACARRIER_TYPE_BINDPLOTTER));
-    withdrawPledgeAction->setEnabled(model->transactionCanBeUnlock(hash, DATACARRIER_TYPE_PLEDGE));
+    withdrawPledgeAction->setEnabled(model->transactionCanBeUnlock(hash, DATACARRIER_TYPE_RENTAL));
 
     if(index.isValid())
     {

@@ -962,14 +962,14 @@ public:
     CAmount GetBalance() const;
     CAmount GetUnconfirmedBalance() const;
     CAmount GetImmatureBalance() const;
-    CAmount GetPledgeLoanBalance() const;
-    CAmount GetPledgeDebitBalance() const;
+    CAmount GetLoanBalance() const;
+    CAmount GetBorrowBalance() const;
     CAmount GetLockedBalance() const;
     CAmount GetWatchOnlyBalance() const;
     CAmount GetUnconfirmedWatchOnlyBalance() const;
     CAmount GetImmatureWatchOnlyBalance() const;
-    CAmount GetPledgeLoanWatchOnlyBalance() const;
-    CAmount GetPledgeDebitWatchOnlyBalance() const;
+    CAmount GetLoanWatchOnlyBalance() const;
+    CAmount GetBorrowWatchOnlyBalance() const;
     CAmount GetLockedWatchOnlyBalance() const;
     CAmount GetLegacyBalance(const isminefilter& filter, int minDepth, const std::string* account) const;
     CAmount GetAvailableBalance(const CCoinControl* coinControl = nullptr) const;
