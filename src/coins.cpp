@@ -16,8 +16,8 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
-CCoinsViewCursorRef CCoinsView::PledgeLoanCursor(const CAccountID &accountID) const { return nullptr; }
-CCoinsViewCursorRef CCoinsView::PledgeDebitCursor(const CAccountID &accountID) const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::RentalLoanCursor(const CAccountID &accountID) const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::RentalBorrowCursor(const CAccountID &accountID) const { return nullptr; }
 CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
         CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const {
     if (balanceBindPlotter != nullptr) *balanceBindPlotter = 0;
@@ -40,8 +40,8 @@ std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetH
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursorRef CCoinsViewBacked::Cursor() const { return base->Cursor(); }
-CCoinsViewCursorRef CCoinsViewBacked::PledgeLoanCursor(const CAccountID &accountID) const { return base->PledgeLoanCursor(accountID); }
-CCoinsViewCursorRef CCoinsViewBacked::PledgeDebitCursor(const CAccountID &accountID) const { return base->PledgeDebitCursor(accountID); }
+CCoinsViewCursorRef CCoinsViewBacked::RentalLoanCursor(const CAccountID &accountID) const { return base->RentalLoanCursor(accountID); }
+CCoinsViewCursorRef CCoinsViewBacked::RentalBorrowCursor(const CAccountID &accountID) const { return base->RentalBorrowCursor(accountID); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 CAmount CCoinsViewBacked::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
         CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const {

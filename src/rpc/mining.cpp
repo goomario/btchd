@@ -789,11 +789,13 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
             "    \"address\":\"address\",           (string) The BitcoinHD address of the binded.\n"
             "    \"txid\":\"txid\",                 (string) The last binded transaction id.\n"
             "    \"blockhash\":\"blockhash\",       (string) The binded transaction included block hash.\n"
-            "    \"blockheight\":height,            (numeric) The binded transaction included block height.\n"
+            "    \"blocktime\": xxx,              (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"blockheight\":height,          (numeric) The binded transaction included block height.\n"
             "    \"bindheightlimit\":height,      (numeric) The plotter bind small fee limit height. Other require high fee.\n"
             "    \"unbindheightlimit\":height,    (numeric) The plotter unbind limit height.\n"
             "    \"lastBlock\": {                   (object) The plotter last generated block. Maybe not exist.\n"
             "        \"blockhash\":\"blockhash\",   (string) The plotter last generated block hash.\n"
+            "        \"blocktime\": xxx,            (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "        \"blockheight\":blockheight    (numeric) The plotter last generated block height.\n"
             "     }\n"
             "  }\n"
@@ -817,6 +819,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("address", EncodeDestination(ExtractDestination(coin.out.scriptPubKey))));
         item.push_back(Pair("txid", lastBindInfo.outpoint.hash.GetHex()));
         item.push_back(Pair("blockhash", chainActive[coin.nHeight]->GetBlockHash().GetHex()));
+        item.push_back(Pair("blocktime", chainActive[coin.nHeight]->GetBlockTime()));
         item.push_back(Pair("blockheight", static_cast<int>(coin.nHeight)));
         item.push_back(Pair("bindheightlimit", Consensus::GetBindPlotterLimitHeight(chainActive.Height() + 1, lastBindInfo, Params().GetConsensus())));
         item.push_back(Pair("unbindheightlimit", Consensus::GetUnbindPlotterLimitHeight(chainActive.Height() + 1, lastBindInfo, *pcoinsTip, Params().GetConsensus())));
@@ -856,6 +859,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             "    \"plotterId\": \"plotterId\",          (string) The binded plotter ID.\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
+            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
             "    \"blockheight\": xxx,                (numeric) The block height.\n"
             "    \"capacity\": \"xxx TB/PB\",           (string) The plotter capacity.\n"
             "    \"bindheightlimit\": xxx             (numeric) The plotter bind small fee limit height. Other require high fee. Only for verbose mode.\n"
@@ -1142,13 +1146,10 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     result.pushKV("lockedBalance", ValueFromAmount(balanceBindPlotter + balanceLoan));
     //! This balance freeze in rental loan
     result.pushKV("loanBalance", ValueFromAmount(balanceLoan));
-    result.pushKV("pledgeLoanBalance", ValueFromAmount(balanceLoan));
     //! This balance recevied from rental borrow. YOUR CANNOT SPENT IT.
     result.pushKV("borrowBalance", ValueFromAmount(balanceBorrow));
-    result.pushKV("pledgeDebitBalance", ValueFromAmount(balanceBorrow));
     //! This balance include rental loan and avaliable balance. For mining require balance
     result.pushKV("availableMiningBalance", ValueFromAmount(balance - balanceLoan + balanceBorrow));
-    result.pushKV("availablePledgeBalance", ValueFromAmount(balance - balanceLoan + balanceBorrow));
 
     const Consensus::Params &params = Params().GetConsensus();
     const CAmount miningRatio = poc::GetMiningRatio(chainActive.Height() + 1, params);
@@ -1202,7 +1203,7 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     }
 
     result.pushKV("capacity", ValueFromCapacity(nCapacityTB));
-    result.pushKV("pledge", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio)));
+    result.pushKV("miningRequireBalance", ValueFromAmount(poc::GetCapacityRequireBalance(nCapacityTB, miningRatio)));
     result.pushKV("height", chainActive.Height());
     result.pushKV("address", address);
 
@@ -1249,8 +1250,8 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "    \"loanBalance\": xxx,                 (numeric) Rental loan amount\n"
             "    \"borrowBalance\": xxx,               (numeric) Rental borrow amount\n"
             "    \"availableMiningBalance\": xxx,      (numeric) Available for mining amount. balance + borrowBalance - loanBalance\n"
-            "    \"pledge\": xxx,                      (numeric) Require mining pledge for next block\n"
-            "    \"capacity\": \"xxx TB\",                (numeric) The address capacity\n"
+            "    \"miningRequireBalance\": xxx,        (numeric) Require balance on mining next block\n"
+            "    \"capacity\": \"xxx TB/PB\",              (string) The address capacity\n"
             "    ...\n"
             "  }\n"
             "]\n"
@@ -1419,7 +1420,7 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
     return result;
 }
 
-static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
+static UniValue ListRental(CCoinsViewCursorRef pcursor) {
     assert(pcursor != nullptr);
     UniValue ret(UniValue::VARR);
     for (; pcursor->Valid(); pcursor->Next()) {
@@ -1437,7 +1438,7 @@ static UniValue ListPledges(CCoinsViewCursorRef pcursor) {
             item.push_back(Pair("txid", key.hash.GetHex()));
             item.push_back(Pair("blockhash", chainActive[(int)coin.nHeight]->GetBlockHash().GetHex()));
             item.push_back(Pair("blocktime", chainActive[(int)coin.nHeight]->GetBlockTime()));
-            item.push_back(Pair("height", (int)coin.nHeight));
+            item.push_back(Pair("blockheight", (int)coin.nHeight));
             ret.push_back(item);
         } else
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
@@ -1451,7 +1452,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "listpledgeloanofaddress \"address\"\n"
-            "\nReturns up to pledge loan coins.\n"
+            "\nReturns up to rental loan coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
             "\nResult:\n"
@@ -1459,16 +1460,16 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
             "  {\n"
             "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
             "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
-            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
-            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"height\": xxx,                       (numeric) The block height.\n"
+            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"blockheight\": xxx,                (numeric) The block height.\n"
             "  }\n"
             "]\n"
 
             "\nExamples:\n"
-            "\nList the pledge loan coins from UTXOs\n"
+            "\nList the rental loan coins from UTXOs\n"
             + HelpExampleCli("listpledgeloanofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
             + HelpExampleRpc("listpledgeloanofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );
@@ -1482,7 +1483,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     FlushStateToDisk();
-    return ListPledges(pcoinsdbview->PledgeLoanCursor(accountID));
+    return ListRental(pcoinsdbview->RentalLoanCursor(accountID));
 }
 
 UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
@@ -1490,7 +1491,7 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "listpledgedebitofaddress \"address\"\n"
-            "\nReturns up to pledge debit coins.\n"
+            "\nReturns up to rental borrow coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
             "\nResult:\n"
@@ -1498,16 +1499,16 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
             "  {\n"
             "    \"from\":\"address\",                  (string) The BitcoinHD address of the pledge source.\n"
             "    \"to\":\"address\",                    (string) The BitcoinHD address of the pledge destination\n"
-            "    \"amount\": x.xxx,                     (numeric) The amount in " + CURRENCY_UNIT + ".\n"
+            "    \"amount\": x.xxx,                   (numeric) The amount in " + CURRENCY_UNIT + ".\n"
             "    \"txid\": \"transactionid\",           (string) The transaction id.\n"
             "    \"blockhash\": \"hashvalue\",          (string) The block hash containing the transaction.\n"
-            "    \"blocktime\": xxx,                    (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
-            "    \"height\": xxx,                       (numeric) The block height.\n"
+            "    \"blocktime\": xxx,                  (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).\n"
+            "    \"blockheight\": xxx,                 (numeric) The block height.\n"
             "  }\n"
             "]\n"
 
             "\nExamples:\n"
-            "\nList the pledge debit coins from UTXOs\n"
+            "\nList the rental borrow coins from UTXOs\n"
             + HelpExampleCli("listpledgedebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
             + HelpExampleRpc("listpledgedebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );
@@ -1521,7 +1522,7 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     FlushStateToDisk();
-    return ListPledges(pcoinsdbview->PledgeDebitCursor(accountID));
+    return ListRental(pcoinsdbview->RentalBorrowCursor(accountID));
 }
 
 UniValue estimatefee(const JSONRPCRequest& request)

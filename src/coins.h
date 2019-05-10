@@ -264,9 +264,9 @@ public:
     //! Get a cursor to iterate over the whole spendable state
     virtual CCoinsViewCursorRef Cursor() const;
 
-    //! Get a cursor to iterate over the whole pledge loan and debit state
-    virtual CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const;
-    virtual CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const;
+    //! Get a cursor to iterate over the whole rental loan and borrow state
+    virtual CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const;
+    virtual CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
     virtual ~CCoinsView() {}
@@ -301,8 +301,8 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
-    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
-    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
         CAmount *balanceBindPlotter, CAmount *balanceLoan, CAmount *balanceBorrow) const override;
@@ -342,10 +342,10 @@ public:
     CCoinsViewCursorRef Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override {
+    CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
-    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override {
+    CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CAmount GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,

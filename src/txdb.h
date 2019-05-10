@@ -76,8 +76,8 @@ public:
     std::vector<uint256> GetHeadBlocks() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
-    CCoinsViewCursorRef PledgeLoanCursor(const CAccountID &accountID) const override;
-    CCoinsViewCursorRef PledgeDebitCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override;
+    CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade(bool &fUpgraded);

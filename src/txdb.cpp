@@ -357,7 +357,7 @@ CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
     return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
 }
 
-CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) const {
+CCoinsViewCursorRef CCoinsViewDB::RentalLoanCursor(const CAccountID &accountID) const {
     class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
     {
     public:
@@ -404,7 +404,7 @@ CCoinsViewCursorRef CCoinsViewDB::PledgeLoanCursor(const CAccountID &accountID) 
     return std::make_shared<CCoinsViewDBPledgeCreditCursor>(accountID, this, db.NewIterator(), GetBestBlock());
 }
 
-CCoinsViewCursorRef CCoinsViewDB::PledgeDebitCursor(const CAccountID &accountID) const {
+CCoinsViewCursorRef CCoinsViewDB::RentalBorrowCursor(const CAccountID &accountID) const {
     class CCoinsViewDBPledgeDebitCursor : public CCoinsViewCursor
     {
     public:
