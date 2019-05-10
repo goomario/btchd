@@ -11,9 +11,6 @@
 #include <serialize.h>
 #include <uint256.h>
 
-static const uint64_t BASETARGET_MASK       = 0x7fffffffffffffffL;
-static const uint64_t BLOCKSIGNATURE_FLAG   = 0x8000000000000000L;
-
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -47,16 +44,16 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         // Read: Signature flag and base target read from stream. Real base target require remove mask
         // Write: Signature flag and base target write to stream
-        uint64_t nSignatureFlags = nBaseTarget | (vchPubKey.empty() ? 0 : BLOCKSIGNATURE_FLAG);
+        uint64_t nFlags = nBaseTarget | (vchPubKey.empty() ? 0 : 0x8000000000000000L);
         READWRITE(this->nVersion);
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nSignatureFlags);
+        READWRITE(nFlags);
         READWRITE(nNonce);
         READWRITE(nPlotterId);
-        nBaseTarget = nSignatureFlags & BASETARGET_MASK;
-        if (nSignatureFlags & BLOCKSIGNATURE_FLAG) {
+        nBaseTarget = nFlags & 0x7fffffffffffffffL;
+        if (nFlags & 0x8000000000000000L) {
             READWRITE(LIMITED_VECTOR(vchPubKey, CPubKey::COMPRESSED_PUBLIC_KEY_SIZE));
             // Signature block data exclude vchSignature
             if (!(s.GetType() & SER_UNSIGNATURED)) {
