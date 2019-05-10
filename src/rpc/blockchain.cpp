@@ -100,6 +100,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
     }
+    result.push_back(Pair("generator", HexStr(blockindex->generatorAccountID)));
     if (blockindex->nHeight >= Params().GetConsensus().BHDIP007Height) {
         result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
         result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
@@ -152,6 +153,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     } else {
         result.push_back(Pair("deadline", (uint64_t)0));
     }
+    result.push_back(Pair("generator", HexStr(blockindex->generatorAccountID)));
     if (blockindex->nHeight >= Params().GetConsensus().BHDIP007Height) {
         result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
         result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
@@ -681,12 +683,18 @@ UniValue getblockheader(const JSONRPCRequest& request)
             "  \"merkleroot\" : \"xxxx\", (string) The merkle root\n"
             "  \"time\" : ttt,          (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"mediantime\" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"nonce\" : n,           (numeric) The nonce\n"
-            "  \"bits\" : \"1d00ffff\", (string) The bits\n"
             "  \"difficulty\" : x.xxx,  (numeric) The difficulty\n"
-            "  \"chainwork\" : \"0000...1f3\"     (string) Expected number of hashes required to produce the current chain (in hex)\n"
+            "  \"chainwork\" : \"xxxx\",  (string) Expected number of hashes required to produce the chain up to this block (in hex)\n"
+            "  \"baseTarget\" : xxx,    (numeric) The baseTarget\n"
+            "  \"plotterId\" : xxx,     (numeric) The plotter Id\n"
+            "  \"nonce\" : n,           (numeric) The nonce\n"
+            "  \"generationSignature\" : \"hash\",  (string) The generation signature\n"
+            "  \"deadline\" : ttt,      (numeric) The block deadline\n"
+            "  \"generator\" : \"hash\",(string) The generator\n"
+            "  \"pubkey\" : \"hash\",   (string) The signature public key\n"
+            "  \"signature\" : \"hash\",(string) The signature of generator\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
-            "  \"nextblockhash\" : \"hash\",      (string) The hash of the next block\n"
+            "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
             "}\n"
             "\nResult (for verbose=false):\n"
             "\"data\"             (string) A string that is serialized, hex-encoded data for block 'hash'.\n"
@@ -750,10 +758,16 @@ UniValue getblock(const JSONRPCRequest& request)
             "  ],\n"
             "  \"time\" : ttt,          (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"mediantime\" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"nonce\" : n,           (numeric) The nonce\n"
-            "  \"bits\" : \"1d00ffff\", (string) The bits\n"
             "  \"difficulty\" : x.xxx,  (numeric) The difficulty\n"
             "  \"chainwork\" : \"xxxx\",  (string) Expected number of hashes required to produce the chain up to this block (in hex)\n"
+            "  \"baseTarget\" : xxx,    (numeric) The baseTarget\n"
+            "  \"plotterId\" : xxx,     (numeric) The plotter Id\n"
+            "  \"nonce\" : n,           (numeric) The nonce\n"
+            "  \"generationSignature\" : \"hash\",  (string) The generation signature\n"
+            "  \"deadline\" : ttt,      (numeric) The block deadline\n"
+            "  \"generator\" : \"hash\",(string) The generator\n"
+            "  \"pubkey\" : \"hash\",   (string) The signature public key\n"
+            "  \"signature\" : \"hash\",(string) The signature of generator\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
             "}\n"
