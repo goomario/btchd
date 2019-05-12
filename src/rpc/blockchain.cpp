@@ -1502,6 +1502,8 @@ UniValue listunspentofaddress(const JSONRPCRequest& request)
         );
 
     const CAccountID accountID = ExtractAccountID(DecodeDestination(request.params[0].get_str()));
+    if (accountID.IsNull())
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BitcoinHD address");
 
     LOCK(cs_main);
     const int nSpendHeight = GetSpendHeight(*pcoinsTip);
@@ -1509,13 +1511,13 @@ UniValue listunspentofaddress(const JSONRPCRequest& request)
     UniValue results(UniValue::VARR);
 
     FlushStateToDisk();
-    for (CCoinsViewCursorRef pcursor = pcoinsdbview->Cursor(); pcursor->Valid(); pcursor->Next()) {
+    for (CCoinsViewCursorRef pcursor = pcoinsdbview->Cursor(accountID); pcursor->Valid(); pcursor->Next()) {
         boost::this_thread::interruption_point();
 
         COutPoint key;
         Coin coin;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
-            if (coin.refOutAccountID == accountID && !coin.extraData) {
+            if (!coin.extraData) {
                 UniValue entry(UniValue::VOBJ);
                 entry.push_back(Pair("txid", key.hash.GetHex()));
                 entry.push_back(Pair("vout", (int)key.n));

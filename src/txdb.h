@@ -76,6 +76,7 @@ public:
     std::vector<uint256> GetHeadBlocks() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
+    CCoinsViewCursorRef Cursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override;
 

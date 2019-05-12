@@ -263,6 +263,7 @@ public:
 
     //! Get a cursor to iterate over the whole spendable state
     virtual CCoinsViewCursorRef Cursor() const;
+    virtual CCoinsViewCursorRef Cursor(const CAccountID &accountID) const;
 
     //! Get a cursor to iterate over the whole rental loan and borrow state
     virtual CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const;
@@ -301,6 +302,7 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override;
+    CCoinsViewCursorRef Cursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override;
     CCoinsViewCursorRef RentalBorrowCursor(const CAccountID &accountID) const override;
     size_t EstimateSize() const override;
@@ -340,6 +342,9 @@ public:
     void SetBestBlock(const uint256 &hashBlock);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
     CCoinsViewCursorRef Cursor() const override {
+        throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
+    }
+    CCoinsViewCursorRef Cursor(const CAccountID &accountID) const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
     CCoinsViewCursorRef RentalLoanCursor(const CAccountID &accountID) const override {
