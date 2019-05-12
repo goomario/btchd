@@ -16,6 +16,7 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return false; }
 CCoinsViewCursorRef CCoinsView::Cursor() const { return nullptr; }
+CCoinsViewCursorRef CCoinsView::Cursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::RentalLoanCursor(const CAccountID &accountID) const { return nullptr; }
 CCoinsViewCursorRef CCoinsView::RentalBorrowCursor(const CAccountID &accountID) const { return nullptr; }
 CAmount CCoinsView::GetBalance(const CAccountID &accountID, const CCoinsMap &mapChildCoins,
@@ -40,6 +41,7 @@ std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetH
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) { return base->BatchWrite(mapCoins, hashBlock); }
 CCoinsViewCursorRef CCoinsViewBacked::Cursor() const { return base->Cursor(); }
+CCoinsViewCursorRef CCoinsViewBacked::Cursor(const CAccountID &accountID) const { return base->Cursor(accountID); }
 CCoinsViewCursorRef CCoinsViewBacked::RentalLoanCursor(const CAccountID &accountID) const { return base->RentalLoanCursor(accountID); }
 CCoinsViewCursorRef CCoinsViewBacked::RentalBorrowCursor(const CAccountID &accountID) const { return base->RentalBorrowCursor(accountID); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }

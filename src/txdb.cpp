@@ -357,6 +357,53 @@ CCoinsViewCursorRef CCoinsViewDB::Cursor() const {
     return std::make_shared<CCoinsViewDBCursor>(db.NewIterator(), GetBestBlock());
 }
 
+CCoinsViewCursorRef CCoinsViewDB::Cursor(const CAccountID &accountID) const {
+    class CCoinsViewDBCursor : public CCoinsViewCursor
+    {
+    public:
+        CCoinsViewDBCursor(const CAccountID& accountIDIn, const CCoinsViewDB* pcoinviewdbIn, CDBIterator* pcursorIn, const uint256& hashBlockIn)
+                : CCoinsViewCursor(hashBlockIn), accountID(accountIDIn), pcoinviewdb(pcoinviewdbIn), pcursor(pcursorIn), outpoint(uint256(), 0) {
+            // Seek cursor
+            pcursor->Seek(CoinIndexEntry(&outpoint, &accountID));
+            TestKey();
+        }
+
+        bool GetKey(COutPoint &key) const override {
+            // Return cached key
+            if (!outpoint.IsNull()) {
+                key = outpoint;
+                return true;
+            }
+            return false;
+        }
+
+        bool GetValue(Coin &coin) const override { return pcoinviewdb->GetCoin(outpoint, coin); }
+        unsigned int GetValueSize() const override { return pcursor->GetValueSize(); }
+
+        bool Valid() const override { return !outpoint.IsNull(); }
+        void Next() override {
+            pcursor->Next();
+            TestKey();
+        }
+
+    private:
+        void TestKey() {
+            CAccountID tempAccountID;
+            CoinIndexEntry entry(&outpoint, &tempAccountID);
+            if (!pcursor->Valid() || !pcursor->GetKey(entry) || entry.key != DB_COIN_INDEX || tempAccountID != accountID) {
+                outpoint.SetNull();
+            }
+        }
+
+        const CAccountID accountID;
+        const CCoinsViewDB* pcoinviewdb;
+        std::unique_ptr<CDBIterator> pcursor;
+        COutPoint outpoint;
+    };
+
+    return std::make_shared<CCoinsViewDBCursor>(accountID, this, db.NewIterator(), GetBestBlock());
+}
+
 CCoinsViewCursorRef CCoinsViewDB::RentalLoanCursor(const CAccountID &accountID) const {
     class CCoinsViewDBPledgeCreditCursor : public CCoinsViewCursor
     {
