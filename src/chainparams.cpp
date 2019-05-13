@@ -169,6 +169,9 @@ public:
         vSeeds.push_back("seed1-chain.btchd.org");
         vSeeds.push_back("seed2-chain.btchd.org");
         vSeeds.push_back("seed3-chain.btchd.org");
+        vSeeds.push_back("seed-bhd.hpool.com");
+        vSeeds.push_back("seed-bhd.hdpool.com");
+        vSeeds.push_back("seed-bhd.awpool.com");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
