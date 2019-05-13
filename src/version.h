@@ -9,7 +9,13 @@
  * network protocol versioning
  */
 
-static const int PROTOCOL_VERSION = 80022;
+static const int PROTOCOL_VERSION = 80023;
+
+//! Signature & Dynamic ratio
+static const int BHDIP007_SIGN = 80023;
+
+//! Unsignature
+static const int BHDIP006_UNSIGN = 80022;
 
 //! BHDIP 006, limit unbind plotter, softfork
 static const int BHDIP006_LIMITUNBIND_VERSION = 80021;
