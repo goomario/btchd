@@ -322,6 +322,14 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     return true;
 }
 
+bool Consensus::CheckTxInputs(const CTransaction& tx, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
+    int nSpendHeight, const CAccountID& generatorAccountID, const Consensus::Params& params)
+{
+    CValidationState state;
+    CAmount txfee;
+    return Consensus::CheckTxInputs(tx, state, inputs, prevInputs, nSpendHeight, txfee, generatorAccountID, params);
+}
+
 int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Consensus::Params& params)
 {
     assert(!lastBindInfo.outpoint.IsNull() && lastBindInfo.nHeight >= 0);
