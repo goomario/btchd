@@ -33,6 +33,8 @@ struct Params;
  */
 bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
     int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, const Params& params);
+bool CheckTxInputs(const CTransaction& tx, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
+    int nSpendHeight, const CAccountID& generatorAccountID, const Params& params);
 
 /** Get bind/unbind plotter transaction lock height. */
 int GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Params& params);

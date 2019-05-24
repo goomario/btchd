@@ -244,7 +244,6 @@ bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost
 // - transaction finality (locktime)
 // - premature witness (in case segwit transactions are added to mempool before
 //   segwit activation)
-// - check uniform transaction
 bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& package)
 {
     for (const CTxMemPool::txiter it : package) {
@@ -252,12 +251,6 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
             return false;
         if (!fIncludeWitness && it->GetTx().HasWitness())
             return false;
-        if (it->GetTx().IsUniform()) {
-            CValidationState state;
-            CAmount txfee;
-            if (!Consensus::CheckTxInputs(it->GetTx(), state, *pcoinsTip, *pcoinsTip, nHeight, txfee, generatorAccountID, chainparams.GetConsensus()))
-                return false;
-        }
     }
     return true;
 }
@@ -365,6 +358,8 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
     const int64_t MAX_CONSECUTIVE_FAILURES = 1000;
     int64_t nConsecutiveFailed = 0;
 
+    CCoinsViewCache view(pcoinsTip.get());
+
     while (mi != mempool.mapTx.get<ancestor_score>().end() || !mapModifiedTx.empty())
     {
         // First try to find a new transaction in mapTx to evaluate.
@@ -460,16 +455,29 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
         std::vector<CTxMemPool::txiter> sortedEntries;
         SortForBlock(ancestors, iter, sortedEntries);
 
-        for (size_t i=0; i<sortedEntries.size(); ++i) {
+        size_t i = 0;
+        for (; i < sortedEntries.size(); ++i) {
+            // Check transaction inputs and type
+            if (!Consensus::CheckTxInputs(sortedEntries[i]->GetTx(), view, *pcoinsTip, nHeight, generatorAccountID, chainparams.GetConsensus())) {
+                if (i == 0 && fUsingModified) {
+                    mapModifiedTx.get<ancestor_score>().erase(modit);
+                    failedTx.insert(sortedEntries[i]);
+                }
+                break;
+            }
+            // Add to block
+            UpdateCoins(sortedEntries[i]->GetTx(), view, nHeight);
             AddToBlock(sortedEntries[i]);
             // Erase from the modified set, if present
             mapModifiedTx.erase(sortedEntries[i]);
         }
 
-        ++nPackagesSelected;
+        if (i > 0) {
+            ++nPackagesSelected;
 
-        // Update transactions that depend on each of these
-        nDescendantsUpdated += UpdatePackagesForAdded(ancestors, mapModifiedTx);
+            // Update transactions that depend on each of these
+            nDescendantsUpdated += UpdatePackagesForAdded(ancestors, mapModifiedTx);
+        }
     }
 }
 
