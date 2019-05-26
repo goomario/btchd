@@ -455,13 +455,14 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
         std::vector<CTxMemPool::txiter> sortedEntries;
         SortForBlock(ancestors, iter, sortedEntries);
 
-        size_t i = 0;
-        for (; i < sortedEntries.size(); ++i) {
+        for (size_t i = 0; i < sortedEntries.size(); ++i) {
             // Check transaction inputs and type
-            if (!Consensus::CheckTxInputs(sortedEntries[i]->GetTx(), view, *pcoinsTip, nHeight, generatorAccountID, chainparams.GetConsensus())) {
-                if (i == 0 && fUsingModified) {
-                    mapModifiedTx.get<ancestor_score>().erase(modit);
-                    failedTx.insert(sortedEntries[i]);
+            if (!Consensus::CheckTxInputs(sortedEntries[i]->GetTx(), view, *pcoinsTip, nHeight,
+                    generatorAccountID, chainparams.GetConsensus())) {
+                // All descendants move to failed
+                for (size_t j = i; j < sortedEntries.size(); ++j) {
+                    failedTx.insert(sortedEntries[j]);
+                    ancestors.erase(sortedEntries[j]);
                 }
                 break;
             }
@@ -472,7 +473,12 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
             mapModifiedTx.erase(sortedEntries[i]);
         }
 
-        if (i > 0) {
+        if (ancestors.empty()) {
+            if (fUsingModified) {
+                mapModifiedTx.get<ancestor_score>().erase(modit);
+                failedTx.insert(iter);
+            }
+        } else {
             ++nPackagesSelected;
 
             // Update transactions that depend on each of these
