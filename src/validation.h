@@ -287,8 +287,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
 /** Get block reward */
 typedef struct {
     CAmount miner;
-    //! Hark fork compatible
-    CAmount minerBHDIP004Compatiable;
+    CAmount miner0; //! For BHDIP004
     CAmount fund;
 } BlockReward;
 BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId,
