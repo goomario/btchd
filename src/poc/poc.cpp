@@ -792,7 +792,7 @@ bool StartPOC()
         }
     #endif
 
-        LogPrintf("WARN: The minig-sign consensus verify at %d. Please import private key by:\n"
+        LogPrintf("WARN: The mining-sign consensus verify at %d. Please import private key by:\n"
             "\t1.RPC interface: `addsignprivkey <privkey>`\n"
             "\t2.Write `signprivkey=<privkey>` to btchd.conf (Delete after startup)\n", Params().GetConsensus().BHDIP007Height);
     } else {
