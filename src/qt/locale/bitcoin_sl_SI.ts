@@ -1508,7 +1508,7 @@
         <translation>Če vnesete oznako za zgornji naslov, se bo skupaj z naslovom shranila v imenk že uporabljenih naslovov</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
         <translation>Sporočilo, ki ste ga pripeli na URI tipa btchd:. Shranjeno bo skupaj s podatki o transakciji. Opomba: Sporočilo ne bo poslano preko omrežja BitcoinHD.</translation>
     </message>
     <message>

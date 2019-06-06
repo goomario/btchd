@@ -1055,6 +1055,34 @@ UniValue sendrawtransaction(const JSONRPCRequest& request)
     return hashTx.GetHex();
 }
 
+UniValue createtextdata(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "createtextdata \"text\"\n"
+            "\nCreate text data.\n"
+            "\nArguments:\n"
+            "1. \"text\"         (string, required) The text\n"
+            "\nResult:\n"
+            "\"hex\"             (string) The text data in hex\n"
+            "\nExamples:\n"
+            "\nCreate text data\n"
+            + HelpExampleCli("createtextdata", "\"Hello\"") +
+            "\nAs a json rpc call\n"
+            + HelpExampleRpc("createtextdata", "\"Hello\"")
+        );
+
+    RPCTypeCheck(request.params, {UniValue::VSTR});
+    if (request.params[0].get_str().size() > PROTOCOL_TEXT_MAXSIZE)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Max text size is %d", PROTOCOL_TEXT_MAXSIZE));
+
+    CScript script = GetTextScript(request.params[0].get_str());
+    if (script.empty())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot generate text data");
+
+    return HexStr(script.begin(), script.end());
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -1065,6 +1093,7 @@ static const CRPCCommand commands[] =
     { "rawtransactions",    "sendrawtransaction",     &sendrawtransaction,     {"hexstring","allowhighfees"} },
     { "rawtransactions",    "combinerawtransaction",  &combinerawtransaction,  {"txs"} },
     { "rawtransactions",    "signrawtransaction",     &signrawtransaction,     {"hexstring","prevtxs","privkeys","sighashtype"} }, /* uses wallet if enabled */
+    { "rawtransactions",    "createtextdata",         &createtextdata,         {"text"} },
 
     { "blockchain",         "gettxoutproof",          &gettxoutproof,          {"txids", "blockhash"} },
     { "blockchain",         "verifytxoutproof",       &verifytxoutproof,       {"proof"} },

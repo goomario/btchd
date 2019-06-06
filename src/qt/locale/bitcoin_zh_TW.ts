@@ -2658,8 +2658,8 @@ Available for mining: %5</source>
         <translation>請輸入這個位址的標記，來把它加進去已使用過位址的清單</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
-        <translation>附加在 BitcoinHD 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息不會送到比特硬幣網路上。</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
+        <translation>附加在 BitcoinHD 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息會送到比特硬幣網路上。</translation>
     </message>
     <message>
         <source>Pay To:</source>

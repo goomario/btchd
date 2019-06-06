@@ -2377,7 +2377,7 @@
         <translation>Vložte popis pre túto adresu aby sa uložila do zoznamu použitých adries</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
         <translation>Správa ktorá bola pripojená k btchd: URI a ktorá bude uložená s transakcou pre Vaše potreby. Poznámka: Táto správa nebude poslaná cez sieť BitcoinHD.</translation>
     </message>
     <message>

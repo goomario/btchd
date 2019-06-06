@@ -1048,7 +1048,7 @@ UniValue verifybindplotterdata(const JSONRPCRequest& request)
     }
     bool fReject = false;
     int lastActiveHeight = 0;
-    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(CTransaction(dummyTx), nHeight, &fReject, &lastActiveHeight);
+    CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(CTransaction(dummyTx), nHeight, fReject, lastActiveHeight);
     if (payload && payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
         // Verify pass
         result.push_back(Pair("result", "success"));

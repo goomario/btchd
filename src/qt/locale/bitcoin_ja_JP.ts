@@ -2212,7 +2212,7 @@
         <translation>使用されたアドレス一覧のために、このアドレスのラベルを入力します。</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
         <translation>参考資料に保存された処理のビットコインURIは、メッセージに添付されます。メモ: このメッセージはビットコイン上で送信されません。</translation>
     </message>
     <message>

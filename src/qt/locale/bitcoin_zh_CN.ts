@@ -2666,8 +2666,8 @@ Available for mining: %5</source>
         <translation>请为此地址输入一个标签以将它加入用过的地址列表</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
-        <translation>btchd:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特硬币网络传输。</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
+        <translation>btchd:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息会通过比特硬币网络传输。</translation>
     </message>
     <message>
         <source>Pay To:</source>

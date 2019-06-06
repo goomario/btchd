@@ -57,6 +57,8 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
     // Pay method
     if (payOperateMethod == PayOperateMethod::LoanTo) {
         ui->payToLabel->setText(tr("Loan &To:"));
+        ui->messageText->hide();
+        ui->messageLabel->hide();
     } else if (payOperateMethod == PayOperateMethod::BindPlotter) {
         ui->payToLabel->setText(tr("Bind &To:"));
         ui->labellLabel->setVisible(false);
@@ -70,6 +72,8 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
     #if QT_VERSION >= 0x040700
         ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase or bind hex data"));
     #endif
+        ui->messageText->hide();
+        ui->messageLabel->hide();
     }
 }
 
@@ -121,9 +125,7 @@ void SendCoinsEntry::clear()
     ui->plotterPassphrase->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
-    ui->messageTextLabel->clear();
-    ui->messageTextLabel->hide();
-    ui->messageLabel->hide();
+    ui->messageText->clear();
     // clear UI elements for unauthenticated payment request
     ui->payTo_is->clear();
     ui->memoTextLabel_is->clear();
@@ -212,6 +214,15 @@ bool SendCoinsEntry::validate()
         }
     }
 
+    // Message length
+    if (payOperateMethod == PayOperateMethod::Pay)
+    {
+        if (ui->messageText->text().toStdString().size() >PROTOCOL_TEXT_MAXSIZE) {
+            ui->messageText->setValid(false);
+            retval = false;
+        }
+    }
+
     return retval;
 }
 
@@ -227,7 +238,7 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     if (payOperateMethod == PayOperateMethod::BindPlotter)
         recipient.plotterPassphrase = ui->plotterPassphrase->text().trimmed();
     recipient.amount = ui->payAmount->value();
-    recipient.message = ui->messageTextLabel->text();
+    recipient.message = ui->messageText->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);
 
     return recipient;
@@ -272,8 +283,7 @@ void SendCoinsEntry::setValue(const SendCoinsRecipient &value)
     else // normal payment
     {
         // message
-        ui->messageTextLabel->setText(recipient.message);
-        ui->messageTextLabel->setVisible(!recipient.message.isEmpty());
+        ui->messageText->setText(recipient.message);
         ui->messageLabel->setVisible(!recipient.message.isEmpty());
 
         ui->addAsLabel->clear();

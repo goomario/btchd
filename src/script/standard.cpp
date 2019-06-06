@@ -483,14 +483,17 @@ CScript GetRentalScriptForDestination(const CTxDestination& dest) {
     return script;
 }
 
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool *pReject, int *pLastActiveHeight) {
-    if (pReject) *pReject = false;
-    if (pLastActiveHeight) *pLastActiveHeight = 0;
+CScript GetTextScript(const std::string& text) {
+    CScript script;
+    if (text.size() <= PROTOCOL_TEXT_MAXSIZE) {
+        script << OP_RETURN;
+        script << ToByteVector(DATACARRIER_TYPE_TEXT);
+        script << ToByteVector(text);
+    }
+    return script;
+}
 
-    // Check pre-condition
-    if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
-        return nullptr;
-
+static CDatacarrierPayloadRef ExtractDatacarrier(const CTransaction& tx, int nHeight, bool fAllData, bool *pReject, int *pLastActiveHeight) {
     // OP_RETURN 0x04 <Protocol> <...>
     const CScript &scriptPubKey = tx.vout.back().scriptPubKey;
     if (scriptPubKey.size() < 6 || scriptPubKey[0] != OP_RETURN || scriptPubKey[1] != 0x04)
@@ -505,6 +508,8 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
     unsigned int type = (vData[0] << 0) | (vData[1] << 8) | (vData[2] << 16) | (vData[3] << 24);
     if (type == DATACARRIER_TYPE_BINDPLOTTER) {
         // Bind plotter transaction
+        if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
+            return nullptr;
         if (scriptPubKey.size() != PROTOCOL_BINDPLOTTER_SCRIPTSIZE || tx.vout[0].nValue != PROTOCOL_BINDPLOTTER_LOCKAMOUNT)
             return nullptr;
         // Check destination
@@ -545,6 +550,8 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         return payload;
     } else if (type == DATACARRIER_TYPE_RENTAL) {
         // Plege transaction
+        if (tx.nVersion != CTransaction::UNIFORM_VERSION || tx.vout.size() < 2 || tx.vout.size() > 3 || tx.vout[0].scriptPubKey.IsUnspendable())
+            return nullptr;
         if (tx.vout[0].nValue < PROTOCOL_RENTAL_AMOUNT_MIN || scriptPubKey.size() != PROTOCOL_RENTAL_SCRIPTSIZE)
             return nullptr;
 
@@ -557,7 +564,27 @@ CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int
         if (payload->GetBorrowerAccountID().IsNull())
             return nullptr;
         return payload;
+    } else if (type == DATACARRIER_TYPE_TEXT && fAllData) {
+        if (scriptPubKey.size() > MAX_OP_RETURN_RELAY)
+            return nullptr;
+        if (!scriptPubKey.GetOp(pc, opcode, vData))
+            return nullptr;
+        std::shared_ptr<TextPayload> payload = std::make_shared<TextPayload>();
+        payload->text = std::string(vData.cbegin(), vData.cend());
+        return payload;
     }
 
     return nullptr;
+}
+
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight) {
+    return ExtractDatacarrier(tx, nHeight, false, nullptr, nullptr);
+}
+
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool& fReject, int& lastActiveHeight) {
+    return ExtractDatacarrier(tx, nHeight, false, &fReject, &lastActiveHeight);
+}
+
+CDatacarrierPayloadRef ExtractTransactionDatacarrierUnlimit(const CTransaction& tx, int nHeight) {
+    return ExtractDatacarrier(tx, nHeight, true, nullptr, nullptr);
 }

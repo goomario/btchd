@@ -257,6 +257,25 @@ struct RentalPayload : public DatacarrierPayload
     }
 };
 
+/** For text */
+struct TextPayload : public DatacarrierPayload
+{
+    std::string text;
+
+    TextPayload() : DatacarrierPayload(DATACARRIER_TYPE_TEXT) {}
+    const std::string& GetText() const { return text; }
+
+    // Checkable cast for CDatacarrierPayloadRef
+    static TextPayload * As(CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_TEXT);
+        return (TextPayload*) ref.get();
+    }
+    static const TextPayload * As(const CDatacarrierPayloadRef &ref) {
+        assert(ref->type == DATACARRIER_TYPE_TEXT);
+        return (const TextPayload*) ref.get();
+    }
+};
+
 /** The bind plotter lock amount */
 static const CAmount PROTOCOL_BINDPLOTTER_LOCKAMOUNT = 10 * CENT;
 
@@ -292,7 +311,15 @@ static const int PROTOCOL_RENTAL_SCRIPTSIZE = 27;
 /** Generate a rental script. */
 CScript GetRentalScriptForDestination(const CTxDestination& dest);
 
+/** The text script maximum size. OP_RETURN(1) + type(5) + size(4) */
+static const int PROTOCOL_TEXT_MAXSIZE = MAX_OP_RETURN_RELAY - 10;
+
+/** Get text script */
+CScript GetTextScript(const std::string& text);
+
 /** Parse a datacarrier transaction. */
-CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight = 0, bool *pReject = nullptr, int *pLastActiveHeight = nullptr);
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight);
+CDatacarrierPayloadRef ExtractTransactionDatacarrier(const CTransaction& tx, int nHeight, bool& fReject, int& lastActiveHeight);
+CDatacarrierPayloadRef ExtractTransactionDatacarrierUnlimit(const CTransaction& tx, int nHeight);
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

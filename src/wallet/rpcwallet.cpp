@@ -448,7 +448,17 @@ CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmoun
     CAmount nFeeRequired = 0;
     std::string strError;
     std::vector<CRecipient> vecSend = { {scriptPubKey, nValue, fSubtractFeeFromAmount} };
-    int nChangePosRet = -1;
+    int nChangePosRet = GetRandInt(vecSend.size() + 1);
+    std::string text = wtxNew.mapValue.count("comment") ? wtxNew.mapValue["comment"] : "";
+    if (!text.empty() && text[0] == '#') {
+        if (text.size() > PROTOCOL_TEXT_MAXSIZE + 1)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Max text size is %d", PROTOCOL_TEXT_MAXSIZE));
+        CScript textData = GetTextScript(text.substr(1));
+        if (textData.empty())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot generate text data");
+        vecSend.push_back({textData, 0, false});
+        wtxNew.mapValue.erase("comment");
+    }
     if (!pwallet->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
         if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
@@ -479,7 +489,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "1. \"address\"            (string, required) The BitcoinHD address to send to.\n"
             "2. \"amount\"             (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
             "3. \"comment\"            (string, optional) A comment used to store what the transaction is for. \n"
-            "                             This is not part of the transaction, just kept in your wallet.\n"
+            "                             If not start with \"#\" then this is not part of the transaction, just kept in your wallet.\n"
             "4. \"comment_to\"         (string, optional) A comment to store the name of the person or organization \n"
             "                             to which you're sending the transaction. This is not part of the \n"
             "                             transaction, just kept in your wallet.\n"
@@ -3657,7 +3667,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
     {
         bool fReject = false;
         int lastActiveHeight = 0;
-        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1, &fReject, &lastActiveHeight);
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1, fReject, lastActiveHeight);
         if (!payload || payload->type != DATACARRIER_TYPE_BINDPLOTTER) {
             if (fReject)
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Not for current address");

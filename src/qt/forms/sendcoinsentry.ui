@@ -197,12 +197,9 @@
      </layout>
     </item>
     <item row="4" column="1">
-     <widget class="QLabel" name="messageTextLabel">
+     <widget class="QValidatedLineEdit" name="messageText">
       <property name="toolTip">
-       <string>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</string>
-      </property>
-      <property name="textFormat">
-       <enum>Qt::PlainText</enum>
+       <string>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</string>
       </property>
      </widget>
     </item>

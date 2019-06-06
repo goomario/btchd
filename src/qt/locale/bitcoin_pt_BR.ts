@@ -2357,7 +2357,7 @@ Esta sincronização inicial é muito exigente e pode expor problemas de hardwar
         <translation>Digite um rótulo para este endereço para adicioná-lo no catálogo</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
         <translation>A mensagem que foi anexada ao btchd: URI na qual será gravada na transação para sua referência. Nota: Essa mensagem não será gravada publicamente na rede BitcoinHD.</translation>
     </message>
     <message>

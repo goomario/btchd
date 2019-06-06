@@ -2332,7 +2332,7 @@
         <translation>Kullanılmış adres listesine eklemek için bu adrese bir etiket girin</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
         <translation>Referans için btchd: URI'siyle iliştirilmiş işlemle birlikte depolanacak bir ileti. Not: Bu mesaj BitcoinHD ağı üzerinden gönderilmeyecektir.</translation>
     </message>
     <message>
