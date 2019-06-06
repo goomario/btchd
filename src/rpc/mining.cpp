@@ -822,7 +822,7 @@ UniValue getactivebindplotter(const JSONRPCRequest& request)
         item.push_back(Pair("blocktime", chainActive[coin.nHeight]->GetBlockTime()));
         item.push_back(Pair("blockheight", static_cast<int>(coin.nHeight)));
         item.push_back(Pair("bindheightlimit", Consensus::GetBindPlotterLimitHeight(chainActive.Height() + 1, lastBindInfo, Params().GetConsensus())));
-        item.push_back(Pair("unbindheightlimit", Consensus::GetUnbindPlotterLimitHeight(chainActive.Height() + 1, lastBindInfo, *pcoinsTip, Params().GetConsensus())));
+        item.push_back(Pair("unbindheightlimit", Consensus::GetUnbindPlotterLimitHeight(lastBindInfo, *pcoinsTip, Params().GetConsensus())));
 
         // Last generate block
         for (const CBlockIndex& block : poc::GetEvalBlocks(chainActive.Height(), false, Params().GetConsensus())) {
@@ -945,7 +945,7 @@ UniValue listbindplotterofaddress(const JSONRPCRequest& request)
             }
             if (fVerbose) {
                 item.push_back(Pair("bindheightlimit", GetBindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), Params().GetConsensus())));
-                item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(chainActive.Height() + 1, CBindPlotterInfo(*it), *pcoinsTip, Params().GetConsensus())));
+                item.push_back(Pair("unbindheightlimit", GetUnbindPlotterLimitHeight(CBindPlotterInfo(*it), *pcoinsTip, Params().GetConsensus())));
                 item.push_back(Pair("active", it->first == pcoinsTip->GetLastBindPlotterInfo(it->second.plotterId).outpoint));
             }
 
@@ -1123,7 +1123,7 @@ UniValue getunbindplotterlimit(const JSONRPCRequest& request)
     if (!coin.IsBindPlotter())
         throw JSONRPCError(RPC_INVALID_PARAMS, "Invalid bind transaction");
 
-    return Consensus::GetUnbindPlotterLimitHeight(GetSpendHeight(*pcoinsTip), CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
+    return Consensus::GetUnbindPlotterLimitHeight(CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
 }
 
 UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbose)

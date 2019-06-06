@@ -324,7 +324,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
             const Coin &bindCoin = pcoinsTip->AccessCoin(coinEntry);
             if (!bindCoin.IsSpent() && bindCoin.IsBindPlotter()) {
                 int nSpendHeight = GetSpendHeight(*pcoinsTip);
-                int activeHeight = Consensus::GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(coinEntry, bindCoin), *pcoinsTip, Params().GetConsensus());
+                int activeHeight = Consensus::GetUnbindPlotterLimitHeight(CBindPlotterInfo(coinEntry, bindCoin), *pcoinsTip, Params().GetConsensus());
                 if (nSpendHeight < activeHeight) {
                     strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                             arg(QString::number(activeHeight),

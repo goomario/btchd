@@ -32,13 +32,13 @@ struct Params;
  * Preconditions: tx.IsCoinBase() is false.
  */
 bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, const Params& params);
+    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, bool fStrictCheckLimit, const Params& params);
 bool CheckTxInputs(const CTransaction& tx, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, const CAccountID& generatorAccountID, const Params& params);
+    int nSpendHeight, const CAccountID& generatorAccountID, bool fStrictCheckLimit, const Params& params);
 
 /** Get bind/unbind plotter transaction lock height. */
-int GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Params& params);
-int GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& bindInfo, const CCoinsViewCache& inputs, const Params& params);
+int GetBindPlotterLimitHeight(int nBindHeight, const CBindPlotterInfo& lastBindInfo, const Params& params);
+int GetUnbindPlotterLimitHeight(const CBindPlotterInfo& bindInfo, const CCoinsViewCache& inputs, const Params& params);
 
 } // namespace Consensus
 

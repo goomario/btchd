@@ -893,7 +893,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
         return false;
 
     if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-        int activeHeight = Consensus::GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
+        int activeHeight = Consensus::GetUnbindPlotterLimitHeight(CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             QString information = tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                     arg(QString::number(activeHeight),
