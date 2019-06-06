@@ -101,15 +101,15 @@ $(OSX_APP)/Contents/MacOS/BTCHD-Qt: $(BITCOIN_QT_BIN)
 
 $(OSX_APP)/Contents/Resources/Base.lproj/InfoPlist.strings:
 	$(MKDIR_P) $(@D)
-	echo '{	CFBundleDisplayName = "$(PACKAGE_NAME)"; CFBundleName = "$(PACKAGE_TARNAME)"; }' > $@
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "$(PACKAGE_TARNAME)"; }' > $@
 
 $(OSX_APP)/Contents/Resources/zh_CN.lproj/InfoPlist.strings:
 	$(MKDIR_P) $(@D)
-	echo '{	CFBundleDisplayName = "$(PACKAGE_NAME)"; CFBundleName = "比特硬币"; }' > $@
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "比特硬币"; }' > $@
 
 $(OSX_APP)/Contents/Resources/zh_TW.lproj/InfoPlist.strings:
 	$(MKDIR_P) $(@D)
-	echo '{	CFBundleDisplayName = "$(PACKAGE_NAME)"; CFBundleName = "比特硬幣"; }' > $@
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "比特硬幣"; }' > $@
 
 OSX_APP_BUILT=$(OSX_APP)/Contents/PkgInfo $(OSX_APP)/Contents/Resources/empty.lproj \
   $(OSX_APP)/Contents/Resources/bitcoin.icns $(OSX_APP)/Contents/Info.plist \
