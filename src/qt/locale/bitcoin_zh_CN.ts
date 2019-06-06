@@ -412,6 +412,10 @@ Available for mining: %5</source>
         <translation>比特硬币</translation>
     </message>
     <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
+    <message>
         <source>Wallet</source>
         <translation>钱包</translation>
     </message>
@@ -915,6 +919,10 @@ Available for mining: %5</source>
         <source>Reset all settings changed in the GUI</source>
         <translation>重置图形界面所有的设置</translation>
     </message>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
 </context>
 <context>
     <name>Intro</name>
@@ -1067,6 +1075,10 @@ Available for mining: %5</source>
 </context>
 <context>
     <name>OptionsDialog</name>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
     <message>
         <source>Options</source>
         <translation>选项</translation>
@@ -1686,6 +1698,10 @@ Available for mining: %5</source>
 </context>
 <context>
     <name>RPCConsole</name>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
     <message>
         <source>N/A</source>
         <translation>不可用</translation>
@@ -2829,6 +2845,10 @@ Available for mining: %5</source>
 </context>
 <context>
     <name>SplashScreen</name>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
     <message>
         <source>[testnet]</source>
         <translation>[测试网络]</translation>
