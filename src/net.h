@@ -56,9 +56,9 @@ static const unsigned int MAX_PROTOCOL_MESSAGE_LENGTH = 64 * 1000 * 1000;
 /** Maximum length of strSubVer in `version` message */
 static const unsigned int MAX_SUBVERSION_LENGTH = 256;
 /** Maximum number of automatic outgoing nodes */
-static const int MAX_OUTBOUND_CONNECTIONS = 8;
+static const int MAX_OUTBOUND_CONNECTIONS = 16;
 /** Maximum number of addnode outgoing nodes */
-static const int MAX_ADDNODE_CONNECTIONS = 8;
+static const int MAX_ADDNODE_CONNECTIONS = 32;
 /** -listen default */
 static const bool DEFAULT_LISTEN = true;
 /** -upnp default */
@@ -84,8 +84,8 @@ static const bool DEFAULT_FORCEDNSSEED = false;
 static const size_t DEFAULT_MAXRECEIVEBUFFER = 5 * 1000;
 static const size_t DEFAULT_MAXSENDBUFFER    = 1 * 1000;
 
-// NOTE: When adjusting this, update rpcnet:setban's help ("30min")
-static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 30;  // Default 30-minutes ban
+// NOTE: When adjusting this, update rpcnet:setban's help ("2hours")
+static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 2;  // Default 2-hours ban
 
 typedef int64_t NodeId;
 

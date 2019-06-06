@@ -1593,7 +1593,7 @@ void CConnman::ThreadDNSAddressSeed()
         for (auto pnode : vNodes) {
             nRelevant += pnode->fSuccessfullyConnected && !pnode->fFeeler && !pnode->fOneShot && !pnode->m_manual_connection && !pnode->fInbound;
         }
-        if (nRelevant >= 2) {
+        if (nRelevant >= 4) {
             LogPrintf("P2P peers available. Skipped DNS seeding.\n");
             return;
         }
@@ -2304,10 +2304,6 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
         LogPrintf("Invalid or missing banlist.dat; recreating\n");
         SetBannedSetDirty(true); // force write
         DumpBanlist();
-    }
-    if (gArgs.GetBoolArg("-clearbanned", false)) {
-        ClearBanned();
-        LogPrint(BCLog::NET, "Cleared banlist\n");
     }
 
     uiInterface.InitMessage(_("Starting network threads..."));
