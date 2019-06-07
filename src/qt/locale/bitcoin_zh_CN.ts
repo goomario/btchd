@@ -955,6 +955,10 @@
         <translation>比特硬币</translation>
     </message>
     <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
+    <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
         <translation>此目录中至少会保存 %1 GB 的数据，并且尺寸还会随着时间增长。</translation>
     </message>
@@ -3575,6 +3579,14 @@
 </context>
 <context>
     <name>bitcoin-core</name>
+    <message>
+        <source>BitcoinHD</source>
+        <translation>比特硬币</translation>
+    </message>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
     <message>
         <source>Options:</source>
         <translation>选项：</translation>
