@@ -120,11 +120,11 @@
     </message>
     <message>
         <source>Loan</source>
-        <translation>借出金額</translation>
+        <translation>指向金額</translation>
     </message>
     <message>
         <source>Borrow</source>
-        <translation>借入金額</translation>
+        <translation>被指向金額</translation>
     </message>
     <message>
         <source>Locked</source>
@@ -142,17 +142,9 @@
         <source>Watchonly address</source>
         <translation>僅觀察位址</translation>
     </message>
-        <message>
-        <source>Spendable: %1
-Locked: %2
-Load to: %3
-Borrow from: %4
-Available for mining: %5</source>
-        <translation>可花費的金額: %1
-鎖定的金額: %2
-借出的金額: %3
-借入的金額: %4
-可用於開採的金額: %5</translation>
+    <message>
+        <source>Spendable: %1;Locked: %2;Loan to: %3;Borrow from: %4;Available for mining: %5</source>
+        <translation>可花費的金額: %1;鎖定的金額（綁定和指向鎖定的總金額）: %2;指向的金額: %3;被指向的金額: %4;可用於開採的金額: %5</translation>
     </message>
 </context>
 <context>
@@ -1370,23 +1362,23 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Total of balance that have to be locked (for bind plotter and loan), and do not yet count toward the spendable balance</source>
-        <translation>被鎖定的總額(綁定算力和抵押租出)，未計入當前金額</translation>
+        <translation>被鎖定的總額(綁定算力和指向)，未計入當前金額</translation>
     </message>
     <message>
         <source>Load to:</source>
-        <translation>借出的總額:</translation>
+        <translation>指向的總額:</translation>
     </message>
     <message>
         <source>Total of balance that have to be loan, and do not yet count toward the spendable balance</source>
-        <translation>借出的總額，未計入當前餘額</translation>
+        <translation>指向的總額，未計入當前餘額</translation>
     </message>
     <message>
         <source>Borrow from:</source>
-        <translation>借入的總額:</translation>
+        <translation>被指向的總額:</translation>
     </message>
     <message>
         <source>Total of balance that have to be borrow, and do not yet count toward the spendable balance</source>
-        <translation>借到的總額，未計入當前餘額</translation>
+        <translation>指向的總額，未計入當前餘額</translation>
     </message>
     <message>
         <source>Balances</source>
@@ -1426,15 +1418,15 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Locked (for bind plotter and loan) balance to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和租出)</translation>
+        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和指向)</translation>
     </message>
     <message>
         <source>Loan to to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)借出的金額</translation>
+        <translation>只能看位址(watch-only address)指向的金額</translation>
     </message>
     <message>
         <source>Borrow from watch-only addresses</source>
-        <translation>只能看位址(watch-only address)借入的金額</translation>
+        <translation>只能看位址(watch-only address)被指向的金額</translation>
     </message>
 </context>
 <context>
@@ -2516,7 +2508,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出到</translation>
+        <translation>指向到</translation>
     </message>
     <message>
         <source>Bind to</source>
@@ -2524,11 +2516,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Confirm loan to</source>
-        <translation>確認發送借出</translation>
+        <translation>確認發送指向</translation>
     </message>
     <message>
         <source>Are you sure you want loan?</source>
-        <translation>您確定要借出嗎？</translation>
+        <translation>您確定要指向嗎？</translation>
     </message>
     <message>
         <source>Confirm bind plotter</source>
@@ -2560,7 +2552,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The rental consensus active on %1 after.</source>
-        <translation>租借共識將在 %1 高度之後啟用。</translation>
+        <translation>指向共識將在 %1 高度之後啟用。</translation>
     </message>
     <message>
         <source>The lock amount to bind plotter must be %1.</source>
@@ -2572,11 +2564,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to amount must be larger than %1.</source>
-        <translation>有效的借出額除必須大於 %1 。</translation>
+        <translation>有效的指向額除必須大於 %1 。</translation>
     </message>
     <message>
         <source>Loan to amount must be larger than %1 on exclude fee %2.</source>
-        <translation>有效的借出額除去交易費用 %2 後必須大於 %1 。</translation>
+        <translation>有效的指向額除去交易費用 %2 後必須大於 %1 。</translation>
     </message>
     <message>
         <source>Copy bind data</source>
@@ -2595,7 +2587,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan &amp;To:</source>
-        <translation>借給(&amp;T)：</translation>
+        <translation>指向给(&amp;T)：</translation>
     </message>
     <message>
         <source>Bind &amp;To:</source>
@@ -3063,11 +3055,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdrawn</source>
-        <translation>已贖回</translation>
+        <translation>已解除指向</translation>
     </message>
     <message>
         <source>Relevant transaction ID</source>
-        <translation>關聯的交易ID</translation>
+        <translation>關聯的交易</translation>
     </message>
 </context>
 <context>
@@ -3191,23 +3183,23 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出</translation>
+        <translation>指向</translation>
     </message>
     <message>
         <source>Borrow from</source>
-        <translation>借入</translation>
+        <translation>被指向</translation>
     </message>
     <message>
         <source>This rental has withdraw</source>
-        <translation>此租借已被贖回</translation>
+        <translation>此指向已被解除</translation>
     </message>
     <message>
         <source>Loan to yourself</source>
-        <translation>借給自己</translation>
+        <translation>指向給自己</translation>
     </message>
     <message>
         <source>Withdrawn loan</source>
-        <translation>贖回借出</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Transaction status. Hover over this field to show number of confirmations.</source>
@@ -3290,23 +3282,23 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出</translation>
+        <translation>指向</translation>
     </message>
     <message>
         <source>Borrow from</source>
-        <translation>借入</translation>
+        <translation>被指向</translation>
     </message>
     <message>
         <source>This rental has withdraw</source>
-        <translation>此租借已被贖回</translation>
+        <translation>此指向已被解除</translation>
     </message>
     <message>
         <source>Loan to yourself</source>
-        <translation>借給自己</translation>
+        <translation>指向給自己</translation>
     </message>
     <message>
         <source>Withdrawn loan</source>
-        <translation>贖回借出</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Other</source>
@@ -3334,7 +3326,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdraw rental</source>
-        <translation>贖回租借</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Copy address</source>
@@ -3491,7 +3483,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdraw rental</source>
-        <translation>贖回租借</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Unbind plotter error</source>
@@ -3499,7 +3491,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdraw rental error</source>
-        <translation>贖回租借失敗</translation>
+        <translation>解除指向失敗</translation>
     </message>
     <message>
         <source>Are you sure you want to unbind plotter?</source>
@@ -3507,7 +3499,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Are you sure you want to withdraw loan?</source>
-        <translation>你是否確認贖回借出?</translation>
+        <translation>你是否確認解除指向?</translation>
     </message>
     <message>
         <source>Transaction fee:</source>
