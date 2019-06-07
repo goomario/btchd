@@ -2268,7 +2268,7 @@
         <translation>Aseta nimi tälle osoitteelle lisätäksesi sen käytettyjen osoitteiden listalle.</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
         <translation>Viesti joka liitettiin btchd: URI:iin tallennetaan rahansiirtoon viitteeksi. Tätä viestiä ei lähetetä BitcoinHD-verkkoon.</translation>
     </message>
     <message>

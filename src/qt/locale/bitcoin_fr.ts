@@ -2376,7 +2376,7 @@
         <translation>Saisir une étiquette pour cette adresse afin de l’ajouter à la liste d’adresses utilisées</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
         <translation>Un message qui était joint à l’URI btchd: et qui sera stocké avec la transaction pour référence. Note : ce message ne sera pas envoyé par le réseau BitcoinHD.</translation>
     </message>
     <message>

@@ -1086,8 +1086,8 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             wtx.mapValue["to"]   = EncodeDestination(CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID()));
         } else if (payload->type == DATACARRIER_TYPE_TEXT) {
             fUpdated = true;
-            wtx.mapValue["type"] = "text";
-            wtx.mapValue["message"] = TextPayload::As(payload)->GetText();
+            wtx.mapValue["type"]    = "text";
+            wtx.mapValue["tx_text"] = TextPayload::As(payload)->GetText();
         }
 
         // Clear exist type

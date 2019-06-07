@@ -314,8 +314,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
         if (setAddress.size() != nAddresses)
             return DuplicateAddress;
-        if (!recipients[0].message.isEmpty()) {
-            std::string text = recipients[0].message.toStdString();
+        if (transaction.getTransaction()->mapValue.count("tx_text")) {
+            std::string text = transaction.getTransaction()->mapValue["tx_text"];
             if (text.size() > PROTOCOL_TEXT_MAXSIZE)
                 text = text.substr(0, PROTOCOL_TEXT_MAXSIZE);
             CScript script = GetTextScript(text);

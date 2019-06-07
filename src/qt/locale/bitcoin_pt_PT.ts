@@ -2282,7 +2282,7 @@
         <translation>Introduza um rótulo para este endereço para o adicionar à sua lista de endereços usados</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
         <translation>Uma mensagem que estava anexada ao URI btchd: que será armazenada com a transação para sua referência. Nota: Esta mensagem não será enviada através da rede BitcoinHD.</translation>
     </message>
     <message>

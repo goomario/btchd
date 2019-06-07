@@ -2339,6 +2339,14 @@ Available for mining: %5</source>
         <translation>手续费追加(Replace-By-Fee, BIP-125)可以让你在发送交易后才来提高手续费。不使用这个功能的话，建议支付比较高的手续费来降低交易延迟的风险。</translation>
     </message>
     <message>
+        <source>Add text to transaction</source>
+        <translation>添加文本信息到交易中</translation>
+    </message>
+    <message>
+        <source>Add &amp;Text</source>
+        <translation>添加交易信息(&amp;T)</translation>
+    </message>
+    <message>
         <source>Clear &amp;All</source>
         <translation>清除所有(&amp;A)</translation>
     </message>
@@ -2516,7 +2524,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出到</translation>
+        <translation>指向到</translation>
     </message>
     <message>
         <source>Bind to</source>
@@ -2666,8 +2674,8 @@ Available for mining: %5</source>
         <translation>请为此地址输入一个标签以将它加入用过的地址列表</translation>
     </message>
     <message>
-        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will sent over the BitcoinHD network.</source>
-        <translation>btchd:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息会通过比特硬币网络传输。</translation>
+        <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
+        <translation>btchd:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特硬币网络传输。</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2988,6 +2996,10 @@ Available for mining: %5</source>
     <message>
         <source>Net amount</source>
         <translation>净额</translation>
+    </message>
+    <message>
+        <source>Transaction text</source>
+        <translation>交易包含的内容</translation>
     </message>
     <message>
         <source>Message</source>
