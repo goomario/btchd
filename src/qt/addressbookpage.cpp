@@ -78,12 +78,12 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     case SendingTab:
         ui->labelExplanation->setText(tr("These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins."));
         ui->newAddress->setVisible(true);
-        ui->deleteAddress->setVisible(true);
+        ui->deleteAddress->setVisible(mode == AddressBookPage::ForEditing);
         break;
     case ReceivingTab:
         ui->labelExplanation->setText(tr("These are your BitcoinHD addresses for receiving payments."));
         ui->newAddress->setVisible(false);
-        ui->deleteAddress->setVisible(true);
+        ui->deleteAddress->setVisible(mode == AddressBookPage::ForEditing);
         break;
     }
 
@@ -98,11 +98,13 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     contextMenu = new QMenu(this);
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
-    contextMenu->addAction(editAction);
-    contextMenu->addAction(deleteAction);
-    if (tab == ReceivingTab) {
-        contextMenu->addSeparator();
-        contextMenu->addAction(setPrimaryAction);
+    if (mode == AddressBookPage::ForEditing) {
+        contextMenu->addAction(editAction);
+        contextMenu->addAction(deleteAction);
+        if (tab == ReceivingTab) {
+            contextMenu->addSeparator();
+            contextMenu->addAction(setPrimaryAction);
+        }
     }
 
     // Connect signals for context menu actions
