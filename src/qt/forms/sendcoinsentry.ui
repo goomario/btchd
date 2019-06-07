@@ -201,9 +201,6 @@
       <property name="toolTip">
        <string>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</string>
       </property>
-      <property name="textFormat">
-       <enum>Qt::PlainText</enum>
-      </property>
      </widget>
     </item>
     <item row="5" column="0" colspan="2">

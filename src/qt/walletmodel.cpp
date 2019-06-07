@@ -256,6 +256,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     bool fSubtractFeeFromAmount = false;
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
     std::vector<CRecipient> vecSend;
+    int nChangePosRet = -1;
 
     const int nSpendHeight = GetSpendHeight(*pcoinsTip);
 
@@ -313,6 +314,15 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
         if (setAddress.size() != nAddresses)
             return DuplicateAddress;
+        if (transaction.getTransaction()->mapValue.count("tx_text")) {
+            std::string text = transaction.getTransaction()->mapValue["tx_text"];
+            if (text.size() > PROTOCOL_TEXT_MAXSIZE)
+                text = text.substr(0, PROTOCOL_TEXT_MAXSIZE);
+            CScript script = GetTextScript(text);
+            assert(!script.empty());
+            vecSend.push_back({script, 0, false});
+            nChangePosRet = GetRandInt(vecSend.size());
+        }
     }
     else if (payOperateMethod == PayOperateMethod::LoanTo) {
         if (recipients.size() != 1 || recipients[0].paymentRequest.IsInitialized() ||
@@ -333,6 +343,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
         vecSend.push_back({GetScriptForDestination(coinControl.destPick), rcp.amount, rcp.fSubtractFeeFromAmount});
         vecSend.push_back({GetRentalScriptForDestination(DecodeDestination(rcp.address.toStdString())), 0, false});
+        nChangePosRet = 1;
 
         total += rcp.amount;
     }
@@ -364,6 +375,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         } else {
             vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), nSpendHeight - 1 + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE), 0, false});
         }
+        nChangePosRet = 1;
 
         total += rcp.amount;
     }
@@ -383,7 +395,6 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         transaction.newPossibleKeyChange(wallet);
 
         CAmount nFeeRequired = 0;
-        int nChangePosRet = (payOperateMethod != PayOperateMethod::Pay ? 1 : -1);
         int nTxVersion = (payOperateMethod != PayOperateMethod::Pay ? CTransaction::UNIFORM_VERSION : 0);
         std::string strFailReason;
 
@@ -893,7 +904,7 @@ bool WalletModel::unlockTransaction(uint256 hash) {
         return false;
 
     if (coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-        int activeHeight = Consensus::GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
+        int activeHeight = Consensus::GetUnbindPlotterLimitHeight(CBindPlotterInfo(coinEntry, coin), *pcoinsTip, Params().GetConsensus());
         if (nSpendHeight < activeHeight) {
             QString information = tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                     arg(QString::number(activeHeight),

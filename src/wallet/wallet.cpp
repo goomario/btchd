@@ -990,7 +990,7 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
 
 bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 {
-    LOCK(cs_wallet);
+    LOCK2(cs_main, cs_wallet);
 
     CWalletDB walletdb(*dbw, "r+", fFlushOnClose);
 
@@ -1047,55 +1047,54 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
     }
 
     // Update transaction datacarrier
-    if (wtx.tx->IsUniform()) {
-        int nHeight = 0;
-        if (!wtx.hashUnset()) {
-            LOCK(cs_main);
-            if (mapBlockIndex.count(wtx.hashBlock))
-                nHeight = mapBlockIndex[wtx.hashBlock]->nHeight;
-        }
-        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, nHeight);
+    {
+        int nHeight = (!wtx.hashUnset() && mapBlockIndex.count(wtx.hashBlock)) ? mapBlockIndex[wtx.hashBlock]->nHeight : 0;
+        CDatacarrierPayloadRef payload = ExtractTransactionDatacarrierUnlimit(*(wtx.tx), nHeight);
         if (!payload) {
             // Check relevant unlock tx
-            if (wtx.tx->vin.size() == 1 && wtx.tx->vout.size() == 1) {
+            if (wtx.tx->IsUniform() && wtx.tx->vin.size() == 1 && wtx.tx->vout.size() == 1) {
                 std::map<uint256, CWalletTx>::iterator itWalletTx = mapWallet.find(wtx.tx->vin[0].prevout.hash);
                 if (itWalletTx != mapWallet.end() && itWalletTx->second.mapValue.count("type")) {
-                    CWalletTx &relevantWalletTx = itWalletTx->second;
-                    const std::string &type = relevantWalletTx.mapValue["type"];
+                    CWalletTx& relevantWalletTx = itWalletTx->second;
+                    const std::string& type = relevantWalletTx.mapValue["type"];
                     if (type == "bindplotter") {
                         fUpdated = true;
-                        wtx.mapValue["type"] = "unbindplotter";
-                        wtx.mapValue["plotter_id"] = relevantWalletTx.mapValue["plotter_id"];
-                        wtx.mapValue["from"] = relevantWalletTx.mapValue["from"];
+                        wtx.mapValue["type"]          = "unbindplotter";
+                        wtx.mapValue["plotter_id"]    = relevantWalletTx.mapValue["plotter_id"];
+                        wtx.mapValue["from"]          = relevantWalletTx.mapValue["from"];
                         wtx.mapValue["relevant_txid"] = relevantWalletTx.tx->GetHash().ToString();
                     } else if (type == "pledge") {
                         fUpdated = true;
-                        wtx.mapValue["type"] = "withdrawpledge";
-                        wtx.mapValue["from"] = relevantWalletTx.mapValue["from"];
-                        wtx.mapValue["to"] = relevantWalletTx.mapValue["to"];
+                        wtx.mapValue["type"]          = "withdrawpledge";
+                        wtx.mapValue["from"]          = relevantWalletTx.mapValue["from"];
+                        wtx.mapValue["to"]            = relevantWalletTx.mapValue["to"];
                         wtx.mapValue["relevant_txid"] = relevantWalletTx.tx->GetHash().ToString();
                     }
                 }
             }
         } else if (payload->type == DATACARRIER_TYPE_BINDPLOTTER) {
             fUpdated = true;
-            wtx.mapValue["lock"] = "";
-            wtx.mapValue["type"] = "bindplotter";
+            wtx.mapValue["lock"]       = "";
+            wtx.mapValue["type"]       = "bindplotter";
             wtx.mapValue["plotter_id"] = std::to_string(BindPlotterPayload::As(payload)->GetId());
-
-            CTxDestination address;
-            ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
-            wtx.mapValue["from"] = EncodeDestination(address);
+            wtx.mapValue["from"]       = EncodeDestination(ExtractDestination(wtx.tx->vout[0].scriptPubKey));
         } else if (payload->type == DATACARRIER_TYPE_RENTAL) {
             fUpdated = true;
             wtx.mapValue["lock"] = "";
             wtx.mapValue["type"] = "pledge";
+            wtx.mapValue["from"] = EncodeDestination(ExtractDestination(wtx.tx->vout[0].scriptPubKey));
+            wtx.mapValue["to"]   = EncodeDestination(CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID()));
+        } else if (payload->type == DATACARRIER_TYPE_TEXT) {
+            fUpdated = true;
+            wtx.mapValue["type"]    = "text";
+            wtx.mapValue["tx_text"] = TextPayload::As(payload)->GetText();
+        }
 
-            CTxDestination address;
-            ExtractDestination(wtx.tx->vout[0].scriptPubKey, address);
-            wtx.mapValue["from"] = EncodeDestination(address);
-
-            wtx.mapValue["to"] = EncodeDestination(CScriptID(RentalPayload::As(payload)->GetBorrowerAccountID()));
+        // Clear exist type
+        if (!fUpdated && wtx.mapValue.count("type")) {
+            fUpdated = true;
+            wtx.mapValue.erase("lock");
+            wtx.mapValue.erase("type");
         }
     }
 

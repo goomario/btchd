@@ -280,10 +280,12 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     //
     // Message
     //
+    if (wtx.mapValue.count("tx_text") && !wtx.mapValue["tx_text"].empty())
+        strHTML += "<br><b>" + tr("Transaction text") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["tx_text"], true) + "<br><br>";
     if (wtx.mapValue.count("message") && !wtx.mapValue["message"].empty())
-        strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["message"], true) + "<br>";
+        strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["message"], true) + "<br><br>";
     if (wtx.mapValue.count("comment") && !wtx.mapValue["comment"].empty())
-        strHTML += "<br><b>" + tr("Comment") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["comment"], true) + "<br>";
+        strHTML += "<br><b>" + tr("Comment") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["comment"], true) + "<br><br>";
 
     strHTML += "<b>" + tr("Transaction ID") + ":</b> " + AddLinkToTx(rec->getTxID()) + "<br>";
     strHTML += "<b>" + tr("Transaction total size") + ":</b> " + QString::number(wtx.tx->GetTotalSize()) + " bytes<br>";
@@ -324,7 +326,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
             const Coin &bindCoin = pcoinsTip->AccessCoin(coinEntry);
             if (!bindCoin.IsSpent() && bindCoin.IsBindPlotter()) {
                 int nSpendHeight = GetSpendHeight(*pcoinsTip);
-                int activeHeight = Consensus::GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(coinEntry, bindCoin), *pcoinsTip, Params().GetConsensus());
+                int activeHeight = Consensus::GetUnbindPlotterLimitHeight(CBindPlotterInfo(coinEntry, bindCoin), *pcoinsTip, Params().GetConsensus());
                 if (nSpendHeight < activeHeight) {
                     strHTML += "<br>" + tr("Unbind plotter active on %1 block height (%2 blocks after, about %3 minute).").
                                             arg(QString::number(activeHeight),

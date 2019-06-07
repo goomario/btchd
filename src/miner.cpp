@@ -162,7 +162,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Reward
     BlockReward blockReward = GetBlockReward(nHeight, nFees, generatorAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
-    if (blockReward.minerBHDIP004Compatiable != 0) {
+    if (blockReward.miner0 != 0) {
         // Let old wallet can verify
         if (blockReward.fund != 0) {
             fundOutIndex = 2;
@@ -172,7 +172,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         }
         // Old consensus will check [1] amount
         coinbaseTx.vout[1].scriptPubKey = scriptPubKeyIn;
-        coinbaseTx.vout[1].nValue = blockReward.minerBHDIP004Compatiable;
+        coinbaseTx.vout[1].nValue = blockReward.miner0;
     } else if (blockReward.fund != 0) {
         fundOutIndex = 1;
         coinbaseTx.vout.resize(2);
@@ -457,8 +457,9 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
 
         for (size_t i = 0; i < sortedEntries.size(); ++i) {
             // Check transaction inputs and type
-            if (!Consensus::CheckTxInputs(sortedEntries[i]->GetTx(), view, *pcoinsTip, nHeight,
-                    generatorAccountID, chainparams.GetConsensus())) {
+            if (!Consensus::CheckTxInputs(sortedEntries[i]->GetTx(), view, *pcoinsTip, nHeight, generatorAccountID,
+                    true, // v1.2.4 crash when unbind same height bind coin
+                    chainparams.GetConsensus())) {
                 // All descendants move to failed
                 for (size_t j = i; j < sortedEntries.size(); ++j) {
                     failedTx.insert(sortedEntries[j]);

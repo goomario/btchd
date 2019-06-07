@@ -25,6 +25,8 @@
 #include <wallet/fees.h>
 
 #include <QFontMetrics>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QScrollBar>
 #include <QSettings>
 #include <QStringList>
@@ -65,11 +67,13 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
         ui->clearButton->setIcon(QIcon());
         ui->sendButton->setIcon(QIcon());
         ui->genBindDataButton->setIcon(QIcon());
+        ui->setTxMessageButton->setIcon(QIcon());
     } else {
         ui->addButton->setIcon(_platformStyle->SingleColorIcon(":/icons/add"));
         ui->clearButton->setIcon(_platformStyle->SingleColorIcon(":/icons/remove"));
         ui->sendButton->setIcon(_platformStyle->SingleColorIcon(":/icons/send"));
         ui->genBindDataButton->setIcon(_platformStyle->SingleColorIcon(":/icons/key"));
+        ui->setTxMessageButton->setIcon(_platformStyle->SingleColorIcon(":/icons/add"));
     }
 
     // Operate method
@@ -253,6 +257,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
         {
         case PayOperateMethod::LoanTo:
         case PayOperateMethod::BindPlotter:
+            ui->setTxMessageButton->setVisible(false);
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
             ui->frameCoinControl->setVisible(false);
@@ -260,6 +265,7 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             CoinControlDialog::coinControl()->destPick = CoinControlDialog::coinControl()->destChange = model->getWallet()->GetPrimaryDestination();
             break;
         default: // Normal pay
+            ui->setTxMessageButton->setVisible(true);
             ui->clearButton->setVisible(true);
             ui->addButton->setVisible(true);
             CoinControlDialog::coinControl()->destChange = CNoDestination();
@@ -384,6 +390,8 @@ void SendCoinsDialog::on_sendButton_clicked()
         if (model->getOptionsModel()->getCoinControlFeatures())
             ctrl = *CoinControlDialog::coinControl();
         updateCoinControlState(ctrl);
+        if (!txCustomText.isEmpty())
+            currentTransaction.getTransaction()->mapValue["tx_text"] = txCustomText.toStdString();
         break;
     }
 
@@ -409,6 +417,11 @@ void SendCoinsDialog::on_sendButton_clicked()
         } else if (operateMethod == PayOperateMethod::LoanTo) {
             payload = ExtractTransactionDatacarrier(*currentTransaction.getTransaction()->tx, nSpendHeight);
             if (!payload || payload->type != DATACARRIER_TYPE_RENTAL) {
+                prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
+            }
+        } else {
+            payload = ExtractTransactionDatacarrierUnlimit(*currentTransaction.getTransaction()->tx, nSpendHeight);
+            if (!txCustomText.isEmpty() && (!payload || payload->type != DATACARRIER_TYPE_TEXT)) {
                 prepareStatus = WalletModel::SendCoinsReturn(WalletModel::TransactionCreationFailed);
             }
         }
@@ -491,9 +504,12 @@ void SendCoinsDialog::on_sendButton_clicked()
         }
         break;
     default:
-        assert(!payload);
         titleString = tr("Confirm send coins");
         questionString = "<span style='color:#aa0000;'><b>" + tr("Are you sure you want to send?") + "<b></span>";
+        if (payload && payload->type == DATACARRIER_TYPE_TEXT) {
+            formatted.append("");
+            formatted.append(QString::fromStdString(TextPayload::As(payload)->GetText()));
+        }
         break;
     }
     questionString.append("<br /><br />%1");
@@ -572,6 +588,18 @@ void SendCoinsDialog::on_sendButton_clicked()
     fNewRecipientAllowed = true;
 }
 
+void SendCoinsDialog::on_setTxMessageButton_clicked()
+{
+    bool fOk = false;
+    QString text = QInputDialog::getText(this, tr("Add text to transaction"), "", QLineEdit::Normal, txCustomText, &fOk);
+    if (fOk) {
+        std::string stdStr = text.toStdString();
+        if (stdStr.size() > PROTOCOL_TEXT_MAXSIZE)
+            stdStr = stdStr.substr(0, PROTOCOL_TEXT_MAXSIZE);
+        txCustomText = QString::fromStdString(stdStr);
+    }
+}
+
 void SendCoinsDialog::on_genBindDataButton_clicked()
 {
     if (!model || !model->getOptionsModel())
@@ -641,6 +669,8 @@ void SendCoinsDialog::clear()
     addEntry();
 
     updateTabsAndLabels();
+
+    txCustomText.clear();
 }
 
 void SendCoinsDialog::reject()
@@ -706,7 +736,9 @@ QWidget *SendCoinsDialog::setupTabChain(QWidget *prev)
         }
     }
     QWidget::setTabOrder(prev, ui->sendButton);
-    QWidget::setTabOrder(ui->sendButton, ui->clearButton);
+    QWidget::setTabOrder(ui->sendButton, ui->genBindDataButton);
+    QWidget::setTabOrder(ui->genBindDataButton, ui->setTxMessageButton);
+    QWidget::setTabOrder(ui->setTxMessageButton, ui->clearButton);
     QWidget::setTabOrder(ui->clearButton, ui->addButton);
     return ui->addButton;
 }

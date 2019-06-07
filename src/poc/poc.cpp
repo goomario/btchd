@@ -765,14 +765,17 @@ bool StartPOC()
         threadCheckDeadline = std::thread(CheckDeadlineThread);
 
         // import private key
-        for (const std::string &privkey : gArgs.GetArgs("-signprivkey")) {
-            std::string strkeyLog = (privkey.size() > 2 ? privkey.substr(0, 2) : privkey) + "**************************************************";
-            std::string address;
-            if (poc::AddMiningSignaturePrivkey(privkey, &address)) {
-                LogPrintf("Success import mining-sign address %s from `-signprivkey` \"%s\"\n", address, strkeyLog);
-            } else {
-                LogPrintf("Fail import mining-sign private key from `-signprivkey` \"%s\"\n", strkeyLog);
+        if (gArgs.IsArgSet("-signprivkey")) {
+            for (const std::string &privkey : gArgs.GetArgs("-signprivkey")) {
+                std::string strkeyLog = (privkey.size() > 2 ? privkey.substr(0, 2) : privkey) + "**************************************************";
+                std::string address;
+                if (poc::AddMiningSignaturePrivkey(privkey, &address)) {
+                    LogPrintf("Success import mining-sign address %s from `-signprivkey` \"%s\"\n", address, strkeyLog);
+                } else {
+                    LogPrintf("Fail import mining-sign private key from `-signprivkey` \"%s\"\n", strkeyLog);
+                }
             }
+            gArgs.ForceSetArg("-signprivkey", "");
         }
 
     #ifdef ENABLE_WALLET
@@ -792,7 +795,7 @@ bool StartPOC()
         }
     #endif
 
-        LogPrintf("WARN: The minig-sign consensus verify at %d. Please import private key by:\n"
+        LogPrintf("WARN: The mining-sign consensus verify at %d. Please import private key by:\n"
             "\t1.RPC interface: `addsignprivkey <privkey>`\n"
             "\t2.Write `signprivkey=<privkey>` to btchd.conf (Delete after startup)\n", Params().GetConsensus().BHDIP007Height);
     } else {

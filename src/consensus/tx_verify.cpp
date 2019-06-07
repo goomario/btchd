@@ -207,7 +207,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
 }
 
 bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, const Consensus::Params& params)
+    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, bool fStrictCheckLimit, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -239,6 +239,18 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-spend-special-coin");
     }
 
+    const CAmount value_out = tx.GetValueOut();
+    if (nValueIn < value_out) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-belowout", false,
+            strprintf("value in (%s) < value out (%s)", FormatMoney(nValueIn), FormatMoney(value_out)));
+    }
+
+    // Tally transaction fees
+    CAmount txfee_aux = nValueIn - value_out;
+    if (!MoneyRange(txfee_aux)) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
+    }
+
     // Check uniform transaction. Inputs[i] == Outputs[j]
     if (tx.IsUniform() && nSpendHeight >= params.BHDIP006Height) {
         const CScript& scriptPubKey = inputs.AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
@@ -254,18 +266,6 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         }
     }
 
-    const CAmount value_out = tx.GetValueOut();
-    if (nValueIn < value_out) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-belowout", false,
-            strprintf("value in (%s) < value out (%s)", FormatMoney(nValueIn), FormatMoney(value_out)));
-    }
-
-    // Tally transaction fees
-    CAmount txfee_aux = nValueIn - value_out;
-    if (!MoneyRange(txfee_aux)) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
-    }
-
     // Check for bind plotter fee and unbind plotter limit
     if (tx.IsUniform() && nSpendHeight >= params.BHDIP006CheckRelayHeight) {
         if (tx.vin.size() == 1 && tx.vout.size() == 1) {
@@ -274,15 +274,10 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             if (!coin.extraData && nSpendHeight >= params.BHDIP007Height)
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-invaliduniform-unlock");
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                if (nSpendHeight < params.BHDIP006LimitBindPlotterHeight) {
-                    // Delay check. Old consensus flexiable 6 blocks active check
-                    if (nSpendHeight + 6 < GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
-                        return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
-                } else {
-                    // Strict check
-                    if (nSpendHeight < GetUnbindPlotterLimitHeight(nSpendHeight, CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
-                        return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
-                }
+                if (fStrictCheckLimit && static_cast<int>(coin.nHeight) == nSpendHeight)
+                    return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-strict-limit");
+                if (nSpendHeight < GetUnbindPlotterLimitHeight(CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
+                    return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
             }
         } else {
             // Bind & Rental
@@ -323,24 +318,24 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 }
 
 bool Consensus::CheckTxInputs(const CTransaction& tx, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, const CAccountID& generatorAccountID, const Consensus::Params& params)
+    int nSpendHeight, const CAccountID& generatorAccountID, bool fStrictCheckLimit, const Consensus::Params& params)
 {
     CValidationState state;
     CAmount txfee;
-    return Consensus::CheckTxInputs(tx, state, inputs, prevInputs, nSpendHeight, txfee, generatorAccountID, params);
+    return Consensus::CheckTxInputs(tx, state, inputs, prevInputs, nSpendHeight, txfee, generatorAccountID, fStrictCheckLimit, params);
 }
 
-int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& lastBindInfo, const Consensus::Params& params)
+int Consensus::GetBindPlotterLimitHeight(int nBindHeight, const CBindPlotterInfo& lastBindInfo, const Consensus::Params& params)
 {
     assert(!lastBindInfo.outpoint.IsNull() && lastBindInfo.nHeight >= 0);
-    assert(nSpentHeight > lastBindInfo.nHeight);
+    assert(nBindHeight > lastBindInfo.nHeight);
 
-    if (nSpentHeight < params.BHDIP006LimitBindPlotterHeight)
+    if (nBindHeight < params.BHDIP006LimitBindPlotterHeight)
         return std::max(params.BHDIP006Height, lastBindInfo.nHeight + 1);
 
     // Checking range [nEvalBeginHeight, nEvalEndHeight]
-    const int nEvalBeginHeight = std::max(nSpentHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
-    const int nEvalEndHeight = nSpentHeight - 1;
+    const int nEvalBeginHeight = std::max(nBindHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
+    const int nEvalEndHeight = nBindHeight - 1;
 
     // Mined block in <EvalWindow>, next block unlimit
     for (int nHeight = nEvalBeginHeight; nHeight <= nEvalEndHeight; nHeight++) {
@@ -359,39 +354,41 @@ int Consensus::GetBindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInf
     return lastBindInfo.nHeight + 1;
 }
 
-int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterInfo& bindInfo, const CCoinsViewCache& inputs, const Consensus::Params& params)
+int Consensus::GetUnbindPlotterLimitHeight(const CBindPlotterInfo& bindInfo, const CCoinsViewCache& inputs, const Consensus::Params& params)
 {
     assert(!bindInfo.outpoint.IsNull() && bindInfo.valid && bindInfo.nHeight >= 0);
-    assert(nSpentHeight > bindInfo.nHeight);
 
-    if (nSpentHeight < params.BHDIP006CheckRelayHeight)
+    const int nSpendHeight = GetSpendHeight(inputs);
+    assert(nSpendHeight >= bindInfo.nHeight);
+    if (nSpendHeight < params.BHDIP006CheckRelayHeight)
         return std::max(params.BHDIP006Height, bindInfo.nHeight + 1);
 
     // Checking range [nEvalBeginHeight, nEvalEndHeight]
-    int nEvalBeginHeight = std::max(nSpentHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
-    int nEvalEndHeight = nSpentHeight - 1;
+    const int nEvalBeginHeight = std::max(nSpendHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
+    const int nEvalEndHeight = nSpendHeight - 1;
 
     // 2.5%, Large capacity unlimit
     for (int height = nEvalBeginHeight + 1, nMinedBlockCount = 0; height <= nEvalEndHeight; height++) {
         if (chainActive[height]->nPlotterId == bindInfo.plotterId) {
             if (++nMinedBlockCount > params.nCapacityEvalWindow / 40)
-                return std::min(height, bindInfo.nHeight + params.nCapacityEvalWindow);
+                return std::max(std::min(height, bindInfo.nHeight + params.nCapacityEvalWindow), bindInfo.nHeight);
         }
     }
 
-    if (nSpentHeight < params.BHDIP006LimitBindPlotterHeight) {
+    if (nSpendHeight < params.BHDIP006LimitBindPlotterHeight) {
         //! Issues: Infinitely +<EvalWindow> when mine to any address
         // Delay unbind EvalWindow blocks when mined block
         for (int nHeight = nEvalEndHeight; nHeight > nEvalBeginHeight; nHeight--) {
             if (chainActive[nHeight]->nPlotterId == bindInfo.plotterId)
                 return nHeight + params.nCapacityEvalWindow;
         }
-    } else if (nSpentHeight < params.BHDIP007Height) {
+    } else if (nSpendHeight < params.BHDIP007Height) {
         //! Issues: Infinitely +<EvalWindow>
         const CBindPlotterInfo activeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo, true);
         assert(!activeBindInfo.outpoint.IsNull() && activeBindInfo.valid && activeBindInfo.nHeight >= 0);
         assert(activeBindInfo.nHeight >= bindInfo.nHeight);
 
+        // Checking range [nBeginMiningHeight, nEndMiningHeight]
         const int nBeginMiningHeight = std::max(nEvalBeginHeight, bindInfo.nHeight);
         const int nEndMiningHeight = (bindInfo.outpoint == activeBindInfo.outpoint) ? nEvalEndHeight : activeBindInfo.nHeight;
 
@@ -409,11 +406,12 @@ int Consensus::GetUnbindPlotterLimitHeight(int nSpentHeight, const CBindPlotterI
         }
     } else {
         // Participate mining lock <EvalWindow>
-        const CBindPlotterInfo changeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo);
+        const CBindPlotterInfo changeBindInfo = inputs.GetChangeBindPlotterInfo(bindInfo, false);
         assert(!changeBindInfo.outpoint.IsNull() && changeBindInfo.nHeight >= 0);
         assert(changeBindInfo.nHeight >= bindInfo.nHeight);
-        assert(nSpentHeight > changeBindInfo.nHeight);
+        assert(nSpendHeight >= changeBindInfo.nHeight);
 
+        // Checking range [nBeginMiningHeight, nEndMiningHeight]
         const int nBeginMiningHeight = bindInfo.nHeight;
         const int nEndMiningHeight = (bindInfo.outpoint == changeBindInfo.outpoint) ? nEvalEndHeight : changeBindInfo.nHeight;
         for (int nHeight = nBeginMiningHeight; nHeight <= nEndMiningHeight; nHeight++) {

@@ -65,11 +65,11 @@
     </message>
     <message>
         <source>These are your BitcoinHD addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>這些是你要付款過去的比特硬盤位址。在付錢之前，務必要檢查金額和收款位址是否正確。</translation>
+        <translation>這些是你要付款過去的比特硬幣位址。在付錢之前，務必要檢查金額和收款位址是否正確。</translation>
     </message>
     <message>
         <source>These are your BitcoinHD addresses for receiving payments.</source>
-        <translation>這些是你用來收款的比特硬盤位址。</translation>
+        <translation>這些是你用來收款的比特硬幣位址。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -120,11 +120,11 @@
     </message>
     <message>
         <source>Loan</source>
-        <translation>借出金額</translation>
+        <translation>指向金額</translation>
     </message>
     <message>
         <source>Borrow</source>
-        <translation>借入金額</translation>
+        <translation>被指向金額</translation>
     </message>
     <message>
         <source>Locked</source>
@@ -142,17 +142,9 @@
         <source>Watchonly address</source>
         <translation>僅觀察位址</translation>
     </message>
-        <message>
-        <source>Spendable: %1
-Locked: %2
-Load to: %3
-Borrow from: %4
-Available for mining: %5</source>
-        <translation>可花費的金額: %1
-鎖定的金額: %2
-借出的金額: %3
-借入的金額: %4
-可用於開採的金額: %5</translation>
+    <message>
+        <source>Spendable: %1;Locked: %2;Loan to: %3;Borrow from: %4;Available for mining: %5</source>
+        <translation>可花費的金額: %1;鎖定的金額（綁定和指向鎖定的總金額）: %2;指向的金額: %3;被指向的金額: %4;可用於開採的金額: %5</translation>
     </message>
 </context>
 <context>
@@ -385,7 +377,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Send coins to a BitcoinHD address</source>
-        <translation>付錢給一個比特硬盤位址</translation>
+        <translation>付錢給一個比特硬幣位址</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -409,7 +401,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>BitcoinHD</source>
-        <translation>比特硬盤</translation>
+        <translation>比特硬幣</translation>
+    </message>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
     </message>
     <message>
         <source>Wallet</source>
@@ -437,11 +433,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Sign messages with your BitcoinHD addresses to prove you own them</source>
-        <translation>用比特硬盤位址簽署訊息來證明位址是你的</translation>
+        <translation>用比特硬幣位址簽署訊息來證明位址是你的</translation>
     </message>
     <message>
         <source>Verify messages to ensure they were signed with specified BitcoinHD addresses</source>
-        <translation>驗證訊息是用來確定訊息是用指定的比特硬盤位址簽署的</translation>
+        <translation>驗證訊息是用來確定訊息是用指定的比特硬幣位址簽署的</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -469,7 +465,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Request payments (generates QR codes and btchd: URIs)</source>
-        <translation>要求付款(產生 QR Code 和比特硬盤付款協議的資源識別碼: URI)</translation>
+        <translation>要求付款(產生 QR Code 和比特硬幣付款協議的資源識別碼: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -481,7 +477,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Open a btchd: URI or payment request</source>
-        <translation>開啓比特硬盤協議的資源識別碼(URI)或付款要求</translation>
+        <translation>開啓比特硬幣協議的資源識別碼(URI)或付款要求</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
@@ -490,7 +486,7 @@ Available for mining: %5</source>
     <message numerus="yes">
         <source>%n active connection(s) to BitcoinHD network</source>
         <translation>
-            <numerusform>%n 個運作中的比特硬盤網路連線</numerusform>
+            <numerusform>%n 個運作中的比特硬幣網路連線</numerusform>
         </translation>
     </message>
     <message>
@@ -607,7 +603,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>A fatal error occurred. BitcoinHD can no longer continue safely and will quit.</source>
-        <translation>發生了致命的錯誤。比特硬盤軟體沒辦法再繼續安全執行，只好結束。</translation>
+        <translation>發生了致命的錯誤。比特硬幣軟體沒辦法再繼續安全執行，只好結束。</translation>
     </message>
     <message>
         <source>Please save your mining account.</source>
@@ -813,7 +809,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The entered address &quot;%1&quot; is not a valid BitcoinHD address.</source>
-        <translation>輸入的位址 %1 並不是有效的比特硬盤位址。</translation>
+        <translation>輸入的位址 %1 並不是有效的比特硬幣位址。</translation>
     </message>
     <message>
         <source>The entered address &quot;%1&quot; is already in the address book.</source>
@@ -905,6 +901,10 @@ Available for mining: %5</source>
         <source>Reset all settings changed in the GUI</source>
         <translation>重置所有在使用界面更改的設定</translation>
     </message>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
+    </message>
 </context>
 <context>
     <name>Intro</name>
@@ -942,7 +942,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>BitcoinHD</source>
-        <translation>比特硬盤</translation>
+        <translation>比特硬幣</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -954,7 +954,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>%1 will download and store a copy of the BitcoinHD block chain.</source>
-        <translation>%1 會下載比特硬盤區塊鏈並且儲存一份副本。</translation>
+        <translation>%1 會下載比特硬幣區塊鏈並且儲存一份副本。</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -989,11 +989,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Recent transactions may not yet be visible, and therefore your wallet&apos;s balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the BitcoinHD network, as detailed below.</source>
-        <translation>最近的交易可能還看不到，因此錢包餘額可能不正確。在錢包軟體完成跟比特硬盤網路的同步後，這裡的資訊就會正確。詳情請見下面。</translation>
+        <translation>最近的交易可能還看不到，因此錢包餘額可能不正確。在錢包軟體完成跟比特硬幣網路的同步後，這裡的資訊就會正確。詳情請見下面。</translation>
     </message>
     <message>
         <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
-        <translation>使用還沒顯示出來的交易所影響到的比特硬盤可能會不被網路所接受。</translation>
+        <translation>使用還沒顯示出來的交易所影響到的比特硬幣可能會不被網路所接受。</translation>
     </message>
     <message>
         <source>Number of blocks left</source>
@@ -1058,6 +1058,10 @@ Available for mining: %5</source>
 <context>
     <name>OptionsDialog</name>
     <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
+    </message>
+    <message>
         <source>Options</source>
         <translation>選項</translation>
     </message>
@@ -1095,7 +1099,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>透過另外的 SOCKS&amp;5 代理伺服器來連線到比特硬盤網路中的 Tor 隱藏服務:</translation>
+        <translation>透過另外的 SOCKS&amp;5 代理伺服器來連線到比特硬幣網路中的 Tor 隱藏服務:</translation>
     </message>
     <message>
         <source>Hide the icon from the system tray.</source>
@@ -1163,7 +1167,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Automatically open the BitcoinHD client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>自動在路由器上開放比特硬盤的客戶端通訊埠。只有在你的路由器支援且開啓「通用即插即用」協定(UPnP)時才有作用。</translation>
+        <translation>自動在路由器上開放比特硬幣的客戶端通訊埠。只有在你的路由器支援且開啓「通用即插即用」協定(UPnP)時才有作用。</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1179,7 +1183,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Connect to the BitcoinHD network through a SOCKS5 proxy.</source>
-        <translation>透過 SOCKS5 代理伺服器來連線到比特硬盤網路。</translation>
+        <translation>透過 SOCKS5 代理伺服器來連線到比特硬幣網路。</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1215,7 +1219,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Connect to the BitcoinHD network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>透過另外的 SOCKS5 代理伺服器來連線到比特硬盤網路中的 Tor 隱藏服務。</translation>
+        <translation>透過另外的 SOCKS5 代理伺服器來連線到比特硬幣網路中的 Tor 隱藏服務。</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1322,7 +1326,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The displayed information may be out of date. Your wallet automatically synchronizes with the BitcoinHD network after a connection is established, but this process has not completed yet.</source>
-        <translation>顯示的資訊可能是過期的。跟比特硬盤網路的連線建立後，你的錢包會自動和網路同步，但是這個步驟還沒完成。</translation>
+        <translation>顯示的資訊可能是過期的。跟比特硬幣網路的連線建立後，你的錢包會自動和網路同步，但是這個步驟還沒完成。</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1358,23 +1362,23 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Total of balance that have to be locked (for bind plotter and loan), and do not yet count toward the spendable balance</source>
-        <translation>被鎖定的總額(綁定算力和抵押租出)，未計入當前金額</translation>
+        <translation>被鎖定的總額(綁定算力和指向)，未計入當前金額</translation>
     </message>
     <message>
         <source>Load to:</source>
-        <translation>借出的總額:</translation>
+        <translation>指向的總額:</translation>
     </message>
     <message>
         <source>Total of balance that have to be loan, and do not yet count toward the spendable balance</source>
-        <translation>借出的總額，未計入當前餘額</translation>
+        <translation>指向的總額，未計入當前餘額</translation>
     </message>
     <message>
         <source>Borrow from:</source>
-        <translation>借入的總額:</translation>
+        <translation>被指向的總額:</translation>
     </message>
     <message>
         <source>Total of balance that have to be borrow, and do not yet count toward the spendable balance</source>
-        <translation>借到的總額，未計入當前餘額</translation>
+        <translation>指向的總額，未計入當前餘額</translation>
     </message>
     <message>
         <source>Balances</source>
@@ -1414,15 +1418,15 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Locked (for bind plotter and loan) balance to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和租出)</translation>
+        <translation>只能看位址(watch-only address)鎖定的金額(綁定算力和指向)</translation>
     </message>
     <message>
         <source>Loan to to watch-only addresses</source>
-        <translation>只能看位址(watch-only address)借出的金額</translation>
+        <translation>只能看位址(watch-only address)指向的金額</translation>
     </message>
     <message>
         <source>Borrow from watch-only addresses</source>
-        <translation>只能看位址(watch-only address)借入的金額</translation>
+        <translation>只能看位址(watch-only address)被指向的金額</translation>
     </message>
 </context>
 <context>
@@ -1433,7 +1437,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Cannot start btchd: click-to-pay handler</source>
-        <translation>沒辦法啟動比特硬盤協議的「按就付」處理器</translation>
+        <translation>沒辦法啟動比特硬幣協議的「按就付」處理器</translation>
     </message>
     <message>
         <source>URI handling</source>
@@ -1449,7 +1453,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>URI cannot be parsed! This can be caused by an invalid BitcoinHD address or malformed URI parameters.</source>
-        <translation>沒辦法解析 URI 位址！可能是因為比特硬盤位址無效，或是 URI 參數格式錯誤。</translation>
+        <translation>沒辦法解析 URI 位址！可能是因為比特硬幣位址無效，或是 URI 參數格式錯誤。</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1551,7 +1555,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Enter a BitcoinHD address (e.g. %1)</source>
-        <translation>輸入比特硬盤位址 (比如說 %1)</translation>
+        <translation>輸入比特硬幣位址 (比如說 %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1682,6 +1686,10 @@ Available for mining: %5</source>
 </context>
 <context>
     <name>RPCConsole</name>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
+    </message>
     <message>
         <source>N/A</source>
         <translation>未知</translation>
@@ -2019,7 +2027,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the BitcoinHD network.</source>
-        <translation>附加在付款要求中的訊息，可以不填，打開要求內容時會顯示。注意: 這個訊息不會隨著付款送到比特硬盤網路上。</translation>
+        <translation>附加在付款要求中的訊息，可以不填，打開要求內容時會顯示。注意: 這個訊息不會隨著付款送到比特硬幣網路上。</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -2315,6 +2323,14 @@ Available for mining: %5</source>
         <translation>手續費追加(Replace-By-Fee, BIP-125)可以讓你在送出交易後才來提高手續費。不用這個功能的話，建議付比較高的手續費來降低交易延遲的風險。</translation>
     </message>
     <message>
+        <source>Add text to transaction</source>
+        <translation>添加交易訊息</translation>
+    </message>
+    <message>
+        <source>Add &amp;Text</source>
+        <translation>添加交易訊息(&amp;T)</translation>
+    </message>
+    <message>
         <source>Clear &amp;All</source>
         <translation>全部清掉(&amp;A)</translation>
     </message>
@@ -2468,7 +2484,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Warning: Invalid BitcoinHD address</source>
-        <translation>警告: 比特硬盤位址無效</translation>
+        <translation>警告: 比特硬幣位址無效</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2492,7 +2508,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出到</translation>
+        <translation>指向到</translation>
     </message>
     <message>
         <source>Bind to</source>
@@ -2500,11 +2516,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Confirm loan to</source>
-        <translation>確認發送借出</translation>
+        <translation>確認發送指向</translation>
     </message>
     <message>
         <source>Are you sure you want loan?</source>
-        <translation>您確定要借出嗎？</translation>
+        <translation>您確定要指向嗎？</translation>
     </message>
     <message>
         <source>Confirm bind plotter</source>
@@ -2536,7 +2552,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The rental consensus active on %1 after.</source>
-        <translation>租借共識將在 %1 高度之後啟用。</translation>
+        <translation>指向共識將在 %1 高度之後啟用。</translation>
     </message>
     <message>
         <source>The lock amount to bind plotter must be %1.</source>
@@ -2548,11 +2564,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to amount must be larger than %1.</source>
-        <translation>有效的借出額除必須大於 %1 。</translation>
+        <translation>有效的指向額除必須大於 %1 。</translation>
     </message>
     <message>
         <source>Loan to amount must be larger than %1 on exclude fee %2.</source>
-        <translation>有效的借出額除去交易費用 %2 後必須大於 %1 。</translation>
+        <translation>有效的指向額除去交易費用 %2 後必須大於 %1 。</translation>
     </message>
     <message>
         <source>Copy bind data</source>
@@ -2571,7 +2587,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan &amp;To:</source>
-        <translation>借給(&amp;T)：</translation>
+        <translation>指向给(&amp;T)：</translation>
     </message>
     <message>
         <source>Bind &amp;To:</source>
@@ -2595,7 +2611,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The BitcoinHD address to send the payment to</source>
-        <translation>接收付款的比特硬盤位址</translation>
+        <translation>接收付款的比特硬幣位址</translation>
     </message>
     <message>
         <source>Alt+A</source>
@@ -2643,7 +2659,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>A message that was attached to the btchd: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the BitcoinHD network.</source>
-        <translation>附加在 BitcoinHD 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息不會送到比特硬盤網路上。</translation>
+        <translation>附加在 BitcoinHD 付款協議的資源識別碼(URI)中的訊息，會和交易內容一起存起來，給你自己做參考。注意: 這個訊息不會送到比特硬幣網路上。</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2696,7 +2712,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The BitcoinHD address to sign the message with</source>
-        <translation>用來簽署訊息的比特硬盤位址</translation>
+        <translation>用來簽署訊息的比特硬幣位址</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -2728,7 +2744,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Sign the message to prove you own this BitcoinHD address</source>
-        <translation>簽署這個訊息來證明這個比特硬盤位址是你的</translation>
+        <translation>簽署這個訊息來證明這個比特硬幣位址是你的</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2752,11 +2768,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>The BitcoinHD address the message was signed with</source>
-        <translation>簽署這個訊息的比特硬盤位址</translation>
+        <translation>簽署這個訊息的比特硬幣位址</translation>
     </message>
     <message>
         <source>Verify the message to ensure it was signed with the specified BitcoinHD address</source>
-        <translation>驗證這個訊息來確定是用指定的比特硬盤位址簽署的</translation>
+        <translation>驗證這個訊息來確定是用指定的比特硬幣位址簽署的</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -2821,6 +2837,10 @@ Available for mining: %5</source>
 </context>
 <context>
     <name>SplashScreen</name>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
+    </message>
     <message>
         <source>[testnet]</source>
         <translation>[testnet]</translation>
@@ -2962,6 +2982,10 @@ Available for mining: %5</source>
         <translation>淨額</translation>
     </message>
     <message>
+        <source>Transaction text</source>
+        <translation>交易包含的訊息</translation>
+    </message>
+    <message>
         <source>Message</source>
         <translation>訊息</translation>
     </message>
@@ -3031,11 +3055,11 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdrawn</source>
-        <translation>已贖回</translation>
+        <translation>已解除指向</translation>
     </message>
     <message>
         <source>Relevant transaction ID</source>
-        <translation>關聯的交易ID</translation>
+        <translation>關聯的交易</translation>
     </message>
 </context>
 <context>
@@ -3159,23 +3183,23 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出</translation>
+        <translation>指向</translation>
     </message>
     <message>
         <source>Borrow from</source>
-        <translation>借入</translation>
+        <translation>被指向</translation>
     </message>
     <message>
         <source>This rental has withdraw</source>
-        <translation>此租借已被贖回</translation>
+        <translation>此指向已被解除</translation>
     </message>
     <message>
         <source>Loan to yourself</source>
-        <translation>借給自己</translation>
+        <translation>指向給自己</translation>
     </message>
     <message>
         <source>Withdrawn loan</source>
-        <translation>贖回借出</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Transaction status. Hover over this field to show number of confirmations.</source>
@@ -3258,23 +3282,23 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Loan to</source>
-        <translation>借出</translation>
+        <translation>指向</translation>
     </message>
     <message>
         <source>Borrow from</source>
-        <translation>借入</translation>
+        <translation>被指向</translation>
     </message>
     <message>
         <source>This rental has withdraw</source>
-        <translation>此租借已被贖回</translation>
+        <translation>此指向已被解除</translation>
     </message>
     <message>
         <source>Loan to yourself</source>
-        <translation>借給自己</translation>
+        <translation>指向給自己</translation>
     </message>
     <message>
         <source>Withdrawn loan</source>
-        <translation>贖回借出</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Other</source>
@@ -3302,7 +3326,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdraw rental</source>
-        <translation>贖回租借</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Copy address</source>
@@ -3459,7 +3483,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdraw rental</source>
-        <translation>贖回租借</translation>
+        <translation>解除指向</translation>
     </message>
     <message>
         <source>Unbind plotter error</source>
@@ -3467,7 +3491,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Withdraw rental error</source>
-        <translation>贖回租借失敗</translation>
+        <translation>解除指向失敗</translation>
     </message>
     <message>
         <source>Are you sure you want to unbind plotter?</source>
@@ -3475,7 +3499,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>Are you sure you want to withdraw loan?</source>
-        <translation>你是否確認贖回借出?</translation>
+        <translation>你是否確認解除指向?</translation>
     </message>
     <message>
         <source>Transaction fee:</source>
@@ -3605,7 +3629,7 @@ Available for mining: %5</source>
     </message>
     <message>
         <source>BitcoinHD Core</source>
-        <translation>比特硬盤核心</translation>
+        <translation>比特硬幣核心</translation>
     </message>
     <message>
         <source>The %s developers</source>

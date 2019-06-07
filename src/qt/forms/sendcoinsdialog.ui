@@ -1185,6 +1185,23 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="setTxMessageButton">
+       <property name="toolTip">
+        <string>Add text to transaction</string>
+       </property>
+       <property name="text">
+        <string>Add &amp;Text</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../bitcoin.qrc">
+         <normaloff>:/icons/add</normaloff>:/icons/add</iconset>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="clearButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">

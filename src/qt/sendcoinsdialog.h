@@ -69,6 +69,7 @@ private:
     bool fNewRecipientAllowed;
     bool fFeeMinimized;
     const PlatformStyle *platformStyle;
+    QString txCustomText;
 
     // Process WalletModel::SendCoinsReturn and generate a pair consisting
     // of a message and message flags for use in Q_EMIT message().
@@ -86,6 +87,7 @@ private Q_SLOTS:
     void onOperateMethodComboBoxChanged(int index);
     void on_sendButton_clicked();
     void on_genBindDataButton_clicked();
+    void on_setTxMessageButton_clicked();
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();
     void removeEntry(SendCoinsEntry* entry);
