@@ -955,6 +955,10 @@
         <translation>比特硬币</translation>
     </message>
     <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
+    <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
         <translation>此目录中至少会保存 %1 GB 的数据，并且尺寸还会随着时间增长。</translation>
     </message>
@@ -2610,6 +2614,10 @@
         <translation>算力(&amp;P)：</translation>
     </message>
     <message>
+        <source>&amp;Valid Height:</source>
+        <translation>有效时间(&amp;V)：</translation>
+    </message>
+    <message>
         <source>Choose previously used address</source>
         <translation>选择以前用过的地址</translation>
     </message>
@@ -3576,6 +3584,14 @@
 <context>
     <name>bitcoin-core</name>
     <message>
+        <source>BitcoinHD</source>
+        <translation>比特硬币</translation>
+    </message>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬币</translation>
+    </message>
+    <message>
         <source>Options:</source>
         <translation>选项：</translation>
     </message>
@@ -3709,7 +3725,7 @@
     </message>
     <message>
         <source>Please contribute if you find %s useful. Visit %s for further information about the software.</source>
-        <translation>如果你认为%s对你比较有用的话，请对我们进行一些捐赠支持。请访问%s网站来获取有关这个软件的更多信息。</translation>
+        <translation>如果你认为 %s 对你比较有用的话，请对我们进行一些捐赠支持。请访问 %s 网站来获取有关这个软件的更多信息。</translation>
     </message>
     <message>
         <source>Query for peer addresses via DNS lookup, if low on addresses (default: 1 unless -connect used)</source>

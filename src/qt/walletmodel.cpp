@@ -373,7 +373,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             std::vector<unsigned char> bindData(ParseHex(rcp.plotterPassphrase.toStdString()));
             vecSend.push_back({CScript(bindData.cbegin(), bindData.cend()), 0, false});
         } else {
-            vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), nSpendHeight - 1 + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE), 0, false});
+            vecSend.push_back({GetBindPlotterScriptForDestination(coinControl.destPick, rcp.plotterPassphrase.toStdString(), nSpendHeight - 1 + rcp.plotterDataValidHeight), 0, false});
         }
         nChangePosRet = 1;
 

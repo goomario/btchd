@@ -945,6 +945,10 @@
         <translation>比特硬幣</translation>
     </message>
     <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
+    </message>
+    <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
         <translation>在這個目錄中至少會存放 %1 GB 的資料，並且還會隨時間增加。</translation>
     </message>
@@ -2587,11 +2591,11 @@
     </message>
     <message>
         <source>Loan &amp;To:</source>
-        <translation>指向给(&amp;T)：</translation>
+        <translation>指向给(&amp;T):</translation>
     </message>
     <message>
         <source>Bind &amp;To:</source>
-        <translation>綁給(&amp;T)：</translation>
+        <translation>綁給(&amp;T):</translation>
     </message>
     <message>
         <source>&amp;Label:</source>
@@ -2599,7 +2603,11 @@
     </message>
     <message>
         <source>&amp;Plotter:</source>
-        <translation>算力(&amp;P)：</translation>
+        <translation>算力(&amp;P):</translation>
+    </message>
+        <message>
+        <source>&amp;Valid Height:</source>
+        <translation>有效時間(&amp;V):</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -3567,6 +3575,14 @@
 </context>
 <context>
     <name>bitcoin-core</name>
+    <message>
+        <source>BitcoinHD</source>
+        <translation>比特硬幣</translation>
+    </message>
+    <message>
+        <source>BitcoinHD Chain</source>
+        <translation>比特硬幣</translation>
+    </message>
     <message>
         <source>Options:</source>
         <translation>選項:</translation>
