@@ -14,6 +14,7 @@
 #include <QApplication>
 #include <QClipboard>
 
+#include <array>
 
 static const std::array<int, 11> bindActiveHeights = { {6, 12, 24, 144, 288, 288*2, 288*3, 288*4, 288*5, 288*6, 288*7} };
 int getPlotterDataValidHeightForIndex(int index) {
