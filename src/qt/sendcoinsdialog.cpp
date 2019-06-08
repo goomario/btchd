@@ -622,7 +622,7 @@ void SendCoinsDialog::on_genBindDataButton_clicked()
     const int nSpendHeight = GetSpendHeight(*pcoinsTip);
     CTxDestination bindToDest = DecodeDestination(recipient.address.toStdString());
     int activeHeight = std::max(nSpendHeight - 1, Params().GetConsensus().BHDIP006Height);
-    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), activeHeight + PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE);
+    CScript script = GetBindPlotterScriptForDestination(bindToDest, recipient.plotterPassphrase.toStdString(), activeHeight + recipient.plotterDataValidHeight);
     if (script.empty())
         return;
     // Check
