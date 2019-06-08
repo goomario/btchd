@@ -2591,11 +2591,11 @@
     </message>
     <message>
         <source>Loan &amp;To:</source>
-        <translation>指向给(&amp;T)：</translation>
+        <translation>指向给(&amp;T):</translation>
     </message>
     <message>
         <source>Bind &amp;To:</source>
-        <translation>綁給(&amp;T)：</translation>
+        <translation>綁給(&amp;T):</translation>
     </message>
     <message>
         <source>&amp;Label:</source>
@@ -2603,7 +2603,11 @@
     </message>
     <message>
         <source>&amp;Plotter:</source>
-        <translation>算力(&amp;P)：</translation>
+        <translation>算力(&amp;P):</translation>
+    </message>
+        <message>
+        <source>&amp;Valid Height:</source>
+        <translation>有效時間(&amp;V):</translation>
     </message>
     <message>
         <source>Choose previously used address</source>

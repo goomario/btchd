@@ -14,6 +14,26 @@
 #include <QApplication>
 #include <QClipboard>
 
+
+static const std::array<int, 11> bindActiveHeights = { {6, 12, 24, 144, 288, 288*2, 288*3, 288*4, 288*5, 288*6, 288*7} };
+int getPlotterDataValidHeightForIndex(int index) {
+    if (index+1 > static_cast<int>(bindActiveHeights.size())) {
+        return bindActiveHeights.back();
+    }
+    if (index < 0) {
+        return bindActiveHeights[0];
+    }
+    return bindActiveHeights[index];
+}
+int getIndexForPlotterDataValidHeight(int height) {
+    for (unsigned int i = 0; i < bindActiveHeights.size(); i++) {
+        if (bindActiveHeights[i] >= height) {
+            return i;
+        }
+    }
+    return bindActiveHeights.size() - 1;
+}
+
 SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const PlatformStyle *_platformStyle, QWidget *parent) :
     QStackedWidget(parent),
     payOperateMethod(_payOperateMethod),
@@ -25,6 +45,8 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
 
     ui->plotterPassphraseLabel->setVisible(false);
     ui->plotterPassphrase->setVisible(false);
+    ui->plotterDataValidHeightLabel->setVisible(false);
+    ui->plotterDataValidHeightSelector->setVisible(false);
 
     ui->addressBookButton->setIcon(platformStyle->SingleColorIcon(":/icons/address-book"));
     ui->pasteButton->setIcon(platformStyle->SingleColorIcon(":/icons/editpaste"));
@@ -70,6 +92,13 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
     #if QT_VERSION >= 0x040700
         ui->plotterPassphrase->setPlaceholderText(tr("Enter your plotter passphrase or bind hex data"));
     #endif
+        ui->plotterDataValidHeightLabel->setVisible(true);
+        ui->plotterDataValidHeightSelector->setVisible(true);
+        for (const int n : bindActiveHeights) {
+            assert(n > 0 && n <= PROTOCOL_BINDPLOTTER_MAXALIVE);
+            ui->plotterDataValidHeightSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPocTargetSpacing)).arg(n));
+        }
+        ui->plotterDataValidHeightSelector->setCurrentIndex(getIndexForPlotterDataValidHeight(PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE));
     }
 }
 
@@ -224,8 +253,10 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     // Normal payment
     recipient.address = ui->payTo->text();
     recipient.label = ui->addAsLabel->text();
-    if (payOperateMethod == PayOperateMethod::BindPlotter)
+    if (payOperateMethod == PayOperateMethod::BindPlotter) {
         recipient.plotterPassphrase = ui->plotterPassphrase->text().trimmed();
+        recipient.plotterDataValidHeight = getPlotterDataValidHeightForIndex(ui->plotterDataValidHeightSelector->currentIndex());
+    }
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);

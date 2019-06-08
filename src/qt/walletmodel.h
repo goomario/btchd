@@ -46,9 +46,9 @@ enum class PayOperateMethod {
 class SendCoinsRecipient
 {
 public:
-    explicit SendCoinsRecipient() : amount(0), fSubtractFeeFromAmount(false), nVersion(SendCoinsRecipient::CURRENT_VERSION) { }
+    explicit SendCoinsRecipient() : amount(0), fSubtractFeeFromAmount(false), plotterDataValidHeight(0), nVersion(SendCoinsRecipient::CURRENT_VERSION) { }
     explicit SendCoinsRecipient(const QString &addr, const QString &_label, const CAmount& _amount, const QString &_message):
-        address(addr), label(_label), amount(_amount), message(_message), fSubtractFeeFromAmount(false), nVersion(SendCoinsRecipient::CURRENT_VERSION) {}
+        address(addr), label(_label), amount(_amount), message(_message), fSubtractFeeFromAmount(false), plotterDataValidHeight(0), nVersion(SendCoinsRecipient::CURRENT_VERSION) { }
 
     // If from an unauthenticated payment request, this is used for storing
     // the addresses, e.g. address-A<br />address-B<br />address-C.
@@ -61,15 +61,16 @@ public:
     // If from a payment request, this is used for storing the memo
     QString message;
 
-    // For bind plotter request
-    QString plotterPassphrase;
-
     // If from a payment request, paymentRequest.IsInitialized() will be true
     PaymentRequestPlus paymentRequest;
     // Empty if no authentication or invalid signature/cert/etc.
     QString authenticatedMerchant;
 
     bool fSubtractFeeFromAmount; // memory only
+
+    // For bind plotter request
+    QString plotterPassphrase;
+    int plotterDataValidHeight;
 
     static const int CURRENT_VERSION = 1;
     int nVersion;

@@ -2614,6 +2614,10 @@
         <translation>算力(&amp;P)：</translation>
     </message>
     <message>
+        <source>&amp;Valid Height:</source>
+        <translation>有效时间(&amp;V)：</translation>
+    </message>
+    <message>
         <source>Choose previously used address</source>
         <translation>选择以前用过的地址</translation>
     </message>
