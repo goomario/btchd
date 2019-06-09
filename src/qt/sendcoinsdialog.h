@@ -87,7 +87,6 @@ private Q_SLOTS:
     void onOperateMethodComboBoxChanged(int index);
     void on_sendButton_clicked();
     void on_genBindDataButton_clicked();
-    void on_setTxMessageButton_clicked();
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();
     void removeEntry(SendCoinsEntry* entry);

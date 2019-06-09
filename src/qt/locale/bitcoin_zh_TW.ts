@@ -2327,14 +2327,6 @@
         <translation>手續費追加(Replace-By-Fee, BIP-125)可以讓你在送出交易後才來提高手續費。不用這個功能的話，建議付比較高的手續費來降低交易延遲的風險。</translation>
     </message>
     <message>
-        <source>Add text to transaction</source>
-        <translation>添加交易訊息</translation>
-    </message>
-    <message>
-        <source>Add &amp;Text</source>
-        <translation>添加交易訊息(&amp;T)</translation>
-    </message>
-    <message>
         <source>Clear &amp;All</source>
         <translation>全部清掉(&amp;A)</translation>
     </message>
@@ -2988,10 +2980,6 @@
     <message>
         <source>Net amount</source>
         <translation>淨額</translation>
-    </message>
-    <message>
-        <source>Transaction text</source>
-        <translation>交易包含的訊息</translation>
     </message>
     <message>
         <source>Message</source>

@@ -281,7 +281,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     // Message
     //
     if (wtx.mapValue.count("tx_text") && !wtx.mapValue["tx_text"].empty())
-        strHTML += "<br><b>" + tr("Transaction text") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["tx_text"], true) + "<br><br>";
+        strHTML += "<br><b>" + tr("Message") + ":</b><br>@@" + GUIUtil::HtmlEscape(HexStr(wtx.mapValue["tx_text"]), true) + "<br><br>";
     if (wtx.mapValue.count("message") && !wtx.mapValue["message"].empty())
         strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(wtx.mapValue["message"], true) + "<br><br>";
     if (wtx.mapValue.count("comment") && !wtx.mapValue["comment"].empty())
@@ -293,8 +293,10 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 
     // Message from normal btchd:URI (btchd:123...?message=example)
     for (const std::pair<std::string, std::string>& r : wtx.vOrderForm)
+    {
         if (r.first == "Message")
             strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(r.second, true) + "<br>";
+    }
 
     //
     // PaymentRequest info:
