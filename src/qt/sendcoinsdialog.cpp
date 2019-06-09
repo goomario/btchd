@@ -25,7 +25,6 @@
 #include <wallet/fees.h>
 
 #include <QFontMetrics>
-#include <QInputDialog>
 #include <QLineEdit>
 #include <QScrollBar>
 #include <QSettings>
@@ -67,13 +66,11 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
         ui->clearButton->setIcon(QIcon());
         ui->sendButton->setIcon(QIcon());
         ui->genBindDataButton->setIcon(QIcon());
-        ui->setTxMessageButton->setIcon(QIcon());
     } else {
         ui->addButton->setIcon(_platformStyle->SingleColorIcon(":/icons/add"));
         ui->clearButton->setIcon(_platformStyle->SingleColorIcon(":/icons/remove"));
         ui->sendButton->setIcon(_platformStyle->SingleColorIcon(":/icons/send"));
         ui->genBindDataButton->setIcon(_platformStyle->SingleColorIcon(":/icons/key"));
-        ui->setTxMessageButton->setIcon(_platformStyle->SingleColorIcon(":/icons/add"));
     }
 
     // Operate method
@@ -257,7 +254,6 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
         {
         case PayOperateMethod::LoanTo:
         case PayOperateMethod::BindPlotter:
-            ui->setTxMessageButton->setVisible(false);
             ui->clearButton->setVisible(false);
             ui->addButton->setVisible(false);
             ui->frameCoinControl->setVisible(false);
@@ -265,7 +261,6 @@ void SendCoinsDialog::onOperateMethodComboBoxChanged(int index)
             CoinControlDialog::coinControl()->destPick = CoinControlDialog::coinControl()->destChange = model->getWallet()->GetPrimaryDestination();
             break;
         default: // Normal pay
-            ui->setTxMessageButton->setVisible(true);
             ui->clearButton->setVisible(true);
             ui->addButton->setVisible(true);
             CoinControlDialog::coinControl()->destChange = CNoDestination();
@@ -588,18 +583,6 @@ void SendCoinsDialog::on_sendButton_clicked()
     fNewRecipientAllowed = true;
 }
 
-void SendCoinsDialog::on_setTxMessageButton_clicked()
-{
-    bool fOk = false;
-    QString text = QInputDialog::getText(this, tr("Add text to transaction"), "", QLineEdit::Normal, txCustomText, &fOk);
-    if (fOk) {
-        std::string stdStr = text.toStdString();
-        if (stdStr.size() > PROTOCOL_TEXT_MAXSIZE)
-            stdStr = stdStr.substr(0, PROTOCOL_TEXT_MAXSIZE);
-        txCustomText = QString::fromStdString(stdStr);
-    }
-}
-
 void SendCoinsDialog::on_genBindDataButton_clicked()
 {
     if (!model || !model->getOptionsModel())
@@ -737,8 +720,7 @@ QWidget *SendCoinsDialog::setupTabChain(QWidget *prev)
     }
     QWidget::setTabOrder(prev, ui->sendButton);
     QWidget::setTabOrder(ui->sendButton, ui->genBindDataButton);
-    QWidget::setTabOrder(ui->genBindDataButton, ui->setTxMessageButton);
-    QWidget::setTabOrder(ui->setTxMessageButton, ui->clearButton);
+    QWidget::setTabOrder(ui->genBindDataButton, ui->clearButton);
     QWidget::setTabOrder(ui->clearButton, ui->addButton);
     return ui->addButton;
 }

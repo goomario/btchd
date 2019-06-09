@@ -2335,14 +2335,6 @@
         <translation>手续费追加(Replace-By-Fee, BIP-125)可以让你在发送交易后才来提高手续费。不使用这个功能的话，建议支付比较高的手续费来降低交易延迟的风险。</translation>
     </message>
     <message>
-        <source>Add text to transaction</source>
-        <translation>添加文本信息到交易中</translation>
-    </message>
-    <message>
-        <source>Add &amp;Text</source>
-        <translation>添加交易信息(&amp;T)</translation>
-    </message>
-    <message>
         <source>Clear &amp;All</source>
         <translation>清除所有(&amp;A)</translation>
     </message>
@@ -2996,10 +2988,6 @@
     <message>
         <source>Net amount</source>
         <translation>净额</translation>
-    </message>
-    <message>
-        <source>Transaction text</source>
-        <translation>交易包含的内容</translation>
     </message>
     <message>
         <source>Message</source>
