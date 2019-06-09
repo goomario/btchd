@@ -4413,7 +4413,7 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             // Reduce validity
             pindexIter->nStatus = std::min<unsigned int>(pindexIter->nStatus & BLOCK_VALID_MASK, BLOCK_VALID_TREE) | (pindexIter->nStatus & ~BLOCK_VALID_MASK);
             // Remove have-data flags.
-            pindexIter->nStatus &= ~(BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO | BLOCK_HAVE_SIGNATURE);
+            pindexIter->nStatus &= ~(BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO);
             // Remove storage location.
             pindexIter->nFile = 0;
             pindexIter->nDataPos = 0;
@@ -4422,7 +4422,6 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             pindexIter->nTx = 0;
             pindexIter->nChainTx = 0;
             pindexIter->nSequenceId = 0;
-            pindexIter->generatorAccountID.SetNull();
             // Make sure it gets written.
             setDirtyBlockIndex.insert(pindexIter);
             // Update indexes
