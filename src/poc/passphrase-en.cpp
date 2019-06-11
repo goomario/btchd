@@ -4,9 +4,9 @@
 
 #include <poc/passphrase.h>
 
+#include <stdlib.h>
 #include <time.h>
-
-#include <random>
+#include <utility>
 
 static const char *PassPhrase[] = {
     "like",
@@ -1641,16 +1641,15 @@ namespace poc {
 
 std::string generatePassPhrase()
 {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, sizeof(PassPhrase) / sizeof(PassPhrase[0]));
+    srand(time(NULL));
 
     std::string phrase;
     for (int i = 0; i < 12; i++) {
         if (!phrase.empty())
             phrase.append(" ");
-        phrase.append(PassPhrase[dist(gen) - 1]);
+        phrase.append(PassPhrase[rand() % sizeof(PassPhrase) / sizeof(PassPhrase[0])]);
     }
+
 
     return phrase;
 }
