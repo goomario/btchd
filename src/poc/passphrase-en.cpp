@@ -1641,14 +1641,15 @@ namespace poc {
 
 std::string generatePassPhrase()
 {
-    std::default_random_engine rd(time(NULL));
+    std::random_device rd;
+    std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(1, sizeof(PassPhrase) / sizeof(PassPhrase[0]));
 
     std::string phrase;
     for (int i = 0; i < 12; i++) {
         if (!phrase.empty())
             phrase.append(" ");
-        phrase.append(PassPhrase[dist(rd) - 1]);
+        phrase.append(PassPhrase[dist(gen) - 1]);
     }
 
     return phrase;
