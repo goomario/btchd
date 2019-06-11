@@ -4,6 +4,8 @@
 
 #include <poc/passphrase.h>
 
+#include <time.h>
+
 #include <random>
 
 static const char *PassPhrase[] = {
@@ -1639,7 +1641,7 @@ namespace poc {
 
 std::string generatePassPhrase()
 {
-    std::random_device rd;
+    std::default_random_engine rd(time(NULL));
     std::uniform_int_distribution<int> dist(1, sizeof(PassPhrase) / sizeof(PassPhrase[0]));
 
     std::string phrase;
