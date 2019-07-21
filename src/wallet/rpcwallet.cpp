@@ -4064,7 +4064,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     if (nAmount <= 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount for send");
     else if (nAmount <= PROTOCOL_RENTAL_AMOUNT_MIN)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require big then %s", FormatMoney(PROTOCOL_RENTAL_AMOUNT_MIN)));
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Small amount for pledge, require more than %s BHD", FormatMoney(PROTOCOL_RENTAL_AMOUNT_MIN)));
 
     // Wallet comments
     CWalletTx wtx;
@@ -4127,7 +4127,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     if (nAmount - nFeeRequired < PROTOCOL_RENTAL_AMOUNT_MIN)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Error: This pledge amount %s (requires fee of at least %s) small then %s",
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Error: This pledge amount %s (requires fee of at least %s) small than %s",
             FormatMoney(nAmount - nFeeRequired), FormatMoney(nFeeRequired), FormatMoney(PROTOCOL_RENTAL_AMOUNT_MIN)));
 
     // Check
