@@ -201,14 +201,16 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
-    // Signature
-    if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !sign(*pblock, *privKey))) {
-        throw std::runtime_error(strprintf("%s: Signature block error", __func__));
-    }
+    if (plotterId != 0) {
+        // Signature
+        if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !sign(*pblock, *privKey))) {
+            throw std::runtime_error(strprintf("%s: Signature block error", __func__));
+        }
 
-    CValidationState state;
-    if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
-        throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
+        CValidationState state;
+        if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
+            throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
+        }
     }
     int64_t nTime2 = GetTimeMicros();
 
