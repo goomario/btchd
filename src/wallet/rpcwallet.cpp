@@ -3652,7 +3652,7 @@ UniValue bindplotter(const JSONRPCRequest& request)
 
         const CBindPlotterInfo lastBindInfo = pcoinsTip->GetLastBindPlotterInfo(plotterId);
         if (!lastBindInfo.outpoint.IsNull() && nSpendHeight < Consensus::GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params)) {
-            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLow - params.BHDIP001FundRoyaltyPercentOnFull)) / 100;
+            CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyForLowMortgage - params.BHDIP001FundRoyaltyForFullMortgage)) / 1000;
             if (diffReward > 0) {
                 coin_control.m_fee_mode = FeeEstimateMode::FIXED;
                 coin_control.fixedFee = std::max(coin_control.fixedFee, diffReward + PROTOCOL_BINDPLOTTER_MINFEE);
@@ -3792,7 +3792,7 @@ UniValue unbindplotter(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unbind plotter active on %d block height (%d blocks after, about %d minute)",
                     activeHeight,
                     activeHeight - nSpendHeight,
-                    (activeHeight - nSpendHeight) * Params().GetConsensus().nPocTargetSpacing / 60));
+                    (activeHeight - nSpendHeight) * Consensus::GetTargetSpacing(nSpendHeight, Params().GetConsensus()) / 60));
         }
     }
     CAmount nFeeOut = 0;

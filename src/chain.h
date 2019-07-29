@@ -161,7 +161,8 @@ enum BlockStatus: uint32_t {
     BLOCK_OPT_WITNESS        =  128, //!< block data in blk*.data was received with a witness-enforcing client
 
     BLOCK_HAVE_SIGNATURE     =  256, //!< signature data for block
-    BLOCK_HAVE_MASK          =   BLOCK_HAVE_DATA | BLOCK_HAVE_UNDO | BLOCK_HAVE_SIGNATURE,
+
+    BLOCK_LOWMORTGAGE        =  512, //!< low mortgage for block. Only valid after BHDIP008
 };
 
 /** The block chain is a tree shaped structure starting with the

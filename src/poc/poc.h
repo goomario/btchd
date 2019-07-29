@@ -31,15 +31,33 @@ namespace poc {
 static const arith_uint256 TWO64 = arith_uint256(std::numeric_limits<uint64_t>::max()) + 1;
 
 /**
- * BHD base target for 240s.
+ * BHD base target when target spacing is 1 seconds
  * 
- * This correct value is 14660155037. ((2^64-1)/300 - 1) / 300 / 4 / 1024 / 1024
  * See https://btchd.org/wiki/The_Proof_of_Capacity#Base_Target
+ *
+ * net capacity(t) = 4398046511104 / t / baseTarget(t)
+ *
+ * Each nonce provides a deadline.
+ * The size of 4 nonces is 1 MiB. Each deadline is an 64bit unsigned integer, i.e.
+ * has a value between 0 and 2^64-1. Deadlines are uniform and independent identically
+ * distributed (i.i.d). Scanning deadlines means looking for the minimum (best deadline).
+ * The expected minimum deadline of such a distribution is* E(X)=(b + a * n) / (n + 1),
+ * where (a,b) is the range of possible values for a deadline (0..2^64-1), n is the number
+ * of deadlines being scanned.
  */
-static const uint64_t BHD_BASE_TARGET_240 = 18325193796ull;
+static const uint64_t BHD_BASE_TARGET_1 = 4398046511104ULL;
 
-// BHD base target. ((2^64-1)/300 - 1) / 300 / 4 / 1024 / 1024
-static const uint64_t BHD_BASE_TARGET = 14660155037ull;
+/**
+ * Get basetarget for give target spacing
+ */
+inline uint64_t GetBaseTarget(int targetSpacing) {
+    return BHD_BASE_TARGET_1 / targetSpacing;
+}
+
+/**
+ * Get basetarget for give height
+ */
+uint64_t GetBaseTarget(int nHeight, const Consensus::Params& params);
 
 // Max target deadline
 static const int64_t MAX_TARGET_DEADLINE = std::numeric_limits<uint32_t>::max();

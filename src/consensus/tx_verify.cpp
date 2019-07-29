@@ -301,7 +301,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                     if (nSpendHeight < GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params)) {
                         // Change bind require high transaction fee. Diff reward between full-balance and low-balance.
                         // 23.75 - 7.5 = 16.25
-                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLow - params.BHDIP001FundRoyaltyPercentOnFull)) / 100;
+                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyForLowMortgage - params.BHDIP001FundRoyaltyForFullMortgage)) / 1000;
                         if (txfee_aux < diffReward + PROTOCOL_BINDPLOTTER_MINFEE)
                             return state.Invalid(false, REJECT_INVALID, "bad-bindplotter-limitlowfee");
 

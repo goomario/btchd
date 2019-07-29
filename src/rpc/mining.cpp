@@ -51,7 +51,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const st
     // rough high night desk familiar hop freely needle slowly threaten process flicker
     // =>
     // 11529889285493050610ULL;
-    const uint64_t nNonce = 0, nPlotterId = 11529889285493050610ULL, nDeadline = 0;
+    const uint64_t nPlotterId = 11529889285493050610ULL;
 
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -64,19 +64,15 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const st
     while (nHeight < nHeightEnd) {
         ++nHeight;
 
+        uint64_t nDeadline = static_cast<uint64_t>(nHeight < Params().GetConsensus().BHDIP008Height 
+            ? Params().GetConsensus().BHDIP001TargetSpacing 
+            : Params().GetConsensus().BHDIP008TargetSpacing);
+
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true,
-            nPlotterId, nNonce, nDeadline, privKey));
+            nPlotterId, nDeadline, nDeadline, privKey));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
-        // Update time for pre-mining
-        if (nHeight <= Params().GetConsensus().BHDIP001StartMingingHeight) {
-            // Update nBaseTarget because nTime has changed
-            LOCK(cs_main);
-            pblock->nTime = chainActive.Tip()->nTime + 1;
-            pblock->nBaseTarget = poc::CalculateBaseTarget(*chainActive.Tip(), *pblock, Params().GetConsensus());
-        }
-
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
@@ -169,7 +165,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblocktx",     (uint64_t)nLastBlockTx));
     obj.push_back(Pair("pooledtx",           (uint64_t)mempool.size()));
     obj.push_back(Pair("difficulty",         (double)GetDifficulty()));
-    obj.push_back(Pair("netcapacity",        ValueFromCapacity(poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget)));
+    obj.push_back(Pair("netcapacity",        ValueFromCapacity(std::max(poc::GetBaseTarget(chainActive.Height(), params) / chainActive.Tip()->nBaseTarget, (uint64_t) 1))));
     obj.push_back(Pair("smoothbeginheight",  params.BHDIP007Height));
     obj.push_back(Pair("smoothendheight",    params.BHDIP007SmoothEndHeight));
     obj.push_back(Pair("stagebeginheight",   params.BHDIP007SmoothEndHeight + 1));
@@ -1312,18 +1308,25 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     int64_t nNetCapacityTB = 0, nCapacityTB = 0;
     if (!vBlocks.empty()) {
-        int nMinedBlockCount = 0;
         uint64_t nBaseTarget = 0;
+        int nBlockCount = 0;
+        int nMinedBlockCount = 0;
         for (const CBlockIndex& block : vBlocks) {
-            nBaseTarget += block.nBaseTarget;
             if (block.nPlotterId == nPlotterId)
                 nMinedBlockCount++;
+
+            if (chainActive.Height() < params.BHDIP008Height || block.nHeight >= params.BHDIP008Height) {
+                nBaseTarget += block.nBaseTarget;
+                nBlockCount++;
+            }
         }
-        nBaseTarget /= vBlocks.size();
-        nNetCapacityTB = std::max(static_cast<int64_t>(poc::BHD_BASE_TARGET / nBaseTarget), (int64_t) 1);
-        if (nMinedBlockCount < (int) vBlocks.size())
-            nMinedBlockCount++;
-        nCapacityTB = std::max((int64_t) ((nNetCapacityTB * nMinedBlockCount) / vBlocks.size()), (int64_t) 1);
+        if (nBlockCount > 0) {
+            nBaseTarget = std::max(nBaseTarget / nBlockCount, uint64_t(1));
+            nNetCapacityTB = std::max(static_cast<int64_t>(poc::GetBaseTarget(chainActive.Height(), params) / nBaseTarget), (int64_t) 1);
+            if (nMinedBlockCount < (int) vBlocks.size())
+                nMinedBlockCount++;
+            nCapacityTB = std::max((int64_t) ((nNetCapacityTB * nMinedBlockCount) / vBlocks.size()), (int64_t) 1);
+        }
     }
 
     UniValue result(UniValue::VOBJ);

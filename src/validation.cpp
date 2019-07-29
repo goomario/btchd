@@ -1132,29 +1132,40 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy;
 
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
+    int halvings;
+    if (nHeight < consensusParams.BHDIP008Height) {
+        halvings = nHeight / (consensusParams.nSubsidyHalvingInterval * 600 / consensusParams.BHDIP001TargetSpacing);
+    } else {
+        // 197568*5/3=329280, First halving height is 568288 (=197568+(700000-329280))
+        // 106848*5/3=178080, First halving height is 628768 (=106848+(700000-178080))
+        // 720*5/3=1200, First halving height is 520 (=720+(1000-1200))
+        int nEqualHeight = consensusParams.BHDIP008Height * consensusParams.BHDIP001TargetSpacing / consensusParams.BHDIP008TargetSpacing;
+        halvings = (nHeight - consensusParams.BHDIP008Height + nEqualHeight) / (consensusParams.nSubsidyHalvingInterval * 600 / consensusParams.BHDIP008TargetSpacing);
+    }
     if (halvings >= 64) {
         // Force block reward to zero when right shift is undefined.
         nSubsidy = 0;
     } else {
-        nSubsidy = 25 * COIN;
-        // Subsidy is cut in half every 420,000 blocks which will occur approximately every 4 years.
+        nSubsidy = (50 * Consensus::GetTargetSpacing(nHeight, consensusParams) / 600) * COIN;
+        // Subsidy is cut in half every 210,000 blocks / 10minutes which will occur approximately every 4 years.
         nSubsidy >>= halvings;
     }
 
     return nSubsidy;
 }
 
-BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId, const CCoinsViewCache& view, const Consensus::Params& consensusParams)
+BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId,
+    const CCoinsViewCache& view, const Consensus::Params& consensusParams)
 {
+    const int nHeight = pindexPrev ? (pindexPrev->nHeight + 1) : 0;
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     // Calc miner reward and fund royalty
-    BlockReward reward = { 0, 0, 0 };
+    BlockReward reward = { 0, 0, 0, 0, false };
     if (nHeight <= consensusParams.BHDIP001StartMingingHeight) {
         // Fund pre-mining
         reward.fund = nSubsidy + nFees;
-    } else if (nHeight <= consensusParams.BHDIP001FundZeroPercentLastHeight) {
+    } else if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
         // All to miner
         reward.miner = nSubsidy + nFees;
     } else if (nHeight < consensusParams.BHDIP006Height) {
@@ -1172,24 +1183,60 @@ BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& 
         CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, &miningRequireBalanceAtOldConsensus, consensusParams);
         CAmount accountBalance = view.GetAccountBalance(generatorAccountID);
         if (accountBalance >= miningRequireBalance) {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnFull) / 100;
+            // Full mortgage
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
             if (nHeight < consensusParams.BHDIP004InActiveHeight && accountBalance < miningRequireBalanceAtOldConsensus) {
                 // Old consensus => fund
-                reward.miner0 = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLow) / 100;
+                reward.miner0 = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForLowMortgage) / 1000;
             }
         } else {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLow) / 100;
+            // Low mortgage
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForLowMortgage) / 1000;
+            reward.lowMortgage = true;
         }
         reward.miner = nSubsidy + nFees - reward.fund - reward.miner0;
-    } else {
+    } else if (nHeight < consensusParams.BHDIP008Height) {
         // Normal mining for BHDIP006
         CAmount balanceLoan = 0, balanceBorrow = 0;
         CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balanceLoan, &balanceBorrow);
         CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
         if (accountBalance - balanceLoan + balanceBorrow >= miningRequireBalance) {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnFull) / 100;
+            // Full mortgage
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
         } else {
-            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyPercentOnLow) / 100;
+            // Low mortgage
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForLowMortgage) / 1000;
+            reward.lowMortgage = true;
+        }
+        reward.miner = nSubsidy + nFees - reward.fund - reward.miner0;
+    } else {
+        // Normal mining for BHDIP008
+        CAmount balanceLoan = 0, balanceBorrow = 0;
+        CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balanceLoan, &balanceBorrow);
+        CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
+        if (accountBalance - balanceLoan + balanceBorrow >= miningRequireBalance) {
+            // Full mortgage
+            reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
+            for (const CBlockIndex* pindex = pindexPrev;
+                    (pindex != nullptr) && (pindex->nStatus & BLOCK_LOWMORTGAGE) && (pindex->nHeight >= consensusParams.BHDIP008Height);
+                    pindex = pindex->pprev) {
+                int nPeriod = (pindex->nHeight - consensusParams.BHDIP008Height) / consensusParams.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage;
+                int fundRatio = consensusParams.BHDIP008FundRoyaltyForLowMortgage - consensusParams.BHDIP008FundRoyaltyDecreaseForLowMortgage * nPeriod;
+                if (fundRatio < consensusParams.BHDIP001FundRoyaltyForFullMortgage)
+                    fundRatio = consensusParams.BHDIP001FundRoyaltyForFullMortgage;
+                assert(fundRatio < consensusParams.BHDIP001FundRoyaltyForLowMortgage);
+                reward.accumulate += (GetBlockSubsidy(pindex->nHeight, consensusParams) * (consensusParams.BHDIP001FundRoyaltyForLowMortgage - fundRatio)) / 1000;
+            }
+        } else {
+            // Low mortgage
+            int nPeriod = (nHeight - consensusParams.BHDIP008Height) / consensusParams.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage;
+            int fundRatio = consensusParams.BHDIP008FundRoyaltyForLowMortgage - consensusParams.BHDIP008FundRoyaltyDecreaseForLowMortgage * nPeriod;
+            if (fundRatio < consensusParams.BHDIP001FundRoyaltyForFullMortgage)
+                fundRatio = consensusParams.BHDIP001FundRoyaltyForFullMortgage;
+            assert(fundRatio < consensusParams.BHDIP001FundRoyaltyForLowMortgage);
+            reward.fund = (nSubsidy * fundRatio) / 1000;
+            reward.accumulate -= (nSubsidy * (consensusParams.BHDIP001FundRoyaltyForLowMortgage - fundRatio)) / 1000;
+            reward.lowMortgage = true;
         }
         reward.miner = nSubsidy + nFees - reward.fund - reward.miner0;
     }
@@ -1996,16 +2043,16 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
 
     // GetBlockReward() must use pre CCoinsView
-    BlockReward blockReward = GetBlockReward(pindex->nHeight, nFees, pindex->generatorAccountID, pindex->nPlotterId, view, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(pindex->pprev, nFees, pindex->generatorAccountID, pindex->nPlotterId, view, chainparams.GetConsensus());
     // Check coinbase amount
-    if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.miner0 + blockReward.fund)
+    if (block.vtx[0]->GetValueOut() > blockReward.miner + blockReward.miner0 + blockReward.fund + blockReward.accumulate)
         return state.DoS(100,
                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
                             block.vtx[0]->GetValueOut(), blockReward.miner + blockReward.miner0 + blockReward.fund),
                         REJECT_INVALID, "bad-cb-amount");
 
     if (pindex->nHeight >= chainparams.GetConsensus().BHDIP006Height) {
-        // Standard transaction: vout[0] for miner, vout[1] for fund (maybe not exist), vout[2] for witness nulldata (allow not exist)
+        // Standard transaction: vout[0] for miner+accumulate, vout[1] for fund (maybe not exist), vout[2] for witness nulldata (allow not exist)
         if (blockReward.miner0 != 0)
             return state.DoS(100, error("ConnectBlock(): coinbase not standard"), REJECT_INVALID, "bad-cb-amount");
 
@@ -2154,6 +2201,18 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     if (!pindex->IsValid(BLOCK_VALID_SCRIPTS)) {
         pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
         setDirtyBlockIndex.insert(pindex);
+    }
+
+    if (blockReward.lowMortgage && pindex->nHeight >= chainparams.GetConsensus().BHDIP008Height) {
+        if (!(pindex->nStatus & BLOCK_LOWMORTGAGE)) {
+            pindex->nStatus |= BLOCK_LOWMORTGAGE;
+            setDirtyBlockIndex.insert(pindex);
+        }
+    } else {
+        if (pindex->nStatus & BLOCK_LOWMORTGAGE) {
+            pindex->nStatus &= ~BLOCK_LOWMORTGAGE;
+            setDirtyBlockIndex.insert(pindex);
+        }
     }
 
     if (!WriteTxIndexDataForBlock(block, state, pindex))

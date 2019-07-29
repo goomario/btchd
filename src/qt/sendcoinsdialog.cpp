@@ -181,7 +181,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
 
         // fee section
         for (const int n : confTargets) {
-            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPocTargetSpacing)).arg(n));
+            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Consensus::GetTargetSpacing(chainActive.Height(), Params().GetConsensus()))).arg(n));
         }
         connect(ui->confTargetSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(updateSmartFeeLabel()));
         connect(ui->confTargetSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(coinControlUpdateLabels()));
@@ -366,7 +366,7 @@ void SendCoinsDialog::on_sendButton_clicked()
                 if (!lastBindInfo.outpoint.IsNull()) {
                     bindLimitHeight = Consensus::GetBindPlotterLimitHeight(nSpendHeight, lastBindInfo, params);
                     if (nSpendHeight < bindLimitHeight) {
-                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyPercentOnLow - params.BHDIP001FundRoyaltyPercentOnFull)) / 100;
+                        CAmount diffReward = (GetBlockSubsidy(nSpendHeight, params) * (params.BHDIP001FundRoyaltyForLowMortgage - params.BHDIP001FundRoyaltyForFullMortgage)) / 1000;
                         if (diffReward > 0) {
                             ctrl.m_fee_mode = FeeEstimateMode::FIXED;
                             ctrl.fixedFee = std::max(ctrl.fixedFee, diffReward + PROTOCOL_BINDPLOTTER_MINFEE);
@@ -531,7 +531,7 @@ void SendCoinsDialog::on_sendButton_clicked()
                         arg("<b>" + QString::number(BindPlotterPayload::As(payload)->GetId()) + "</b>",
                             QString::number(bindLimitHeight),
                             QString::number(bindLimitHeight - nSpendHeight),
-                            QString::number((bindLimitHeight - nSpendHeight) * params.nPocTargetSpacing / 60)));
+                            QString::number((bindLimitHeight - nSpendHeight) * Consensus::GetTargetSpacing(nSpendHeight, params) / 60)));
         }
     }
 

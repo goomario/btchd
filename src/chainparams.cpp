@@ -94,10 +94,9 @@ public:
         };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval        = 420000; // About 4 years
         consensus.nCapacityEvalWindow            = 2016;   // About 1 week
-        consensus.fPocAllowMinDifficultyBlocks   = false;  // For test
-        consensus.nPocTargetSpacing              = 300;    // 5 minutes
+        consensus.nSubsidyHalvingInterval        = 210000; // About 4 years. 210000*600/(365*24*3600) = 3.99543379
+        consensus.fAllowMinDifficultyBlocks      = false;  // For test
         consensus.nRuleChangeActivationThreshold = 1916;   // 95% of 2016
         consensus.nMinerConfirmationWindow       = 2016;   // About 1 week
 
@@ -106,11 +105,12 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP001StartMingingHeight        = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
-        consensus.BHDIP001FundZeroPercentLastHeight = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
-        consensus.BHDIP001FundRoyaltyPercentOnFull  = 5;     // 5% to fund
-        consensus.BHDIP001FundRoyaltyPercentOnLow   = 70;    // 70% to fund
-        consensus.BHDIP001MiningRatio               = 3 * COIN;
+        consensus.BHDIP001TargetSpacing              = 300;   // 5 minutes. Subsidy halving interval 420000 blocks
+        consensus.BHDIP001StartMingingHeight         = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
+        consensus.BHDIP001FundZeroLastHeight         = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BHDIP001FundRoyaltyForFullMortgage = 50;    // 50‰ to fund
+        consensus.BHDIP001FundRoyaltyForLowMortgage  = 700;   // 700‰ to fund
+        consensus.BHDIP001MiningRatio                = 3 * COIN;
 
         consensus.BHDIP004ActiveHeight   = 96264; // BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004InActiveHeight = 99000;
@@ -121,8 +121,17 @@ public:
         consensus.BHDIP006LimitBindPlotterHeight  = 134650; // Bind plotter limit. Active on Tue, 21 Jan 2019 9:00:00 GMT
 
         consensus.BHDIP007Height           = 168300; // Begin BHDIP007 consensus
-        consensus.BHDIP007SmoothEndHeight  = consensus.BHDIP007Height + 2 * consensus.nCapacityEvalWindow; // Smooth BHD_BASE_TARGET_240 to BHD_BASE_TARGET
+        consensus.BHDIP007SmoothEndHeight  = 172332; // 240 -> 300, About 2 weeks
         consensus.BHDIP007MiningRatioStage = 1250 * 1024; // 1250 PB
+
+        consensus.BHDIP008Height                                  = 197568; // Begin BHDIP008 consensus. About active on Tue, 27 Aug 2019 04:47:46 GMT
+        consensus.BHDIP008TargetSpacing                           = 180;    // 3 minutes. Subsidy halving interval 700000 blocks
+        consensus.BHDIP008FundRoyaltyForLowMortgage               = 270;    // 270‰ to fund
+        consensus.BHDIP008FundRoyaltyDecreaseForLowMortgage       = 20;     // 20‰ decrease
+        consensus.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage = 33600;  // 10 weeks. About 100 weeks decrease to 50‰
+        assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
+        assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
+        assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -155,7 +164,7 @@ public:
         nDefaultPort = 8733;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1531292789, 0, poc::BHD_BASE_TARGET_240, 2, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 0, poc::GetBaseTarget(240), 2, 25 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0x8cec494f7f02ad25b3abf418f7d5647885000e010c34e16c039711e4061497b0"));
         assert(genesis.hashMerkleRoot == uint256S("0x6b80acabaf0fef45e2cad0b8b63d07cff1b35640e81f3ab3d83120dd8bc48164"));
@@ -322,10 +331,9 @@ public:
         consensus.BHDFundAddressPool = { "2N3DHXpYQFZ6pNCUxNpHuTtaFQZJCmCKNBw" };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval        = 420000;
         consensus.nCapacityEvalWindow            = 2016;
-        consensus.fPocAllowMinDifficultyBlocks   = false;
-        consensus.nPocTargetSpacing              = 300;
+        consensus.nSubsidyHalvingInterval        = 420000;
+        consensus.fAllowMinDifficultyBlocks      = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 2016;
 
@@ -334,11 +342,12 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP001StartMingingHeight        = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
-        consensus.BHDIP001FundZeroPercentLastHeight = 12400;
-        consensus.BHDIP001FundRoyaltyPercentOnFull  = 5;    // 5%
-        consensus.BHDIP001FundRoyaltyPercentOnLow   = 70;   // 70%
-        consensus.BHDIP001MiningRatio               = 3 * COIN;
+        consensus.BHDIP001TargetSpacing              = 300;
+        consensus.BHDIP001StartMingingHeight         = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
+        consensus.BHDIP001FundZeroLastHeight         = 12400;
+        consensus.BHDIP001FundRoyaltyForFullMortgage = 50;  // 50‰
+        consensus.BHDIP001FundRoyaltyForLowMortgage  = 700; // 700‰
+        consensus.BHDIP001MiningRatio                = 3 * COIN;
 
         consensus.BHDIP004ActiveHeight   = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
         consensus.BHDIP004InActiveHeight = 21000;
@@ -349,8 +358,17 @@ public:
         consensus.BHDIP006LimitBindPlotterHeight  = 48790;
 
         consensus.BHDIP007Height           = 72550;
-        consensus.BHDIP007SmoothEndHeight  = 76582; // BHD_BASE_TARGET_240 -> BHD_BASE_TARGET
-        consensus.BHDIP007MiningRatioStage = 10;
+        consensus.BHDIP007SmoothEndHeight  = 76582; // 240 -> 300, About 2 weeks
+        consensus.BHDIP007MiningRatioStage = 10;    // 10 TB
+
+        consensus.BHDIP008Height                                  = 106848; // About active on Fri, 09 Aug 2019 10:01:58 GMT
+        consensus.BHDIP008TargetSpacing                           = 180;
+        consensus.BHDIP008FundRoyaltyForLowMortgage               = 270;  // 270‰ to fund
+        consensus.BHDIP008FundRoyaltyDecreaseForLowMortgage       = 20;   // 20‰ decrease
+        consensus.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage = 1008; // About half week
+        assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
+        assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
+        assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -378,7 +396,7 @@ public:
         nDefaultPort = 18733;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1531292789, 1, poc::BHD_BASE_TARGET_240, 2, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 1, poc::GetBaseTarget(240), 2, 25 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0xb67faee747224b7646d66cd08763f33d72b594da8e884535c2f95904fe3cf8c1"));
         assert(genesis.hashMerkleRoot == uint256S("0xb8f17dd05a0d3fe40963d189ee0397ff909ce33bd1c9821898d2400b89ea75e6"));
@@ -516,10 +534,9 @@ public:
         consensus.BHDFundAddressPool = { "2NDHUkujmJ3SBL5JmFZrycxGbAumhr2ycgy" };
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
-        consensus.nSubsidyHalvingInterval        = 300;
         consensus.nCapacityEvalWindow            = 144;
-        consensus.fPocAllowMinDifficultyBlocks   = true;
-        consensus.nPocTargetSpacing              = 300;
+        consensus.nSubsidyHalvingInterval        = 300;
+        consensus.fAllowMinDifficultyBlocks      = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 144;
 
@@ -528,11 +545,12 @@ public:
         consensus.BIP65Height = 0; // Always enforce BIP65
         consensus.BIP66Height = 0; // Always enforce BIP66
 
-        consensus.BHDIP001StartMingingHeight        = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
-        consensus.BHDIP001FundZeroPercentLastHeight = 94;
-        consensus.BHDIP001FundRoyaltyPercentOnFull  = 5;  // 5%
-        consensus.BHDIP001FundRoyaltyPercentOnLow   = 70; // 70%
-        consensus.BHDIP001MiningRatio               = 3 * COIN;
+        consensus.BHDIP001TargetSpacing              = 300;
+        consensus.BHDIP001StartMingingHeight         = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
+        consensus.BHDIP001FundZeroLastHeight         = 94;
+        consensus.BHDIP001FundRoyaltyForFullMortgage = 50; // 50‰
+        consensus.BHDIP001FundRoyaltyForLowMortgage  = 700; // 700‰
+        consensus.BHDIP001MiningRatio                = 3 * COIN;
 
         consensus.BHDIP004ActiveHeight   = 0;
         consensus.BHDIP004InActiveHeight = 0;
@@ -544,7 +562,16 @@ public:
 
         consensus.BHDIP007Height           = 550;
         consensus.BHDIP007SmoothEndHeight  = 586;
-        consensus.BHDIP007MiningRatioStage = 10 * 1024;
+        consensus.BHDIP007MiningRatioStage = 10 * 1024; // 10 PB
+
+        consensus.BHDIP008Height                                  = 720;
+        consensus.BHDIP008TargetSpacing                           = 180;
+        consensus.BHDIP008FundRoyaltyForLowMortgage               = 270;
+        consensus.BHDIP008FundRoyaltyDecreaseForLowMortgage       = 20;
+        consensus.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage = 36;
+        assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
+        assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
+        assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
@@ -569,7 +596,7 @@ public:
         nDefaultPort = 18744;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1531292789, 2, poc::BHD_BASE_TARGET_240, 2, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 2, poc::GetBaseTarget(240), 2, 25 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0x8414542ce030252cd4958545e6043b8c4e48182756fe39325851af58922b7df6"));
         assert(genesis.hashMerkleRoot == uint256S("0xb17eff00d4b76e03a07e98f256850a13cd42c3246dc6927be56db838b171d79b"));
