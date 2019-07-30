@@ -63,6 +63,14 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
             }
             else
                 entry.push_back(Pair("confirmations", 0));
+
+            if (tx.IsCoinBase() && pindex->nHeight >= Params().GetConsensus().BHDIP008Height) {
+                if (pindex->nStatus & BLOCK_LOWMORTGAGE) {
+                    entry.push_back(Pair("accumulate", ValueFromAmount(0)));
+                } else {
+                    entry.push_back(Pair("accumulate", ValueFromAmount(GetLowMortgageAccumulate(pindex->pprev, Params().GetConsensus()))));
+                }
+            }
         }
     }
 }

@@ -48,10 +48,10 @@ unsigned int ParseConfirmTarget(const UniValue& value)
 
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const std::shared_ptr<CKey> privKey, int nGenerate, bool keepScript)
 {
-    // rough high night desk familiar hop freely needle slowly threaten process flicker
+    // root minute ancient won check dove second spot book thump retreat add
     // =>
-    // 11529889285493050610ULL;
-    const uint64_t nPlotterId = 11529889285493050610ULL;
+    // 9414704830574620511;
+    const uint64_t nPlotterId = 9414704830574620511ULL;
 
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -125,8 +125,8 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "\nResult:\n"
             "{\n"
             "  \"blocks\": nnn,             (numeric) The current block\n"
-            "  \"currentblockweight\": nnn, (numeric) The last block weight\n"
-            "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
+            "  \"currentblockweight\": nnn  (numeric) The last block weight\n"
+            "  \"currentblocktx\": nnn      (numeric) The last block transaction\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
             "  \"netcapacity\": nnn         (string) The net capacity\n"
@@ -145,6 +145,21 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "    \"ratiostartheight\": nnn  (numeric) The height of ratio update for next period\n"
             "    \"ratiostage\": nnn        (numeric) The ratio stage of pledge for next period. -1: smooth decrease, others...\n"
             "    \"rationetcapacity\": nnn  (string) The net capacity of pledge for next period\n"
+            "  },\n"
+            "  \"reward\": {                (object) Next block reward\n"
+            "    \"subsidy\": xxx.xxxxx     (numeric) Next block subsidy\n"
+            "    \"meet\": {                (object) Meet the conditional capacity mining\n"
+            "      \"miner\": xxx.xxxxx     (numeric) Miner total reward, and include accumulate reward\n"
+            "      \"fund\": xxx.xxxxx      (numeric) Fund royalty\n"
+            "      \"fundratio\": \"x.x%\"    (numeric) Fund royalty ratio\n"
+            "      \"accumulate\": xxx.xxxx (numeric) Accumulate reward for miner\n"
+            "    },\n"
+            "    \"notmeet\": {             (object) Not meet the conditional capacity mining\n"
+            "      \"miner\": xxx.xxxxx     (numeric) Miner total reward\n"
+            "      \"fund\": xxx.xxxxx      (numeric) Fund royalty\n"
+            "      \"fundratio\": \"x.x%\"    (numeric) Fund royalty ratio\n"
+            "      \"takeoff\": xxx.xxxxx   (numeric) Take off reward to next meet block\n"
+            "    }\n"
             "  },\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
@@ -195,6 +210,33 @@ UniValue getmininginfo(const JSONRPCRequest& request)
         nextEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nNextEvalNetCapacityTB)));
         obj.push_back(Pair("nexteval", nextEval));
     }
+    // reward
+    obj.push_back(Pair("reward", [&params]() -> UniValue {
+        const BlockReward fullReward = GetFullMortgageBlockReward(params);
+        const BlockReward lowReward = GetLowMortgageBlockReward(params);
+        const int fullFundRatio = GetFullMortgageFundRoyaltyRatio(params);
+        const int lowFundRatio = GetLowMortgageFundRoyaltyRatio(params);
+
+        UniValue rewardObj(UniValue::VOBJ);
+        rewardObj.push_back(Pair("subsidy", ValueFromAmount(GetBlockSubsidy(chainActive.Height() + 1, params))));
+        rewardObj.push_back(Pair("meet", [&fullReward, &fullFundRatio]() -> UniValue {
+            UniValue item(UniValue::VOBJ);
+            item.push_back(Pair("miner", ValueFromAmount(fullReward.miner + fullReward.miner0 + fullReward.accumulate)));
+            item.push_back(Pair("fund", ValueFromAmount(fullReward.fund)));
+            item.push_back(Pair("fundratio", strprintf("%d.%d%%", fullFundRatio/10, fullFundRatio%10)));
+            item.push_back(Pair("accumulate", ValueFromAmount(fullReward.accumulate)));
+            return item;
+        }()));
+        rewardObj.push_back(Pair("notmeet", [&lowReward, &lowFundRatio]() -> UniValue {
+            UniValue item(UniValue::VOBJ);
+            item.push_back(Pair("miner", ValueFromAmount(lowReward.miner + lowReward.miner0 + lowReward.accumulate)));
+            item.push_back(Pair("fund", ValueFromAmount(lowReward.fund)));
+            item.push_back(Pair("fundratio", strprintf("%d.%d%%", lowFundRatio/10, lowFundRatio%10)));
+            item.push_back(Pair("takeoff", ValueFromAmount(-lowReward.accumulate)));
+            return item;
+        }()));
+        return rewardObj;
+    }()));
     obj.push_back(Pair("chain", Params().NetworkIDString()));
     if (IsDeprecatedRPCEnabled("getmininginfo")) {
         obj.push_back(Pair("errors",         GetWarnings("statusbar")));
@@ -970,8 +1012,8 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 
             "\nExamples:\n"
             "\nReturn bind plotter hex data\n"
-            + HelpExampleCli("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"rough high night desk familiar hop freely needle slowly threaten process flicker\"")
-            + HelpExampleRpc("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"rough high night desk familiar hop freely needle slowly threaten process flicker\"")
+            + HelpExampleCli("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"root minute ancient won check dove second spot book thump retreat add\"")
+            + HelpExampleRpc("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"root minute ancient won check dove second spot book thump retreat add\"")
         );
 
     if (!request.params[0].isStr())

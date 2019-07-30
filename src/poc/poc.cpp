@@ -369,7 +369,11 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         return newBaseTarget;
     } else if (nHeight == params.BHDIP008Height) {
         // Use previous block BaseTarget for first BHDIP008 genesis block
-        return prevBlockIndex.nBaseTarget * BHD_BASE_TARGET_180 / BHD_BASE_TARGET_300;
+        const arith_uint256 bt180(BHD_BASE_TARGET_180), bt300(BHD_BASE_TARGET_300);
+        arith_uint256 bt(prevBlockIndex.nBaseTarget);
+        bt *= bt180;
+        bt /= bt300;
+        return bt.GetLow64();
     } else if (nHeight < params.BHDIP008Height + 4) {
         return prevBlockIndex.nBaseTarget;
     } else if (nHeight < params.BHDIP008Height + 80) {
@@ -676,13 +680,21 @@ CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
         // Legacy
         if (pRatioStage) *pRatioStage = -2;
 
-        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001MiningRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET_300);
+        const arith_uint256 bt240(BHD_BASE_TARGET_240), bt300(BHD_BASE_TARGET_300);
+        arith_uint256 miningRatio(static_cast<uint64_t>(params.BHDIP001MiningRatio));
+        miningRatio *= bt240;
+        miningRatio /= bt300;
+        CAmount nLegacyRatio = RoundPledgeRatio(static_cast<CAmount>(miningRatio.GetLow64()));
         return nLegacyRatio;
     } else if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         // Smooth
         if (pRatioStage) *pRatioStage = -1;
 
-        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001MiningRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET_300);
+        const arith_uint256 bt240(BHD_BASE_TARGET_240), bt300(BHD_BASE_TARGET_300);
+        arith_uint256 miningRatio(static_cast<uint64_t>(params.BHDIP001MiningRatio));
+        miningRatio *= bt240;
+        miningRatio /= bt300;
+        CAmount nLegacyRatio = RoundPledgeRatio(static_cast<CAmount>(miningRatio.GetLow64()));
         int step = params.BHDIP007SmoothEndHeight - params.BHDIP007Height + 1;
         int current = nMiningHeight - params.BHDIP007Height + 1;
         return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001MiningRatio) * current) / step);
