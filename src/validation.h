@@ -294,13 +294,14 @@ typedef struct {
 } BlockReward;
 BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId,
     const CCoinsViewCache& view, const Consensus::Params& consensusParams);
-CAmount GetLowMortgageAccumulate(const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
-BlockReward GetFullMortgageBlockReward(const Consensus::Params& consensusParams);
-BlockReward GetLowMortgageBlockReward(const Consensus::Params& consensusParams);
-CAmount GetFullMortgageFundRoyalty(const Consensus::Params& consensusParams);
-CAmount GetLowMortgageFundRoyalty(const Consensus::Params& consensusParams);
-int GetFullMortgageFundRoyaltyRatio(const Consensus::Params& consensusParams);
-int GetLowMortgageFundRoyaltyRatio(const Consensus::Params& consensusParams);
+
+CAmount GetLowMortgageAccumulateSubsidy(const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
+BlockReward GetFullMortgageBlockReward(int nHeight, const Consensus::Params& consensusParams);
+BlockReward GetLowMortgageBlockReward(int nHeight, const Consensus::Params& consensusParams);
+CAmount GetFullMortgageFundRoyalty(int nHeight, const Consensus::Params& consensusParams);
+CAmount GetLowMortgageFundRoyalty(int nHeight, const Consensus::Params& consensusParams);
+int GetFullMortgageFundRoyaltyRatio(int nHeight, const Consensus::Params& consensusParams);
+int GetLowMortgageFundRoyaltyRatio(int nHeight, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

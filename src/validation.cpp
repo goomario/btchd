@@ -1215,7 +1215,7 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
         if (accountBalance - balanceLoan + balanceBorrow >= miningRequireBalance) {
             // Full mortgage
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
-            reward.accumulate = GetLowMortgageAccumulate(pindexPrev, consensusParams);
+            reward.accumulate = GetLowMortgageAccumulateSubsidy(pindexPrev, consensusParams);
         } else {
             // Low mortgage
             int nPeriod = (nHeight - consensusParams.BHDIP008Height) / consensusParams.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage;
@@ -1234,7 +1234,7 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
     return reward;
 }
 
-CAmount GetLowMortgageAccumulate(const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
+CAmount GetLowMortgageAccumulateSubsidy(const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
 {
     CAmount accumulate = 0;
     for (const CBlockIndex* pindex = pindexPrev;
@@ -1250,10 +1250,8 @@ CAmount GetLowMortgageAccumulate(const CBlockIndex* pindexPrev, const Consensus:
     return accumulate;
 }
 
-BlockReward GetFullMortgageBlockReward(const Consensus::Params& consensusParams)
+BlockReward GetFullMortgageBlockReward(int nHeight, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
-    const int nHeight = chainActive.Height() + 1;
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     BlockReward reward = { 0, 0, 0, 0, false };
@@ -1269,7 +1267,7 @@ BlockReward GetFullMortgageBlockReward(const Consensus::Params& consensusParams)
         reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
     } else {
         reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
-        reward.accumulate = GetLowMortgageAccumulate(chainActive.Tip(), consensusParams);
+        reward.accumulate = GetLowMortgageAccumulateSubsidy(chainActive.Tip(), consensusParams);
     }
 
     reward.miner = nSubsidy - reward.fund - reward.miner0;
@@ -1277,10 +1275,8 @@ BlockReward GetFullMortgageBlockReward(const Consensus::Params& consensusParams)
     return reward;
 }
 
-BlockReward GetLowMortgageBlockReward(const Consensus::Params& consensusParams)
+BlockReward GetLowMortgageBlockReward(int nHeight, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
-    const int nHeight = chainActive.Height() + 1;
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     BlockReward reward = { 0, 0, 0, 0, true };
@@ -1309,10 +1305,8 @@ BlockReward GetLowMortgageBlockReward(const Consensus::Params& consensusParams)
     return reward;
 }
 
-CAmount GetFullMortgageFundRoyalty(const Consensus::Params& consensusParams)
+CAmount GetFullMortgageFundRoyalty(int nHeight, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
-    const int nHeight = chainActive.Height() + 1;
     if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
         return 0;
     } else {
@@ -1320,10 +1314,8 @@ CAmount GetFullMortgageFundRoyalty(const Consensus::Params& consensusParams)
     }
 }
 
-CAmount GetLowMortgageFundRoyalty(const Consensus::Params& consensusParams)
+CAmount GetLowMortgageFundRoyalty(int nHeight, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
-    const int nHeight = chainActive.Height() + 1;
     if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
         return 0;
     } else if (nHeight < consensusParams.BHDIP008Height) {
@@ -1337,10 +1329,8 @@ CAmount GetLowMortgageFundRoyalty(const Consensus::Params& consensusParams)
     }
 }
 
-int GetFullMortgageFundRoyaltyRatio(const Consensus::Params& consensusParams)
+int GetFullMortgageFundRoyaltyRatio(int nHeight, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
-    const int nHeight = chainActive.Height() + 1;
     if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
         return 0;
     } else {
@@ -1348,10 +1338,8 @@ int GetFullMortgageFundRoyaltyRatio(const Consensus::Params& consensusParams)
     }
 }
 
-int GetLowMortgageFundRoyaltyRatio(const Consensus::Params& consensusParams)
+int GetLowMortgageFundRoyaltyRatio(int nHeight, const Consensus::Params& consensusParams)
 {
-    AssertLockHeld(cs_main);
-    const int nHeight = chainActive.Height() + 1;
     if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
         return 0;
     } else if (nHeight < consensusParams.BHDIP008Height) {

@@ -153,7 +153,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "      \"miner\": xxx.xxxxx     (numeric) Miner total reward, and include accumulate reward\n"
             "      \"fund\": xxx.xxxxx      (numeric) Fund royalty\n"
             "      \"fundratio\": \"x.x%\"    (numeric) Fund royalty ratio\n"
-            "      \"accumulate\": xxx.xxxx (numeric) Accumulate reward for miner\n"
+            "      \"subsidy\": xxx.xxxx    (numeric) Accumulate subsidy to meet block\n"
             "    },\n"
             "    \"notmeet\": {             (json object) Not meet the conditional capacity mining\n"
             "      \"miner\": xxx.xxxxx     (numeric) Miner total reward\n"
@@ -214,27 +214,27 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     }
     // reward
     obj.push_back(Pair("reward", [&params]() -> UniValue {
-        const BlockReward fullReward = GetFullMortgageBlockReward(params);
-        const BlockReward lowReward = GetLowMortgageBlockReward(params);
-        const int fullFundRatio = GetFullMortgageFundRoyaltyRatio(params);
-        const int lowFundRatio = GetLowMortgageFundRoyaltyRatio(params);
+        const BlockReward fullReward = GetFullMortgageBlockReward(chainActive.Height() + 1, params);
+        const BlockReward lowReward = GetLowMortgageBlockReward(chainActive.Height() + 1, params);
+        const int fullFundRatio = GetFullMortgageFundRoyaltyRatio(chainActive.Height() + 1, params);
+        const int lowFundRatio = GetLowMortgageFundRoyaltyRatio(chainActive.Height() + 1, params);
 
         UniValue rewardObj(UniValue::VOBJ);
         rewardObj.push_back(Pair("subsidy", ValueFromAmount(GetBlockSubsidy(chainActive.Height() + 1, params))));
         rewardObj.push_back(Pair("meet", [&fullReward, &fullFundRatio]() -> UniValue {
             UniValue item(UniValue::VOBJ);
-            item.push_back(Pair("miner", ValueFromAmount(fullReward.miner + fullReward.miner0 + fullReward.accumulate)));
-            item.push_back(Pair("fund", ValueFromAmount(fullReward.fund)));
+            item.push_back(Pair("miner",     ValueFromAmount(fullReward.miner + fullReward.miner0 + fullReward.accumulate)));
+            item.push_back(Pair("fund",      ValueFromAmount(fullReward.fund)));
             item.push_back(Pair("fundratio", strprintf("%d.%d%%", fullFundRatio/10, fullFundRatio%10)));
-            item.push_back(Pair("accumulate", ValueFromAmount(fullReward.accumulate)));
+            item.push_back(Pair("subsidy",   ValueFromAmount(fullReward.accumulate)));
             return item;
         }()));
         rewardObj.push_back(Pair("notmeet", [&lowReward, &lowFundRatio]() -> UniValue {
             UniValue item(UniValue::VOBJ);
-            item.push_back(Pair("miner", ValueFromAmount(lowReward.miner + lowReward.miner0 + lowReward.accumulate)));
-            item.push_back(Pair("fund", ValueFromAmount(lowReward.fund)));
+            item.push_back(Pair("miner",     ValueFromAmount(lowReward.miner + lowReward.miner0 + lowReward.accumulate)));
+            item.push_back(Pair("fund",      ValueFromAmount(lowReward.fund)));
             item.push_back(Pair("fundratio", strprintf("%d.%d%%", lowFundRatio/10, lowFundRatio%10)));
-            item.push_back(Pair("takeoff", ValueFromAmount(-lowReward.accumulate)));
+            item.push_back(Pair("takeoff",   ValueFromAmount(-lowReward.accumulate)));
             return item;
         }()));
         return rewardObj;
