@@ -59,15 +59,6 @@ struct Params {
     int nSubsidyHalvingInterval;
     int nCapacityEvalWindow;
 
-    /** Block height at which BIP16 becomes active */
-    int BIP16Height;
-    /** Block height and hash at which BIP34 becomes active */
-    int BIP34Height;
-    /** Block height at which BIP65 becomes active */
-    int BIP65Height;
-    /** Block height at which BIP66 becomes active */
-    int BIP66Height;
-
     /** BitcoinHD target spacing */
     int BHDIP001TargetSpacing;
     /** BitcoinHD fund pre-mining height */
@@ -83,9 +74,9 @@ struct Params {
 
     /** View all BHDIP document on https://btchd.org/wiki/BHDIP */
     /** Block height at which BHDIP004 becomes active */
-    int BHDIP004ActiveHeight;
+    int BHDIP004Height;
     /** Block height at which BHDIP004 becomes inactive */
-    int BHDIP004InActiveHeight;
+    int BHDIP004AbandonHeight;
 
     /** Block height at which BHDIP006 becomes active */
     int BHDIP006Height;
@@ -119,6 +110,15 @@ struct Params {
     bool fAllowMinDifficultyBlocks;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
+
+    /** Block height at which BIP16 becomes active */
+    int BIP16Height;
+    /** Block height and hash at which BIP34 becomes active */
+    int BIP34Height;
+    /** Block height at which BIP65 becomes active */
+    int BIP65Height;
+    /** Block height at which BIP66 becomes active */
+    int BIP66Height;
 };
 
 // Get target time space

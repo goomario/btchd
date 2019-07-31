@@ -1185,7 +1185,7 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
         if (accountBalance >= miningRequireBalance) {
             // Full mortgage
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForFullMortgage) / 1000;
-            if (nHeight < consensusParams.BHDIP004InActiveHeight && accountBalance < miningRequireBalanceAtOldConsensus) {
+            if (nHeight < consensusParams.BHDIP004AbandonHeight && accountBalance < miningRequireBalanceAtOldConsensus) {
                 // Old consensus => fund
                 reward.miner0 = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForLowMortgage) / 1000;
             }
@@ -1905,7 +1905,7 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
 {
     LOCK(cs_main);
     int32_t nVersion = VERSIONBITS_TOP_BITS;
-    if (pindexPrev != nullptr && pindexPrev->nHeight + 1 >= params.BHDIP004ActiveHeight && pindexPrev->nHeight + 1 < params.BHDIP006Height)
+    if (pindexPrev != nullptr && pindexPrev->nHeight + 1 >= params.BHDIP004Height && pindexPrev->nHeight + 1 < params.BHDIP006Height)
         nVersion |= VERSIONBITS_BHDV2_BITS;
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
@@ -2253,7 +2253,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
         } else {
             // Old block: 0x20000000
-            if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004InActiveHeight)
+            if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004AbandonHeight)
                 return state.DoS(100,
                                 error("ConnectBlock(): Depreacted block version %08x", pindex->nVersion),
                                 REJECT_INVALID, "bad-block-version");
@@ -2277,7 +2277,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
                 // Check output amount
                 if (block.vtx[0]->vout[1].nValue < fund) {
-                    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004ActiveHeight) {
+                    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP004Height) {
                         // Bug, accept corruption pay for fund. See https://btchd.org/wiki/BHDIP/004#bad-blocks
                         LogPrint(BCLog::POC, "ConnectBlock(): Block hash=%s height=%d bad pay for fund, but accepted!\n", pindex->GetBlockHash().ToString(), pindex->nHeight);
                     } else {

@@ -100,20 +100,15 @@ public:
         consensus.nRuleChangeActivationThreshold = 1916;   // 95% of 2016
         consensus.nMinerConfirmationWindow       = 2016;   // About 1 week
 
-        consensus.BIP16Height = 0; // Always enforce BIP16
-        consensus.BIP34Height = 0; // Always enforce BIP34
-        consensus.BIP65Height = 0; // Always enforce BIP65
-        consensus.BIP66Height = 0; // Always enforce BIP66
-
-        consensus.BHDIP001TargetSpacing              = 300;   // 5 minutes. Subsidy halving interval 420000 blocks
         consensus.BHDIP001StartMingingHeight         = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
         consensus.BHDIP001FundZeroLastHeight         = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
+        consensus.BHDIP001TargetSpacing              = 300;   // 5 minutes. Subsidy halving interval 420000 blocks
         consensus.BHDIP001FundRoyaltyForFullMortgage = 50;    // 50‰ to fund
         consensus.BHDIP001FundRoyaltyForLowMortgage  = 700;   // 700‰ to fund
         consensus.BHDIP001MiningRatio                = 3 * COIN;
 
-        consensus.BHDIP004ActiveHeight   = 96264; // BitcoinHD new consensus upgrade bug. 96264 is first invalid block
-        consensus.BHDIP004InActiveHeight = 99000;
+        consensus.BHDIP004Height        = 96264; // BitcoinHD new consensus upgrade bug. 96264 is first invalid block
+        consensus.BHDIP004AbandonHeight = 99000;
 
         consensus.BHDIP006Height                  = 129100; // Actived on Wed, 02 Jan 2019 02:17:19 GMT
         consensus.BHDIP006BindPlotterActiveHeight = 131116; // Bind plotter actived on Tue, 08 Jan 2019 23:14:57 GMT
@@ -132,6 +127,11 @@ public:
         assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
+
+        consensus.BIP16Height = 0; // Always enforce BIP16
+        consensus.BIP34Height = 0; // Always enforce BIP34
+        consensus.BIP65Height = 0; // Always enforce BIP65
+        consensus.BIP66Height = 0; // Always enforce BIP66
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -164,7 +164,7 @@ public:
         nDefaultPort = 8733;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1531292789, 0, poc::GetBaseTarget(240), 2, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 0, poc::GetBaseTarget(240), 2, 50 * COIN * consensus.BHDIP001TargetSpacing / 600);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0x8cec494f7f02ad25b3abf418f7d5647885000e010c34e16c039711e4061497b0"));
         assert(genesis.hashMerkleRoot == uint256S("0x6b80acabaf0fef45e2cad0b8b63d07cff1b35640e81f3ab3d83120dd8bc48164"));
@@ -337,20 +337,15 @@ public:
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 2016;
 
-        consensus.BIP16Height = 0; // Always enforce BIP16
-        consensus.BIP34Height = 0; // Always enforce BIP34
-        consensus.BIP65Height = 0; // Always enforce BIP65
-        consensus.BIP66Height = 0; // Always enforce BIP66
-
-        consensus.BHDIP001TargetSpacing              = 300;
         consensus.BHDIP001StartMingingHeight         = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
         consensus.BHDIP001FundZeroLastHeight         = 12400;
+        consensus.BHDIP001TargetSpacing              = 300;
         consensus.BHDIP001FundRoyaltyForFullMortgage = 50;  // 50‰
         consensus.BHDIP001FundRoyaltyForLowMortgage  = 700; // 700‰
         consensus.BHDIP001MiningRatio                = 3 * COIN;
 
-        consensus.BHDIP004ActiveHeight   = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
-        consensus.BHDIP004InActiveHeight = 21000;
+        consensus.BHDIP004Height        = 12400; // BHDIP004. BitcoinHD new consensus upgrade bug.
+        consensus.BHDIP004AbandonHeight = 21000;
 
         consensus.BHDIP006Height                  = 41290;
         consensus.BHDIP006BindPlotterActiveHeight = 41296;
@@ -369,6 +364,11 @@ public:
         assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
+
+        consensus.BIP16Height = 0; // Always enforce BIP16
+        consensus.BIP34Height = 0; // Always enforce BIP34
+        consensus.BIP65Height = 0; // Always enforce BIP65
+        consensus.BIP66Height = 0; // Always enforce BIP66
 
         // TestDummy
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
@@ -396,7 +396,7 @@ public:
         nDefaultPort = 18733;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1531292789, 1, poc::GetBaseTarget(240), 2, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 1, poc::GetBaseTarget(240), 2, 50 * COIN * consensus.BHDIP001TargetSpacing / 600);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0xb67faee747224b7646d66cd08763f33d72b594da8e884535c2f95904fe3cf8c1"));
         assert(genesis.hashMerkleRoot == uint256S("0xb8f17dd05a0d3fe40963d189ee0397ff909ce33bd1c9821898d2400b89ea75e6"));
@@ -540,20 +540,15 @@ public:
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 144;
 
-        consensus.BIP16Height = 0; // Always enforce BIP16
-        consensus.BIP34Height = 0; // Always enforce BIP34
-        consensus.BIP65Height = 0; // Always enforce BIP65
-        consensus.BIP66Height = 0; // Always enforce BIP66
-
-        consensus.BHDIP001TargetSpacing              = 300;
         consensus.BHDIP001StartMingingHeight         = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BHDIP001FundZeroLastHeight         = 94;
+        consensus.BHDIP001TargetSpacing              = 300;
         consensus.BHDIP001FundRoyaltyForFullMortgage = 50; // 50‰
         consensus.BHDIP001FundRoyaltyForLowMortgage  = 700; // 700‰
         consensus.BHDIP001MiningRatio                = 3 * COIN;
 
-        consensus.BHDIP004ActiveHeight   = 0;
-        consensus.BHDIP004InActiveHeight = 0;
+        consensus.BHDIP004Height        = 0;
+        consensus.BHDIP004AbandonHeight = 0;
 
         consensus.BHDIP006Height                  = 294;
         consensus.BHDIP006BindPlotterActiveHeight = 344;
@@ -572,6 +567,11 @@ public:
         assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
+
+        consensus.BIP16Height = 0; // Always enforce BIP16
+        consensus.BIP34Height = 0; // Always enforce BIP34
+        consensus.BIP65Height = 0; // Always enforce BIP65
+        consensus.BIP66Height = 0; // Always enforce BIP66
 
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
@@ -596,7 +596,7 @@ public:
         nDefaultPort = 18744;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1531292789, 2, poc::GetBaseTarget(240), 2, 25 * COIN);
+        genesis = CreateGenesisBlock(1531292789, 2, poc::GetBaseTarget(240), 2, 50 * COIN * consensus.BHDIP001TargetSpacing / 600);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0x8414542ce030252cd4958545e6043b8c4e48182756fe39325851af58922b7df6"));
         assert(genesis.hashMerkleRoot == uint256S("0xb17eff00d4b76e03a07e98f256850a13cd42c3246dc6927be56db838b171d79b"));
