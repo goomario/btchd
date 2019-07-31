@@ -129,6 +129,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"currentblocktx\": nnn      (numeric) The last block transaction\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
+            "  \"basetarget\" : xxx,        (numeric) The current basetarget\n"
             "  \"netcapacity\": nnn         (string) The net capacity\n"
             "  \"smoothbeginheight\": nnn   (numeric) The smooth adjust ratio begin height\n"
             "  \"smoothendheight\": nnn     (numeric) The smooth adjust ratio end height\n"
@@ -180,6 +181,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblocktx",     (uint64_t)nLastBlockTx));
     obj.push_back(Pair("pooledtx",           (uint64_t)mempool.size()));
     obj.push_back(Pair("difficulty",         (double)GetDifficulty()));
+    obj.push_back(Pair("basetarget",         (uint64_t)chainActive.Tip()->nBaseTarget));
     obj.push_back(Pair("netcapacity",        ValueFromCapacity(std::max(poc::GetBaseTarget(chainActive.Height(), params) / chainActive.Tip()->nBaseTarget, (uint64_t) 1))));
     obj.push_back(Pair("smoothbeginheight",  params.BHDIP007Height));
     obj.push_back(Pair("smoothendheight",    params.BHDIP007SmoothEndHeight));
