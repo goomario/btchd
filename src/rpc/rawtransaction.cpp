@@ -56,14 +56,7 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
     if (!hashBlock.IsNull()) {
         entry.push_back(Pair("blockhash", hashBlock.GetHex()));
         if (pindex) {
-            if (chainActive.Contains(pindex)) {
-                entry.push_back(Pair("confirmations", 1 + chainActive.Height() - pindex->nHeight));
-                entry.push_back(Pair("time", pindex->GetBlockTime()));
-                entry.push_back(Pair("blocktime", pindex->GetBlockTime()));
-            }
-            else
-                entry.push_back(Pair("confirmations", 0));
-
+            // Coinbase transaction accumulate reward
             if (tx.IsCoinBase() && pindex->nHeight >= Params().GetConsensus().BHDIP008Height) {
                 if (pindex->nStatus & BLOCK_LOWMORTGAGE) {
                     entry.push_back(Pair("accumulate", ValueFromAmount(0)));
@@ -71,6 +64,14 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
                     entry.push_back(Pair("accumulate", ValueFromAmount(GetLowMortgageAccumulate(pindex->pprev, Params().GetConsensus()))));
                 }
             }
+
+            if (chainActive.Contains(pindex)) {
+                entry.push_back(Pair("confirmations", 1 + chainActive.Height() - pindex->nHeight));
+                entry.push_back(Pair("time", pindex->GetBlockTime()));
+                entry.push_back(Pair("blocktime", pindex->GetBlockTime()));
+            }
+            else
+                entry.push_back(Pair("confirmations", 0));
         }
     }
 }
@@ -140,15 +141,16 @@ UniValue getrawtransaction(const JSONRPCRequest& request)
             "     }\n"
             "     ,...\n"
             "  ],\n"
-            "  \"extra\": {                        (json object) Only exist for bind plotter and pledge loan\n"
-            "    \"type\": \"pledge|bindplotter\", (string) Extra data type\n"
-            "    \"amount\": xxx,                  (numeric) The value in special tx\n"
-            "    \"address\": \"xxxx\",            (string) Bind address. Only exist for bind plotter\n"
-            "    \"id\": \"plotterID\",            (string) Bind plotter ID. Only exist for bind plotter\n"
-            "    \"from\": \"xxxx\",               (string) Pledge loan address. Only exist for pledge loan\n"
-            "    \"to\": \"xxxx\"                  (string) Pledge loadebitn address. Only exist for pledge loan\n"
+            "  \"extra\": {                       (json object) Only exist for bind plotter and pledge loan\n"
+            "    \"type\": \"pledge|bindplotter\",  (string) Extra data type\n"
+            "    \"amount\": xxx,                 (numeric) The value in special tx\n"
+            "    \"address\": \"xxxx\",             (string) Bind address. Only exist for bind plotter\n"
+            "    \"id\": \"plotterID\",             (string) Bind plotter ID. Only exist for bind plotter\n"
+            "    \"from\": \"xxxx\",                (string) Pledge loan address. Only exist for pledge loan\n"
+            "    \"to\": \"xxxx\"                   (string) Pledge loadebitn address. Only exist for pledge loan\n"
             "  },\n"
-            "  \"blockhash\" : \"hash\",   (string) the block hash\n"
+            "  \"accumulate\": x.xxx       (numeric) Accumulate reward. Only exist in coinbase transaction\n"
+            "  \"blockhash\" : \"hash\",     (string) The block hash\n"
             "  \"confirmations\" : n,      (numeric) The confirmations\n"
             "  \"time\" : ttt,             (numeric) The transaction time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"blocktime\" : ttt         (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"

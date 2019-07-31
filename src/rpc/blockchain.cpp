@@ -158,13 +158,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         result.push_back(Pair("pubkey", HexStr(blockindex->vchPubKey)));
         result.push_back(Pair("signature", HexStr(blockindex->vchSignature)));
     }
-    if (blockindex->nHeight >= Params().GetConsensus().BHDIP008Height) {
-        if (blockindex->nStatus & BLOCK_LOWMORTGAGE) {
-            result.push_back(Pair("accumulate", ValueFromAmount(0)));
-        } else {
-            result.push_back(Pair("accumulate", ValueFromAmount(GetLowMortgageAccumulate(blockindex->pprev, Params().GetConsensus()))));
-        }
-    }
     if (blockindex->pprev) {
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     }
@@ -775,7 +768,6 @@ UniValue getblock(const JSONRPCRequest& request)
             "  \"generator\" : \"hash\",(string) The generator\n"
             "  \"pubkey\" : \"hash\",   (string) The signature public key\n"
             "  \"signature\" : \"hash\",(string) The signature of generator\n"
-            "  \"accumulate\" : xx.xxx, (numeric) Accumulate reward\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
             "}\n"
