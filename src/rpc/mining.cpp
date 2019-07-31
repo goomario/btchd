@@ -377,12 +377,11 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
             "     \"value\"                          (string) A way the block template may be changed, e.g. 'time', 'transactions', 'prevblock'\n"
             "     ,...\n"
             "  ],\n"
-            "  \"noncerange\" : \"00000000ffffffff\",(string) A range of valid nonces\n"
             "  \"sigoplimit\" : n,                 (numeric) limit of sigops in blocks\n"
             "  \"sizelimit\" : n,                  (numeric) limit of block size\n"
             "  \"weightlimit\" : n,                (numeric) limit of block weight\n"
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"bits\" : \"xxxxxxxx\",              (string) compressed target of next block\n"
+            "  \"basetarget\" : xxx,               (numeric) current basetarget\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
             "}\n"
 
@@ -673,7 +672,6 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));
     result.push_back(Pair("mutable", aMutable));
-    result.push_back(Pair("noncerange", "00000000ffffffff"));
     int64_t nSigOpLimit = (int64_t)MAX_BLOCK_SIGOPS_COST;
     int64_t nSizeLimit = (int64_t)MAX_BLOCK_WEIGHT;
     if (fPreSegWit) {
@@ -682,13 +680,13 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         assert(nSizeLimit % WITNESS_SCALE_FACTOR == 0);
         nSizeLimit /= WITNESS_SCALE_FACTOR;
     }
-    result.push_back(Pair("sigoplimit", (int64_t)MAX_BLOCK_SIGOPS_COST));
-    result.push_back(Pair("sizelimit", (int64_t)MAX_BLOCK_WEIGHT));
+    result.push_back(Pair("sigoplimit", nSigOpLimit));
+    result.push_back(Pair("sizelimit", nSizeLimit));
     if (!fPreSegWit) {
         result.push_back(Pair("weightlimit", (int64_t)MAX_BLOCK_WEIGHT));
     }
     result.push_back(Pair("curtime", pblock->GetBlockTime()));
-    result.push_back(Pair("baseTarget", (uint64_t)pblock->nBaseTarget));
+    result.push_back(Pair("basetarget", (uint64_t)pblock->nBaseTarget));
     result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
