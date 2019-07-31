@@ -123,7 +123,7 @@ public:
         consensus.BHDIP008TargetSpacing                           = 180;    // 3 minutes. Subsidy halving interval 700000 blocks
         consensus.BHDIP008FundRoyaltyForLowMortgage               = 270;    // 270‰ to fund
         consensus.BHDIP008FundRoyaltyDecreaseForLowMortgage       = 20;     // 20‰ decrease
-        consensus.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage = 33600;  // 10 weeks. About 100 weeks decrease to 50‰
+        consensus.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage = 33600;  // 10 weeks. About 110 weeks decrease to 50‰
         assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
