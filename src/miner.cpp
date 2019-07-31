@@ -128,13 +128,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         pblock->nVersion = gArgs.GetArg("-blockversion", pblock->nVersion);
 
     // Keep largest difficulty
-    if (nHeight < chainparams.GetConsensus().BHDIP008Height) {
-        // Bug: +1s
-        pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + static_cast<uint64_t>(deadline) + 1);
-    } else {
-        // Fixed block time
-        pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + static_cast<uint64_t>(deadline));
-    }
+    pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + static_cast<int64_t>(deadline) + 1);
 
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 

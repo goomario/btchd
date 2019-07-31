@@ -117,7 +117,7 @@ void CheckDeadlineThread()
                         // Previous round
                         // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best (highest chainwork).
                         uint64_t mineDeadline = it->second.best / pindexTip->pprev->nBaseTarget;
-                        uint64_t tipDeadline = (uint64_t) (pindexTip->GetBlockTime() - pindexTip->pprev->GetBlockTime() - (pindexTip->nHeight < Params().GetConsensus().BHDIP008Height ? 1 : 0));
+                        uint64_t tipDeadline = (uint64_t) (pindexTip->GetBlockTime() - pindexTip->pprev->GetBlockTime() - 1);
                         if (mineDeadline <= tipDeadline) {
                             LogPrint(BCLog::POC, "Snatch block: height=%d, nonce=%" PRIu64 ", plotterId=%" PRIu64 ", deadline=%" PRIu64 " <= %" PRIu64 "\n",
                                 it->second.height, it->second.nonce, it->second.plotterId, mineDeadline, tipDeadline);
@@ -341,8 +341,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
             pLastindex = pLastindex->pprev;
             avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
         }
-        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = params.BHDIP001TargetSpacing * N;
+        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime(); // Bug: diffTime large
+        int64_t targetTimespan = params.BHDIP001TargetSpacing * N; // Bug: targetTimespan small
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;
         }
@@ -395,7 +395,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         }
         avgBaseTarget /= N;
 
-        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
+        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime() - static_cast<int64_t>(N) * 1;
         uint64_t curBaseTarget = avgBaseTarget;
         uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.BHDIP008TargetSpacing * 4);
         if (newBaseTarget > BHD_BASE_TARGET_180) {
@@ -424,7 +424,7 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
             pLastindex = pLastindex->pprev;
             avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
         }
-        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
+        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime() - static_cast<int64_t>(N) * 1;
         int64_t targetTimespan = params.BHDIP008TargetSpacing * N;
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;
@@ -857,12 +857,8 @@ bool CheckProofOfCapacity(const CBlockIndex& prevBlockIndex, const CBlockHeader&
 
     if (prevBlockIndex.nHeight + 1 < params.BHDIP007Height) {
         return deadline == 0 || block.GetBlockTime() > prevBlockIndex.GetBlockTime() + static_cast<int64_t>(deadline);
-    } else if (prevBlockIndex.nHeight + 1 < params.BHDIP008Height) {
-        // Bug: +1s
-        return block.GetBlockTime() == prevBlockIndex.GetBlockTime() + static_cast<int64_t>(deadline) + 1;
     } else {
-        // Fixed block time
-        return block.GetBlockTime() == prevBlockIndex.GetBlockTime() + static_cast<int64_t>(deadline);
+        return block.GetBlockTime() == prevBlockIndex.GetBlockTime() + static_cast<int64_t>(deadline) + 1;
     }
 }
 
