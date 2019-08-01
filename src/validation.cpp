@@ -1146,7 +1146,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
         // Force block reward to zero when right shift is undefined.
         nSubsidy = 0;
     } else {
-        nSubsidy = (50 * Consensus::GetTargetSpacing(nHeight, consensusParams) / 600) * COIN;
+        nSubsidy = 50 * COIN * Consensus::GetTargetSpacing(nHeight, consensusParams) / 600;
         // Subsidy is cut in half every 210,000 blocks / 10minutes which will occur approximately every 4 years.
         nSubsidy >>= halvings;
     }
