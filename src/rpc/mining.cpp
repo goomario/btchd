@@ -48,10 +48,10 @@ unsigned int ParseConfirmTarget(const UniValue& value)
 
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const std::shared_ptr<CKey> privKey, int nGenerate, bool keepScript)
 {
-    // rough high night desk familiar hop freely needle slowly threaten process flicker
+    // root minute ancient won check dove second spot book thump retreat add
     // =>
-    // 11529889285493050610ULL;
-    const uint64_t nNonce = 0, nPlotterId = 11529889285493050610ULL, nDeadline = 0;
+    // 9414704830574620511;
+    const uint64_t nPlotterId = 9414704830574620511ULL;
 
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -64,19 +64,15 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const st
     while (nHeight < nHeightEnd) {
         ++nHeight;
 
+        uint64_t nDeadline = static_cast<uint64_t>(nHeight < Params().GetConsensus().BHDIP008Height 
+            ? Params().GetConsensus().BHDIP001TargetSpacing 
+            : Params().GetConsensus().BHDIP008TargetSpacing);
+
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true,
-            nPlotterId, nNonce, nDeadline, privKey));
+            nPlotterId, nDeadline, nDeadline, privKey));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
-        // Update time for pre-mining
-        if (nHeight <= Params().GetConsensus().BHDIP001StartMingingHeight) {
-            // Update nBaseTarget because nTime has changed
-            LOCK(cs_main);
-            pblock->nTime = chainActive.Tip()->nTime + 1;
-            pblock->nBaseTarget = poc::CalculateBaseTarget(*chainActive.Tip(), *pblock, Params().GetConsensus());
-        }
-
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
@@ -129,26 +125,42 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "\nResult:\n"
             "{\n"
             "  \"blocks\": nnn,             (numeric) The current block\n"
-            "  \"currentblockweight\": nnn, (numeric) The last block weight\n"
-            "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
+            "  \"currentblockweight\": nnn  (numeric) The last block weight\n"
+            "  \"currentblocktx\": nnn      (numeric) The last block transaction\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
+            "  \"basetarget\" : xxx,        (numeric) The current basetarget\n"
             "  \"netcapacity\": nnn         (string) The net capacity\n"
             "  \"smoothbeginheight\": nnn   (numeric) The smooth adjust ratio begin height\n"
             "  \"smoothendheight\": nnn     (numeric) The smooth adjust ratio end height\n"
             "  \"stagebeginheight\": nnn    (numeric) The stage adjust ratio begin height\n"
             "  \"stagecapacity\": nnn       (numeric) The capacity of stage\n"
-            "  \"currenteval\": {           (object) Current ratio estimate\n"
+            "  \"currenteval\": {           (json object) Current ratio estimate\n"
             "    \"ratio\": xxx.xxxxx       (numeric) The ratio of pledge\n"
             "    \"ratiostartheight\": nnn  (numeric) The height of ratio updated\n"
             "    \"ratiostage\": nnn        (numeric) The ratio stage of pledge. -2: not start, -1: smooth decrease, others...\n"
             "    \"rationetcapacity\": nnn  (string) The net capacity of pledge\n"
             "  },\n"
-            "  \"nexteval\": {              (object) Next ratio estimate by current blockchain status\n"
+            "  \"nexteval\": {              (json object) Next ratio estimate by current blockchain status\n"
             "    \"ratio\": xxx.xxxxx       (numeric) The ratio of pledge for next period\n"
             "    \"ratiostartheight\": nnn  (numeric) The height of ratio update for next period\n"
             "    \"ratiostage\": nnn        (numeric) The ratio stage of pledge for next period. -1: smooth decrease, others...\n"
             "    \"rationetcapacity\": nnn  (string) The net capacity of pledge for next period\n"
+            "  },\n"
+            "  \"reward\": {                (json object) Next block reward\n"
+            "    \"subsidy\": xxx.xxxxx     (numeric) Next block subsidy\n"
+            "    \"meet\": {                (json object) Meet the conditional capacity mining\n"
+            "      \"miner\": xxx.xxxxx     (numeric) Miner total reward, and include accumulate reward\n"
+            "      \"fund\": xxx.xxxxx      (numeric) Fund royalty\n"
+            "      \"fundratio\": \"x.x%\"    (numeric) Fund royalty ratio\n"
+            "      \"subsidy\": xxx.xxxx    (numeric) Accumulate subsidy to meet block\n"
+            "    },\n"
+            "    \"notmeet\": {             (json object) Not meet the conditional capacity mining\n"
+            "      \"miner\": xxx.xxxxx     (numeric) Miner total reward\n"
+            "      \"fund\": xxx.xxxxx      (numeric) Fund royalty\n"
+            "      \"fundratio\": \"x.x%\"    (numeric) Fund royalty ratio\n"
+            "      \"takeoff\": xxx.xxxxx   (numeric) Take off reward to next meet block\n"
+            "    }\n"
             "  },\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
@@ -169,7 +181,8 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblocktx",     (uint64_t)nLastBlockTx));
     obj.push_back(Pair("pooledtx",           (uint64_t)mempool.size()));
     obj.push_back(Pair("difficulty",         (double)GetDifficulty()));
-    obj.push_back(Pair("netcapacity",        ValueFromCapacity(poc::BHD_BASE_TARGET / chainActive.Tip()->nBaseTarget)));
+    obj.push_back(Pair("basetarget",         (uint64_t)chainActive.Tip()->nBaseTarget));
+    obj.push_back(Pair("netcapacity",        ValueFromCapacity(std::max(poc::GetBaseTarget(chainActive.Height(), params) / chainActive.Tip()->nBaseTarget, (uint64_t) 1))));
     obj.push_back(Pair("smoothbeginheight",  params.BHDIP007Height));
     obj.push_back(Pair("smoothendheight",    params.BHDIP007SmoothEndHeight));
     obj.push_back(Pair("stagebeginheight",   params.BHDIP007SmoothEndHeight + 1));
@@ -199,6 +212,33 @@ UniValue getmininginfo(const JSONRPCRequest& request)
         nextEval.push_back(Pair("rationetcapacity", ValueFromCapacity(nNextEvalNetCapacityTB)));
         obj.push_back(Pair("nexteval", nextEval));
     }
+    // reward
+    obj.push_back(Pair("reward", [&params]() -> UniValue {
+        const BlockReward fullReward = GetFullMortgageBlockReward(chainActive.Height() + 1, params);
+        const BlockReward lowReward = GetLowMortgageBlockReward(chainActive.Height() + 1, params);
+        const int fullFundRatio = GetFullMortgageFundRoyaltyRatio(chainActive.Height() + 1, params);
+        const int lowFundRatio = GetLowMortgageFundRoyaltyRatio(chainActive.Height() + 1, params);
+
+        UniValue rewardObj(UniValue::VOBJ);
+        rewardObj.push_back(Pair("subsidy", ValueFromAmount(GetBlockSubsidy(chainActive.Height() + 1, params))));
+        rewardObj.push_back(Pair("meet", [&fullReward, &fullFundRatio]() -> UniValue {
+            UniValue item(UniValue::VOBJ);
+            item.push_back(Pair("miner",     ValueFromAmount(fullReward.miner + fullReward.miner0 + fullReward.accumulate)));
+            item.push_back(Pair("fund",      ValueFromAmount(fullReward.fund)));
+            item.push_back(Pair("fundratio", strprintf("%d.%d%%", fullFundRatio/10, fullFundRatio%10)));
+            item.push_back(Pair("subsidy",   ValueFromAmount(fullReward.accumulate)));
+            return item;
+        }()));
+        rewardObj.push_back(Pair("notmeet", [&lowReward, &lowFundRatio]() -> UniValue {
+            UniValue item(UniValue::VOBJ);
+            item.push_back(Pair("miner",     ValueFromAmount(lowReward.miner + lowReward.miner0 + lowReward.accumulate)));
+            item.push_back(Pair("fund",      ValueFromAmount(lowReward.fund)));
+            item.push_back(Pair("fundratio", strprintf("%d.%d%%", lowFundRatio/10, lowFundRatio%10)));
+            item.push_back(Pair("takeoff",   ValueFromAmount(-lowReward.accumulate)));
+            return item;
+        }()));
+        return rewardObj;
+    }()));
     obj.push_back(Pair("chain", Params().NetworkIDString()));
     if (IsDeprecatedRPCEnabled("getmininginfo")) {
         obj.push_back(Pair("errors",         GetWarnings("statusbar")));
@@ -337,12 +377,11 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
             "     \"value\"                          (string) A way the block template may be changed, e.g. 'time', 'transactions', 'prevblock'\n"
             "     ,...\n"
             "  ],\n"
-            "  \"noncerange\" : \"00000000ffffffff\",(string) A range of valid nonces\n"
             "  \"sigoplimit\" : n,                 (numeric) limit of sigops in blocks\n"
             "  \"sizelimit\" : n,                  (numeric) limit of block size\n"
             "  \"weightlimit\" : n,                (numeric) limit of block weight\n"
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"bits\" : \"xxxxxxxx\",              (string) compressed target of next block\n"
+            "  \"basetarget\" : xxx,               (numeric) current basetarget\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
             "}\n"
 
@@ -633,7 +672,6 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));
     result.push_back(Pair("mutable", aMutable));
-    result.push_back(Pair("noncerange", "00000000ffffffff"));
     int64_t nSigOpLimit = (int64_t)MAX_BLOCK_SIGOPS_COST;
     int64_t nSizeLimit = (int64_t)MAX_BLOCK_WEIGHT;
     if (fPreSegWit) {
@@ -642,13 +680,13 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         assert(nSizeLimit % WITNESS_SCALE_FACTOR == 0);
         nSizeLimit /= WITNESS_SCALE_FACTOR;
     }
-    result.push_back(Pair("sigoplimit", (int64_t)MAX_BLOCK_SIGOPS_COST));
-    result.push_back(Pair("sizelimit", (int64_t)MAX_BLOCK_WEIGHT));
+    result.push_back(Pair("sigoplimit", nSigOpLimit));
+    result.push_back(Pair("sizelimit", nSizeLimit));
     if (!fPreSegWit) {
         result.push_back(Pair("weightlimit", (int64_t)MAX_BLOCK_WEIGHT));
     }
     result.push_back(Pair("curtime", pblock->GetBlockTime()));
-    result.push_back(Pair("baseTarget", (uint64_t)pblock->nBaseTarget));
+    result.push_back(Pair("basetarget", (uint64_t)pblock->nBaseTarget));
     result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
@@ -974,8 +1012,8 @@ UniValue createbindplotterdata(const JSONRPCRequest& request)
 
             "\nExamples:\n"
             "\nReturn bind plotter hex data\n"
-            + HelpExampleCli("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"rough high night desk familiar hop freely needle slowly threaten process flicker\"")
-            + HelpExampleRpc("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"rough high night desk familiar hop freely needle slowly threaten process flicker\"")
+            + HelpExampleCli("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\" \"root minute ancient won check dove second spot book thump retreat add\"")
+            + HelpExampleRpc("createbindplotterdata", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\", \"root minute ancient won check dove second spot book thump retreat add\"")
         );
 
     if (!request.params[0].isStr())
@@ -1312,18 +1350,25 @@ UniValue getplottermininginfo(const JSONRPCRequest& request)
 
     int64_t nNetCapacityTB = 0, nCapacityTB = 0;
     if (!vBlocks.empty()) {
-        int nMinedBlockCount = 0;
         uint64_t nBaseTarget = 0;
+        int nBlockCount = 0;
+        int nMinedBlockCount = 0;
         for (const CBlockIndex& block : vBlocks) {
-            nBaseTarget += block.nBaseTarget;
             if (block.nPlotterId == nPlotterId)
                 nMinedBlockCount++;
+
+            if (chainActive.Height() < params.BHDIP008Height || block.nHeight >= params.BHDIP008Height) {
+                nBaseTarget += block.nBaseTarget;
+                nBlockCount++;
+            }
         }
-        nBaseTarget /= vBlocks.size();
-        nNetCapacityTB = std::max(static_cast<int64_t>(poc::BHD_BASE_TARGET / nBaseTarget), (int64_t) 1);
-        if (nMinedBlockCount < (int) vBlocks.size())
-            nMinedBlockCount++;
-        nCapacityTB = std::max((int64_t) ((nNetCapacityTB * nMinedBlockCount) / vBlocks.size()), (int64_t) 1);
+        if (nBlockCount > 0) {
+            nBaseTarget = std::max(nBaseTarget / nBlockCount, uint64_t(1));
+            nNetCapacityTB = std::max(static_cast<int64_t>(poc::GetBaseTarget(chainActive.Height(), params) / nBaseTarget), (int64_t) 1);
+            if (nMinedBlockCount < (int) vBlocks.size())
+                nMinedBlockCount++;
+            nCapacityTB = std::max((int64_t) ((nNetCapacityTB * nMinedBlockCount) / vBlocks.size()), (int64_t) 1);
+        }
     }
 
     UniValue result(UniValue::VOBJ);

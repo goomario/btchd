@@ -289,9 +289,19 @@ typedef struct {
     CAmount miner;
     CAmount miner0; //! For BHDIP004
     CAmount fund;
+    CAmount accumulate;
+    bool lowMortgage;
 } BlockReward;
-BlockReward GetBlockReward(int nHeight, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId,
+BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId,
     const CCoinsViewCache& view, const Consensus::Params& consensusParams);
+
+CAmount GetLowMortgageAccumulateSubsidy(const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
+BlockReward GetFullMortgageBlockReward(int nHeight, const Consensus::Params& consensusParams);
+BlockReward GetLowMortgageBlockReward(int nHeight, const Consensus::Params& consensusParams);
+CAmount GetFullMortgageFundRoyalty(int nHeight, const Consensus::Params& consensusParams);
+CAmount GetLowMortgageFundRoyalty(int nHeight, const Consensus::Params& consensusParams);
+int GetFullMortgageFundRoyaltyRatio(int nHeight, const Consensus::Params& consensusParams);
+int GetLowMortgageFundRoyaltyRatio(int nHeight, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);

@@ -128,7 +128,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         pblock->nVersion = gArgs.GetArg("-blockversion", pblock->nVersion);
 
     // Keep largest difficulty
-    pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + deadline + 1);
+    pblock->nTime = static_cast<uint32_t>(pindexPrev->GetBlockTime() + static_cast<int64_t>(deadline) + 1);
 
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
@@ -160,7 +160,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(static_cast<int64_t>(nonce)) << CScriptNum(static_cast<int64_t>(plotterId))) + COINBASE_FLAGS;
     assert(coinbaseTx.vin[0].scriptSig.size() <= 100);
     // Reward
-    BlockReward blockReward = GetBlockReward(nHeight, nFees, generatorAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
+    BlockReward blockReward = GetBlockReward(pindexPrev, nFees, generatorAccountID, plotterId, *pcoinsTip, chainparams.GetConsensus());
+    assert(blockReward.miner + blockReward.accumulate >= 0);
     unsigned int fundOutIndex = std::numeric_limits<unsigned int>::max();
     if (blockReward.miner0 != 0) {
         // Let old wallet can verify
@@ -180,7 +181,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         coinbaseTx.vout.resize(1);
     }
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[0].nValue = blockReward.miner;
+    coinbaseTx.vout[0].nValue = blockReward.miner + blockReward.accumulate;
     if (fundOutIndex < coinbaseTx.vout.size()) {
         coinbaseTx.vout[fundOutIndex].scriptPubKey = GetScriptForDestination(DecodeDestination(chainparams.GetConsensus().BHDFundAddress));
         coinbaseTx.vout[fundOutIndex].nValue = blockReward.fund;
@@ -201,14 +202,16 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
-    // Signature
-    if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !sign(*pblock, *privKey))) {
-        throw std::runtime_error(strprintf("%s: Signature block error", __func__));
-    }
+    if (plotterId != 0) {
+        // Signature
+        if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !sign(*pblock, *privKey))) {
+            throw std::runtime_error(strprintf("%s: Signature block error", __func__));
+        }
 
-    CValidationState state;
-    if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
-        throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
+        CValidationState state;
+        if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
+            throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
+        }
     }
     int64_t nTime2 = GetTimeMicros();
 

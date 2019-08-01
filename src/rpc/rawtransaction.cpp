@@ -53,6 +53,16 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
     // data into the returned UniValue.
     TxToUniv(tx, uint256(), entry, true, RPCSerializationFlags(), pindex ? pindex->nHeight : 0);
 
+    // Coinbase transaction accumulate subsidy and takeoff
+    if (tx.IsCoinBase() && pindex != nullptr && pindex->nHeight >= Params().GetConsensus().BHDIP008Height) {
+        if (pindex->nStatus & BLOCK_LOWMORTGAGE) {
+            int ratio = Params().GetConsensus().BHDIP001FundRoyaltyForLowMortgage - GetLowMortgageFundRoyaltyRatio(pindex->nHeight, Params().GetConsensus());
+            entry.push_back(Pair("takeoff", ValueFromAmount(GetBlockSubsidy(pindex->nHeight, Params().GetConsensus()) * ratio / 1000)));
+        } else {
+            entry.push_back(Pair("subsidy", ValueFromAmount(GetLowMortgageAccumulateSubsidy(pindex->pprev, Params().GetConsensus()))));
+        }
+    }
+
     if (!hashBlock.IsNull()) {
         entry.push_back(Pair("blockhash", hashBlock.GetHex()));
         if (pindex) {
@@ -132,15 +142,17 @@ UniValue getrawtransaction(const JSONRPCRequest& request)
             "     }\n"
             "     ,...\n"
             "  ],\n"
-            "  \"extra\": {                        (json object) Only exist for bind plotter and pledge loan\n"
-            "    \"type\": \"pledge|bindplotter\", (string) Extra data type\n"
-            "    \"amount\": xxx,                  (numeric) The value in special tx\n"
-            "    \"address\": \"xxxx\",            (string) Bind address. Only exist for bind plotter\n"
-            "    \"id\": \"plotterID\",            (string) Bind plotter ID. Only exist for bind plotter\n"
-            "    \"from\": \"xxxx\",               (string) Pledge loan address. Only exist for pledge loan\n"
-            "    \"to\": \"xxxx\"                  (string) Pledge loadebitn address. Only exist for pledge loan\n"
+            "  \"extra\": {                       (json object) Only exist for bind plotter and pledge loan\n"
+            "    \"type\": \"pledge|bindplotter\",  (string) Extra data type\n"
+            "    \"amount\": xxx,                 (numeric) The value in special tx\n"
+            "    \"address\": \"xxxx\",             (string) Bind address. Only exist for bind plotter\n"
+            "    \"id\": \"plotterID\",             (string) Bind plotter ID. Only exist for bind plotter\n"
+            "    \"from\": \"xxxx\",                (string) Pledge loan address. Only exist for pledge loan\n"
+            "    \"to\": \"xxxx\"                   (string) Pledge loadebitn address. Only exist for pledge loan\n"
             "  },\n"
-            "  \"blockhash\" : \"hash\",   (string) the block hash\n"
+            "  \"subsidy\": x.xxx          (numeric) Accumulate subsidy to block. Only exist in coinbase transaction and meet block\n"
+            "  \"takeoff\": x.xxx          (numeric) Take off reward to next meet block. Only exist in coinbase transaction and not meet block\n"
+            "  \"blockhash\" : \"hash\",     (string) The block hash\n"
             "  \"confirmations\" : n,      (numeric) The confirmations\n"
             "  \"time\" : ttt,             (numeric) The transaction time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"blocktime\" : ttt         (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"

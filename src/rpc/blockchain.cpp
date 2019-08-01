@@ -1635,7 +1635,6 @@ UniValue getchaintxstats(const JSONRPCRequest& request)
         );
 
     const CBlockIndex* pindex;
-    int blockcount = 30 * 24 * 60 * 60 / Params().GetConsensus().nPocTargetSpacing; // By default: 1 month
 
     bool havehash = !request.params[1].isNull();
     uint256 hash;
@@ -1661,6 +1660,7 @@ UniValue getchaintxstats(const JSONRPCRequest& request)
     
     assert(pindex != nullptr);
 
+    int blockcount = 30 * 24 * 60 * 60 / Consensus::GetTargetSpacing(pindex->nHeight, Params().GetConsensus()); // By default: 1 month
     if (request.params[0].isNull()) {
         blockcount = std::max(0, std::min(blockcount, pindex->nHeight - 1));
     } else {

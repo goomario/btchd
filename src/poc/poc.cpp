@@ -76,7 +76,7 @@ void CheckDeadlineThread()
 {
     RenameThread("bitcoin-checkdeadline");
     while (!interruptCheckDeadline) {
-        if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(200)))
+        if (!interruptCheckDeadline.sleep_for(std::chrono::milliseconds(500)))
             break;
 
         std::shared_ptr<CBlock> pblock;
@@ -115,7 +115,7 @@ void CheckDeadlineThread()
                         }
                     } else if (pindexTip->GetGenerationSignature().GetUint64(0) == it->first) {
                         // Previous round
-                        // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best(highest chainwork).
+                        // Process future post block (MAX_FUTURE_BLOCK_TIME). My deadline is best (highest chainwork).
                         uint64_t mineDeadline = it->second.best / pindexTip->pprev->nBaseTarget;
                         uint64_t tipDeadline = (uint64_t) (pindexTip->GetBlockTime() - pindexTip->pprev->GetBlockTime() - 1);
                         if (mineDeadline <= tipDeadline) {
@@ -166,6 +166,15 @@ void CheckDeadlineThread()
 typedef std::unordered_map< uint64_t, std::shared_ptr<CKey> > CPrivKeyMap;
 CPrivKeyMap mapSignaturePrivKeys;
 
+// 4398046511104 / 240 = 18325193796
+const uint64_t BHD_BASE_TARGET_240 = 18325193796ull;
+
+// 4398046511104 / 300 = 14660155037
+const uint64_t BHD_BASE_TARGET_300 = 14660155037ull;
+
+// 4398046511104 / 180 = 24433591728
+const uint64_t BHD_BASE_TARGET_180 = 24433591728ull;
+
 }
 
 namespace poc {
@@ -182,20 +191,12 @@ static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const ui
     CShabal256 shabal256;
     uint256 temp;
 
-    // Scoop
-    const uint64_t flipHeight = htobe64(static_cast<uint64_t>(nHeight));
-    shabal256
-        .Write(generationSignature.begin(), generationSignature.size())
-        .Write((const unsigned char*)&flipHeight, sizeof(flipHeight))
-        .Finalize((unsigned char*)temp.begin());
-    const uint32_t scoop = (uint32_t) (temp.begin()[31] + 256 * temp.begin()[30]) % 4096;
-
     // Row data
-    const uint64_t addr = htobe64(nPlotterId);
-    const uint64_t nonce = htobe64(nNonce);
+    const uint64_t plotterId_be = htobe64(nPlotterId);
+    const uint64_t nonce_be = htobe64(nNonce);
     unsigned char *const data = calcDLDataCache.get();
-    memcpy(data + PLOT_SIZE, (const unsigned char*)&addr, 8);
-    memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce, 8);
+    memcpy(data + PLOT_SIZE, (const unsigned char*)&plotterId_be, 8);
+    memcpy(data + PLOT_SIZE + 8, (const unsigned char*)&nonce_be, 8);
     for (int i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
         int len = PLOT_SIZE + 16 - i;
         if (len > SCOOPS_PER_PLOT) {
@@ -206,12 +207,21 @@ static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const ui
             .Write(data + i, len)
             .Finalize(data + i - HASH_SIZE);
     }
+    // Final
     shabal256
         .Write(data, PLOT_SIZE + 16)
         .Finalize(temp.begin());
     for (int i = 0; i < PLOT_SIZE; i++) {
         data[i] = (unsigned char) (data[i] ^ (temp.begin()[i % HASH_SIZE]));
     }
+
+    // Scoop
+    const uint64_t height_be = htobe64(static_cast<uint64_t>(nHeight));
+    shabal256
+        .Write(generationSignature.begin(), generationSignature.size())
+        .Write((const unsigned char*)&height_be, 8)
+        .Finalize((unsigned char*)temp.begin());
+    const uint32_t scoop = (uint32_t) (temp.begin()[31] + 256 * temp.begin()[30]) % 4096;
 
     // PoC2 Rearrangement. Swap high hash
     //
@@ -243,7 +253,7 @@ static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, 
         return poc::INVALID_DEADLINE;
 
     // Regtest use nonce as deadline
-    if (params.fPocAllowMinDifficultyBlocks)
+    if (params.fAllowMinDifficultyBlocks)
         return block.nNonce * prevBlockIndex.nBaseTarget;
 
     return CalcDL(prevBlockIndex.nHeight + 1, prevBlockIndex.GetNextGenerationSignature(), block.nPlotterId, block.nNonce, params);
@@ -258,24 +268,23 @@ uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader
 uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight <= params.BHDIP001StartMingingHeight) {
-        // genesis block & pre-mining block
+    if (nHeight < params.BHDIP001StartMingingHeight + 4) {
+        // genesis block & pre-mining block & const block
         return BHD_BASE_TARGET_240;
-    } else if (nHeight < params.BHDIP001StartMingingHeight + 4) {
-        return BHD_BASE_TARGET_240;
-    } else if (nHeight < params.BHDIP001StartMingingHeight + 2700) {
+    } else if (nHeight < params.BHDIP001StartMingingHeight + 2700 && nHeight < params.BHDIP006Height) {
         // [N-1,N-2,N-3,N-4]
-        uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
+        const int N = 4;
         const CBlockIndex *pLastindex = &prevBlockIndex;
-        for (int i = nHeight - 2; i >= nHeight - 4; i--) {
+        uint64_t avgBaseTarget = pLastindex->nBaseTarget;
+        for (int n = 1; n < N; n++) {
             pLastindex = pLastindex->pprev;
             avgBaseTarget += pLastindex->nBaseTarget;
         }
-        avgBaseTarget /= 4;
+        avgBaseTarget /= N;
 
-        uint64_t curBaseTarget = avgBaseTarget;
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.nPocTargetSpacing * 4); // 5m * 4blocks
+        uint64_t curBaseTarget = avgBaseTarget;
+        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.BHDIP001TargetSpacing * 4);
         if (newBaseTarget > BHD_BASE_TARGET_240) {
             newBaseTarget = BHD_BASE_TARGET_240;
         }
@@ -290,20 +299,17 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         }
 
         return newBaseTarget;
-    } else {
-        // Algorithm:
-        //   B(0) = prevBlock, B(1) = B(0).prev, ..., B(n) = B(n-1).prev
-        //   Y(0) = B(0).nBaseTarget
-        //   Y(n) = (Y(n-1) * (n-1) + B(n).nBaseTarget) / (n + 1); n > 0
-        const int N = nHeight < params.BHDIP006Height ? 25 : (24 * 3600 / params.nPocTargetSpacing);
+    } else if (nHeight < params.BHDIP006Height) {
+        // [N-1,N-2,...,N-24,N-25]
+        const int N = 24;
         const CBlockIndex *pLastindex = &prevBlockIndex;
-        uint64_t avgBaseTarget = prevBlockIndex.nBaseTarget;
-        for (int n = 1; n < N; n++) {
+        uint64_t avgBaseTarget = pLastindex->nBaseTarget;
+        for (int n = 1; n <= N; n++) {
             pLastindex = pLastindex->pprev;
             avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
         }
         int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime();
-        int64_t targetTimespan = params.nPocTargetSpacing * (N - 1); // 5m * (N-1)blocks. Because "time1 = time0 + deadline + 1" about 288s, so we -1
+        int64_t targetTimespan = params.BHDIP001TargetSpacing * N;
         if (diffTime < targetTimespan / 2) {
             diffTime = targetTimespan / 2;
         }
@@ -326,7 +332,127 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         }
 
         return newBaseTarget;
+    } else if (nHeight < params.BHDIP008Height) {
+        // [N-1,N-2,...,N-287,N-288]
+        const int N = 288 - 1;
+        const CBlockIndex *pLastindex = &prevBlockIndex;
+        uint64_t avgBaseTarget = pLastindex->nBaseTarget;
+        for (int n = 1; n <= N; n++) {
+            pLastindex = pLastindex->pprev;
+            avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
+        }
+        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime(); // Bug: diffTime large
+        int64_t targetTimespan = params.BHDIP001TargetSpacing * N; // Bug: targetTimespan small
+        if (diffTime < targetTimespan / 2) {
+            diffTime = targetTimespan / 2;
+        }
+        if (diffTime > targetTimespan * 2) {
+            diffTime = targetTimespan * 2;
+        }
+        uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
+        uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
+        if (newBaseTarget > BHD_BASE_TARGET_300) {
+            newBaseTarget = BHD_BASE_TARGET_300;
+        }
+        if (newBaseTarget == 0) {
+            newBaseTarget = 1;
+        }
+        if (newBaseTarget < curBaseTarget * 8 / 10) {
+            newBaseTarget = curBaseTarget * 8 / 10;
+        }
+        if (newBaseTarget > curBaseTarget * 12 / 10) {
+            newBaseTarget = curBaseTarget * 12 / 10;
+        }
+
+        return newBaseTarget;
+    } else if (nHeight == params.BHDIP008Height) {
+        // Use average BaseTarget for first BHDIP008 genesis block
+        const int N = params.nCapacityEvalWindow;
+        const CBlockIndex *pLastindex = &prevBlockIndex;
+        uint64_t avgBaseTarget = pLastindex->nBaseTarget;
+        for (int n = 1; n < N; n++) {
+            pLastindex = pLastindex->pprev;
+            avgBaseTarget += pLastindex->nBaseTarget;
+        }
+        avgBaseTarget /= N;
+
+        // 300 to 180
+        const arith_uint256 bt180(BHD_BASE_TARGET_180), bt300(BHD_BASE_TARGET_300);
+        arith_uint256 bt(avgBaseTarget);
+        bt *= bt180;
+        bt /= bt300;
+        return bt.GetLow64();
+    } else if (nHeight < params.BHDIP008Height + 4) {
+        return prevBlockIndex.nBaseTarget;
+    } else if (nHeight < params.BHDIP008Height + 80) {
+        // [N-1,N-2,N-3,N-4]
+        const int N = 4;
+        const CBlockIndex *pLastindex = &prevBlockIndex;
+        uint64_t avgBaseTarget = pLastindex->nBaseTarget;
+        for (int n = 1; n < N; n++) {
+            pLastindex = pLastindex->pprev;
+            avgBaseTarget += pLastindex->nBaseTarget;
+        }
+        avgBaseTarget /= N;
+
+        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime() - static_cast<int64_t>(N) * 1;
+        uint64_t curBaseTarget = avgBaseTarget;
+        uint64_t newBaseTarget = (curBaseTarget * diffTime) / (params.BHDIP008TargetSpacing * 4);
+        if (newBaseTarget > BHD_BASE_TARGET_180) {
+            newBaseTarget = BHD_BASE_TARGET_180;
+        }
+        if (newBaseTarget < (curBaseTarget * 9 / 10)) {
+            newBaseTarget = curBaseTarget * 9 / 10;
+        }
+        if (newBaseTarget == 0) {
+            newBaseTarget = 1;
+        }
+        if (newBaseTarget > (curBaseTarget * 11 / 10)) {
+            newBaseTarget = curBaseTarget * 11 / 10;
+        }
+
+        return newBaseTarget;
+    } else {
+        // Algorithm:
+        //   B(0) = prevBlock, B(1) = B(0).prev, ..., B(n) = B(n-1).prev
+        //   Y(0) = B(0).nBaseTarget
+        //   Y(n) = (Y(n-1) * (n-1) + B(n).nBaseTarget) / (n + 1); n > 0
+        const int N = 80; // About 4 hours
+        const CBlockIndex *pLastindex = &prevBlockIndex;
+        uint64_t avgBaseTarget = pLastindex->nBaseTarget;
+        for (int n = 1; n < N; n++) {
+            pLastindex = pLastindex->pprev;
+            avgBaseTarget = (avgBaseTarget * n + pLastindex->nBaseTarget) / (n + 1);
+        }
+        int64_t diffTime = block.GetBlockTime() - pLastindex->GetBlockTime() - static_cast<int64_t>(N) * 1;
+        int64_t targetTimespan = params.BHDIP008TargetSpacing * N;
+        if (diffTime < targetTimespan / 2) {
+            diffTime = targetTimespan / 2;
+        }
+        if (diffTime > targetTimespan * 2) {
+            diffTime = targetTimespan * 2;
+        }
+        uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
+        uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
+        if (newBaseTarget > BHD_BASE_TARGET_180) {
+            newBaseTarget = BHD_BASE_TARGET_180;
+        }
+        if (newBaseTarget == 0) {
+            newBaseTarget = 1;
+        }
+        if (newBaseTarget < curBaseTarget * 8 / 10) {
+            newBaseTarget = curBaseTarget * 8 / 10;
+        }
+        if (newBaseTarget > curBaseTarget * 12 / 10) {
+            newBaseTarget = curBaseTarget * 12 / 10;
+        }
+
+        return newBaseTarget;
     }
+}
+
+uint64_t GetBaseTarget(int nHeight, const Consensus::Params& params) {
+    return GetBaseTarget(Consensus::GetTargetSpacing(nHeight, params));
 }
 
 uint64_t AddNonce(uint64_t& bestDeadline, const CBlockIndex& miningBlockIndex,
@@ -486,35 +612,41 @@ int64_t GetNetCapacity(int nHeight, const Consensus::Params& params)
     uint64_t nBaseTarget = 0;
     int nBlockCount = 0;
     for (const CBlockIndex& block : GetEvalBlocks(nHeight, true, params)) {
-        nBaseTarget += block.nBaseTarget;
-        nBlockCount++;
+        if (nHeight < params.BHDIP008Height || block.nHeight >= params.BHDIP008Height) {
+            nBaseTarget += block.nBaseTarget;
+            nBlockCount++;
+        }
     }
-
     if (nBlockCount != 0) {
         nBaseTarget /= nBlockCount;
-        if (nBaseTarget > 0) {
-            return std::max(static_cast<int64_t>(poc::BHD_BASE_TARGET / nBaseTarget), (int64_t) 1);
+        if (nBaseTarget != 0) {
+            const uint64_t &nInitbaseTarget = nHeight < params.BHDIP008Height ? BHD_BASE_TARGET_300 : BHD_BASE_TARGET_180;
+            return std::max(static_cast<int64_t>(nInitbaseTarget / nBaseTarget), (int64_t) 1);
         }
     }
 
     return (int64_t) 1;
 }
 
-template <uint64_t BaseTarget>
-static int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
+template <uint64_t BT>
+static int64_t EvalNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
 {
     uint64_t nBaseTarget = 0;
     int nBlockCount = 0;
     for (const CBlockIndex& block : GetEvalBlocks(nHeight, true, params)) {
+        // All blocks
         associateBlock(block);
-        nBaseTarget += block.nBaseTarget;
-        nBlockCount++;
+
+        if (nHeight < params.BHDIP008Height || block.nHeight >= params.BHDIP008Height) {
+            nBaseTarget += block.nBaseTarget;
+            nBlockCount++;
+        }
     }
 
     if (nBlockCount != 0) {
         nBaseTarget /= nBlockCount;
-        if (nBaseTarget > 0) {
-            return std::max(static_cast<int64_t>(BaseTarget / nBaseTarget), (int64_t) 1);
+        if (nBaseTarget != 0) {
+            return std::max(static_cast<int64_t>(BT / nBaseTarget), (int64_t) 1);
         }
     }
 
@@ -523,7 +655,11 @@ static int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std:
 
 int64_t GetNetCapacity(int nHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
 {
-    return GetNetCapacity<BHD_BASE_TARGET>(nHeight, params, associateBlock);
+    if (nHeight < params.BHDIP008Height) {
+        return EvalNetCapacity<BHD_BASE_TARGET_300>(nHeight, params, associateBlock);
+    } else {
+        return EvalNetCapacity<BHD_BASE_TARGET_180>(nHeight, params, associateBlock);
+    }
 }
 
 int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, const Consensus::Params& params)
@@ -539,7 +675,7 @@ int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, 
     return nTargetNetCapacityTB;
 }
 
-// Round to cent coin
+// Round to cent coin. 0.0001
 static const CAmount ratio_percise = COIN / 10000;
 static inline CAmount RoundPledgeRatio(CAmount amount)
 {
@@ -552,13 +688,21 @@ CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
         // Legacy
         if (pRatioStage) *pRatioStage = -2;
 
-        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001MiningRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
+        const arith_uint256 bt240(BHD_BASE_TARGET_240), bt300(BHD_BASE_TARGET_300);
+        arith_uint256 miningRatio(static_cast<uint64_t>(params.BHDIP001MiningRatio));
+        miningRatio *= bt240;
+        miningRatio /= bt300;
+        CAmount nLegacyRatio = RoundPledgeRatio(static_cast<CAmount>(miningRatio.GetLow64()));
         return nLegacyRatio;
     } else if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         // Smooth
         if (pRatioStage) *pRatioStage = -1;
 
-        CAmount nLegacyRatio = RoundPledgeRatio(params.BHDIP001MiningRatio * BHD_BASE_TARGET_240 / BHD_BASE_TARGET);
+        const arith_uint256 bt240(BHD_BASE_TARGET_240), bt300(BHD_BASE_TARGET_300);
+        arith_uint256 miningRatio(static_cast<uint64_t>(params.BHDIP001MiningRatio));
+        miningRatio *= bt240;
+        miningRatio /= bt300;
+        CAmount nLegacyRatio = RoundPledgeRatio(static_cast<CAmount>(miningRatio.GetLow64()));
         int step = params.BHDIP007SmoothEndHeight - params.BHDIP007Height + 1;
         int current = nMiningHeight - params.BHDIP007Height + 1;
         return RoundPledgeRatio(nLegacyRatio - ((nLegacyRatio - params.BHDIP001MiningRatio) * current) / step);
@@ -596,16 +740,16 @@ CAmount GetMiningRatio(int nMiningHeight, const Consensus::Params& params, int* 
     assert(nMiningHeight > 0 && nMiningHeight <= chainActive.Height() + 1);
 
     int64_t nNetCapacityTB = 0;
-    if (nMiningHeight > params.BHDIP007SmoothEndHeight) {
-        int nAdjustHeight = ((nMiningHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
-        int64_t nCurrentNetCapacityTB = GetNetCapacity(nAdjustHeight, params);
-        int64_t nPrevNetCapacityTB = GetNetCapacity(std::max(nAdjustHeight - params.nCapacityEvalWindow, 0), params);
-        nNetCapacityTB = GetRatioNetCapacity(nCurrentNetCapacityTB, nPrevNetCapacityTB, params);
-        if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
-        if (pRatioBeginHeight) *pRatioBeginHeight = nAdjustHeight;
-    } else {
+    if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         if (pRatioCapacityTB) *pRatioCapacityTB = GetNetCapacity(nMiningHeight - 1, params);
         if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight);
+    } else {
+        int nEndEvalHeight = ((nMiningHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
+        int64_t nCurrentNetCapacityTB = GetNetCapacity(nEndEvalHeight, params);
+        int64_t nPrevNetCapacityTB = GetNetCapacity(std::max(nEndEvalHeight - params.nCapacityEvalWindow, 0), params);
+        nNetCapacityTB = GetRatioNetCapacity(nCurrentNetCapacityTB, nPrevNetCapacityTB, params);
+        if (pRatioCapacityTB) *pRatioCapacityTB = nNetCapacityTB;
+        if (pRatioBeginHeight) *pRatioBeginHeight = nEndEvalHeight;
     }
 
     return EvalMiningRatio(nMiningHeight, nNetCapacityTB, params, pRatioStage);
@@ -625,10 +769,14 @@ static inline CAmount GetCompatiblePledgeRatio(int nMiningHeight, const Consensu
 // Compatible BHD007 before consensus
 static inline int64_t GetCompatibleNetCapacity(int nMiningHeight, const Consensus::Params& params, std::function<void(const CBlockIndex&)> associateBlock)
 {
-    if (nMiningHeight < params.BHDIP007Height)
-        return GetNetCapacity<BHD_BASE_TARGET_240>(nMiningHeight - 1, params, associateBlock);
-    else
-        return GetNetCapacity<BHD_BASE_TARGET>(nMiningHeight - 1, params, associateBlock);
+    if (nMiningHeight < params.BHDIP007Height) {
+        return EvalNetCapacity<BHD_BASE_TARGET_240>(nMiningHeight - 1, params, associateBlock);
+    } else if (nMiningHeight <= params.BHDIP008Height) {
+        // BHDIP008 is new genesis block
+        return EvalNetCapacity<BHD_BASE_TARGET_300>(nMiningHeight - 1, params, associateBlock);
+    } else {
+        return EvalNetCapacity<BHD_BASE_TARGET_180>(nMiningHeight - 1, params, associateBlock);
+    }
 }
 
 CAmount GetMiningRequireBalance(const CAccountID& generatorAccountID, const uint64_t& nPlotterId, int nMiningHeight,
@@ -708,10 +856,9 @@ bool CheckProofOfCapacity(const CBlockIndex& prevBlockIndex, const CBlockHeader&
         return false;
 
     if (prevBlockIndex.nHeight + 1 < params.BHDIP007Height) {
-        return deadline == 0 || block.GetBlockTime() > prevBlockIndex.GetBlockTime() + (int64_t)deadline;
+        return deadline == 0 || block.GetBlockTime() > prevBlockIndex.GetBlockTime() + static_cast<int64_t>(deadline);
     } else {
-        // Strict check time interval
-        return block.GetBlockTime() == prevBlockIndex.GetBlockTime() + (int64_t)deadline + 1;
+        return block.GetBlockTime() == prevBlockIndex.GetBlockTime() + static_cast<int64_t>(deadline) + 1;
     }
 }
 
@@ -794,10 +941,6 @@ bool StartPOC()
             }
         }
     #endif
-
-        LogPrintf("WARN: The mining-sign consensus verify at %d. Please import private key by:\n"
-            "\t1.RPC interface: `addsignprivkey <privkey>`\n"
-            "\t2.Write `signprivkey=<privkey>` to btchd.conf (Delete after startup)\n", Params().GetConsensus().BHDIP007Height);
     } else {
         LogPrintf("Skip PoC forge thread\n");
         interruptCheckDeadline();

@@ -189,13 +189,13 @@ void CBlockIndex::BuildSkip()
 arith_uint256 GetBlockProof(const CBlockHeader& header, const Consensus::Params& params)
 {
     //! Same nBaseTarget select biggest hash
-    return (poc::TWO64 / header.nBaseTarget) * 100 + header.GetHash().GetUint64(0) % 100;
+    return (poc::TWO64 / header.nBaseTarget) * 100 + (header.vchSignature.empty() ? 0 : header.vchSignature.back()) % 100;
 }
 
 arith_uint256 GetBlockProof(const CBlockIndex& block, const Consensus::Params& params)
 {
     //! Same nBaseTarget select biggest hash
-    return (poc::TWO64 / block.nBaseTarget) * 100 + block.phashBlock->GetUint64(0) % 100;
+    return (poc::TWO64 / block.nBaseTarget) * 100 + (block.vchSignature.empty() ? 0 : block.vchSignature.back()) % 100;
 }
 
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params& params)
@@ -208,7 +208,7 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
         r = from.nChainWork - to.nChainWork;
         sign = -1;
     }
-    r = r * arith_uint256(params.nPocTargetSpacing) / GetBlockProof(tip, params);
+    r = r * arith_uint256(Consensus::GetTargetSpacing(tip.nHeight, params)) / GetBlockProof(tip, params);
     if (r.bits() > 63) {
         return sign * std::numeric_limits<int64_t>::max();
     }

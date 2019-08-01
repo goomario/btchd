@@ -11,6 +11,8 @@
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 
+#include <validation.h>
+
 #include <QApplication>
 #include <QClipboard>
 
@@ -97,7 +99,9 @@ SendCoinsEntry::SendCoinsEntry(PayOperateMethod _payOperateMethod, const Platfor
         ui->plotterDataValidHeightSelector->setVisible(true);
         for (const int n : bindActiveHeights) {
             assert(n > 0 && n <= PROTOCOL_BINDPLOTTER_MAXALIVE);
-            ui->plotterDataValidHeightSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPocTargetSpacing)).arg(n));
+            ui->plotterDataValidHeightSelector->addItem(tr("%1 (%2 blocks)")
+                .arg(GUIUtil::formatNiceTimeOffset(n*Consensus::GetTargetSpacing(chainActive.Height(), Params().GetConsensus())))
+                .arg(n));
         }
         ui->plotterDataValidHeightSelector->setCurrentIndex(getIndexForPlotterDataValidHeight(PROTOCOL_BINDPLOTTER_DEFAULTMAXALIVE));
     }
