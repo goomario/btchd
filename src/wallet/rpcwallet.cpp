@@ -42,6 +42,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <vector>
 
 #include <univalue.h>
 
@@ -425,29 +426,41 @@ UniValue setprimaryaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_MISC_ERROR, "setprimaryaddress can only be used with own address");
 }
 
-CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
+// Send money to addresses
+CAmount SendMoney(CWallet * const pwallet, const std::vector< std::pair<CTxDestination,CAmount> > &vecPay,
+    bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CCoinControl& coin_control)
 {
+    if (vecPay.empty())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid input");
+
+    // Vout
+    CAmount nTotalAmount = 0;
+    std::vector<CRecipient> vecSend;
+    vecSend.reserve(vecPay.size());
+    for (auto it = vecPay.cbegin(); it != vecPay.cend(); it++) {
+        CScript scriptPubKey = GetScriptForDestination(it->first);
+        if (!scriptPubKey.IsPayToScriptHash())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
+
+        if (it->second <= 0)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
+        nTotalAmount += it->second;
+
+        vecSend.push_back({scriptPubKey, it->second, fSubtractFeeFromAmount});
+    }
+
     CAmount curBalance = pwallet->GetBalance();
-
-    // Check amount
-    if (nValue <= 0)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
-
-    if (nValue > curBalance)
+    if (nTotalAmount > curBalance)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
 
     if (pwallet->GetBroadcastTransactions() && !g_connman) {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
 
-    // Parse Bitcoin address
-    CScript scriptPubKey = GetScriptForDestination(address);
-
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
     CAmount nFeeRequired = 0;
     std::string strError;
-    std::vector<CRecipient> vecSend = { {scriptPubKey, nValue, fSubtractFeeFromAmount} };
     int nChangePosRet = -1;
 
     // @@ comment add to transaction
@@ -464,7 +477,7 @@ CAmount SendMoney(CWallet * const pwallet, const CTxDestination &address, CAmoun
     }
 
     if (!pwallet->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
-        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
+        if (!fSubtractFeeFromAmount && nTotalAmount + nFeeRequired > curBalance)
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
@@ -488,11 +501,12 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 10)
         throw std::runtime_error(
             "sendtoaddress \"address\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\" \"pay_policy\" \"changeaddress\")\n"
-            "\nSend an amount to a given address.\n"
+            "sendtoaddress [\"addresses\"...] [amounts...] ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\" \"pay_policy\" \"changeaddress\")\n"
+            "\nSend an amount(s) to a given address(es).\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
-            "1. \"address\"            (string, required) The BitcoinHD address to send to.\n"
-            "2. \"amount\"             (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
+            "1. \"address\"            (string or array, required) The BitcoinHD address(es) to send to.\n"
+            "2. \"amount\"             (numeric or string or array, required) The amount(s) in " + CURRENCY_UNIT + " to send. eg 0.1\n"
             "3. \"comment\"            (string, optional) A comment used to store what the transaction is for. \n"
             "                             This is not part of the transaction, just kept in your wallet.\n"
             "4. \"comment_to\"         (string, optional) A comment to store the name of the person or organization \n"
@@ -518,7 +532,9 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1")
             + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"donation\" \"seans outpost\"")
             + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"\" \"\" true")
+            + HelpExampleCli("sendtoaddress", "\"[\\\"" + Params().GetConsensus().BHDFundAddress + "\\\"]\" \"[0.1]\"")
             + HelpExampleRpc("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\", 0.1, \"donation\", \"seans outpost\"")
+            + HelpExampleRpc("sendtoaddress", "\"[\\\"" + Params().GetConsensus().BHDFundAddress + "\\\"]\", \"[0.1]\"")
         );
 
     ObserveSafeMode();
@@ -529,15 +545,44 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
-    }
+    std::vector< std::pair<CTxDestination,CAmount> > vecPay;
+    std::vector<CTxDestination> vecAmount;
+    if (request.params[1].isArray()) {
+        UniValue addresses;
+        if (!addresses.read(request.params[0].get_str()) || !addresses.isArray() || addresses.empty())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Error parsing JSON:") + request.params[0].get_str());
 
-    // Amount
-    CAmount nAmount = AmountFromValue(request.params[1]);
-    if (nAmount <= 0)
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+        const UniValue &amounts = request.params[1];
+        if (addresses.size() != amounts.size())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid addresses and amounts size");
+
+        for (std::size_t i = 0; i < addresses.size(); i++) {
+            // Dest
+            CTxDestination dest = DecodeDestination(addresses[i].get_str());
+            if (!IsValidDestination(dest))
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+
+            // Amount
+            CAmount nAmount = AmountFromValue(amounts[i]);
+            if (nAmount <= 0)
+                throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+
+            vecPay.push_back(std::make_pair(dest, nAmount));
+        }
+    }
+    if (vecPay.empty()) {
+        // Dest
+        CTxDestination dest = DecodeDestination(request.params[0].get_str());
+        if (!IsValidDestination(dest))
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+
+        // Amount
+        CAmount nAmount = AmountFromValue(request.params[1]);
+        if (nAmount <= 0)
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+
+        vecPay.push_back(std::make_pair(dest, nAmount));
+    }
 
     // Wallet comments
     CWalletTx wtx;
@@ -579,9 +624,12 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             coin_control.coinPickPolicy = CoinPickPolicy::ExcludeIfSet;
             coin_control.destPick = pwallet->GetPrimaryDestination();
         } else if (payPolicy == "MOVETO") {
+            if (vecPay.size() != 1) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Only support single address on pay_policy=MOVETO");
+            }
             coin_control.coinPickPolicy = CoinPickPolicy::MoveAllTo;
-            coin_control.destPick = dest;
-            coin_control.destChange = dest; // Don't use, but set for change params
+            coin_control.destPick = vecPay[0].first;
+            coin_control.destChange = vecPay[0].first; // Don't use, but set for change params
         } else {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid pay_policy parameter");
         }
@@ -591,7 +639,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid changeaddress parameter on pay_policy=MOVETO");
 
         CTxDestination changeDest = DecodeDestination(request.params[9].get_str());
-        if (!IsValidDestination(dest)) {
+        if (!IsValidDestination(changeDest)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid change address");
         }
         coin_control.destChange = changeDest;
@@ -599,7 +647,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked(pwallet);
 
-    CAmount sendAmount = SendMoney(pwallet, dest, nAmount, fSubtractFeeFromAmount, wtx, coin_control);
+    CAmount sendAmount = SendMoney(pwallet, vecPay, fSubtractFeeFromAmount, wtx, coin_control);
     if (coin_control.coinPickPolicy == CoinPickPolicy::MoveAllTo) {
         UniValue result(UniValue::VOBJ);
         result.pushKV("txid", wtx.GetHash().GetHex());
@@ -1088,7 +1136,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Account has insufficient funds");
 
     CCoinControl no_coin_control; // This is a deprecated API
-    SendMoney(pwallet, dest, nAmount, false, wtx, no_coin_control);
+    SendMoney(pwallet, { std::make_pair(dest, nAmount) }, false, wtx, no_coin_control);
 
     return wtx.GetHash().GetHex();
 }
