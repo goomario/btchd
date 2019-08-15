@@ -70,7 +70,7 @@ const std::string CLIENT_BUILD(BUILD_DESC CLIENT_VERSION_SUFFIX);
 
 static std::string FormatVersion(int nVersion)
 {
-    if (nVersion % 2 == 0)
+    if (nVersion % 100 == 0)
         return strprintf("%d.%d.%d", nVersion / 1000000, (nVersion / 10000) % 100, (nVersion / 100) % 100);
     else
         return strprintf("%d.%d.%d.%d", nVersion / 1000000, (nVersion / 10000) % 100, (nVersion / 100) % 100, nVersion % 100);
