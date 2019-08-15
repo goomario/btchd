@@ -351,8 +351,8 @@ uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHead
         }
         uint64_t curBaseTarget = prevBlockIndex.nBaseTarget;
         uint64_t newBaseTarget = avgBaseTarget * diffTime / targetTimespan;
-        if (newBaseTarget > BHD_BASE_TARGET_300) {
-            newBaseTarget = BHD_BASE_TARGET_300;
+        if (newBaseTarget > BHD_BASE_TARGET_240) {
+            newBaseTarget = BHD_BASE_TARGET_240;
         }
         if (newBaseTarget == 0) {
             newBaseTarget = 1;
