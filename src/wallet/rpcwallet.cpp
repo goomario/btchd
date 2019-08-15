@@ -534,7 +534,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             + HelpExampleCli("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\" 0.1 \"\" \"\" true")
             + HelpExampleCli("sendtoaddress", "\"[\\\"" + Params().GetConsensus().BHDFundAddress + "\\\"]\" \"[0.1]\"")
             + HelpExampleRpc("sendtoaddress", "\"" + Params().GetConsensus().BHDFundAddress + "\", 0.1, \"donation\", \"seans outpost\"")
-            + HelpExampleRpc("sendtoaddress", "\"[\\\"" + Params().GetConsensus().BHDFundAddress + "\\\"]\", \"[0.1]\"")
+            + HelpExampleRpc("sendtoaddress", "\"[\\\"" + Params().GetConsensus().BHDFundAddress + "\\\"]\", [0.1])
         );
 
     ObserveSafeMode();
