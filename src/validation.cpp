@@ -3310,16 +3310,28 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
         return true;
     }
 
-    // Skip exist valid block header
-    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi != mapBlockIndex.end() && mi->second->IsValid(BLOCK_VALID_TREE))
-        return true;
-
     // Have previous block
     BlockMap::iterator miPrev = mapBlockIndex.find(block.hashPrevBlock);
     if (miPrev == mapBlockIndex.end())
         return state.DoS(10, error("%s: prev block not found", __func__), 0, "prev-blk-not-found");
     const CBlockIndex* pindexPrev = miPrev->second;
+
+    // Check difficulty
+    if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, chainparams.GetConsensus()))
+        return state.DoS(100, false, REJECT_INVALID, "bad-diff", false, "incorrect difficulty");
+
+    // Block signature
+    if (pindexPrev->nHeight + 1 >= chainparams.GetConsensus().BHDIP007Height) {
+        if (block.vchPubKey.size() != CPubKey::COMPRESSED_PUBLIC_KEY_SIZE || block.vchSignature.size() > CPubKey::SIGNATURE_SIZE)
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "require block signature");
+
+        CPubKey pubkey(block.vchPubKey);
+        if (!pubkey.Verify(block.GetUnsignaturedHash(), block.vchSignature))
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "incorrect block signature");
+    } else {
+        if (!block.vchPubKey.empty() || !block.vchSignature.empty())
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "not allow block signature");
+    }
 
     // Checkpoint
     if (!chainparams.Checkpoints().mapCheckpoints.empty()) {
@@ -3336,25 +3348,15 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
             return true;
     }
 
-    // Block signature for BHDIP007
-    if (pindexPrev->nHeight + 1 >= chainparams.GetConsensus().BHDIP007Height) {
-        if (block.vchPubKey.size() != CPubKey::COMPRESSED_PUBLIC_KEY_SIZE || block.vchSignature.size() > CPubKey::SIGNATURE_SIZE)
-            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "require block signature");
-
-        CPubKey pubkey(block.vchPubKey);
-        if (!pubkey.Verify(block.GetUnsignaturedHash(), block.vchSignature))
-            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "incorrect block signature");
-    } else {
-        if (!block.vchPubKey.empty() || !block.vchSignature.empty())
-            return state.DoS(100, false, REJECT_INVALID, "bad-blk-sign", false, "not allow block signature");
-    }
+    // Skip exist valid block header
+    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
+    if (mi != mapBlockIndex.end() && mi->second->IsValid(BLOCK_VALID_TREE))
+        return true;
 
     // Checking work
     LogPrint(BCLog::POC, "%s: hash=%s height=%d version=0x%08x date='%s'\n", __func__,
         hashBlock.ToString(), pindexPrev->nHeight + 1, block.nVersion,
         DateTimeStrFormat("%Y-%m-%d %H:%M:%S", block.GetBlockTime()));
-    if (block.nBaseTarget != poc::CalculateBaseTarget(*pindexPrev, block, chainparams.GetConsensus()))
-        return state.DoS(100, false, REJECT_INVALID, "bad-work", false, "incorrect difficulty");
     if (!poc::CheckProofOfCapacity(*pindexPrev, block, chainparams.GetConsensus()))
         return state.DoS(100, false, REJECT_INVALID, "bad-work", false, "check work failed");
 
