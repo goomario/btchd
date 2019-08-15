@@ -601,7 +601,7 @@ private:
         int64_t now = GetTime();
         if (now > prevTickTime + 2) {
             prevTickTime = now;
-            tick = (++tick) % m;
+            tick = (tick + 1) % m;
         }
     }
 
