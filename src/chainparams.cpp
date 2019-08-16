@@ -549,7 +549,7 @@ public:
                 {  103000, uint256S("0xe33f5f3479699b77a1bbc70c586f539389d23163bfd9a7e5d544311e82a1ca52") },
                 {  104000, uint256S("0x44905a3381d8bf3e15daa5258cd9332619bd69670d6df7e94701c4e748cc5de1") },
                 {  105000, uint256S("0x3d414ad47acf9aed9e26cf681298d0710d4fb68d4057e16d765cd6e26e3fbee3") },
-                {  106000, uint256S("0x3d414ad47acf9aed9e26cf681298d0710d4fb68d4057e16d765cd6e26e3fbee3") },
+                {  106000, uint256S("0x074b174cdffb56727d71f08f2002957d89b3ff39c87abb69a5e990c462a81c8b") },
                 {  106848, uint256S("0xb3482ee2d4fde29559636657de6f1059b4f8b38ba2d8c9842078d4faed53d92e") }, // BHDIP006
                 {  107000, uint256S("0x142123211cf8df7011baa5d3f4f485cd6484920124b4ecd135e72e2f7b99b2ed") },
                 {  108000, uint256S("0x8e03e9959f26dad803ce5ef10ad8f974854b0f663ac699fcc38fa7999f10d072") },
