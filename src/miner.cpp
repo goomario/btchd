@@ -204,7 +204,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     if (plotterId != 0) {
         // Signature
-        if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !sign(*pblock, *privKey))) {
+        if (nHeight >= chainparams.GetConsensus().BHDIP007Height && (!privKey || !privKey->IsValid() || !sign(*pblock, *privKey))) {
             throw std::runtime_error(strprintf("%s: Signature block error", __func__));
         }
 
