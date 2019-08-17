@@ -31,6 +31,7 @@ static UniValue getMiningInfo(const JSONRPCRequest& request)
             "  [ height ]                  (integer) Next block height\n"
             "  [ generationSignature ]     (string) Current block generation signature\n"
             "  [ baseTarget ]              (string) Current block base target \n"
+            "  [ targetDeadline ]          (number) Max acceptable deadline \n"
             "}\n"
         );
     }
@@ -111,7 +112,7 @@ static UniValue submitNonce(const JSONRPCRequest& request)
         result.pushKV("height", pindexMining->nHeight + 1);
     } catch (const UniValue& objError) {
         result.pushKV("result", "error");
-        result.pushKV("errorCode", objError.isObject() ? objError["code"].getValStr() : "403");
+        result.pushKV("errorCode", objError.isObject() ? objError["code"].getValStr() : "400");
         result.pushKV("errorDescription", objError.isObject() ? objError["message"].getValStr() : objError.getValStr());
     } catch (const std::exception& e) {
         result.pushKV("result", "error");
