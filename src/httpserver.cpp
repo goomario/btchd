@@ -592,7 +592,7 @@ std::string HTTPRequest::ReadBody()
     if (!buf)
         return "";
     size_t size = evbuffer_get_length(buf);
-    if (size > 65535)
+    if (size > 206233600) // 100MB
         return "";
 
     /** Trivial implementation: if this is ever a performance bottleneck,
