@@ -72,6 +72,7 @@ static UniValue submitNonce(const JSONRPCRequest& request)
             "  [ result ]                  (string) Submit result: 'success' or others \n"
             "  [ deadline ]                (integer, optional) Current block generation signature\n"
             "  [ height ]                  (integer, optional) Target block height\n"
+            "  [ targetDeadline ]          (number) Current acceptable deadline \n"
             "}\n"
         );
     }
@@ -108,8 +109,8 @@ static UniValue submitNonce(const JSONRPCRequest& request)
         uint64_t deadline = AddNonce(bestDeadline, *pindexMining, nNonce, nPlotterId, generateTo, fCheckBind, Params().GetConsensus());
         result.pushKV("result", "success");
         result.pushKV("deadline", deadline);
-        result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
         result.pushKV("height", pindexMining->nHeight + 1);
+        result.pushKV("targetDeadline", (bestDeadline == 0 ? poc::MAX_TARGET_DEADLINE : bestDeadline));
     } catch (const UniValue& objError) {
         result.pushKV("result", "error");
         result.pushKV("errorCode", objError.isObject() ? objError["code"].getValStr() : "400");
