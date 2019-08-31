@@ -5,7 +5,7 @@ Upstart: btchdd.conf
 OpenRC:  btchdd.openrc
          btchdd.openrcconf
 CentOS:  btchdd.init
-OS X:    org.btchd.btchd-core.plist
+OS X:    org.btchd.btchdd.plist
 ```
 have been made available to assist packagers in creating node packages here.
 
