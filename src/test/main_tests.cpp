@@ -11,17 +11,6 @@
 #include <boost/signals2/signal.hpp>
 #include <boost/test/unit_test.hpp>
 
-
-static CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
-{
-    CAmount nFees = 0;
-    CAccountID accountID;
-    uint64_t nPlotterId = 0;
-    CCoinsView view;
-    BlockReward nBlockReward = GetBlockReward(nHeight, nFees, accountID, nPlotterId, view, consensusParams);
-    return nBlockReward.miner + nBlockReward.fund;
-}
-
 BOOST_FIXTURE_TEST_SUITE(main_tests, TestingSetup)
 
 static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
