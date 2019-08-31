@@ -5,15 +5,12 @@
 
 #include <script/interpreter.h>
 
-#include <chain.h>
-#include <consensus/params.h>
 #include <crypto/ripemd160.h>
 #include <crypto/sha1.h>
 #include <crypto/sha256.h>
 #include <pubkey.h>
 #include <script/script.h>
 #include <uint256.h>
-#include <utilstrencodings.h>
 
 typedef std::vector<unsigned char> valtype;
 
@@ -1226,6 +1223,8 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         ss << txTo.nLockTime;
         // Sighash type
         ss << nHashType;
+
+        // BitcoinHD salt
         ss << std::string("btchd");
 
         return ss.GetHash();
@@ -1247,6 +1246,8 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
+
+    // BitcoinHD salt
     ss << std::string("btchd");
 
     return ss.GetHash();

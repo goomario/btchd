@@ -162,7 +162,7 @@ void AddressBookPage::setModel(AddressTableModel *_model)
     }
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
-    if (tab == ReceivingTab || gArgs.GetBoolArg("-showalladdressamount", false)) {
+    if (tab == ReceivingTab) {
         ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);
@@ -183,7 +183,7 @@ void AddressBookPage::setModel(AddressTableModel *_model)
     }
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
-    if (tab == ReceivingTab || gArgs.GetBoolArg("-showalladdressamount", false)) {
+    if (tab == ReceivingTab) {
         ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Amount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LockedAmount, QHeaderView::ResizeToContents);
         ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::LoanAmount, QHeaderView::ResizeToContents);

@@ -84,8 +84,8 @@ static const bool DEFAULT_FORCEDNSSEED = false;
 static const size_t DEFAULT_MAXRECEIVEBUFFER = 5 * 1000;
 static const size_t DEFAULT_MAXSENDBUFFER    = 1 * 1000;
 
-// NOTE: When adjusting this, update rpcnet:setban's help ("2hours")
-static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 2;  // Default 2-hours ban
+// NOTE: When adjusting this, update rpcnet:setban's help ("2h")
+static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 2;  // Default 2-hour ban
 
 typedef int64_t NodeId;
 

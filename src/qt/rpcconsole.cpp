@@ -1353,7 +1353,7 @@ void RPCConsole::inputLargeCommand()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 2, 0))
     bool fOk = false;
-    QString cmd = QInputDialog::getMultiLineText(this, this->windowTitle(), "", "", &fOk);
+    QString cmd = QInputDialog::getMultiLineText(this, this->windowTitle(), tr("Input command:"), "", &fOk);
     if (fOk) {
         ui->lineEdit->setText(cmd.replace("\n", " ").trimmed());
     }

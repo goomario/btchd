@@ -162,7 +162,7 @@ enum BlockStatus: uint32_t {
 
     BLOCK_HAVE_SIGNATURE     =  256, //!< signature data for block
 
-    BLOCK_LOWMORTGAGE        =  512, //!< low mortgage for block. Only valid after BHDIP008
+    BLOCK_UNCONDITIONAL      =  512, //!< unconditional block. Only valid after BHDIP008
 };
 
 /** The block chain is a tree shaped structure starting with the

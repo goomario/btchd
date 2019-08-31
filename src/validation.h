@@ -290,7 +290,7 @@ typedef struct {
     CAmount miner0; //! For BHDIP004
     CAmount fund;
     CAmount accumulate;
-    bool lowMortgage;
+    bool fUnconditional;
 } BlockReward;
 BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, const CAccountID& generatorAccountID, const uint64_t& nPlotterId,
     const CCoinsViewCache& view, const Consensus::Params& consensusParams);

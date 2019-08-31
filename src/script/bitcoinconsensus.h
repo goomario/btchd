@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-#define BITCOINCONSENSUS_API_VER 2
+#define BITCOINCONSENSUS_API_VER 1
 
 typedef enum bitcoinconsensus_error_t
 {

@@ -528,7 +528,7 @@ public:
     bool fSafe;
 
     /**
-     * Whether this output lock in bind plotter or pledge loan
+     * Whether this output lock in bind plotter or point to
      */
     bool fLock;
 

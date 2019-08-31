@@ -35,7 +35,7 @@ static const bool DEFAULT_SPLASHSCREEN = true;
 #define COLOR_BLACK QColor(0, 0, 0)
 
 /* Tooltips longer than this (in characters) are converted into rich text,
- * so that they can be word-wrapped.
+   so that they can be word-wrapped.
  */
 static const int TOOLTIP_WRAP_THRESHOLD = 80;
 

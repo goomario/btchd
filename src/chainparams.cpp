@@ -107,6 +107,7 @@ public:
         consensus.BHDIP001FundRoyaltyForLowMortgage  = 700;   // 700‰ to fund
         consensus.BHDIP001MiningRatio                = 3 * COIN;
 
+        // It's fuck mind BitcoinHD Improvement Proposals
         consensus.BHDIP004Height        = 96264; // BitcoinHD new consensus upgrade bug. 96264 is first invalid block
         consensus.BHDIP004AbandonHeight = 99000;
 
@@ -212,7 +213,7 @@ public:
                 {  70000, uint256S("0x464a90f3e349e9066847dfb377e11b994b412407ba8ca00c34e330278db8383e") },
                 {  80000, uint256S("0x4a6f5a5c944105a70aaba7e64c5a7c8f4fc4f3759ac8af423c824db8c89f7482") },
                 {  84001, uint256S("0xa474cb4eeca85ada0f4600b1d6fe656bb09c88328e00c3fcccc0136f2c360e94") },
-                // Offset +1000. Sync batch by 1000
+                // Offset +1000. Sync batch by 1000, accelerate block verify
                 {  85000, uint256S("0xaaeb335da849331f43e7808611f38e630ffbb2726ba131181ba72ac8d58a2da3") },
                 {  86000, uint256S("0xe4fabbdcef187186ae1f1cc32ef8ec2fa22025c0f38a8a4cb0a89118ba34f75b") },
                 {  87000, uint256S("0xf045373bf308043b5e3aff3fffa76e72290c2e433574b1a27a4ad34cab3f12bd") },
@@ -258,7 +259,7 @@ public:
                 { 127000, uint256S("0x323e69f9713a0d5c0a83427e70e4fa5c5e2693cc8ee0e5d4c4e91adb6f982633") },
                 { 128000, uint256S("0x94ebf25c1db0e170e5d3c6529f2e453ce2edac11984ac9b94c1c61eda76d7d42") },
                 { 129000, uint256S("0xc58f6d8bc07ca5e899440bf487474b09f4e139de83defb6b6f36b8e1c49954ec") },
-                { 129100, uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25") }, // BHDIP006 fork height
+                { 129100, uint256S("0xebbc8573080109747838beec06c2014f11327b7b7dc35eab8332a53efecf7f25") }, // BHDIP006
                 { 130000, uint256S("0xfea47141ac2ab697b33ceb3ee71cbca42c8aa93115f301ca69fd21d7ab2f65f5") },
                 { 131000, uint256S("0x9452748d6899f2bb16126c1377e91309aabf0b0645106c26b0959bc0912f7315") },
                 { 132000, uint256S("0x35feb21020d8dc2674a811c5c23e8d85bd2d13339022c273c202986746c18636") },

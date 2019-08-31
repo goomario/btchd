@@ -4,13 +4,11 @@
 
 #include <wallet/crypter.h>
 
-#include <chainparams.h>
 #include <crypto/aes.h>
 #include <crypto/sha512.h>
 #include <script/script.h>
 #include <script/standard.h>
 #include <util.h>
-#include <utilstrencodings.h>
 
 #include <string>
 #include <vector>

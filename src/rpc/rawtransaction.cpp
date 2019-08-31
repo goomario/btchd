@@ -55,7 +55,7 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
 
     // Coinbase transaction accumulate subsidy and takeoff
     if (tx.IsCoinBase() && pindex != nullptr && pindex->nHeight >= Params().GetConsensus().BHDIP008Height) {
-        if (pindex->nStatus & BLOCK_LOWMORTGAGE) {
+        if (pindex->nStatus & BLOCK_UNCONDITIONAL) {
             int ratio = Params().GetConsensus().BHDIP001FundRoyaltyForLowMortgage - GetLowMortgageFundRoyaltyRatio(pindex->nHeight, Params().GetConsensus());
             entry.push_back(Pair("takeoff", ValueFromAmount(GetBlockSubsidy(pindex->nHeight, Params().GetConsensus()) * ratio / 1000)));
         } else {
@@ -142,13 +142,13 @@ UniValue getrawtransaction(const JSONRPCRequest& request)
             "     }\n"
             "     ,...\n"
             "  ],\n"
-            "  \"extra\": {                       (json object) Only exist for bind plotter and pledge loan\n"
+            "  \"extra\": {                       (json object) Only exist for bind plotter and point to\n"
             "    \"type\": \"pledge|bindplotter\",  (string) Extra data type\n"
             "    \"amount\": xxx,                 (numeric) The value in special tx\n"
             "    \"address\": \"xxxx\",             (string) Bind address. Only exist for bind plotter\n"
             "    \"id\": \"plotterID\",             (string) Bind plotter ID. Only exist for bind plotter\n"
-            "    \"from\": \"xxxx\",                (string) Pledge loan address. Only exist for pledge loan\n"
-            "    \"to\": \"xxxx\"                   (string) Pledge loadebitn address. Only exist for pledge loan\n"
+            "    \"from\": \"xxxx\",                (string) Pledge loan address. Only exist for point to\n"
+            "    \"to\": \"xxxx\"                   (string) Pledge loadebitn address. Only exist for point to\n"
             "  },\n"
             "  \"subsidy\": x.xxx          (numeric) Accumulate subsidy to block. Only exist in coinbase transaction and meet block\n"
             "  \"takeoff\": x.xxx          (numeric) Take off reward to next meet block. Only exist in coinbase transaction and not meet block\n"
@@ -920,8 +920,6 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
     bool fHashSingle = ((nHashType & ~(SIGHASH_ANYONECANPAY)) == SIGHASH_SINGLE);
 
-    unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
-
     // Script verification errors
     UniValue vErrors(UniValue::VARR);
 
@@ -943,13 +941,12 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mtx.vout.size()))
             ProduceSignature(MutableTransactionSignatureCreator(&keystore, &mtx, i, amount, nHashType), prevPubKey, sigdata);
-
         sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(mtx, i));
 
         UpdateTransaction(mtx, i, sigdata);
 
         ScriptError serror = SCRIPT_ERR_OK;
-        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, flags, TransactionSignatureChecker(&txConst, i, amount), &serror)) {
+        if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i, amount), &serror)) {
             if (serror == SCRIPT_ERR_INVALID_STACK_OPERATION) {
                 // Unable to sign input and verification failed (possible attempt to partially sign).
                 TxInErrorToJSON(txin, vErrors, "Unable to sign input, invalid stack size (possibly missing key)");

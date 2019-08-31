@@ -24,8 +24,7 @@ Build-Depends: debhelper,
  libqrencode-dev,
  libprotobuf-dev, protobuf-compiler,
  python,
- libzmq3-dev,
- libsqlite3-dev
+ libzmq3-dev
 Standards-Version: 3.9.2
 Homepage: https://btchd.org/
 Vcs-Git: git://github.com/btchd/btchd.git

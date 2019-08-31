@@ -59,6 +59,7 @@ struct Params {
     int nSubsidyHalvingInterval;
     int nCapacityEvalWindow;
 
+    /** BHDIP = BitcoinHD Improvement Proposals, like BIP */
     /** BitcoinHD target spacing */
     int BHDIP001TargetSpacing;
     /** BitcoinHD fund pre-mining height */

@@ -525,7 +525,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "       \"PRIMARYONLY\"\n"
             "       \"PRIMARYEXCLUDE\"\n"
             "       \"MOVETO\"\n"
-            "10. \"changeaddress\"     (string,optional) The change address. Not use on pay_policy=MOVETO"
+            "10. \"changeaddress\"     (string,optional) The change address. Invalid on pay_policy=MOVETO"
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
@@ -2977,7 +2977,7 @@ UniValue listunspent(const JSONRPCRequest& request)
             "                              from outside keys and unconfirmed replacement transactions are considered unsafe\n"
             "                              and are not eligible for spending by fundrawtransaction and sendtoaddress.\n"
             "    \"lock\" : xxx              (bool) The coin has lock, unspendable.\n"
-            "    \"extra\" : {}              (object) The coin extra data for bind plotter and pledge loan.\n"
+            "    \"extra\" : {}              (object) The coin extra data for bind plotter and point to.\n"
             "  }\n"
             "  ,...\n"
             "]\n"
@@ -4026,7 +4026,7 @@ UniValue getpledge(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"balance\": xxx,                     (numeric) All amounts belonging to this address\n"
-            "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and pledge loan\n"
+            "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and point to\n"
             "    \"spendableBalance\": xxx,            (numeric) Spendable amount. Include immarture and exclude locked amount\n"
             "    \"loanBalance\": xxx,                 (numeric) Rental loan amount\n"
             "    \"borrowBalance\": xxx,               (numeric) Rental borrow amount\n"
@@ -4068,7 +4068,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 8)
         throw std::runtime_error(
             "sendpledgetoaddress \"address\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\")\n"
-            "\nSend an amount for pledge loan to a given address.\n"
+            "\nSend an amount for point to to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"address\"            (string, required) The BitcoinHD address to send to.\n"
@@ -4151,7 +4151,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
 
     // Check active state
     if (chainActive.Height() < Params().GetConsensus().BHDIP006Height) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The pledge loan inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("The point to inactive (Will active on %d)", Params().GetConsensus().BHDIP006Height));
     }
 
     EnsureWalletIsUnlocked(pwallet);
@@ -4169,7 +4169,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
         {GetRentalScriptForDestination(rentToDest), 0, false}, //! Tx datacarrier
     };
     if (vecSend[1].scriptPubKey.empty())
-        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid pledge loan script");
+        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid point to script");
     int nChangePosRet = 1;
     if (!pwallet->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, CTransaction::UNIFORM_VERSION)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -4181,7 +4181,7 @@ UniValue sendpledgetoaddress(const JSONRPCRequest& request)
     // Check
     CDatacarrierPayloadRef payload = ExtractTransactionDatacarrier(*wtx.tx, chainActive.Height() + 1);
     if (!payload || payload->type != DATACARRIER_TYPE_RENTAL)
-        throw JSONRPCError(RPC_WALLET_ERROR, "Error on create pledge loan data");
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error on create point to data");
 
     CValidationState state;
     if (!pwallet->CommitTransaction(wtx, reservekey, g_connman.get(), state)) {
@@ -4202,7 +4202,7 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 6)
         throw std::runtime_error(
             "withdrawpledge \"txid\" ( \"comment\" \"comment_to\" replaceable conf_target \"estimate_mode\")\n"
-            "\nWithdraw an pledge loan for a given pledge loan txid.\n"
+            "\nWithdraw an point to for a given point to txid.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"txid\"               (string, required) The pledge transaction id\n"
@@ -4267,11 +4267,11 @@ UniValue withdrawpledge(const JSONRPCRequest& request)
         if (coin.IsSpent() || !coin.IsPledge())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "The transaction not exist or not pledge");
         if (!(pwallet->IsMine(coin.out) & ISMINE_SPENDABLE))
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "The pledge loan not mine");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "The point to not mine");
         
         CTxDestination dest;
         if (!ExtractDestination(coin.out.scriptPubKey, dest))
-            throw JSONRPCError(RPC_WALLET_ERROR, "The pledge loan transaction coin destination cannot extract");
+            throw JSONRPCError(RPC_WALLET_ERROR, "The point to transaction coin destination cannot extract");
 
         txNew.vout.push_back(CTxOut(coin.out.nValue, GetScriptForDestination(dest)));
     }

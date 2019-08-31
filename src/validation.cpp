@@ -420,7 +420,7 @@ bool CheckSequenceLocks(const CTransaction &tx, int flags, LockPoints* lp, bool 
 }
 
 // Returns the script flags which should be checked for a given block
-static unsigned int GetBlockScriptFlags(const CBlockIndex *pindex, const Consensus::Params& chainparams);
+static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& chainparams);
 
 static void LimitMempoolSize(CTxMemPool& pool, size_t limit, unsigned long age) {
     int expired = pool.Expire(GetTime() - age);
@@ -940,7 +940,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // Remove conflicting transactions from the mempool
         for (const CTxMemPool::txiter it : allConflicting)
         {
-            LogPrint(BCLog::MEMPOOL, "replacing tx %s with %s for %s BitcoinHD additional fees, %d delta bytes\n",
+            LogPrint(BCLog::MEMPOOL, "replacing tx %s with %s for %s BHD additional fees, %d delta bytes\n",
                     it->GetTx().GetHash().ToString(),
                     hash.ToString(),
                     FormatMoney(nModifiedFees - nConflictingFees),
@@ -1169,7 +1169,7 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
         // All to miner
         reward.miner = nSubsidy + nFees;
     } else if (nHeight < consensusParams.BHDIP006Height) {
-        // Soft fork. Bad idea
+        // BHDIP004
         // Y is 95% reward, N is 30% reward.
         // -------- Old ------------ => ------------ New ------------
         // Y[95%->miner, 5%->fund]   =>    Y[95%->miner, 5%->fund] pass
@@ -1192,10 +1192,10 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
         } else {
             // Low mortgage
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForLowMortgage) / 1000;
-            reward.lowMortgage = true;
+            reward.fUnconditional = true;
         }
     } else if (nHeight < consensusParams.BHDIP008Height) {
-        // Normal mining for BHDIP006
+        // BHDIP006
         CAmount balanceLoan = 0, balanceBorrow = 0;
         CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balanceLoan, &balanceBorrow);
         CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
@@ -1205,10 +1205,10 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
         } else {
             // Low mortgage
             reward.fund = (nSubsidy * consensusParams.BHDIP001FundRoyaltyForLowMortgage) / 1000;
-            reward.lowMortgage = true;
+            reward.fUnconditional = true;
         }
     } else {
-        // Normal mining for BHDIP008
+        // BHDIP008
         CAmount balanceLoan = 0, balanceBorrow = 0;
         CAmount accountBalance = view.GetAccountBalance(generatorAccountID, nullptr, &balanceLoan, &balanceBorrow);
         CAmount miningRequireBalance = poc::GetMiningRequireBalance(generatorAccountID, nPlotterId, nHeight, view, nullptr, nullptr, consensusParams);
@@ -1225,7 +1225,7 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
             assert(fundRatio <= consensusParams.BHDIP001FundRoyaltyForLowMortgage);
             reward.fund = (nSubsidy * fundRatio) / 1000;
             reward.accumulate -= (nSubsidy * (consensusParams.BHDIP001FundRoyaltyForLowMortgage - fundRatio)) / 1000;
-            reward.lowMortgage = true;
+            reward.fUnconditional = true;
         }
     }
 
@@ -1238,7 +1238,7 @@ CAmount GetLowMortgageAccumulateSubsidy(const CBlockIndex* pindexPrev, const Con
 {
     CAmount accumulate = 0;
     for (const CBlockIndex* pindex = pindexPrev;
-            (pindex != nullptr) && (pindex->nStatus & BLOCK_LOWMORTGAGE) && (pindex->nHeight >= consensusParams.BHDIP008Height);
+            (pindex != nullptr) && (pindex->nStatus & BLOCK_UNCONDITIONAL) && (pindex->nHeight >= consensusParams.BHDIP008Height);
             pindex = pindex->pprev) {
         int nPeriod = (pindex->nHeight - consensusParams.BHDIP008Height) / consensusParams.BHDIP008FundRoyaltyDecreasePeriodForLowMortgage;
         int fundRatio = consensusParams.BHDIP008FundRoyaltyForLowMortgage - consensusParams.BHDIP008FundRoyaltyDecreaseForLowMortgage * nPeriod;
@@ -2311,15 +2311,15 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         setDirtyBlockIndex.insert(pindex);
     }
 
-    // Set low mortgage flags
-    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP008Height && blockReward.lowMortgage) {
-        if (!(pindex->nStatus & BLOCK_LOWMORTGAGE)) {
-            pindex->nStatus |= BLOCK_LOWMORTGAGE;
+    // Set unconditional flags
+    if (pindex->nHeight >= chainparams.GetConsensus().BHDIP008Height && blockReward.fUnconditional) {
+        if (!(pindex->nStatus & BLOCK_UNCONDITIONAL)) {
+            pindex->nStatus |= BLOCK_UNCONDITIONAL;
             setDirtyBlockIndex.insert(pindex);
         }
     } else {
-        if (pindex->nStatus & BLOCK_LOWMORTGAGE) {
-            pindex->nStatus &= ~BLOCK_LOWMORTGAGE;
+        if (pindex->nStatus & BLOCK_UNCONDITIONAL) {
+            pindex->nStatus &= ~BLOCK_UNCONDITIONAL;
             setDirtyBlockIndex.insert(pindex);
         }
     }
@@ -3697,7 +3697,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
     if (first_invalid != nullptr)
         first_invalid->SetNull();
 
-    // DoS and Long fork
+    // DoS check
     {
         LOCK(cs_main);
         BlockMap::const_iterator miPrev = mapBlockIndex.find(headers[0].hashPrevBlock);
@@ -3719,10 +3719,9 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
                         for (std::size_t index = (std::size_t) (pindexLast->nHeight - pindexPrev->nHeight); index < headers.size(); index++) {
                             nChainWork += GetBlockProof(headers[index], chainparams.GetConsensus());
                         }
-                        // pow(0.5, 24) * 288 * 365 = 0.00626564
                         //! Long fork chain work less then 24 blocks, we reject
                         if (nChainWork < chainActive.Tip()->nChainWork + GetBlockProof(*(chainActive.Tip()), chainparams.GetConsensus()) * 24)
-                            return state.DoS(10, error("%s: Sent us small chain work long fork blocks", __func__), 0, "dos-suspicion");
+                            return state.DoS(50, error("%s: Sent us small chain work long fork blocks", __func__), 0, "dos-suspicion");
                     } else {
                         //! Short fork
                         arith_uint256 nChainWork = pindexLast->nChainWork;
@@ -3808,6 +3807,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
             }
             if (ShutdownRequested())
                 break;
+            // Let's GUI response
             MilliSleep(10);
         }
     }

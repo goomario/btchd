@@ -5,12 +5,6 @@ Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
 Source: https://github.com/btchd/btchd
 
 Files: *
-Copyright: 2018-2019, BitcoinHD Core Developers
-License: Expat
-Comment: The BitcoinHD Core Developers encompasses the current developers listed on btchd.org,
-         as well as the numerous contributors to the project.
-
-Files: *
 Copyright: 2017-2018, Bitcoin Core Developers
 License: Expat
 Comment: The Bitcoin Core Developers encompasses the current developers listed on bitcoin.org,

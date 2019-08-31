@@ -23,14 +23,14 @@ static const int BHDIP006_UNSIGN_VERSION = 80022;
 //! BHDIP 006, limit unbind plotter, softfork
 static const int BHDIP006_LIMITUNBIND_VERSION = 80021;
 
-//! BHDIP 006, bind plotter, pledge loan
+//! BHDIP 006, bind plotter, point to
 static const int BHDIP006_VERSION = 80020;
 
 //! test with this version
 static const int PRETEST_VERSION = 80015;
 
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 80023;
+static const int MIN_PEER_PROTO_VERSION = 80024;
 
 
 /********************************************************/

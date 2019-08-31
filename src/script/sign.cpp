@@ -5,16 +5,12 @@
 
 #include <script/sign.h>
 
-#include <chain.h>
-#include <consensus/params.h>
 #include <key.h>
 #include <keystore.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
 #include <script/standard.h>
 #include <uint256.h>
-#include <utilstrencodings.h>
-#include <validation.h>
 
 typedef std::vector<unsigned char> valtype;
 

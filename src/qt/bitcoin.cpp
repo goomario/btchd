@@ -604,7 +604,6 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_WALLET
     qRegisterMetaType< CWallet* >("CWallet*");
 #endif
-    
 
     /// 3. Application identification
     // must be set before OptionsModel is initialized or translations are loaded,

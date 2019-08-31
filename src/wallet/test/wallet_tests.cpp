@@ -54,8 +54,8 @@ static void add_coin(const CAmount& nValue, int nAge = 6*24, bool fIsFromMe = fa
     std::unique_ptr<CWalletTx> wtx(new CWalletTx(&testWallet, MakeTransactionRef(std::move(tx))));
     if (fIsFromMe)
     {
-        wtx->fDebitCached = true;
-        wtx->nDebitCached = 1;
+        wtx->debitCached.first = true;
+        wtx->debitCached.second = 1;
     }
     COutput output(wtx.get(), nInput, nAge, true /* spendable */, true /* solvable */, true /* safe */, false /* lock */);
     vCoins.push_back(output);
