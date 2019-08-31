@@ -92,7 +92,7 @@ class FrameworkInfo(object):
             return None
         
         # Don't deploy system libraries (exception for libQtuitools and libQtlucene).
-        if line.startswith("/System/Library/") or line.startswith("@executable_path") or (line.startswith("/usr/lib/") and "libQt" not in line and "libsqlite" not in line):
+        if line.startswith("/System/Library/") or line.startswith("@executable_path") or (line.startswith("/usr/lib/") and "libQt" not in line):
             return None
         
         m = cls.reOLine.match(line)
@@ -283,18 +283,14 @@ def copyFramework(framework, path, verbose):
     if not os.path.exists(toDir):
         os.makedirs(toDir)
     
-    if "libsqlite" in fromPath:
-        shutil.copy(fromPath, toPath)
-        os.chmod(toPath, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
-    else:
-        shutil.copy2(fromPath, toPath)
+    shutil.copy2(fromPath, toPath)
     if verbose >= 3:
         print("Copied:", fromPath)
         print(" to:", toPath)
 
     permissions = os.stat(toPath)
     if not permissions.st_mode & stat.S_IWRITE:
-      os.chmod(toPath, permissions.st_mode | stat.S_IWRITE)
+        os.chmod(toPath, permissions.st_mode | stat.S_IWRITE)
 
     if not framework.isDylib(): # Copy resources for real frameworks
 

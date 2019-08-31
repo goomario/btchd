@@ -11,4 +11,4 @@ Type=Application
 Icon=bitcoin128
 MimeType=x-scheme-handler/btchd;
 Categories=Office;Finance;
-StartupWMClass=BTCHD-qt
+StartupWMClass=btchd-qt

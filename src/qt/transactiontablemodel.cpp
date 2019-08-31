@@ -427,28 +427,28 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
         return QIcon(":/icons/tx_output");
     case TransactionRecord::BindPlotter:
         if (wtx->status.status & TransactionStatus::Disabled)
-            return QIcon(":/icons/tx_unbindplotter");
+            return QIcon(":/icons/tx_bindplotter_unbind");
         else
             return QIcon(":/icons/tx_bindplotter");
     case TransactionRecord::UnbindPlotter:
-        return QIcon(":/icons/tx_unbindplotter");
+        return QIcon(":/icons/tx_bindplotter_unbind");
     case TransactionRecord::BorrowFrom:
         if (wtx->status.status & TransactionStatus::Disabled)
-            return QIcon(":/icons/tx_pledge_withdraw");
+            return QIcon(":/icons/tx_point_withdraw");
         else
-            return QIcon(":/icons/tx_pledge_in");
+            return QIcon(":/icons/tx_point_in");
     case TransactionRecord::LoanTo:
         if (wtx->status.status & TransactionStatus::Disabled)
-            return QIcon(":/icons/tx_pledge_withdraw");
+            return QIcon(":/icons/tx_point_withdraw");
         else
-            return QIcon(":/icons/tx_pledge_out");
+            return QIcon(":/icons/tx_point_out");
     case TransactionRecord::SelfRental:
         if (wtx->status.status & TransactionStatus::Disabled)
-            return QIcon(":/icons/tx_pledge_withdraw");
+            return QIcon(":/icons/tx_point_withdraw");
         else
-            return QIcon(":/icons/tx_pledge_inout");
+            return QIcon(":/icons/tx_point_inout");
     case TransactionRecord::WithdrawRental:
-        return QIcon(":/icons/tx_pledge_withdraw");
+        return QIcon(":/icons/tx_point_withdraw");
     default:
         return QIcon(":/icons/tx_inout");
     }

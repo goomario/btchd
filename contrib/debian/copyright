@@ -5,9 +5,15 @@ Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
 Source: https://github.com/btchd/btchd
 
 Files: *
-Copyright: 2017-2018, BitcoinHD Core Developers
+Copyright: 2018-2019, BitcoinHD Core Developers
 License: Expat
 Comment: The BitcoinHD Core Developers encompasses the current developers listed on btchd.org,
+         as well as the numerous contributors to the project.
+
+Files: *
+Copyright: 2017-2018, Bitcoin Core Developers
+License: Expat
+Comment: The Bitcoin Core Developers encompasses the current developers listed on bitcoin.org,
          as well as the numerous contributors to the project.
 
 Files: debian/*
@@ -90,10 +96,11 @@ Files: src/qt/res/icons/about.png
        src/qt/res/icons/bitcoin.*
        share/pixmaps/btchd*
        src/qt/res/src/bitcoin.svg
-Copyright: Bitboy, Jonas Schnelli
+       src/qt/res/icons/tx_bindplotter*.png
+       src/qt/res/icons/tx_point_*.png
+Copyright: BitcoinHD
 License: public-domain
-Comment: Site: https://bitcointalk.org/?topic=1756.0
-
+Comment: Site: https://btchd.org
 
 License: Expat
  Permission is hereby granted, free of charge, to any person obtaining a

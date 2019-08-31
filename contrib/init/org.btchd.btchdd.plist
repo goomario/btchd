@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>org.btchd.btchd-core</string>
+	<string>org.btchd.btchdd</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/usr/local/bin/btchd</string>
+		<string>/usr/local/bin/btchdd</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>
