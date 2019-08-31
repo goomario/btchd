@@ -1,5 +1,5 @@
 TOR SUPPORT IN BitcoinHD
-======================
+========================
 
 It is possible to run BitcoinHD as a Tor hidden service, and connect to such services.
 
@@ -8,7 +8,7 @@ configure Tor.
 
 
 1. Run BitcoinHD behind a Tor proxy
----------------------------------
+-----------------------------------
 
 The first step is running BitcoinHD behind a Tor proxy. This will already make all
 outgoing connections be anonymized, but more is possible.
@@ -35,18 +35,18 @@ In a typical situation, this suffices to run behind a Tor proxy:
 
 
 2. Run a BitcoinHD hidden server
-------------------------------
+--------------------------------
 
 If you configure your Tor system accordingly, it is possible to make your node also
 reachable from the Tor network. Add these lines to your /etc/tor/torrc (or equivalent
 config file):
 
 	HiddenServiceDir /var/lib/tor/btchd-service/
-	HiddenServicePort 8833 127.0.0.1:8833
-	HiddenServicePort 18833 127.0.0.1:18833
+	HiddenServicePort 8733 127.0.0.1:8733
+	HiddenServicePort 18733 127.0.0.1:18733
 
 The directory can be different of course, but (both) port numbers should be equal to
-your btchdd's P2P listen port (8833 by default).
+your btchdd's P2P listen port (8733 by default).
 
 	-externalip=X   You can tell BitcoinHD about its publicly reachable address using
 	                this option, and this can be a .onion address. Given the above
@@ -81,7 +81,7 @@ as well, use `discover` instead:
 
 	./btchdd ... -discover
 
-and open port 8833 on your firewall (or use -upnp).
+and open port 8733 on your firewall (or use -upnp).
 
 If you only want to use Tor to reach onion addresses, but not use it as a proxy
 for normal IPv4/IPv6 communication, use:

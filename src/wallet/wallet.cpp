@@ -49,13 +49,6 @@ OutputType g_change_type = OUTPUT_TYPE_NONE;
 
 const char * DEFAULT_WALLET_DAT = "wallet.dat";
 
-/**
- * See https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki,
- *  https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki,
- *  https://github.com/satoshilabs/slips/blob/master/slip-0044.md
- * 
- * https://github.com/satoshilabs/slips/pull/328
- */ 
 const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x8050194a;
 
 /**
@@ -388,6 +381,7 @@ bool CWallet::LoadWatchOnly(const CScript &dest)
     return CCryptoKeyStore::AddWatchOnly(dest);
 }
 
+// TODO bugfix removed coinbase tx
 bool CWallet::RemoveWatchOnlyIfExist(const CTxDestination &dest)
 {
     AssertLockHeld(cs_main);
@@ -3290,7 +3284,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 // behavior."
                 const uint32_t nSequence = coin_control.signalRbf ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1);
                 for (const auto& coin : setCoins)
-                    txNew.vin.push_back(CTxIn(coin.outpoint, CScript(), nSequence));
+                    txNew.vin.push_back(CTxIn(coin.outpoint,CScript(),
+                                              nSequence));
 
                 // Fill in dummy signatures for fee calculation.
                 if (!DummySignTx(txNew, setCoins)) {
@@ -3479,7 +3474,6 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
             if (!wtx.AcceptToMemoryPool(maxTxFee, state)) {
                 LogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", state.GetRejectReason());
                 // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
-                return false;
             } else {
                 wtx.RelayWalletTransaction(connman);
             }
@@ -4083,7 +4077,6 @@ void CReserveKey::KeepKey()
 {
     if (nIndex != -1)
         pwallet->KeepKey(nIndex);
-
     nIndex = -1;
     vchPubKey = CPubKey();
 }

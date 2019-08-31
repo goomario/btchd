@@ -48,9 +48,9 @@ unsigned int ParseConfirmTarget(const UniValue& value)
 
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const std::shared_ptr<CKey> privKey, int nGenerate, bool keepScript)
 {
-    // root minute ancient won check dove second spot book thump retreat add
-    // =>
-    // 9414704830574620511;
+    // Test account:
+    //   root minute ancient won check dove second spot book thump retreat add
+    //   9414704830574620511;
     const uint64_t nPlotterId = 9414704830574620511ULL;
 
     int nHeightEnd = 0;
@@ -64,9 +64,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, const st
     while (nHeight < nHeightEnd) {
         ++nHeight;
 
-        uint64_t nDeadline = static_cast<uint64_t>(nHeight < Params().GetConsensus().BHDIP008Height 
-            ? Params().GetConsensus().BHDIP001TargetSpacing 
-            : Params().GetConsensus().BHDIP008TargetSpacing);
+        uint64_t nDeadline = static_cast<uint64_t>(Consensus::GetTargetSpacing(nHeight, Params().GetConsensus()));
 
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, true,
             nPlotterId, nDeadline, nDeadline, privKey));
@@ -1180,13 +1178,13 @@ UniValue GetPledge(const std::string &address, uint64_t nPlotterId, bool fVerbos
     result.pushKV("balance", ValueFromAmount(balance));
     //! This balance spendable
     result.pushKV("spendableBalance", ValueFromAmount(balance - balanceBindPlotter - balanceLoan));
-    //! This balance freeze in bind plotter and pledge loan
+    //! This balance freeze in bind plotter and point to
     result.pushKV("lockedBalance", ValueFromAmount(balanceBindPlotter + balanceLoan));
-    //! This balance freeze in rental loan
+    //! This balance freeze in point to
     result.pushKV("loanBalance", ValueFromAmount(balanceLoan));
-    //! This balance recevied from rental borrow. YOUR CANNOT SPENT IT.
+    //! This balance recevied from point from. YOUR CANNOT SPENT IT.
     result.pushKV("borrowBalance", ValueFromAmount(balanceBorrow));
-    //! This balance include rental loan and avaliable balance. For mining require balance
+    //! This balance include point to and avaliable balance. For mining require balance
     result.pushKV("availableMiningBalance", ValueFromAmount(balance - balanceLoan + balanceBorrow));
 
     const Consensus::Params &params = Params().GetConsensus();
@@ -1283,7 +1281,7 @@ UniValue getpledgeofaddress(const JSONRPCRequest& request)
             "[\n"
             "  {\n"
             "    \"balance\": xxx,                     (numeric) All amounts belonging to this address\n"
-            "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and pledge loan\n"
+            "    \"lockedBalance\": xxx,               (numeric) Unspendable amount. Freeze in bind plotter and point to\n"
             "    \"spendableBalance\": xxx,            (numeric) Spendable amount. Include immarture and exclude locked amount\n"
             "    \"loanBalance\": xxx,                 (numeric) Rental loan amount\n"
             "    \"borrowBalance\": xxx,               (numeric) Rental borrow amount\n"
@@ -1497,7 +1495,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "listpledgeloanofaddress \"address\"\n"
-            "\nReturns up to rental loan coins.\n"
+            "\nReturns up to point to coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
             "\nResult:\n"
@@ -1514,7 +1512,7 @@ UniValue listpledgeloanofaddress(const JSONRPCRequest& request)
             "]\n"
 
             "\nExamples:\n"
-            "\nList the rental loan coins from UTXOs\n"
+            "\nList the point to coins from UTXOs\n"
             + HelpExampleCli("listpledgeloanofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
             + HelpExampleRpc("listpledgeloanofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );
@@ -1536,7 +1534,7 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "listpledgedebitofaddress \"address\"\n"
-            "\nReturns up to rental borrow coins.\n"
+            "\nReturns up to point from coins.\n"
             "\nArguments:\n"
             "1. address             (string, required) The BitcoinHD address\n"
             "\nResult:\n"
@@ -1553,7 +1551,7 @@ UniValue listpledgedebitofaddress(const JSONRPCRequest& request)
             "]\n"
 
             "\nExamples:\n"
-            "\nList the rental borrow coins from UTXOs\n"
+            "\nList the point from coins from UTXOs\n"
             + HelpExampleCli("listpledgedebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
             + HelpExampleRpc("listpledgedebitofaddress", std::string("\"") + Params().GetConsensus().BHDFundAddress + "\"")
         );

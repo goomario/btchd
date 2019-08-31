@@ -250,7 +250,7 @@ uint64_t SipHashUint256Extra(uint64_t k0, uint64_t k1, const uint256& val, uint3
 uint64_t PocLegacy::GeneratePlotterId(const std::string &passphrase)
 {
     // 1.passphraseHash = sha256(passphrase)
-    // 2.<signingKey,publicKey> = Curve25519(null, passphraseHash)
+    // 2.<signingKey,publicKey> = Curve25519(passphraseHash)
     // 3.publicKeyHash = sha256(publicKey)
     // 4.unsigned int64 id = unsigned int64(publicKeyHash[0~7])
     uint8_t privateKey[32] = {0}, publicKey[32] = {0};

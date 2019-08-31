@@ -475,7 +475,7 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-printpriority", strprintf("Log transaction fee per kB when mining blocks (default: %u)", DEFAULT_PRINTPRIORITY));
     }
     strUsage += HelpMessageOpt("-shrinkdebugfile", _("Shrink debug.log file on client startup (default: 1 when no -debug)"));
-    strUsage += HelpMessageOpt("-signprivkey", _("Import private key for block generation signature"));
+    strUsage += HelpMessageOpt("-signprivkey", _("Import private key for block signature"));
 
     AppendParamsHelpMessages(strUsage, showDebug);
 
@@ -1606,6 +1606,7 @@ bool AppInitMain()
                     }
                 }
 
+                // TODO Move to rewinding
                 if (!is_coinsview_empty) {
                     uiInterface.InitMessage(_("Verifying blocks..."));
                     if (fHavePruned && gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS) > MIN_BLOCKS_TO_KEEP) {

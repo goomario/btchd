@@ -107,15 +107,35 @@ $(OSX_APP)/Contents/Resources/zh_CN.lproj/InfoPlist.strings:
 	$(MKDIR_P) $(@D)
 	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "比特硬币"; }' > $@
 
+$(OSX_APP)/Contents/Resources/zh_HK.lproj/InfoPlist.strings:
+	$(MKDIR_P) $(@D)
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "比特硬幣"; }' > $@
+
 $(OSX_APP)/Contents/Resources/zh_TW.lproj/InfoPlist.strings:
 	$(MKDIR_P) $(@D)
 	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "比特硬幣"; }' > $@
+
+$(OSX_APP)/Contents/Resources/ja.lproj/InfoPlist.strings:
+	$(MKDIR_P) $(@D)
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "ビットコイン"; }' > $@
+
+$(OSX_APP)/Contents/Resources/ko.lproj/InfoPlist.strings:
+	$(MKDIR_P) $(@D)
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "비트 코인"; }' > $@
+
+$(OSX_APP)/Contents/Resources/de.lproj/InfoPlist.strings:
+	$(MKDIR_P) $(@D)
+	echo '{	CFBundleDisplayName = "$(PACKAGE_TARNAME)"; CFBundleName = "Bisschen Münze"; }' > $@
 
 OSX_APP_BUILT=$(OSX_APP)/Contents/PkgInfo $(OSX_APP)/Contents/Resources/empty.lproj \
   $(OSX_APP)/Contents/Resources/bitcoin.icns $(OSX_APP)/Contents/Info.plist \
   $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/Base.lproj/InfoPlist.strings \
   $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/zh_CN.lproj/InfoPlist.strings \
-  $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/zh_TW.lproj/InfoPlist.strings
+  $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/zh_HK.lproj/InfoPlist.strings \
+  $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/zh_TW.lproj/InfoPlist.strings \
+  $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/ja.lproj/InfoPlist.strings \
+  $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/ko.lproj/InfoPlist.strings \
+  $(OSX_APP)/Contents/MacOS/BTCHD-Qt $(OSX_APP)/Contents/Resources/de.lproj/InfoPlist.strings
 
 osx_volname:
 	echo $(OSX_VOLNAME) >$@

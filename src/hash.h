@@ -229,7 +229,7 @@ public:
 uint64_t SipHashUint256(uint64_t k0, uint64_t k1, const uint256& val);
 uint64_t SipHashUint256Extra(uint64_t k0, uint64_t k1, const uint256& val, uint32_t extra);
 
-/** Utility functions for original PoC legacy. See https://btchd.org/wiki/poc/plotter-id */
+/** Utility functions for original PoC legacy. See https://btchd.org/wiki/poc */
 namespace PocLegacy {
 
 uint64_t GeneratePlotterId(const std::string &passphrase);
