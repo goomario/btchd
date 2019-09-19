@@ -63,7 +63,7 @@ struct Params {
     /** BitcoinHD target spacing */
     int BHDIP001TargetSpacing;
     /** BitcoinHD fund pre-mining height */
-    int BHDIP001StartMiningHeight;
+    int BHDIP001PreMiningEndHeight;
     /** BitcoinHD fund zero height */
     int BHDIP001FundZeroLastHeight;
     /** BitcoinHD fund royalty for full mortgage. 1000% */

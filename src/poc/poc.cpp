@@ -245,7 +245,7 @@ static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const ui
 static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     // Fund
-    if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMiningHeight)
+    if (prevBlockIndex.nHeight + 1 <= params.BHDIP001PreMiningEndHeight)
         return 0;
 
     // BHDIP006 disallow plotter 0
@@ -268,10 +268,10 @@ uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader
 uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight < params.BHDIP001StartMiningHeight + 4) {
+    if (nHeight < params.BHDIP001PreMiningEndHeight + 4) {
         // genesis block & pre-mining block & const block
         return BHD_BASE_TARGET_240;
-    } else if (nHeight < params.BHDIP001StartMiningHeight + 2700 && nHeight < params.BHDIP006Height) {
+    } else if (nHeight < params.BHDIP001PreMiningEndHeight + 2700 && nHeight < params.BHDIP006Height) {
         // [N-1,N-2,N-3,N-4]
         const int N = 4;
         const CBlockIndex *pLastindex = &prevBlockIndex;
@@ -591,7 +591,7 @@ CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& par
     assert(nHeight >= 0 && nHeight <= chainActive.Height());
 
     CBlockList vBlocks;
-    int nBeginHeight = std::max(nHeight - params.nCapacityEvalWindow + 1, params.BHDIP001StartMiningHeight + 1);
+    int nBeginHeight = std::max(nHeight - params.nCapacityEvalWindow + 1, params.BHDIP001PreMiningEndHeight + 1);
     if (nHeight >= nBeginHeight) {
         vBlocks.reserve(nHeight - nBeginHeight + 1);
         if (fAscent) {
@@ -742,7 +742,7 @@ CAmount GetMiningRatio(int nMiningHeight, const Consensus::Params& params, int* 
     int64_t nNetCapacityTB = 0;
     if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         if (pRatioCapacityTB) *pRatioCapacityTB = GetNetCapacity(nMiningHeight - 1, params);
-        if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMiningHeight);
+        if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001PreMiningEndHeight);
     } else {
         int nEndEvalHeight = ((nMiningHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
         int64_t nCurrentNetCapacityTB = GetNetCapacity(nEndEvalHeight, params);
