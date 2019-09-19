@@ -334,7 +334,7 @@ int Consensus::GetBindPlotterLimitHeight(int nBindHeight, const CBindPlotterInfo
         return std::max(params.BHDIP006Height, lastBindInfo.nHeight + 1);
 
     // Checking range [nEvalBeginHeight, nEvalEndHeight]
-    const int nEvalBeginHeight = std::max(nBindHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
+    const int nEvalBeginHeight = std::max(nBindHeight - params.nCapacityEvalWindow, params.BHDIP001StartMiningHeight + 1);
     const int nEvalEndHeight = nBindHeight - 1;
 
     // Mined block in <EvalWindow>, next block unlimit
@@ -364,7 +364,7 @@ int Consensus::GetUnbindPlotterLimitHeight(const CBindPlotterInfo& bindInfo, con
         return std::max(params.BHDIP006Height, bindInfo.nHeight + 1);
 
     // Checking range [nEvalBeginHeight, nEvalEndHeight]
-    const int nEvalBeginHeight = std::max(nSpendHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight + 1);
+    const int nEvalBeginHeight = std::max(nSpendHeight - params.nCapacityEvalWindow, params.BHDIP001StartMiningHeight + 1);
     const int nEvalEndHeight = nSpendHeight - 1;
 
     // 2.5%, Large capacity unlimit

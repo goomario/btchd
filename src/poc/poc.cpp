@@ -245,7 +245,7 @@ static uint64_t CalcDL(int nHeight, const uint256& generationSignature, const ui
 static uint64_t CalculateUnformattedDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     // Fund
-    if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMingingHeight)
+    if (prevBlockIndex.nHeight + 1 <= params.BHDIP001StartMiningHeight)
         return 0;
 
     // BHDIP006 disallow plotter 0
@@ -268,10 +268,10 @@ uint64_t CalculateDeadline(const CBlockIndex& prevBlockIndex, const CBlockHeader
 uint64_t CalculateBaseTarget(const CBlockIndex& prevBlockIndex, const CBlockHeader& block, const Consensus::Params& params)
 {
     int nHeight = prevBlockIndex.nHeight + 1;
-    if (nHeight < params.BHDIP001StartMingingHeight + 4) {
+    if (nHeight < params.BHDIP001StartMiningHeight + 4) {
         // genesis block & pre-mining block & const block
         return BHD_BASE_TARGET_240;
-    } else if (nHeight < params.BHDIP001StartMingingHeight + 2700 && nHeight < params.BHDIP006Height) {
+    } else if (nHeight < params.BHDIP001StartMiningHeight + 2700 && nHeight < params.BHDIP006Height) {
         // [N-1,N-2,N-3,N-4]
         const int N = 4;
         const CBlockIndex *pLastindex = &prevBlockIndex;
@@ -591,7 +591,7 @@ CBlockList GetEvalBlocks(int nHeight, bool fAscent, const Consensus::Params& par
     assert(nHeight >= 0 && nHeight <= chainActive.Height());
 
     CBlockList vBlocks;
-    int nBeginHeight = std::max(nHeight - params.nCapacityEvalWindow + 1, params.BHDIP001StartMingingHeight + 1);
+    int nBeginHeight = std::max(nHeight - params.nCapacityEvalWindow + 1, params.BHDIP001StartMiningHeight + 1);
     if (nHeight >= nBeginHeight) {
         vBlocks.reserve(nHeight - nBeginHeight + 1);
         if (fAscent) {
@@ -676,10 +676,10 @@ int64_t GetRatioNetCapacity(int64_t nNetCapacityTB, int64_t nPrevNetCapacityTB, 
 }
 
 // Round to cent coin. 0.0001
-static const CAmount ratio_percise = COIN / 10000;
+static const CAmount ratio_precise = COIN / 10000;
 static inline CAmount RoundPledgeRatio(CAmount amount)
 {
-    return ((amount + ratio_percise / 2) / ratio_percise) * ratio_percise;
+    return ((amount + ratio_precise / 2) / ratio_precise) * ratio_precise;
 }
 
 CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consensus::Params& params, int* pRatioStage)
@@ -722,7 +722,7 @@ CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
 
         CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001MiningRatio));
         CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001MiningRatio));
-        assert (nTargetRatio > ratio_percise && nStartRatio > nTargetRatio);
+        assert (nTargetRatio > ratio_precise && nStartRatio > nTargetRatio);
 
         int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007MiningRatioStage;
         int64_t nEndCapacityTB = nStartCapacityTB * 2;
@@ -742,7 +742,7 @@ CAmount GetMiningRatio(int nMiningHeight, const Consensus::Params& params, int* 
     int64_t nNetCapacityTB = 0;
     if (nMiningHeight <= params.BHDIP007SmoothEndHeight) {
         if (pRatioCapacityTB) *pRatioCapacityTB = GetNetCapacity(nMiningHeight - 1, params);
-        if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMingingHeight);
+        if (pRatioBeginHeight) *pRatioBeginHeight = std::max(nMiningHeight - params.nCapacityEvalWindow, params.BHDIP001StartMiningHeight);
     } else {
         int nEndEvalHeight = ((nMiningHeight - 1) / params.nCapacityEvalWindow) * params.nCapacityEvalWindow;
         int64_t nCurrentNetCapacityTB = GetNetCapacity(nEndEvalHeight, params);

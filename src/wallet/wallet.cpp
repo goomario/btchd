@@ -3069,7 +3069,9 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                                 int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign,
                                 int32_t nTxVersion)
 {
-    assert(nTxVersion == 0 || nTxVersion == CTransaction::CURRENT_VERSION || nTxVersion == CTransaction::UNIFORM_VERSION);
+    if (nTxVersion != 0 && nTxVersion != CTransaction::CURRENT_VERSION && nTxVersion != CTransaction::UNIFORM_VERSION) {
+        return false;
+    }
 
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
