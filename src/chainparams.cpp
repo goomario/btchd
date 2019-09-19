@@ -358,7 +358,7 @@ public:
         assert(consensus.BHDFundAddressPool.find(consensus.BHDFundAddress) != consensus.BHDFundAddressPool.end());
 
         consensus.nCapacityEvalWindow            = 2016;
-        consensus.nSubsidyHalvingInterval        = 420000;
+        consensus.nSubsidyHalvingInterval        = 210000;
         consensus.fAllowMinDifficultyBlocks      = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 2016;
