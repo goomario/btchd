@@ -575,7 +575,7 @@ public:
         if (tracer->nStartHeight > pBlockIndex->nHeight)
             tracer->nStartHeight = pBlockIndex->nHeight;
 
-        int startMiningHeight = Params().GetConsensus().BHDIP001StartMiningHeight;
+        int startMiningHeight = Params().GetConsensus().BHDIP001PreMiningEndHeight;
         if (pBlockIndex->nHeight < startMiningHeight) {
             if (pBlockIndex->nHeight >= tracer->nStartHeight && startMiningHeight > tracer->nStartHeight) {
                 tracer->NextTick(4);
