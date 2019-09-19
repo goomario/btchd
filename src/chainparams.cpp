@@ -100,7 +100,7 @@ public:
         consensus.nRuleChangeActivationThreshold = 1916;   // 95% of 2016
         consensus.nMinerConfirmationWindow       = 2016;   // About 1 week
 
-        consensus.BHDIP001StartMingingHeight         = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
+        consensus.BHDIP001StartMiningHeight          = 84001; // 21M * 10% = 2.1M, 2.1M/25=84000 (+1 for deprecated public test data)
         consensus.BHDIP001FundZeroLastHeight         = 92641; // End 1 month after 30 * 24 * 60 / 5 = 8640
         consensus.BHDIP001TargetSpacing              = 300;   // 5 minutes. Subsidy halving interval 420000 blocks
         consensus.BHDIP001FundRoyaltyForFullMortgage = 50;    // 50‰ to fund
@@ -363,7 +363,7 @@ public:
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 2016;
 
-        consensus.BHDIP001StartMingingHeight         = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
+        consensus.BHDIP001StartMiningHeight          = 8400; // 21M * 1% = 0.21M, 0.21M/25=8400
         consensus.BHDIP001FundZeroLastHeight         = 12400;
         consensus.BHDIP001TargetSpacing              = 300;
         consensus.BHDIP001FundRoyaltyForFullMortgage = 50;  // 50‰
@@ -589,7 +589,7 @@ public:
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow       = 144;
 
-        consensus.BHDIP001StartMingingHeight         = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
+        consensus.BHDIP001StartMiningHeight         = 84; // 21M * 0.01% = 0.0021M, 0.0021M/25=84
         consensus.BHDIP001FundZeroLastHeight         = 94;
         consensus.BHDIP001TargetSpacing              = 300;
         consensus.BHDIP001FundRoyaltyForFullMortgage = 50; // 50‰

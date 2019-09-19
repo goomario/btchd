@@ -1162,7 +1162,7 @@ BlockReward GetBlockReward(const CBlockIndex* pindexPrev, const CAmount& nFees, 
 
     // Calc miner reward and fund royalty
     BlockReward reward = { 0, 0, 0, 0, false };
-    if (nHeight <= consensusParams.BHDIP001StartMingingHeight) {
+    if (nHeight <= consensusParams.BHDIP001StartMiningHeight) {
         // Fund pre-mining
         reward.fund = nSubsidy + nFees;
     } else if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
@@ -1255,7 +1255,7 @@ BlockReward GetFullMortgageBlockReward(int nHeight, const Consensus::Params& con
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     BlockReward reward = { 0, 0, 0, 0, false };
-    if (nHeight <= consensusParams.BHDIP001StartMingingHeight) {
+    if (nHeight <= consensusParams.BHDIP001StartMiningHeight) {
         // Fund pre-mining
         reward.fund = nSubsidy;
     } else if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
@@ -1280,7 +1280,7 @@ BlockReward GetLowMortgageBlockReward(int nHeight, const Consensus::Params& cons
     const CAmount nSubsidy = GetBlockSubsidy(nHeight, consensusParams);
 
     BlockReward reward = { 0, 0, 0, 0, true };
-    if (nHeight <= consensusParams.BHDIP001StartMingingHeight) {
+    if (nHeight <= consensusParams.BHDIP001StartMiningHeight) {
         // Fund pre-mining
         reward.fund = nSubsidy;
     } else if (nHeight <= consensusParams.BHDIP001FundZeroLastHeight) {
