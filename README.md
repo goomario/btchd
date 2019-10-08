@@ -12,10 +12,10 @@ About BitcoinHD
 ---------------
 
 - BitcoinHD is a new type of crypto currency based on Proof of Capacity.
-- BHD uses an upgraded version of cPOC mining (Conditioned Proof of Capacity), with a perfect economic model and consensus algorithm.
-- BHD uses hard disk as the participant of consensus, which reduces power consumption.
-- BHD mining lowers the entry barriers, and makes the coin generation process more decentralized, secure and reliable.
-- Compared with POW mining, cPOC mining saves energy, consumes much less power, has lower noise, no heat, and is anti-ASIC. cPOC-mining-based BHD can realize the original intention of Satoshi Nakamoto ---- everyone can become a miner.
+- BitcoinHD uses an upgraded version of cPOC mining (Conditioned Proof of Capacity), with a perfect economic model and consensus algorithm.
+- BitcoinHD uses hard disk as the participant of consensus, which reduces power consumption.
+- BitcoinHD mining lowers the entry barriers, and makes the coin generation process more decentralized, secure and reliable.
+- Compared with POW mining, cPOC mining saves energy, consumes much less power, has lower noise, no heat, and is anti-ASIC. cPOC-mining-based BitcoinHD can realize the original intention of Satoshi Nakamoto ---- everyone can become a miner.
 - Lowered the cost of credit, increased the strength and breadth of consensus, and improved the security of the consensus architecture
 
 For more information, as well as an immediately useable, binary version of
