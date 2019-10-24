@@ -98,6 +98,9 @@ struct Params {
     int BHDIP008FundRoyaltyDecreaseForLowMortgage;
     int BHDIP008FundRoyaltyDecreasePeriodForLowMortgage;
 
+    /** Block height at which BHDIP009 becomes active, This is a soft fork for limit unbind height */
+    int BHDIP009Height;
+
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPocTargetTimespan / BHDIP001TargetSpacing) which is also used for BIP9 deployments.

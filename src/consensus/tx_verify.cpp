@@ -207,7 +207,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
 }
 
 bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, CheckLevel level, const Consensus::Params& params)
+    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, CheckTxLevel level, const Consensus::Params& params)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -274,7 +274,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             if (!coin.extraData && nSpendHeight >= params.BHDIP007Height)
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-invaliduniform-unlock");
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                if (level != CheckTxLevel::Consensus && static_cast<int>(coin.nHeight) == nSpendHeight)
+                if ((level != CheckTxLevel::Consensus || nSpendHeight >= params.BHDIP009Height) && static_cast<int>(coin.nHeight) == nSpendHeight)
                     return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-strict-limit");
                 if (nSpendHeight < GetUnbindPlotterLimitHeight(CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
                     return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
@@ -318,7 +318,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 }
 
 bool Consensus::CheckTxInputs(const CTransaction& tx, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, const CAccountID& generatorAccountID, CheckLevel level, const Consensus::Params& params)
+    int nSpendHeight, const CAccountID& generatorAccountID, CheckTxLevel level, const Consensus::Params& params)
 {
     CValidationState state;
     CAmount txfee;

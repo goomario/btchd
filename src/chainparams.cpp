@@ -129,6 +129,8 @@ public:
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
 
+        consensus.BHDIP009Height = 230000;
+
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
         consensus.BIP65Height = 0; // Always enforce BIP65
@@ -391,6 +393,8 @@ public:
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
 
+        consensus.BHDIP009Height = 150000;
+
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34
         consensus.BIP65Height = 0; // Always enforce BIP65
@@ -616,6 +620,8 @@ public:
         assert(consensus.BHDIP008Height % consensus.nMinerConfirmationWindow == 0);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage < consensus.BHDIP001FundRoyaltyForLowMortgage);
         assert(consensus.BHDIP008FundRoyaltyForLowMortgage > consensus.BHDIP001FundRoyaltyForFullMortgage);
+
+        consensus.BHDIP009Height = 800;
 
         consensus.BIP16Height = 0; // Always enforce BIP16
         consensus.BIP34Height = 0; // Always enforce BIP34

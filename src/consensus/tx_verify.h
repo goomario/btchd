@@ -45,9 +45,9 @@ enum class CheckTxLevel {
  * Preconditions: tx.IsCoinBase() is false.
  */
 bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, CheckLevel level, const Params& params);
+    int nSpendHeight, CAmount& txfee, const CAccountID& generatorAccountID, CheckTxLevel level, const Params& params);
 bool CheckTxInputs(const CTransaction& tx, const CCoinsViewCache& inputs, const CCoinsViewCache& prevInputs,
-    int nSpendHeight, const CAccountID& generatorAccountID, CheckLevel level, const Params& params);
+    int nSpendHeight, const CAccountID& generatorAccountID, CheckTxLevel level, const Params& params);
 
 /** Get bind/unbind plotter transaction lock height. */
 int GetBindPlotterLimitHeight(int nBindHeight, const CBindPlotterInfo& lastBindInfo, const Params& params);
