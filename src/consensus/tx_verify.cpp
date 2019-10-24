@@ -274,7 +274,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             if (!coin.extraData && nSpendHeight >= params.BHDIP007Height)
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-invaliduniform-unlock");
             if (coin.extraData && coin.extraData->type == DATACARRIER_TYPE_BINDPLOTTER) {
-                if ((level != CheckTxLevel::Consensus || nSpendHeight >= params.BHDIP009Height) && static_cast<int>(coin.nHeight) == nSpendHeight)
+                if (level != CheckTxLevel::Consensus && static_cast<int>(coin.nHeight) == nSpendHeight)
                     return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-strict-limit");
                 if (nSpendHeight < GetUnbindPlotterLimitHeight(CBindPlotterInfo(tx.vin[0].prevout, coin), prevInputs, params))
                     return state.Invalid(false, REJECT_INVALID, "bad-unbindplotter-limit");
