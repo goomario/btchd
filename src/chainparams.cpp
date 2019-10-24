@@ -150,10 +150,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000001c422e58c266a7b7d31");
+        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000026838357a5974fcc747");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x6625f6c687d4f58572f1207ebed1953f5f20c63c5fdc3d59cc14222de1a05a1f");
+        consensus.defaultAssumeValid = uint256S("0xa91153f32c0b516aeed60a2ed90671050e3a4a0ef30d4d47e6f4a0da0934568d");
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -334,15 +334,42 @@ public:
                 { 197000, uint256S("0x230b291bd33ccc544489741b2670b49d294c3f7957b04d6ca5d4dfd46e8b339f") },
                 { 197568, uint256S("0xf12007a3bd180a75c3db6b5264e509e86331d7947831c51758449c03b6edad82") }, // BHDIP008
                 { 198000, uint256S("0x6625f6c687d4f58572f1207ebed1953f5f20c63c5fdc3d59cc14222de1a05a1f") },
+                { 199000, uint256S("0xef22628b770ab14bb29de8e3cc5eb9ebd62b8bcf0acb570a0406b3e153ebe3ae") },
+                { 200000, uint256S("0xbfb68663c994c3e76c33b4b93b92093a7308ff9f7fa25bd84d59a3c092eba262") },
+                { 201000, uint256S("0xbd505bc1ed6f489206caf5b0fdb190251247cccd59938773613b987b8857369f") },
+                { 202000, uint256S("0xc5d824a10eab3d2c8ed366cc5c544a920b1d7edbf747757df084ef72657ed0a3") },
+                { 203000, uint256S("0xb3b3f74ee5e8c28d8e16d47dcd3750783dd65ecfcf8b2f438a360b104f7b2ac4") },
+                { 204000, uint256S("0xe0f0686f23b4b93f8539f524a8a222ff0c387e91aaa0685e046f2c88b7fddaad") },
+                { 205000, uint256S("0xef724d3ba5d7301ce65842c0c2f91ffcd36a7ca95d326f2e937a044ed0f88cf4") },
+                { 206000, uint256S("0xfd19341a4ab9bb8ec1ddfe1ab4b619b154af70a809c8bc7fddf4c1fd9efe407a") },
+                { 207000, uint256S("0x250cd2ab04934bfb8e679c5920a8b220179a72c2b4bd665504380a6cf45a6f3c") },
+                { 208000, uint256S("0x5e2fe184b40cfe90e370dc59927f7e07fb909e919ea82f46e68cda70e9a84079") },
+                { 209000, uint256S("0xa4b2ecf923303d2a7c5114a1228de2a1607bb75d37a78062e412502d3aa92c15") },
+                { 210000, uint256S("0xfc9753fae68a19897b03a1288e67683d64b469f723302f67d7c6b89b0def0c6a") },
+                { 211000, uint256S("0xfcd527ee38c5dbb3b1ed2bd31f3b651e88bf76b0b0f3bfa9b8f22de22faafe10") },
+                { 212000, uint256S("0x6dc9268d6000a219669ddcafe18a5cd7ef05893bb5db0b31d413fd166e4e89c5") },
+                { 213000, uint256S("0x070ca6bbd0f8dbbc8a314a40b7f5acb89d2ef397f14872b8c81de8ae272181c4") },
+                { 214000, uint256S("0xe1449b1ba76823f8586d3f8416f54b25897d80af5a831c30143f9f311520b1eb") },
+                { 215000, uint256S("0x513f1e0412e3f911a7e1bc449c9d3328675fe5a6e9f3bcf8507c0dd1e87e336d") },
+                { 216000, uint256S("0xb273c8376475b84f3656032ce44b068bc1f7c94a9c32c7c4695b9dfc8074bfb4") },
+                { 217000, uint256S("0xd7beecacf49412b14e17ac6f49ce32e256974fc996025f7c07da1686ee6d59cc") },
+                { 218000, uint256S("0xc8dc730a71982f9965d9cb46e59a074947e7a5bc6098d55b6c005a6f84c4975b") },
+                { 219000, uint256S("0x1336adfa75b3f39a840b5714df53d08ffe4a02b87b491fbd656835b832a7333b") },
+                { 220000, uint256S("0xc68c4bdc49b73591d4ea8ceb5af3ef3677413809fbbe67875213390fdb08d145") },
+                { 221000, uint256S("0xbd809bcd912ccf5484734130241a6bc6de360899e5f5299a6fe53a0ea08b9ef1") },
+                { 222000, uint256S("0xb081e10c89ec32a454cadae9c0ef355d2fd60dbae9d5f99ac26f221b42e7bc61") },
+                { 223000, uint256S("0x4226e29e3b8da895cf0845202ec65adb687b41f4cd356ad1cdb576a14d622531") },
+                { 224000, uint256S("0x17905215f82523b1c494ea15908f213b0d392945a2c2799e1aa346f3e2348d8a") },
+                { 225000, uint256S("0xa91153f32c0b516aeed60a2ed90671050e3a4a0ef30d4d47e6f4a0da0934568d") },
             }
         };
 
         chainTxData = ChainTxData{
             // Data from getchaintxstats
-            1566989688, // * UNIX timestamp of last known number of transactions
-            294357,     // * total number of transactions between genesis and that timestamp
+            1571903363, // * UNIX timestamp of last known number of transactions
+            339381,     // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
-            0.007077    // * estimated number of transactions per second after that timestamp
+            0.009177    // * estimated number of transactions per second after that timestamp
         };
     }
 };
@@ -414,10 +441,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000002e8d8e882e64cdd");
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000053c1ab8e9c40dd2");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x87facc4009fa5eef8d7d50168eae18ca0e8a9ce9a0c5d41fb828c2058553c497");
+        consensus.defaultAssumeValid = uint256S("0x4c28ecd73287267f2da76b993782131ebc9fa322939577ca2cebd42c3e865e21");
 
         pchMessageStart[0] = 0x1e;
         pchMessageStart[1] = 0x12;
@@ -552,25 +579,57 @@ public:
                 {  97000, uint256S("0x8ab3bdd033df8ee77f90cb1917802f0edce7090532fc6a889395584e31f4115b") },
                 {  98000, uint256S("0x7534314e5ceba6ba39c2c9244dec8816d801d0d0eabbe956ec9c952be5720156") },
                 {  99000, uint256S("0xcbd672321af1cf138c24d052f81b09466c44515b058287b23de6c7ccb68f9651") },
-                {  100000, uint256S("0x94e80b2871db28950e9005890a5b5ee875cf453947978462f46b705ce80066d8") },
-                {  101000, uint256S("0xb614579020d81a5882f3a36ff0898cbbcbfd1d63c4f1b6f835add2a03767905c") },
-                {  102000, uint256S("0x6aa5cbf5e16cbe9e5b44ccac67c9394a49edfc9bcbb3b18974ad093fdf4b5bc6") },
-                {  103000, uint256S("0xe33f5f3479699b77a1bbc70c586f539389d23163bfd9a7e5d544311e82a1ca52") },
-                {  104000, uint256S("0x44905a3381d8bf3e15daa5258cd9332619bd69670d6df7e94701c4e748cc5de1") },
-                {  105000, uint256S("0x3d414ad47acf9aed9e26cf681298d0710d4fb68d4057e16d765cd6e26e3fbee3") },
-                {  106000, uint256S("0x074b174cdffb56727d71f08f2002957d89b3ff39c87abb69a5e990c462a81c8b") },
-                {  106848, uint256S("0xb3482ee2d4fde29559636657de6f1059b4f8b38ba2d8c9842078d4faed53d92e") }, // BHDIP006
-                {  107000, uint256S("0x142123211cf8df7011baa5d3f4f485cd6484920124b4ecd135e72e2f7b99b2ed") },
-                {  108000, uint256S("0x8e03e9959f26dad803ce5ef10ad8f974854b0f663ac699fcc38fa7999f10d072") },
-                {  109000, uint256S("0x47dbf344dfc9731c56dd4ee00d4c9d9c7125018d1046c6e81ead8ecd6ba0829d") },
-                {  109500, uint256S("0x87facc4009fa5eef8d7d50168eae18ca0e8a9ce9a0c5d41fb828c2058553c497") },
+                { 100000, uint256S("0x94e80b2871db28950e9005890a5b5ee875cf453947978462f46b705ce80066d8") },
+                { 101000, uint256S("0xb614579020d81a5882f3a36ff0898cbbcbfd1d63c4f1b6f835add2a03767905c") },
+                { 102000, uint256S("0x6aa5cbf5e16cbe9e5b44ccac67c9394a49edfc9bcbb3b18974ad093fdf4b5bc6") },
+                { 103000, uint256S("0xe33f5f3479699b77a1bbc70c586f539389d23163bfd9a7e5d544311e82a1ca52") },
+                { 104000, uint256S("0x44905a3381d8bf3e15daa5258cd9332619bd69670d6df7e94701c4e748cc5de1") },
+                { 105000, uint256S("0x3d414ad47acf9aed9e26cf681298d0710d4fb68d4057e16d765cd6e26e3fbee3") },
+                { 106000, uint256S("0x074b174cdffb56727d71f08f2002957d89b3ff39c87abb69a5e990c462a81c8b") },
+                { 106848, uint256S("0xb3482ee2d4fde29559636657de6f1059b4f8b38ba2d8c9842078d4faed53d92e") }, // BHDIP006
+                { 107000, uint256S("0x142123211cf8df7011baa5d3f4f485cd6484920124b4ecd135e72e2f7b99b2ed") },
+                { 108000, uint256S("0x8e03e9959f26dad803ce5ef10ad8f974854b0f663ac699fcc38fa7999f10d072") },
+                { 109000, uint256S("0x47dbf344dfc9731c56dd4ee00d4c9d9c7125018d1046c6e81ead8ecd6ba0829d") },
+                { 110000, uint256S("0x554c11a2da099e48c22e90498b5da50e04f9162cb069f0eb9f7a43704679a019") },
+                { 111000, uint256S("0x3bff0a6ce7db787ecadc1c64b832a3c914a7baae1a7334d18c68615b7db49730") },
+                { 112000, uint256S("0xaf6fb817d7fdec5cd5aea85dd18ea646a57182a2ab8892a8fedad31fa20f0866") },
+                { 113000, uint256S("0xe4dfa7b72d6eeb4a03e94f21206d261890019a1a9dca98995401b63de48c4e01") },
+                { 114000, uint256S("0xce229c535d6c171debbb13d17a854f687aaac97d70196e48a881a774c1a9881b") },
+                { 115000, uint256S("0x0314d25ba935ab62003de3b4aa1d6fea4f6519b9ead994c896c1e25bf0206711") },
+                { 116000, uint256S("0xca2f62d98f3472ae475b412e2e2efc244e2c730d9a6e052bce2d0332f4925c4c") },
+                { 117000, uint256S("0x47efb55eb4de67a2bdf6b9d3c8b8e5cc791c82bfbf47c608ead4cc4f63cdc83c") },
+                { 118000, uint256S("0xd8a0956e505d554eb40ba03b02bc2f2d4c36259ec823e72489660793e2c35f63") },
+                { 119000, uint256S("0xb8254b321ec7326937ec940cb3ce2d8faa91c600a164ecb13d66ccfb7e34912d") },
+                { 120000, uint256S("0xeda089d6b3f1e44f3cbf21967f0b839211847f7ed85384700a2d4b45d9873c4d") },
+                { 121000, uint256S("0x290f87ee5cb3f47ab0d196e5be60e9964e20df8eca84b7e4f9e35c1e9177aa2f") },
+                { 122000, uint256S("0x860f8c9074dc42756c98579cfdd6141a22266873a8af924663103ba9dd9def6a") },
+                { 123000, uint256S("0x757948dfb88b8425d7a94f9b1e7e5f005e8f05aef296cdc8c50bd9cf8a4619da") },
+                { 124000, uint256S("0x9a7140e32080b11eef74e9a378ec239ddaf5ef5b8246267a0d8c21e60a719648") },
+                { 125000, uint256S("0xef19006d40d79ce5ed9b2abcf8b603d859ebc672fdad919ae03887697b17ce08") },
+                { 126000, uint256S("0x4d1a6d4463b75761df780f78abb90e494818f05566fd5c501bb4f4436688d531") },
+                { 127000, uint256S("0xf4bc815f7ee3b35d4f591e9a890778268c4bac56f7bbf41d3fad2fcd25a8db17") },
+                { 128000, uint256S("0x9a4d927604d27eada9d168438832f0dca4bc668cca9f78d69f609f5ebc4d91b9") },
+                { 129000, uint256S("0x200cbde31c03e9d62e5607e87c6430be7af03a0a05240a7f448304cda6a66f8b") },
+                { 130000, uint256S("0xc91569c088de17e7370e2b0a13688f5de6b80c4401c7de6020d59553be2cf189") },
+                { 131000, uint256S("0x1492ed81c8515862673aab2d14e22418b7c6fa0d28bf438a577c09aedfb1847b") },
+                { 132000, uint256S("0x8d87d70bc77993b56c0145485fc0c566587255e6abc9dcf63ca9a159c99fd215") },
+                { 133000, uint256S("0x4efd3efbe58c0ed09cf30449aef325c54d8184f01ed0dbcd3c53fdf0afb91d8f") },
+                { 134000, uint256S("0xcf56a2b1bf2fbf82624f913a4307f2fd391dde80a83ea2fb4a6114377ff9c873") },
+                { 135000, uint256S("0x617c402acbe433f6682e4a691618a5bc89078b1f34109421bd530978c7bbd470") },
+                { 136000, uint256S("0x8a105714f7481b128a760cc6cf342bfb3faad0aa83b07c8dfcf3755313e04a45") },
+                { 137000, uint256S("0x542872e279d60bd6bd249b9e7253e12a3732af3e90cac34c1d52d4ca1716156f") },
+                { 138000, uint256S("0x6eebf5313c0a67f70517777701f0eae85086735107f8fcf4ffe96936206a0e9a") },
+                { 139000, uint256S("0x53004c7aafa6f1c550cffa66758735efa192f0e28c817b75cd06cf9e77466ed4") },
+                { 140000, uint256S("0x9d1ef311c0e9ad0ecd3038fd305dd893770b323a6877accfaf50c15a13efaf92") },
+                { 141000, uint256S("0x199b4745e96839400c1dae02b1d64ffbfa9b94f1682f05d5a34f2a2ccc0a813e") },
+                { 142000, uint256S("0x4c28ecd73287267f2da76b993782131ebc9fa322939577ca2cebd42c3e865e21") },
             }
         };
 
         chainTxData = ChainTxData{
-            1565880684,
-            111173,
-            0.003756
+            1571903989,
+            144925,
+            0.005537
         };
     }
 };
