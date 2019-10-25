@@ -721,7 +721,7 @@ CAmount EvalMiningRatio(int nMiningHeight, int64_t nNetCapacityTB, const Consens
         if (pRatioStage) *pRatioStage = nStage;
 
         CAmount nStartRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) nStage) * params.BHDIP001MiningRatio));
-        CAmount nTargetRatio =  RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001MiningRatio));
+        CAmount nTargetRatio = RoundPledgeRatio((CAmount) (std::pow(0.666667f, (float) (nStage + 1)) * params.BHDIP001MiningRatio));
         assert (nTargetRatio > ratio_precise && nStartRatio > nTargetRatio);
 
         int64_t nStartCapacityTB = (((int64_t)1) << nStage) * params.BHDIP007MiningRatioStage;
